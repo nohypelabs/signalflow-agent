@@ -1,65 +1,86 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import TopBar from "@/components/TopBar";
+import Sidebar from "@/components/Sidebar";
+import KPICards from "@/components/KPICards";
+import PortfolioChart from "@/components/PortfolioChart";
+import SignalList from "@/components/SignalList";
+import AIReasoning from "@/components/AIReasoning";
+import DataSources from "@/components/DataSources";
+import SignalsPage from "@/components/SignalsPage";
+import TradeHistory from "@/components/TradeHistory";
+import StrategyConfig from "@/components/StrategyConfig";
+import PerformancePage from "@/components/PerformancePage";
+import { Signal, signals } from "@/lib/mock-data";
 
 export default function Home() {
+  const [activeMenu, setActiveMenu] = useState("Dashboard");
+  const [selectedSignal, setSelectedSignal] = useState<Signal | null>(signals[0]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="flex flex-col h-screen">
+      <TopBar />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar active={activeMenu} onSelect={setActiveMenu} />
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
+          {activeMenu === "Dashboard" && (
+            <>
+              <KPICards />
+              <div className="flex flex-col lg:flex-row gap-4">
+                <PortfolioChart />
+                <SignalList
+                  onSelect={setSelectedSignal}
+                  selected={selectedSignal?.id ?? null}
+                />
+              </div>
+              <AIReasoning signal={selectedSignal} />
+              <DataSources />
+            </>
+          )}
+
+          {activeMenu === "Signals" && <SignalsPage />}
+
+          {activeMenu === "Trade History" && <TradeHistory />}
+
+          {activeMenu === "Strategy Config" && <StrategyConfig />}
+
+          {activeMenu === "Data Sources" && <DataSources />}
+
+          {activeMenu === "Performance" && <PerformancePage />}
+
+          {activeMenu === "Settings" && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-bold">Settings</h2>
+              <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-5 space-y-4">
+                {[
+                  { label: "API Key", value: "soso_••••••••••••k7x9", status: "Connected" },
+                  { label: "SoDEX Wallet", value: "0x7a3f...8b2c", status: "Linked" },
+                  { label: "AI Model", value: "Claude Opus 4.6", status: "Active" },
+                  { label: "Refresh Interval", value: "30 seconds", status: "" },
+                  { label: "Notifications", value: "Telegram + Email", status: "Enabled" },
+                ].map((item) => (
+                  <div key={item.label} className="flex justify-between items-center bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-3">
+                    <span className="text-xs text-[#888888]">{item.label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-white font-mono">{item.value}</span>
+                      {item.status && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#00ff8815] text-[#00ff88] border border-[#00ff8830]">
+                          {item.status}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <footer className="text-center text-[11px] text-[#333344] py-4">
+            NoHype Labs — SignalFlow Agent — SoSoValue Buildathon 2026
+          </footer>
+        </main>
+      </div>
     </div>
   );
 }
