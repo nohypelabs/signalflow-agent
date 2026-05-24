@@ -279,8 +279,9 @@ export default function Home() {
             />
           )}
 
-          <footer className="text-center text-[11px] text-[#333344] py-4">
-            NoHype Labs — SignalFlow Agent — SoSoValue Buildathon 2026
+          <footer className="text-center text-[11px] text-[#444455] py-4 border-t border-[#1a1a2e] mt-auto">
+            <p>SignalFlow Agent — Built by <span className="text-[#666677]">NoHype Labs</span></p>
+            <p className="mt-0.5 text-[#333344]">SoSoValue Buildathon 2026 — Wave 2</p>
           </footer>
         </main>
       </div>
