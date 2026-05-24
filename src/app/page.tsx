@@ -15,6 +15,7 @@ import PerformancePage from "@/components/PerformancePage";
 import SettingsPage from "@/components/SettingsPage";
 import TradeForm from "@/components/TradeForm";
 import OpenOrders from "@/components/OpenOrders";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import { Signal, signals } from "@/lib/mock-data";
 import { useMarket } from "@/lib/use-market";
 import { useSignals } from "@/lib/use-signals";
@@ -35,6 +36,7 @@ function pairToCoin(pair: string): string {
 export default function Home() {
   const [activeMenu, setActiveMenu] = useState("Dashboard");
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(signals[0]);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { tickers, klines, loading, error } = useMarket(DEFAULT_PAIR);
   const { data: signalsData } = useSignals();
   // Wallet
@@ -98,10 +100,16 @@ export default function Home() {
       <TopBar
         sodexStatus={sodexStatus}
         tickerCount={tickers?.length}
+        onMenuToggle={() => setMobileMenuOpen(true)}
       />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar active={activeMenu} onSelect={setActiveMenu} />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
+        <Sidebar
+          active={activeMenu}
+          onSelect={setActiveMenu}
+          mobileOpen={mobileMenuOpen}
+          onMobileClose={() => setMobileMenuOpen(false)}
+        />
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 pb-20 md:pb-0">
           {activeMenu === "Dashboard" && (
             <>
               <KPICards tickers={tickers} />
@@ -276,6 +284,8 @@ export default function Home() {
           </footer>
         </main>
       </div>
+
+      <MobileBottomNav active={activeMenu} onSelect={setActiveMenu} />
 
       {/* Trade form modal */}
       {showTradeForm && (
