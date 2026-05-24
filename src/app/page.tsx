@@ -135,7 +135,7 @@ export default function Home() {
             <>
               <KPICards tickers={tickers} />
               <div className="flex flex-col lg:flex-row gap-4">
-                <PortfolioChart klines={klines} symbol="BTC/USDC" />
+                <PortfolioChart klines={klines} symbol="BTC/USDC" currentPrice={tickerMap.get("vBTC_vUSDC") ? parseFloat(tickerMap.get("vBTC_vUSDC")!.lastPx) : null} />
                 <SignalList
                   onSelect={setSelectedSignal}
                   selected={selectedSignal?.id ?? null}

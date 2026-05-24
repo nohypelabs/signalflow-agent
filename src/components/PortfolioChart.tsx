@@ -6,6 +6,7 @@ import type { SoDEXKline } from "@/lib/sodex-types";
 interface Props {
   klines?: SoDEXKline[] | null;
   symbol?: string;
+  currentPrice?: number | null;
 }
 
 function formatPrice(p: number) {
@@ -14,11 +15,11 @@ function formatPrice(p: number) {
   return p.toFixed(4);
 }
 
-export default function PortfolioChart({ klines, symbol }: Props) {
+export default function PortfolioChart({ klines, symbol, currentPrice }: Props) {
   const useReal = klines && klines.length > 0;
 
   const values: number[] = useReal
-    ? klines.map((k) => parseFloat(k.c))
+    ? [...klines.map((k) => parseFloat(k.c)), ...(currentPrice != null ? [currentPrice] : [])]
     : portfolioData.map((p) => p.value);
 
   const max = Math.max(...values);
