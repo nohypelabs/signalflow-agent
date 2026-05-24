@@ -114,22 +114,24 @@ export default function WalletButton() {
   // ── Wrong network ──
   if (!correctChain) {
     return (
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] px-2 py-0.5 rounded bg-[#ff444420] text-[#ff4444] border border-[#ff444430]">
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[10px] px-2 py-0.5 rounded bg-[#ff444420] text-[#ff4444] border border-[#ff444430] self-start">
           Wrong Network
         </span>
-        <button
-          onClick={handleSwitch}
-          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#ff8800] text-white hover:bg-[#e67a00] transition-colors"
-        >
-          Switch to ValueChain
-        </button>
-        <button
-          onClick={handleDisconnect}
-          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#ff444415] text-[#ff4444] border border-[#ff444430] hover:bg-[#ff444425] transition-colors"
-        >
-          Disconnect
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={handleSwitch}
+            className="px-2 py-1 text-[10px] font-semibold rounded-lg bg-[#ff8800] text-white hover:bg-[#e67a00] transition-colors whitespace-nowrap"
+          >
+            Switch
+          </button>
+          <button
+            onClick={handleDisconnect}
+            className="px-2 py-1 text-[10px] rounded-lg bg-[#ff444415] text-[#ff4444] border border-[#ff444430] hover:bg-[#ff444425] transition-colors whitespace-nowrap"
+          >
+            Disconnect
+          </button>
+        </div>
       </div>
     );
   }
