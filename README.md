@@ -219,39 +219,56 @@ pnpm start        # Production server — http://localhost:3000
 src/
 ├── app/
 │   ├── layout.tsx           # Root layout + PWA metadata
-│   ├── page.tsx             # Main SPA orchestrator
-│   ├── providers.tsx        # Wagmi + React Query providers
-│   └── api/                 # Next.js API routes
-│       ├── market/[type]    # SoDEX tickers/klines proxy
-│       ├── signals/         # Heuristic scoring engine
-│       ├── signals/analyze  # AI signal generation
-│       ├── balance/         # SoDEX wallet balance
-│       ├── orders/          # SoDEX order management
-│       ├── sources/         # SoSoValue data modules
-│       └── performance/     # Portfolio performance
-├── components/              # UI components (all "use client")
-│   ├── TopBar.tsx           # Header + wallet + hamburger
-│   ├── Sidebar.tsx          # Desktop nav + mobile drawer
-│   ├── MobileBottomNav.tsx  # Bottom tab bar (mobile)
-│   ├── WalletButton.tsx     # Connect/disconnect + balance panel
-│   ├── TradeForm.tsx        # Execution modal with EIP-712 signing
-│   ├── SignalsPage.tsx      # Detailed signal analysis view
-│   ├── TradeHistory.tsx     # Orders + positions table
-│   ├── OpenOrders.tsx       # SoDEX open orders
-│   └── SettingsPage.tsx     # AI provider configuration
+│   ├── page.tsx             # Main SPA orchestrator (client-side routing)
+│   ├── providers.tsx        # WagmiProvider + QueryClientProvider
+│   ├── globals.css          # Tailwind v4 + custom animations
+│   └── api/
+│       ├── market/[type]    # GET — SoDEX tickers, klines, symbols
+│       ├── signals/         # GET — heuristic 5-dimension scoring
+│       ├── signals/analyze  # POST — AI signal generation
+│       ├── balance/         # GET — SoDEX wallet balance
+│       ├── orders/          # GET (list) + POST (place)
+│       ├── orders/[id]      # DELETE — cancel order
+│       ├── sources/         # GET — SoSoValue module status
+│       ├── performance/     # GET — portfolio performance data
+│       └── status/          # GET — SoDEX connection health
+├── components/
+│   ├── TopBar.tsx           # Header with status indicator + hamburger
+│   ├── Sidebar.tsx          # Desktop vertical nav + mobile slide-in drawer
+│   ├── MobileBottomNav.tsx  # Fixed bottom tab bar (Home/Signals/Trade/Settings)
+│   ├── WalletButton.tsx     # Connect/disconnect + balance dropdown panel
+│   ├── TradeForm.tsx        # Trade execution modal with EIP-712 signing
+│   ├── SignalsPage.tsx      # AI signal analysis with per-dimension reasoning
+│   ├── SignalList.tsx       # Signal table with confidence scores
+│   ├── TradeHistory.tsx     # Orders, positions, and executable signals table
+│   ├── OpenOrders.tsx       # Active SoDEX orders with cancel action
+│   ├── SettingsPage.tsx     # AI provider + model + API key configuration
+│   ├── KPICards.tsx         # Dashboard stat cards (P&L, win rate, etc.)
+│   ├── PortfolioChart.tsx   # Price chart from kline data
+│   ├── AIReasoning.tsx      # AI-generated signal rationale panel
+│   ├── DataSources.tsx      # SoSoValue API module status grid
+│   ├── PerformancePage.tsx  # Performance metrics dashboard
+│   ├── StrategyConfig.tsx   # Signal strategy configuration
+│   └── PWARegister.tsx      # Service worker registration (client-only)
 └── lib/
-    ├── wallet-config.ts     # ValueChain + wagmi config
-    ├── use-wallet.ts        # Wallet connection hook
-    ├── use-market.ts        # SoDEX market data hook
-    ├── use-signals.ts       # Signal scoring hook
-    ├── use-ai-signal.ts     # AI generation hook
-    ├── use-ai-config.ts     # AI provider persistence
-    ├── ai-providers.ts      # Provider registry
-    ├── sosovalue.ts         # SoSoValue API client
-    ├── sodex.ts             # SoDEX API client
-    ├── eip712.ts            # EIP-712 typed data
-    ├── sodex-types.ts       # SoDEX type definitions
-    └── mock-data.ts         # Fallback mock data
+    ├── wallet-config.ts     # ValueChain chain def + wagmi config
+    ├── use-wallet.ts        # Wallet connect/disconnect/status hook
+    ├── use-market.ts        # SoDEX tickers + klines hook
+    ├── use-signals.ts       # Signal scoring hook (60s auto-refresh)
+    ├── use-ai-signal.ts     # AI signal generation hook
+    ├── use-ai-config.ts     # localStorage AI provider persistence
+    ├── use-orders.ts        # SoDEX order fetch/place/cancel hook
+    ├── use-performance.ts   # Portfolio performance hook
+    ├── use-sources.ts       # SoSoValue module status hook
+    ├── use-status.ts        # SoDEX health check hook
+    ├── ai-providers.ts      # Deepseek/OpenAI/OpenRouter registry
+    ├── sosovalue.ts         # SoSoValue API client (server-side)
+    ├── sodex.ts             # SoDEX API client (server-side)
+    ├── deepseek.ts          # AI chat completions client
+    ├── eip712.ts            # EIP-712 typed data domain + types
+    ├── sodex-types.ts       # SoDEX TypeScript type definitions
+    ├── pair-map.ts          # Display pair ↔ SoDEX symbol mapping
+    └── mock-data.ts         # Static fallback data for all components
 ```
 
 ---
