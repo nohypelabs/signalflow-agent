@@ -2,6 +2,7 @@
 
 import { usePerformance } from "@/lib/use-performance";
 import { useSignals } from "@/lib/use-signals";
+import type { RecordedSignal } from "@/lib/use-signal-history";
 
 const COIN_COLORS: Record<string, string> = {
   BTC: "#ff8800",
@@ -9,7 +10,13 @@ const COIN_COLORS: Record<string, string> = {
   SOL: "#7b2fff",
 };
 
-export default function PerformancePage() {
+interface Props {
+  signalHistory?: RecordedSignal[];
+  signalStats?: { totalResolved: number; totalCorrect: number; accuracy: number | null };
+  historyHydrated?: boolean;
+}
+
+export default function PerformancePage({ signalHistory = [], signalStats, historyHydrated = true }: Props) {
   const { coins, loading, error } = usePerformance();
   const { data: signalsData } = useSignals();
 
@@ -79,6 +86,90 @@ export default function PerformancePage() {
           </div>
         ))}
       </div>
+
+      {/* Signal Accuracy */}
+      {historyHydrated && signalHistory.length > 0 && (
+        <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="font-semibold text-sm">Signal Accuracy</h3>
+            <span className="text-[10px] px-1.5 py-0.5 bg-[#00ff8815] text-[#00ff88] border border-[#00ff8830] rounded">
+              LOCAL TRACKING
+            </span>
+          </div>
+
+          {/* Accuracy stat cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div className="bg-[#0d0d1a] rounded-lg p-3">
+              <p className="text-[10px] text-[#666677]">Signals Tracked</p>
+              <p className="text-lg font-bold text-white">{signalHistory.length}</p>
+            </div>
+            <div className="bg-[#0d0d1a] rounded-lg p-3">
+              <p className="text-[10px] text-[#666677]">Resolved</p>
+              <p className="text-lg font-bold text-[#00d4ff]">{signalStats?.totalResolved ?? 0}</p>
+            </div>
+            <div className="bg-[#0d0d1a] rounded-lg p-3">
+              <p className="text-[10px] text-[#666677]">Correct</p>
+              <p className="text-lg font-bold text-[#00ff88]">{signalStats?.totalCorrect ?? 0}</p>
+            </div>
+            <div className="bg-[#0d0d1a] rounded-lg p-3">
+              <p className="text-[10px] text-[#666677]">Accuracy</p>
+              <p className="text-lg font-bold" style={{ color: (signalStats?.accuracy ?? 0) >= 60 ? "#00ff88" : (signalStats?.accuracy ?? 0) >= 40 ? "#ff8800" : "#ff4444" }}>
+                {signalStats?.accuracy != null ? `${signalStats.accuracy.toFixed(0)}%` : "—"}
+              </p>
+            </div>
+          </div>
+
+          {/* Signal history table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-[#1a1a2e] text-[#666677]">
+                  <th className="text-left p-2 font-medium">Time</th>
+                  <th className="text-left p-2 font-medium">Coin</th>
+                  <th className="text-left p-2 font-medium">Action</th>
+                  <th className="text-right p-2 font-medium">Confidence</th>
+                  <th className="text-right p-2 font-medium">Entry Price</th>
+                  <th className="text-right p-2 font-medium">Current</th>
+                  <th className="text-center p-2 font-medium">Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                {signalHistory.slice(0, 20).map((s) => (
+                  <tr key={s.id} className="border-b border-[#1a1a2e] hover:bg-[#1a1a2e40]">
+                    <td className="p-2 text-[#888899]">
+                      {new Date(s.timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </td>
+                    <td className="p-2 font-semibold" style={{ color: COIN_COLORS[s.coin] || "#fff" }}>{s.coin}</td>
+                    <td className={`p-2 font-bold ${s.action === "BUY" ? "text-[#00ff88]" : s.action === "SELL" ? "text-[#ff4444]" : "text-[#ff8800]"}`}>{s.action}</td>
+                    <td className="p-2 text-right text-white">{s.confidence}%</td>
+                    <td className="p-2 text-right text-[#aaaaaa]">${s.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                    <td className="p-2 text-right text-[#aaaaaa]">
+                      {s.resolved ? `$${s.resolved.finalPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "Pending"}
+                    </td>
+                    <td className="p-2 text-center">
+                      {s.resolved ? (
+                        s.resolved.correct ? (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#00ff8815] text-[#00ff88]">✓</span>
+                        ) : (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#ff444415] text-[#ff4444]">✗</span>
+                        )
+                      ) : (
+                        <span className="text-[10px] text-[#666677]">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {signalHistory.length > 20 && (
+            <p className="text-[10px] text-[#666677] mt-2">Showing last 20 of {signalHistory.length} signals</p>
+          )}
+          <p className="text-[10px] text-[#444455] mt-3">
+            Signals resolve automatically 1 hour after generation — BUY correct if price rises, SELL correct if price falls.
+          </p>
+        </div>
+      )}
 
       {/* Per-coin performance cards */}
       <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-5">

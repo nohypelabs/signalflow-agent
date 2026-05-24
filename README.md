@@ -275,9 +275,8 @@ src/
 
 ## Known Issues (Wave 2)
 
-- WalletConnect v2 may timeout on slow mobile connections — retry logic planned for Wave 3
-- Deepseek API rate limiting during peak hours — switching to OpenRouter is recommended as fallback
-- Hydration mismatch warning in WalletButton when server-rendered state differs from client — cosmetic, no functional impact
+- WalletButton may show a brief hydration mismatch warning on first render — cosmetic only, caused by wagmi SSR state difference. No functional impact.
+- Signal accuracy resolution runs client-side (localStorage) and requires 1 hour before signals resolve. Full on-chain/backend verification planned for Wave 3 backtesting engine.
 
 ---
 

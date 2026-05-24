@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import TopBar from "@/components/TopBar";
 import Sidebar from "@/components/Sidebar";
 import KPICards from "@/components/KPICards";
@@ -23,6 +23,7 @@ import { useAISignal } from "@/lib/use-ai-signal";
 import { useWallet } from "@/lib/use-wallet";
 import { useOrders } from "@/lib/use-orders";
 import { useAIConfig } from "@/lib/use-ai-config";
+import { useSignalHistory } from "@/lib/use-signal-history";
 import { getProvider } from "@/lib/ai-providers";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import type { SoDEXTicker, SoDEXNewOrderRequest } from "@/lib/sodex-types";
@@ -47,6 +48,9 @@ export default function Home() {
   const { aiSignal, analyzing, error: aiError, generate } = useAISignal(aiConfig);
   const [aiCoin, setAiCoin] = useState("BTC");
 
+  // Signal history & accuracy tracking
+  const { history, hydrated: historyHydrated, recordSignal, resolveSignals, stats } = useSignalHistory();
+
   const aiProviderLabel = getProvider(aiConfig.providerId)?.name || "Deepseek";
 
   // Real orders from SoDEX
@@ -68,6 +72,23 @@ export default function Home() {
   // Build ticker map
   const tickerMap = new Map<string, SoDEXTicker>();
   if (tickers) tickers.forEach((t) => tickerMap.set(t.symbol, t));
+
+  // Resolve past signals against current prices (every ticker update)
+  const resolvePending = useCallback(() => {
+    if (!tickers || !historyHydrated) return;
+    for (const t of tickers) {
+      const pair = t.symbol; // vBTC_vUSDC format
+      const coin = pair.startsWith("v") ? pair.split("_")[0].replace("v", "") : pair.split("_")[0];
+      const price = parseFloat(t.lastPx);
+      if (coin && !Number.isNaN(price)) {
+        resolveSignals(coin, price);
+      }
+    }
+  }, [tickers, historyHydrated, resolveSignals]);
+
+  useEffect(() => {
+    resolvePending();
+  }, [resolvePending]);
 
   // ── Trade execution callbacks ──
 
@@ -138,7 +159,10 @@ export default function Home() {
                     ))}
                   </select>
                   <button
-                    onClick={() => generate(aiCoin)}
+                    onClick={async () => {
+                      const signal = await generate(aiCoin);
+                      if (signal) recordSignal(signal);
+                    }}
                     disabled={analyzing}
                     className="px-4 py-1.5 text-xs font-bold rounded-lg bg-[#7b2fff] text-white hover:bg-[#6a1fee] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
@@ -269,7 +293,9 @@ export default function Home() {
 
           {activeMenu === "Data Sources" && <DataSources />}
 
-          {activeMenu === "Performance" && <PerformancePage />}
+          {activeMenu === "Performance" && (
+            <PerformancePage signalHistory={history} signalStats={stats} historyHydrated={historyHydrated} />
+          )}
 
           {activeMenu === "Settings" && (
             <SettingsPage
