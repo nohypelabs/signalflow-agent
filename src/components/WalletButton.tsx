@@ -124,6 +124,12 @@ export default function WalletButton() {
         >
           Switch to ValueChain
         </button>
+        <button
+          onClick={handleDisconnect}
+          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#ff444415] text-[#ff4444] border border-[#ff444430] hover:bg-[#ff444425] transition-colors"
+        >
+          Disconnect
+        </button>
       </div>
     );
   }
