@@ -115,13 +115,13 @@ SODEX_NETWORK=mainnet
 SODEX_API_KEY_NAME=SignalFlowAgent
 
 # Deepseek (fallback AI)
-DEEPSEEK_API_KEY=sk-...
+DEEPSEEK_API_KEY=sk-your-deepseek-key
 
 # SoSoValue
-SOSOVALUE_API_KEY=SOSO-...
+SOSOVALUE_API_KEY=SOSO-your-sosovalue-key
 
 # WalletConnect v2 (for mobile)
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=...
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your-walletconnect-project-id
 ```
 
 ## Project Structure
