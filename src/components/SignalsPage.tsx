@@ -1,6 +1,8 @@
 "use client";
 
 import { signals, Signal } from "@/lib/mock-data";
+import type { SoDEXTicker } from "@/lib/sodex-types";
+import { pairToSodexSymbol } from "@/lib/pair-map";
 
 const actionColors: Record<Signal["action"], { bg: string; border: string; text: string; accent: string }> = {
   BUY: { bg: "bg-[#0d2a1a]", border: "border-[#00ff8840]", text: "text-[#00ff88]", accent: "#00ff88" },
@@ -16,13 +18,30 @@ const dimLabels = [
   { key: "treasury" as const, label: "Treasury", color: "#ff4488" },
 ];
 
-export default function SignalsPage() {
+interface Props {
+  tickers?: SoDEXTicker[] | null;
+}
+
+export default function SignalsPage({ tickers }: Props) {
+  const tickerMap = new Map<string, SoDEXTicker>();
+  if (tickers) tickers.forEach((t) => tickerMap.set(t.symbol, t));
+
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-bold">All Signals</h2>
+      <div className="flex items-center gap-2">
+        <h2 className="text-lg font-bold">All Signals</h2>
+        {tickers && tickers.length > 0 && (
+          <span className="text-[10px] px-1.5 py-0.5 bg-[#00ff8820] text-[#00ff88] border border-[#00ff8830] rounded">LIVE PRICES</span>
+        )}
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {signals.map((s) => {
           const c = actionColors[s.action];
+          const sodSym = pairToSodexSymbol(s.pair);
+          const live = sodSym ? tickerMap.get(sodSym) : undefined;
+          const price = live ? parseFloat(live.lastPx) : s.price;
+          const chg = live ? live.changePct : s.change24h;
+
           return (
             <div key={s.id} className={`${c.bg} ${c.border} border rounded-xl p-5`}>
               <div className="flex justify-between items-center mb-3">
@@ -31,11 +50,14 @@ export default function SignalsPage() {
                   <span className={`px-2 py-0.5 text-xs font-bold rounded border ${c.text}`} style={{ borderColor: c.accent }}>
                     {s.action}
                   </span>
+                  {live && <span className="text-[9px] text-[#00ff88]">LIVE</span>}
                 </div>
                 <div className="text-right">
-                  <span className="text-sm text-white font-semibold">${s.price.toLocaleString()}</span>
-                  <span className={`text-xs ml-2 ${s.change24h >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
-                    {s.change24h >= 0 ? "+" : ""}{s.change24h}%
+                  <span className="text-sm text-white font-semibold">
+                    ${typeof price === "number" ? price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : price}
+                  </span>
+                  <span className={`text-xs ml-2 ${chg >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
+                    {chg >= 0 ? "+" : ""}{typeof chg === "number" ? chg.toFixed(1) : chg}%
                   </span>
                 </div>
               </div>

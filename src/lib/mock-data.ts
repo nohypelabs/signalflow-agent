@@ -1,3 +1,8 @@
+export interface DimensionScore {
+  score: number;
+  detail?: string;
+}
+
 export type Signal = {
   id: string;
   pair: string;
@@ -12,6 +17,13 @@ export type Signal = {
     macro: number;
     momentum: number;
     treasury: number;
+  };
+  dimensionDetails?: {
+    etfFlow: DimensionScore;
+    sentiment: DimensionScore;
+    macro: DimensionScore;
+    momentum: DimensionScore;
+    treasury: DimensionScore;
   };
   execution: {
     orderType: string;

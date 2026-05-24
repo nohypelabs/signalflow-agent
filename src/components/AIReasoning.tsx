@@ -1,6 +1,7 @@
 "use client";
 
 import { Signal } from "@/lib/mock-data";
+import type { SignalDimensions } from "@/lib/use-signals";
 
 const dimLabels: { key: keyof Signal["dimensions"]; label: string; color: string }[] = [
   { key: "etfFlow", label: "ETF Flow", color: "#00d4ff" },
@@ -16,7 +17,12 @@ const actionBadge: Record<string, string> = {
   HOLD: "bg-[#ff880020] border-[#ff8800] text-[#ff8800]",
 };
 
-export default function AIReasoning({ signal }: { signal: Signal | null }) {
+interface Props {
+  signal: Signal | null;
+  liveDims?: SignalDimensions | null;
+}
+
+export default function AIReasoning({ signal, liveDims }: Props) {
   if (!signal) {
     return (
       <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-5">
@@ -25,16 +31,25 @@ export default function AIReasoning({ signal }: { signal: Signal | null }) {
     );
   }
 
+  const hasLive = liveDims !== undefined && liveDims !== null;
+
   return (
     <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-5 animate-slide-up">
       <div className="flex items-center gap-3 mb-4">
-        <h3 className="font-semibold text-sm">AI Reasoning</h3>
+        <h3 className="font-semibold text-sm">
+          {hasLive ? "Live Signal Data" : "AI Reasoning"}
+        </h3>
         <span
           className={`px-2 py-0.5 text-xs font-bold rounded border ${actionBadge[signal.action]}`}
         >
           {signal.action}
         </span>
         <span className="text-sm text-white">{signal.pair}</span>
+        {hasLive && (
+          <span className="px-1.5 py-0.5 text-[10px] bg-[#00ff8820] text-[#00ff88] border border-[#00ff8830] rounded">
+            LIVE
+          </span>
+        )}
         <span className="text-xs text-[#666677] ml-auto">{signal.timeAgo}</span>
       </div>
 
@@ -46,27 +61,40 @@ export default function AIReasoning({ signal }: { signal: Signal | null }) {
           </p>
 
           <div className="mt-4">
-            <p className="text-xs text-[#888888] mb-2">Signal Dimensions</p>
+            <p className="text-xs text-[#888888] mb-2">
+              {hasLive ? "Live Dimensions (SoSoValue)" : "Signal Dimensions"}
+            </p>
             <div className="flex flex-col gap-2">
-              {dimLabels.map((d) => (
-                <div key={d.key} className="flex items-center gap-2">
-                  <span className="text-xs w-20 shrink-0" style={{ color: d.color }}>
-                    {d.label}
-                  </span>
-                  <div className="flex-1 h-3 bg-[#1a1a2e] rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{
-                        width: `${signal.dimensions[d.key]}%`,
-                        backgroundColor: d.color,
-                      }}
-                    />
+              {dimLabels.map((d) => {
+                const score = hasLive ? liveDims[d.key].score : signal.dimensions[d.key];
+                const detail =
+                  (hasLive ? liveDims[d.key].detail : null) ??
+                  signal.dimensionDetails?.[d.key]?.detail ??
+                  null;
+                return (
+                  <div key={d.key}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs w-20 shrink-0" style={{ color: d.color }}>
+                        {d.label}
+                      </span>
+                      <div className="flex-1 h-3 bg-[#1a1a2e] rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{ width: `${score}%`, backgroundColor: d.color }}
+                        />
+                      </div>
+                      <span className="text-xs w-8 text-right font-semibold" style={{ color: d.color }}>
+                        {score}%
+                      </span>
+                    </div>
+                    {detail && (
+                      <p className="text-[10px] text-[#555566] mt-0.5 ml-[5.5rem] leading-relaxed">
+                        {detail}
+                      </p>
+                    )}
                   </div>
-                  <span className="text-xs w-8 text-right font-semibold" style={{ color: d.color }}>
-                    {signal.dimensions[d.key]}%
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

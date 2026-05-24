@@ -1,20 +1,53 @@
 "use client";
 
-const trades = [
-  { pair: "BTC/USDT", action: "BUY", entry: 65200, exit: 68420, pnl: "+4.94%", pnlUsd: "+$494", date: "Apr 27", status: "Closed" },
-  { pair: "ETH/USDT", action: "BUY", entry: 3580, exit: 3842, pnl: "+7.32%", pnlUsd: "+$293", date: "Apr 26", status: "Closed" },
-  { pair: "SOL/USDT", action: "SELL", entry: 185.0, exit: 178.5, pnl: "+3.51%", pnlUsd: "+$105", date: "Apr 26", status: "Open" },
-  { pair: "LINK/USDT", action: "BUY", entry: 17.8, exit: 18.92, pnl: "+6.29%", pnlUsd: "+$189", date: "Apr 25", status: "Closed" },
-  { pair: "AVAX/USDT", action: "BUY", entry: 44.2, exit: 42.8, pnl: "-3.17%", pnlUsd: "-$95", date: "Apr 25", status: "Closed" },
-  { pair: "BTC/USDT", action: "BUY", entry: 62800, exit: 65200, pnl: "+3.82%", pnlUsd: "+$382", date: "Apr 24", status: "Closed" },
-  { pair: "ETH/USDT", action: "SELL", entry: 3720, exit: 3580, pnl: "+3.76%", pnlUsd: "+$150", date: "Apr 23", status: "Closed" },
-  { pair: "SOL/USDT", action: "BUY", entry: 168.0, exit: 185.0, pnl: "+10.12%", pnlUsd: "+$304", date: "Apr 22", status: "Closed" },
-];
+import { signals } from "@/lib/mock-data";
+import type { SoDEXTicker } from "@/lib/sodex-types";
+import { pairToSodexSymbol } from "@/lib/pair-map";
 
-export default function TradeHistory() {
+interface Props {
+  tickers?: SoDEXTicker[] | null;
+}
+
+export default function TradeHistory({ tickers }: Props) {
+  const tickerMap = new Map<string, SoDEXTicker>();
+  if (tickers) tickers.forEach((t) => tickerMap.set(t.symbol, t));
+
+  const trades = signals.map((s) => {
+    const sodSym = pairToSodexSymbol(s.pair);
+    const live = sodSym ? tickerMap.get(sodSym) : undefined;
+    const livePrice = live ? parseFloat(live.lastPx) : s.price;
+    const isBuy = s.action === "BUY";
+    const pnlPct = isBuy
+      ? ((livePrice - s.price) / s.price) * 100
+      : ((s.price - livePrice) / s.price) * 100;
+    const pnlUsd = (pnlPct / 100) * 5000; // assume $5k position
+
+    return {
+      pair: s.pair,
+      action: s.action,
+      entry: s.price,
+      exit: livePrice,
+      pnlPct,
+      pnlUsd,
+      date: s.timeAgo,
+      status: live ? "Live" : "Stale",
+      confidence: s.confidence,
+    };
+  });
+
+  const wins = trades.filter((t) => t.pnlPct > 0).length;
+  const totalPnl = trades.reduce((sum, t) => sum + t.pnlUsd, 0);
+
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-bold">Trade History</h2>
+      <div className="flex items-center gap-2">
+        <h2 className="text-lg font-bold">Trade History</h2>
+        {tickers && tickers.length > 0 && (
+          <span className="text-[10px] px-1.5 py-0.5 bg-[#00ff8820] text-[#00ff88] border border-[#00ff8830] rounded">
+            LIVE PRICES
+          </span>
+        )}
+      </div>
       <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -22,11 +55,11 @@ export default function TradeHistory() {
               <th className="text-left p-3 font-medium">Pair</th>
               <th className="text-left p-3 font-medium">Action</th>
               <th className="text-right p-3 font-medium">Entry</th>
-              <th className="text-right p-3 font-medium">Exit</th>
-              <th className="text-right p-3 font-medium">P&L</th>
+              <th className="text-right p-3 font-medium">Current</th>
+              <th className="text-right p-3 font-medium">P&L %</th>
               <th className="text-right p-3 font-medium">P&L ($)</th>
-              <th className="text-center p-3 font-medium">Status</th>
-              <th className="text-right p-3 font-medium">Date</th>
+              <th className="text-center p-3 font-medium">Confidence</th>
+              <th className="text-right p-3 font-medium">Signal</th>
             </tr>
           </thead>
           <tbody>
@@ -34,33 +67,40 @@ export default function TradeHistory() {
               <tr key={i} className="border-b border-[#1a1a2e] hover:bg-[#1a1a2e40] transition-colors">
                 <td className="p-3 font-semibold text-white">{t.pair}</td>
                 <td className="p-3">
-                  <span className={`text-xs font-bold ${t.action === "BUY" ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
+                  <span className={`text-xs font-bold ${t.action === "BUY" ? "text-[#00ff88]" : t.action === "SELL" ? "text-[#ff4444]" : "text-[#ff8800]"}`}>
                     {t.action}
                   </span>
                 </td>
-                <td className="p-3 text-right text-[#aaaaaa]">${t.entry.toLocaleString()}</td>
-                <td className="p-3 text-right text-[#aaaaaa]">${t.exit.toLocaleString()}</td>
-                <td className={`p-3 text-right font-semibold ${t.pnl.startsWith("+") ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
-                  {t.pnl}
+                <td className="p-3 text-right text-[#aaaaaa]">${t.entry.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right text-white">${t.exit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className={`p-3 text-right font-semibold ${t.pnlPct >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
+                  {t.pnlPct >= 0 ? "+" : ""}{t.pnlPct.toFixed(2)}%
                 </td>
-                <td className={`p-3 text-right font-semibold ${t.pnlUsd.startsWith("+") ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
-                  {t.pnlUsd}
+                <td className={`p-3 text-right font-semibold ${t.pnlUsd >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
+                  {t.pnlUsd >= 0 ? "+" : "-"}${Math.abs(t.pnlUsd).toFixed(0)}
                 </td>
                 <td className="p-3 text-center">
-                  <span className={`px-2 py-0.5 text-[10px] rounded-full ${t.status === "Open" ? "bg-[#ff880020] text-[#ff8800] border border-[#ff880040]" : "bg-[#ffffff08] text-[#666677] border border-[#333355]"}`}>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                    t.confidence >= 80 ? "bg-[#00ff8820] text-[#00ff88]" : t.confidence >= 60 ? "bg-[#ff880020] text-[#ff8800]" : "bg-[#ff444420] text-[#ff4444]"
+                  }`}>
+                    {t.confidence}%
+                  </span>
+                </td>
+                <td className="p-3 text-right">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${t.status === "Live" ? "bg-[#00ff8815] text-[#00ff88] border border-[#00ff8830]" : "bg-[#ffffff08] text-[#666677] border border-[#333355]"}`}>
                     {t.status}
                   </span>
                 </td>
-                <td className="p-3 text-right text-[#666677] text-xs">{t.date}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <div className="flex gap-4 text-xs text-[#666677]">
-        <span>Total trades: {trades.length}</span>
-        <span>Win rate: <span className="text-[#00ff88]">87.5%</span></span>
-        <span>Total P&L: <span className="text-[#00ff88]">+$1,822</span></span>
+        <span>Signals: {trades.length}</span>
+        <span>Winning: <span className="text-[#00ff88]">{wins}/{trades.length}</span></span>
+        <span>Total P&L: <span className={totalPnl >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}>{totalPnl >= 0 ? "+" : "-"}${Math.abs(totalPnl).toFixed(0)}</span></span>
+        <span className="ml-auto text-[10px]">P&L based on live SoDEX prices vs signal entry</span>
       </div>
     </div>
   );
