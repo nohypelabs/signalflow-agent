@@ -138,7 +138,7 @@ export async function GET() {
         color: MODULE_COLORS["Crypto Stocks"],
       })),
 
-    getIndexSnapshot("soso-btc")
+    getIndexSnapshot("ssimag7")
       .then(() => ({
         name: "SoSoValue Index",
         status: "active" as const,

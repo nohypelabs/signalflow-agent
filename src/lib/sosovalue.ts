@@ -174,8 +174,11 @@ export function getNewsHot(page = 1, pageSize = 20) {
 export function getIndexSnapshot(indexTicker: string) {
   return sosoFetch<{
     price: number;
-    "24h_change_pct": number;
-    "7day_roi": number;
-    "1month_roi": number;
+    change_pct_24h: number;
+    roi_7d: number;
+    roi_1m: number;
+    roi_3m: number;
+    roi_1y: number;
+    ytd: number;
   }>(`/indices/${indexTicker}/market-snapshot`);
 }
