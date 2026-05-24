@@ -77,6 +77,82 @@ function scoreTreasury(companies: { ticker: string; name: string }[]): { score: 
   };
 }
 
+// ── Dynamic weight engine ────────────────────────────
+
+const BASE_WEIGHTS = {
+  etfFlow: 20,
+  sentiment: 20,
+  macro: 20,
+  momentum: 20,
+  treasury: 20,
+};
+
+interface DimScore {
+  score: number;
+  detail: string;
+}
+
+interface WeightedDims {
+  etfFlow: DimScore;
+  sentiment: DimScore;
+  macro: DimScore;
+  momentum: DimScore;
+  treasury: DimScore;
+}
+
+function dynamicWeightScore(dims: WeightedDims): {
+  overall: number;
+  weights: Record<string, number>;
+  capped: string[];
+} {
+  const scores = [
+    { key: "etfFlow", score: dims.etfFlow.score },
+    { key: "sentiment", score: dims.sentiment.score },
+    { key: "macro", score: dims.macro.score },
+    { key: "momentum", score: dims.momentum.score },
+    { key: "treasury", score: dims.treasury.score },
+  ];
+
+  const mean = scores.reduce((s, d) => s + d.score, 0) / scores.length;
+  const variance = scores.reduce((s, d) => s + (d.score - mean) ** 2, 0) / scores.length;
+  const stdDev = Math.sqrt(variance);
+
+  // Detect outliers (>1.5 std dev from mean)
+  const capped: string[] = [];
+  const weights: Record<string, number> = {};
+  let totalWeight = 100;
+
+  for (const d of scores) {
+    if (stdDev > 8 && Math.abs(d.score - mean) > 1.5 * stdDev) {
+      // Outlier — cap weight at 8%
+      weights[d.key] = 8;
+      capped.push(d.key);
+      totalWeight -= 8;
+    } else {
+      weights[d.key] = BASE_WEIGHTS[d.key as keyof typeof BASE_WEIGHTS];
+      totalWeight -= BASE_WEIGHTS[d.key as keyof typeof BASE_WEIGHTS];
+    }
+  }
+
+  // Redistribute capped weight proportionally to non-capped dimensions by their score
+  if (capped.length > 0 && totalWeight > 0) {
+    const uncapped = scores.filter((d) => !capped.includes(d.key));
+    const uncappedTotal = uncapped.reduce((s, d) => s + d.score, 0);
+    for (const d of uncapped) {
+      if (uncappedTotal > 0) {
+        weights[d.key] += Math.round((d.score / uncappedTotal) * totalWeight);
+      }
+    }
+  }
+
+  // Compute final weighted score
+  const overall = Math.round(
+    scores.reduce((s, d) => s + d.score * (weights[d.key] / 100), 0),
+  );
+
+  return { overall, weights, capped };
+}
+
 // ── Simple in-memory cache (avoids rate limits) ───────
 
 let cache: { data: unknown; ts: number } | null = null;
@@ -134,6 +210,10 @@ export async function GET() {
     const ethDims = buildDimensions(eth?.currency_id, eth ? snapshots[eth.currency_id] : undefined);
     const solDims = buildDimensions(sol?.currency_id, sol ? snapshots[sol.currency_id] : undefined);
 
+    const btcWeighted = dynamicWeightScore(btcDims);
+    const ethWeighted = dynamicWeightScore(ethDims);
+    const solWeighted = dynamicWeightScore(solDims);
+
     const result = {
       updated: Date.now(),
       sources: {
@@ -147,6 +227,21 @@ export async function GET() {
         BTC: btcDims,
         ETH: ethDims,
         SOL: solDims,
+      },
+      overall: {
+        BTC: btcWeighted.overall,
+        ETH: ethWeighted.overall,
+        SOL: solWeighted.overall,
+      },
+      weights: {
+        BTC: btcWeighted.weights,
+        ETH: ethWeighted.weights,
+        SOL: solWeighted.weights,
+      },
+      capped: {
+        BTC: btcWeighted.capped,
+        ETH: ethWeighted.capped,
+        SOL: solWeighted.capped,
       },
     };
     cache = { data: result, ts: Date.now() };

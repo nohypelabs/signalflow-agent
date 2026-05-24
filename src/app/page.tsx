@@ -201,7 +201,15 @@ export default function Home() {
             </>
           )}
 
-          {activeMenu === "Signals" && <SignalsPage tickers={tickers} liveDims={signalsData?.dimensions} />}
+          {activeMenu === "Signals" && (
+                <SignalsPage
+                  tickers={tickers}
+                  liveDims={signalsData?.dimensions}
+                  overallScores={signalsData?.overall}
+                  weights={signalsData?.weights}
+                  cappedDims={signalsData?.capped}
+                />
+              )}
 
           {activeMenu === "Trading" && (
             <div className="space-y-4">

@@ -19,6 +19,9 @@ export interface SignalsData {
   updated: number;
   sources: Record<string, boolean>;
   dimensions: Record<string, SignalDimensions>;
+  overall?: Record<string, number>;
+  weights?: Record<string, Record<string, number>>;
+  capped?: Record<string, string[]>;
 }
 
 export function useSignals() {

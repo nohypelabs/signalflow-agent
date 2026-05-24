@@ -46,9 +46,12 @@ function actionRationale(signal: Signal): string[] {
 interface Props {
   tickers?: SoDEXTicker[] | null;
   liveDims?: Record<string, SignalDimensions> | null;
+  overallScores?: Record<string, number> | null;
+  weights?: Record<string, Record<string, number>> | null;
+  cappedDims?: Record<string, string[]> | null;
 }
 
-export default function SignalsPage({ tickers, liveDims }: Props) {
+export default function SignalsPage({ tickers, liveDims, overallScores, weights, cappedDims }: Props) {
   const tickerMap = new Map<string, SoDEXTicker>();
   if (tickers) tickers.forEach((t) => tickerMap.set(t.symbol, t));
 
@@ -116,6 +119,10 @@ export default function SignalsPage({ tickers, liveDims }: Props) {
                     const liveDetail = dimDetails?.[d.key]?.detail;
                     const score = liveScore ?? s.dimensions[d.key];
                     const detail = liveDetail || s.dimensionDetails?.[d.key]?.detail;
+                    const coinWeights = weights?.[coin];
+                    const coinCapped = cappedDims?.[coin];
+                    const weight = coinWeights?.[d.key];
+                    const isCapped = coinCapped?.includes(d.key);
 
                     return (
                       <div key={d.key} className="flex items-center gap-2">
@@ -127,6 +134,14 @@ export default function SignalsPage({ tickers, liveDims }: Props) {
                           />
                         </div>
                         <span className="text-[10px] w-8 text-right" style={{ color: d.color }}>{score}</span>
+                        {weight != null && (
+                          <span className="text-[10px] w-8 text-right text-[#666677]">{weight}%</span>
+                        )}
+                        {isCapped && (
+                          <span className="text-[8px] px-1 py-0.5 rounded bg-[#ff444415] text-[#ff4444]" title="Capped — outlier detected, weight capped at 8%">
+                            CAP
+                          </span>
+                        )}
                         {detail && (
                           <span className="text-[10px] text-[#555566] hidden lg:block w-48 truncate" title={detail}>
                             {detail}
@@ -137,11 +152,18 @@ export default function SignalsPage({ tickers, liveDims }: Props) {
                   })}
                 </div>
 
-                {/* Confidence + time */}
+                {/* Confidence + overall + toggle */}
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-[#666677]">
-                    Confidence: <span className="font-bold" style={{ color: meta.accent }}>{s.confidence}%</span>
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] text-[#666677]">
+                      Confidence: <span className="font-bold" style={{ color: meta.accent }}>{s.confidence}%</span>
+                    </span>
+                    {overallScores?.[coin] != null && (
+                      <span className="text-[10px] text-[#666677]">
+                        Overall: <span className="font-bold text-[#00d4ff]">{overallScores[coin]}/100</span>
+                      </span>
+                    )}
+                  </div>
                   <button
                     onClick={() => toggle(s.id)}
                     className="text-[10px] text-[#7b2fff] hover:text-[#9b4fff] transition-colors"
@@ -165,12 +187,22 @@ export default function SignalsPage({ tickers, liveDims }: Props) {
                         const liveDetail = dimDetails?.[d.key]?.detail;
                         const score = liveScore ?? s.dimensions[d.key];
                         const detail = liveDetail || s.dimensionDetails?.[d.key]?.detail || `Score: ${score}/100`;
+                        const coinWeights = weights?.[coin];
+                        const coinCapped = cappedDims?.[coin];
+                        const weight = coinWeights?.[d.key];
+                        const isCapped = coinCapped?.includes(d.key);
 
                         return (
                           <div key={d.key} className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-2.5">
                             <div className="flex items-center gap-1.5 mb-1">
                               <span className="text-xs">{d.icon}</span>
                               <span className="text-[11px] font-semibold" style={{ color: d.color }}>{d.label}</span>
+                              {weight != null && (
+                                <span className="text-[9px] text-[#666677]">wt: {weight}%</span>
+                              )}
+                              {isCapped && (
+                                <span className="text-[8px] px-1 py-0.5 rounded bg-[#ff444415] text-[#ff4444]" title="Capped — outlier, weight capped at 8%">CAP</span>
+                              )}
                               <span className="text-[10px] font-bold ml-auto" style={{ color: d.color }}>{score}/100</span>
                             </div>
                             <p className="text-[10px] text-[#888899] leading-relaxed">{detail}</p>
