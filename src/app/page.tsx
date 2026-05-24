@@ -21,6 +21,8 @@ import { useSignals } from "@/lib/use-signals";
 import { useAISignal } from "@/lib/use-ai-signal";
 import { useWallet } from "@/lib/use-wallet";
 import { useOrders } from "@/lib/use-orders";
+import { useAIConfig } from "@/lib/use-ai-config";
+import { getProvider } from "@/lib/ai-providers";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import type { SoDEXTicker, SoDEXNewOrderRequest } from "@/lib/sodex-types";
 
@@ -35,11 +37,15 @@ export default function Home() {
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(signals[0]);
   const { tickers, klines, loading, error } = useMarket(DEFAULT_PAIR);
   const { data: signalsData } = useSignals();
-  const { aiSignal, analyzing, error: aiError, generate } = useAISignal();
-  const [aiCoin, setAiCoin] = useState("BTC");
-
   // Wallet
   const { address, isConnected } = useWallet();
+
+  // AI config (user's own provider + API key)
+  const { config: aiConfig, update: updateAIConfig } = useAIConfig();
+  const { aiSignal, analyzing, error: aiError, generate } = useAISignal(aiConfig);
+  const [aiCoin, setAiCoin] = useState("BTC");
+
+  const aiProviderLabel = getProvider(aiConfig.providerId)?.name || "Deepseek";
 
   // Real orders from SoDEX
   const ordersHook = useOrders(true);
@@ -112,7 +118,7 @@ export default function Home() {
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-sm font-semibold text-white">AI Signal Generator</span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#7b2fff20] text-[#7b2fff] border border-[#7b2fff30]">
-                    Deepseek 4 Pro
+                    {aiProviderLabel} {aiConfig.model ? `/ ${aiConfig.model}` : ""}
                   </span>
                   <select
                     value={aiCoin}
@@ -257,7 +263,13 @@ export default function Home() {
 
           {activeMenu === "Performance" && <PerformancePage />}
 
-          {activeMenu === "Settings" && <SettingsPage />}
+          {activeMenu === "Settings" && (
+            <SettingsPage
+              walletConnected={isConnected}
+              aiConfig={aiConfig}
+              onAIConfigChange={updateAIConfig}
+            />
+          )}
 
           <footer className="text-center text-[11px] text-[#333344] py-4">
             NoHype Labs — SignalFlow Agent — SoSoValue Buildathon 2026

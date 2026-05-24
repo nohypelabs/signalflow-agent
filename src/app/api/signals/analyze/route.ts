@@ -127,10 +127,18 @@ export async function POST(req: NextRequest) {
     const marketData = await gatherMarketData(coin);
     const prompt = buildPrompt(marketData);
 
-    const raw = await chat([
-      { role: "system", content: "You are SignalFlow, a crypto trading signal agent. You output only valid JSON. No markdown, no code fences." },
-      { role: "user", content: prompt },
-    ]);
+    // User-provided AI config takes precedence over server defaults
+    const userProvider = body.provider && body.apiKey
+      ? { baseUrl: body.provider, apiKey: body.apiKey, model: body.model || "deepseek-chat" }
+      : undefined;
+
+    const raw = await chat(
+      [
+        { role: "system", content: "You are SignalFlow, a crypto trading signal agent. You output only valid JSON. No markdown, no code fences." },
+        { role: "user", content: prompt },
+      ],
+      userProvider ? { provider: userProvider } : undefined,
+    );
 
     // Deepseek may wrap JSON in ``` fences — strip if present
     const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();

@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import type { Signal } from "./mock-data";
+import type { AIConfig } from "./ai-providers";
+import { getProvider } from "./ai-providers";
 
-export function useAISignal() {
+export function useAISignal(aiConfig?: AIConfig) {
   const [aiSignal, setAiSignal] = useState<Signal | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -12,10 +14,22 @@ export function useAISignal() {
     setAnalyzing(true);
     setError(null);
     try {
+      const body: Record<string, string> = { coin };
+
+      // Attach user AI config if API key is set
+      if (aiConfig?.apiKey) {
+        const provider = getProvider(aiConfig.providerId);
+        if (provider) {
+          body.provider = provider.baseUrl;
+          body.model = aiConfig.model || provider.defaultModel;
+          body.apiKey = aiConfig.apiKey;
+        }
+      }
+
       const res = await fetch("/api/signals/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ coin }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
