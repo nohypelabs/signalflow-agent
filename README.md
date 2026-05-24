@@ -2,20 +2,73 @@
 
 **AI-powered signal-to-execution trading dashboard** — built for the SoSoValue Buildathon 2026 by NoHype Labs.
 
-SignalFlow Agent transforms multi-dimensional market data into explainable, executable trade signals. It ingests real-time data from SoSoValue API and SoDEX, generates AI-powered BUY/HOLD/SELL signals with per-dimension reasoning, and executes spot trades directly on ValueChain via EIP-712 wallet signing.
+## Live Demo
 
-**Live Demo**: [signalflowagent.vercel.app](https://signalflowagent.vercel.app)
-**GitHub**: [github.com/nohypelabs/signalflow-agent](https://github.com/nohypelabs/signalflow-agent)
+**[signalflowagent.vercel.app](https://signalflowagent.vercel.app)**
+
+SignalFlow Agent transforms multi-dimensional market data into explainable, executable trade signals. Real-time data from SoSoValue API and SoDEX, AI-powered BUY/HOLD/SELL signals with per-dimension reasoning, and spot trade execution on ValueChain via EIP-712 wallet signing — all in one dashboard.
 
 ---
 
-## Project Overview
+## Why SignalFlow?
 
-### Target Users
+> Most AI trading agents give you a score. SignalFlow gives you a **plan**.
 
-Crypto traders and investors who want **data-driven, AI-powered trading signals** with **one-click execution** — without switching between multiple platforms. Built for both desktop (MetaMask extension) and mobile (WalletConnect / PWA).
+- **Not just data — decisions.** Every signal includes entry price, stop-loss, and take-profit targets.
+- **Not just a dashboard — execution.** Trade directly on SoDEX with EIP-712 signing, no third-party middleman.
+- **Not just one AI — your choice.** Use Deepseek, OpenAI, or OpenRouter with your own API key. Your keys, your control.
+- **Not just desktop — everywhere.** PWA installable on iOS/Android, responsive layout, WalletConnect for mobile trading.
 
-### Core Logic
+---
+
+## Architecture
+
+```
+                    ┌─────────────────────────────┐
+                    │     SignalFlow Agent         │
+                    └──────────────┬──────────────┘
+                                   │
+    ┌──────────────────────────────┼──────────────────────────────┐
+    │                              │                              │
+    ▼                              ▼                              ▼
+┌───────────┐            ┌─────────────────┐           ┌──────────────────┐
+│ SoSoValue │            │     SoDEX        │           │   AI Provider     │
+│   API     │            │      API         │           │ (Deepseek/OpenAI │
+├───────────┤            ├─────────────────┤           │  /OpenRouter)     │
+│ ETF Flow  │            │ Tickers/Klines   │           └────────┬─────────┘
+│ Sentiment │            │ Orderbook        │                    │
+│ Macro     │            │ Spot Trading     │                    │
+│ Treasury  │            │ Account Balance  │                    │
+│ Indices   │            └────────┬────────┘                    │
+└─────┬─────┘                     │                              │
+      │                           │                              │
+      ▼                           ▼                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Signal Engine                                 │
+│  5-dimension heuristic scoring (0-100) → AI synthesis → BUY/HOLD/SELL│
+└─────────────────────────────────┬───────────────────────────────────┘
+                                  │
+                                  ▼
+                    ┌─────────────────────────┐
+                    │   EIP-712 Trade Execution│
+                    │   MetaMask · WalletConnect│
+                    │   ValueChain Mainnet      │
+                    └─────────────────────────┘
+```
+
+**Stack**: Next.js 16 (App Router), React 19, Tailwind CSS v4, TypeScript, wagmi v3, viem
+
+---
+
+## Supported Networks
+
+| Network | Chain ID | Native Token | Trading Pair | Status |
+|---------|----------|-------------|-------------|--------|
+| ValueChain Mainnet | 286623 | SOSO | vBTC_vUSDC | Live |
+
+---
+
+## Core Logic
 
 A **multi-dimensional signal engine** that aggregates five data dimensions into a unified confidence score:
 
@@ -27,15 +80,41 @@ A **multi-dimensional signal engine** that aggregates five data dimensions into 
 | Momentum | SoDEX | Price action, kline patterns, volume |
 | Treasury | SoSoValue | BTC corporate treasury activity |
 
-Each dimension generates a 0–100 score. The AI agent synthesizes these into a single signal (BUY/HOLD/SELL) with **per-dimension reasoning**, key risk factors, and a concrete execution plan.
+Each dimension generates a 0–100 score. The AI agent synthesizes these into a single signal with **per-dimension reasoning**, key risk factors, and a concrete execution plan — entry price, stop-loss, take-profit.
 
 ### Data Sources & APIs
 
 | API | Purpose | Auth |
 |-----|---------|------|
-| **SoSoValue** | ETF flows, news, macro, treasuries, indices | API key |
-| **SoDEX** | Live tickers, klines, orderbooks, spot trading | API key + EIP-712 wallet signing |
-| **Deepseek / OpenAI / OpenRouter** | AI signal generation & reasoning | User-provided API key |
+| SoSoValue | ETF flows, news, macro, treasuries, indices | API key |
+| SoDEX | Live tickers, klines, orderbooks, spot trading | API key + EIP-712 wallet signing |
+| Deepseek / OpenAI / OpenRouter | AI signal generation & reasoning | User-provided API key |
+
+---
+
+## Features
+
+### AI Signal Generation
+- Multi-provider support — Deepseek, OpenAI, or OpenRouter with user's own API key, stored locally in browser
+- Explainable reasoning — every signal includes per-dimension "why" explanations, key risk factors, and execution plan
+- Confidence scoring — 0–100% with visual indicators, color-coded BUY/HOLD/SELL badges
+
+### Wallet & Trading
+- MetaMask (desktop) + WalletConnect v2 (mobile) — smart connector auto-detects window.ethereum
+- EIP-712 typed data signing for SoDEX spot orders — domain name="spot", chainId=286623
+- Live wallet balance display with 25/50/75/100% quick-fill trade execution buttons
+- Order management — place market orders, view open/filled/canceled status, cancel pending orders
+- Wrong network detection — switch chain or disconnect to different wallet
+
+### Mobile & PWA
+- Installable PWA with offline service worker, custom app icons, standalone display mode
+- Responsive layout — slide-in sidebar drawer, bottom tab navigation (Home/Signals/Trade/Settings)
+- Apple Web App meta tags with black-translucent status bar
+
+### Market Intelligence
+- Real-time SoDEX tickers, klines, and orderbooks for vBTC_vUSDC pair
+- SoSoValue integration across 5 modules — ETF Flow, News Sentiment, Macro, Treasury, Indices
+- 60-second auto-refresh on signal data
 
 ---
 
@@ -47,63 +126,48 @@ Each dimension generates a 0–100 score. The AI agent synthesizes these into a 
 - SoDEX live market data (tickers, klines, orderbooks)
 - Heuristic 5-dimension signal scoring engine
 - AI signal generation via Deepseek with structured prompts
-- Mock data fallback for all components
 - Full sidebar navigation with 8 pages
 
 ### Wave 2 (Current)
-- **Wallet connection** — MetaMask (desktop) + WalletConnect v2 (mobile)
-- **EIP-712 trade execution** — spot orders on SoDEX via typed data signing
-- **Multi-AI provider** — Deepseek, OpenAI, OpenRouter with user API keys
-- **Explainable signals** — per-dimension "why", key factors, execution plans
-- **Live balance display** — wallet balance with 25/50/75/100% quick-fill
-- **PWA support** — installable, offline-capable, custom app icons
-- **Mobile responsive** — bottom tab nav, slide-in drawer, compact TopBar
-- **Order management** — place, view, cancel SoDEX orders
-- **Wrong network handling** — switch chain or disconnect option
-- **Wallet panel** — address copy, balance view, clear disconnect button
+- Wallet connection — MetaMask (desktop) + WalletConnect v2 (mobile)
+- EIP-712 trade execution on SoDEX via typed data signing
+- Multi-AI provider — Deepseek, OpenAI, OpenRouter with user API keys
+- Explainable signals — per-dimension "why", key factors, execution plans
+- Live balance display with 25/50/75/100% quick-fill
+- PWA support — installable, offline-capable, custom app icons
+- Mobile responsive — bottom tab nav, slide-in drawer, compact header
+- Order management — place, view, cancel SoDEX orders
+- Wrong network handling — switch chain or disconnect option
+- Wallet panel — address copy, balance view, clear disconnect button
 
-## Architecture
+---
 
-```
-External APIs → Next.js API Routes → Client Hooks → Components
+## Roadmap
 
-SoSoValue API ─── ETF flows, news/sentiment, macro, treasuries, indices
-SoDEX API ──────── Live tickers, klines, orderbooks, spot trading
-Deepseek/OpenAI ── AI signal generation with structured reasoning
-```
+### Wave 3 — Production Features & Public Launch
+- [ ] Backtesting engine — validate signal accuracy against historical SoSoValue data
+- [ ] Multi-asset support — expand beyond vBTC_vUSDC to additional trading pairs
+- [ ] Portfolio management — multi-asset position tracking, automated rebalancing, risk-adjusted sizing
+- [ ] Strategy marketplace — create, share, and subscribe to custom signal strategies
+- [ ] Notification system — Telegram and email alerts for high-confidence signals and trade executions
+- [ ] Performance optimization — Redis caching, rate limiting, WebSocket streaming
+- [ ] Public launch — documentation, onboarding wizard, community channels
 
-**Stack**: Next.js 16 (App Router), React 19, Tailwind CSS v4, TypeScript, wagmi v3, viem
+### Wave 4 — Ecosystem & Scale
+- [ ] Multi-chain expansion — cross-chain signal aggregation, unified portfolio view
+- [ ] Advanced order types — trailing stop-loss, OCO bracket orders, TWAP execution
+- [ ] Copy-trading and signal leaderboards with verified on-chain track records
+- [ ] Institutional dashboard — multi-wallet management, team roles, approval workflows
+- [ ] Public REST API, WebSocket feeds, and trading bot SDK (TypeScript/Python)
 
-## Features
-
-### Multi-Source Market Intelligence
-- **SoSoValue Integration** — ETF flow analysis, news sentiment scoring, macroeconomic indicators, BTC treasury tracking, index snapshots (Mag 7, Layer 1)
-- **SoDEX Live Data** — Real-time tickers, klines, orderbooks for vBTC_vUSDC pairs
-- **Heuristic Scoring** — 5-dimension signal engine computing ETF, sentiment, macro, momentum, and treasury scores
-
-### AI Signal Generation
-- **Multi-Provider** — Deepseek, OpenAI, or OpenRouter with user's own API key
-- **Explainable Reasoning** — Every signal includes per-dimension "why" explanations, key factors, and execution plans
-- **Confidence Scoring** — 0–100% with visual indicators
-
-### Wallet & Trading
-- **EIP-712 Signing** — Typed data signing for SoDEX spot orders
-- **Multi-Wallet** — MetaMask (desktop) + WalletConnect v2 (mobile)
-- **ValueChain Mainnet** — Chain ID 286623, native currency SOSO
-- **Live Balance** — Real SoDEX balance display with quick-fill percentage buttons
-- **Order Management** — Place, view, and cancel orders directly from the dashboard
-
-### Mobile & PWA
-- **Progressive Web App** — Installable with offline service worker, custom icons, standalone display
-- **Responsive Layout** — Slide-in sidebar drawer, bottom tab navigation on mobile
-- **Dark Theme** — Optimized for trading desk use
+---
 
 ## Getting Started
 
 ### Prerequisites
 
-- **Node.js** 18+ (check: `node --version`)
-- **pnpm** (install: `npm install -g pnpm`)
+- **Node.js** 18+ (`node --version`)
+- **pnpm** (`npm install -g pnpm`)
 - A wallet with SOSO on ValueChain mainnet for trading
 
 ### Setup
@@ -117,7 +181,7 @@ cd signalflow-agent
 pnpm install
 
 # 3. Create environment file
-cp .env.example .env.local   # or create .env.local manually
+cp .env.example .env.local
 ```
 
 ### Environment Variables
@@ -142,13 +206,12 @@ NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your-walletconnect-project-id
 ### Run
 
 ```bash
-# Development
-pnpm dev          # http://localhost:3000
-
-# Production build
-pnpm build
-pnpm start        # http://localhost:3000
+pnpm dev          # Development — http://localhost:3000
+pnpm build        # Production build
+pnpm start        # Production server — http://localhost:3000
 ```
+
+---
 
 ## Project Structure
 
@@ -158,7 +221,6 @@ src/
 │   ├── layout.tsx           # Root layout + PWA metadata
 │   ├── page.tsx             # Main SPA orchestrator
 │   ├── providers.tsx        # Wagmi + React Query providers
-│   ├── globals.css          # Tailwind + animations
 │   └── api/                 # Next.js API routes
 │       ├── market/[type]    # SoDEX tickers/klines proxy
 │       ├── signals/         # Heuristic scoring engine
@@ -176,18 +238,13 @@ src/
 │   ├── SignalsPage.tsx      # Detailed signal analysis view
 │   ├── TradeHistory.tsx     # Orders + positions table
 │   ├── OpenOrders.tsx       # SoDEX open orders
-│   ├── SettingsPage.tsx     # AI provider configuration
-│   ├── KPICards.tsx         # Stat cards
-│   ├── PortfolioChart.tsx   # Price chart
-│   ├── AIReasoning.tsx      # AI signal rationale
-│   └── DataSources.tsx      # API module status
+│   └── SettingsPage.tsx     # AI provider configuration
 └── lib/
     ├── wallet-config.ts     # ValueChain + wagmi config
     ├── use-wallet.ts        # Wallet connection hook
     ├── use-market.ts        # SoDEX market data hook
     ├── use-signals.ts       # Signal scoring hook
     ├── use-ai-signal.ts     # AI generation hook
-    ├── use-orders.ts        # SoDEX orders hook
     ├── use-ai-config.ts     # AI provider persistence
     ├── ai-providers.ts      # Provider registry
     ├── sosovalue.ts         # SoSoValue API client
@@ -197,13 +254,29 @@ src/
     └── mock-data.ts         # Fallback mock data
 ```
 
+---
+
+## Known Issues (Wave 2)
+
+- WalletConnect v2 may timeout on slow mobile connections — retry logic planned for Wave 3
+- Deepseek API rate limiting during peak hours — switching to OpenRouter is recommended as fallback
+- Hydration mismatch warning in WalletButton when server-rendered state differs from client — cosmetic, no functional impact
+
+---
+
 ## Team
 
 **NoHype Labs**
 
-| Role | Name | Contact |
-|------|------|---------|
-| Developer | Abdul Gofur | abdulgofur100persen@gmail.com |
+| | |
+|---|---|
+| **Abdul Gofur** | Full-stack Blockchain Developer |
+| | abdulgofur100persen@gmail.com |
+| | [github.com/nohypelabs](https://github.com/nohypelabs) |
+
+> *"Building tools that make on-chain trading smarter, not harder."*
+
+---
 
 ## Deployment
 
