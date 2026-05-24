@@ -1,36 +1,192 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SignalFlow Agent
+
+**AI-powered signal-to-execution trading dashboard** — built for the SoSoValue Buildathon 2026 by NoHype Labs.
+
+SignalFlow Agent transforms multi-dimensional market data into explainable, executable trade signals. It ingests real-time data from SoSoValue API and SoDEX, generates AI-powered BUY/HOLD/SELL signals with per-dimension reasoning, and executes spot trades directly on ValueChain via EIP-712 wallet signing.
+
+**Live Demo**: [signalflowagent.vercel.app](https://signalflowagent.vercel.app)
+**GitHub**: [github.com/nohypelabs/signalflow-agent](https://github.com/nohypelabs/signalflow-agent)
+
+---
+
+## Project Overview
+
+### Target Users
+
+Crypto traders and investors who want **data-driven, AI-powered trading signals** with **one-click execution** — without switching between multiple platforms. Built for both desktop (MetaMask extension) and mobile (WalletConnect / PWA).
+
+### Core Logic
+
+A **multi-dimensional signal engine** that aggregates five data dimensions into a unified confidence score:
+
+| Dimension | Source | What It Measures |
+|-----------|--------|------------------|
+| ETF Flow | SoSoValue | Institutional capital rotation (BTC/ETH ETFs) |
+| Sentiment | SoSoValue | News & social media sentiment scoring |
+| Macro | SoSoValue | Interest rates, inflation, global liquidity |
+| Momentum | SoDEX | Price action, kline patterns, volume |
+| Treasury | SoSoValue | BTC corporate treasury activity |
+
+Each dimension generates a 0–100 score. The AI agent synthesizes these into a single signal (BUY/HOLD/SELL) with **per-dimension reasoning**, key risk factors, and a concrete execution plan.
+
+### Data Sources & APIs
+
+| API | Purpose | Auth |
+|-----|---------|------|
+| **SoSoValue** | ETF flows, news, macro, treasuries, indices | API key |
+| **SoDEX** | Live tickers, klines, orderbooks, spot trading | API key + EIP-712 wallet signing |
+| **Deepseek / OpenAI / OpenRouter** | AI signal generation & reasoning | User-provided API key |
+
+---
+
+## Wave Progress Update
+
+### Wave 1 (Baseline)
+- Next.js dashboard shell with dark-themed trading interface
+- SoSoValue API integration (ETF, sentiment, macro, treasury, indices)
+- SoDEX live market data (tickers, klines, orderbooks)
+- Heuristic 5-dimension signal scoring engine
+- AI signal generation via Deepseek with structured prompts
+- Mock data fallback for all components
+- Full sidebar navigation with 8 pages
+
+### Wave 2 (Current)
+- **Wallet connection** — MetaMask (desktop) + WalletConnect v2 (mobile)
+- **EIP-712 trade execution** — spot orders on SoDEX via typed data signing
+- **Multi-AI provider** — Deepseek, OpenAI, OpenRouter with user API keys
+- **Explainable signals** — per-dimension "why", key factors, execution plans
+- **Live balance display** — wallet balance with 25/50/75/100% quick-fill
+- **PWA support** — installable, offline-capable, custom app icons
+- **Mobile responsive** — bottom tab nav, slide-in drawer, compact TopBar
+- **Order management** — place, view, cancel SoDEX orders
+- **Wrong network handling** — switch chain or disconnect option
+- **Wallet panel** — address copy, balance view, clear disconnect button
+
+## Architecture
+
+```
+External APIs → Next.js API Routes → Client Hooks → Components
+
+SoSoValue API ─── ETF flows, news/sentiment, macro, treasuries, indices
+SoDEX API ──────── Live tickers, klines, orderbooks, spot trading
+Deepseek/OpenAI ── AI signal generation with structured reasoning
+```
+
+**Stack**: Next.js 16 (App Router), React 19, Tailwind CSS v4, TypeScript, wagmi v3, viem
+
+## Features
+
+### Multi-Source Market Intelligence
+- **SoSoValue Integration** — ETF flow analysis, news sentiment scoring, macroeconomic indicators, BTC treasury tracking, index snapshots (Mag 7, Layer 1)
+- **SoDEX Live Data** — Real-time tickers, klines, orderbooks for vBTC_vUSDC pairs
+- **Heuristic Scoring** — 5-dimension signal engine computing ETF, sentiment, macro, momentum, and treasury scores
+
+### AI Signal Generation
+- **Multi-Provider** — Deepseek, OpenAI, or OpenRouter with user's own API key
+- **Explainable Reasoning** — Every signal includes per-dimension "why" explanations, key factors, and execution plans
+- **Confidence Scoring** — 0–100% with visual indicators
+
+### Wallet & Trading
+- **EIP-712 Signing** — Typed data signing for SoDEX spot orders
+- **Multi-Wallet** — MetaMask (desktop) + WalletConnect v2 (mobile)
+- **ValueChain Mainnet** — Chain ID 286623, native currency SOSO
+- **Live Balance** — Real SoDEX balance display with quick-fill percentage buttons
+- **Order Management** — Place, view, and cancel orders directly from the dashboard
+
+### Mobile & PWA
+- **Progressive Web App** — Installable with offline service worker, custom icons, standalone display
+- **Responsive Layout** — Slide-in sidebar drawer, bottom tab navigation on mobile
+- **Dark Theme** — Optimized for trading desk use
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+pnpm dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create `.env.local`:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+# SoDEX
+SODEX_NETWORK=mainnet
+SODEX_API_KEY_NAME=SignalFlowAgent
 
-## Learn More
+# Deepseek (fallback AI)
+DEEPSEEK_API_KEY=sk-...
 
-To learn more about Next.js, take a look at the following resources:
+# SoSoValue
+SOSOVALUE_API_KEY=SOSO-...
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# WalletConnect v2 (for mobile)
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=...
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+src/
+├── app/
+│   ├── layout.tsx           # Root layout + PWA metadata
+│   ├── page.tsx             # Main SPA orchestrator
+│   ├── providers.tsx        # Wagmi + React Query providers
+│   ├── globals.css          # Tailwind + animations
+│   └── api/                 # Next.js API routes
+│       ├── market/[type]    # SoDEX tickers/klines proxy
+│       ├── signals/         # Heuristic scoring engine
+│       ├── signals/analyze  # AI signal generation
+│       ├── balance/         # SoDEX wallet balance
+│       ├── orders/          # SoDEX order management
+│       ├── sources/         # SoSoValue data modules
+│       └── performance/     # Portfolio performance
+├── components/              # UI components (all "use client")
+│   ├── TopBar.tsx           # Header + wallet + hamburger
+│   ├── Sidebar.tsx          # Desktop nav + mobile drawer
+│   ├── MobileBottomNav.tsx  # Bottom tab bar (mobile)
+│   ├── WalletButton.tsx     # Connect/disconnect + balance panel
+│   ├── TradeForm.tsx        # Execution modal with EIP-712 signing
+│   ├── SignalsPage.tsx      # Detailed signal analysis view
+│   ├── TradeHistory.tsx     # Orders + positions table
+│   ├── OpenOrders.tsx       # SoDEX open orders
+│   ├── SettingsPage.tsx     # AI provider configuration
+│   ├── KPICards.tsx         # Stat cards
+│   ├── PortfolioChart.tsx   # Price chart
+│   ├── AIReasoning.tsx      # AI signal rationale
+│   └── DataSources.tsx      # API module status
+└── lib/
+    ├── wallet-config.ts     # ValueChain + wagmi config
+    ├── use-wallet.ts        # Wallet connection hook
+    ├── use-market.ts        # SoDEX market data hook
+    ├── use-signals.ts       # Signal scoring hook
+    ├── use-ai-signal.ts     # AI generation hook
+    ├── use-orders.ts        # SoDEX orders hook
+    ├── use-ai-config.ts     # AI provider persistence
+    ├── ai-providers.ts      # Provider registry
+    ├── sosovalue.ts         # SoSoValue API client
+    ├── sodex.ts             # SoDEX API client
+    ├── eip712.ts            # EIP-712 typed data
+    ├── sodex-types.ts       # SoDEX type definitions
+    └── mock-data.ts         # Fallback mock data
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Team
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**NoHype Labs**
+
+| Role | Name | Contact |
+|------|------|---------|
+| Developer | Abdul Gofur | abdulgofur100persen@gmail.com |
+
+## Deployment
+
+Deployed on **Vercel** with automatic CI/CD from `main` branch.
+
+```bash
+pnpm build
+```
+
+---
+
+Built by **NoHype Labs** for the SoSoValue Buildathon 2026 — Wave 2.
