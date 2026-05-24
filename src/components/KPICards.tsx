@@ -28,7 +28,7 @@ export default function KPICards({ tickers }: Props) {
     {
       label: hasLive ? "ACTIVE PAIRS" : "WIN RATE",
       value: String(activePairs),
-      sub: hasLive ? "SoDEX Testnet" : `${stats.winTrades}/${stats.totalTrades} trades`,
+      sub: hasLive ? "SoDEX Mainnet" : `${stats.winTrades}/${stats.totalTrades} trades`,
       color: "#00d4ff",
     },
     {
