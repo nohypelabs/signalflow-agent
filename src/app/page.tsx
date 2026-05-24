@@ -169,7 +169,7 @@ export default function Home() {
             </>
           )}
 
-          {activeMenu === "Signals" && <SignalsPage tickers={tickers} />}
+          {activeMenu === "Signals" && <SignalsPage tickers={tickers} liveDims={signalsData?.dimensions} />}
 
           {activeMenu === "Trading" && (
             <div className="space-y-4">
