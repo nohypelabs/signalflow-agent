@@ -283,6 +283,7 @@ export default function Home() {
           signal={executingSignal}
           ticker={executingTicker}
           walletConnected={isConnected}
+          walletAddress={address}
           onExecute={handleExecuteOrder}
           onClose={handleCloseForm}
         />
