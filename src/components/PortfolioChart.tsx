@@ -108,11 +108,19 @@ export default function PortfolioChart({ klines, symbol, currentPrice }: Props) 
         <circle cx={scaleX(values.length - 1)} cy={scaleY(latest)} r="3.5" fill={isUp ? "#00ff88" : "#ff4444"} stroke="#12122a" strokeWidth="2" />
 
         {/* Time labels */}
-        {useReal && [0, Math.floor(values.length / 2), values.length - 1].map((idx) => (
-          <text key={idx} x={scaleX(idx)} y={vbH - 3} fill="#555566" fontSize="9" textAnchor="middle">
-            {new Date(klines[idx].t).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+        {useReal && [0, Math.floor((klines.length - 1) / 2), klines.length - 1].map((kIdx) => {
+          const vIdx = currentPrice != null && kIdx === klines.length - 1 ? values.length - 1 : kIdx;
+          return (
+            <text key={kIdx} x={scaleX(vIdx)} y={vbH - 3} fill="#555566" fontSize="9" textAnchor="middle">
+              {new Date(klines[kIdx].t).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+            </text>
+          );
+        })}
+        {currentPrice != null && (
+          <text x={scaleX(values.length - 1)} y={vbH - 3} fill="#00ff88" fontSize="9" textAnchor="middle" fontWeight="bold">
+            Now
           </text>
-        ))}
+        )}
         {!useReal && (
           <>
             <text x={scaleX(0)} y={vbH - 3} fill="#555566" fontSize="9" textAnchor="middle">Day 1</text>
