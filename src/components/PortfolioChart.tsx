@@ -8,87 +8,118 @@ interface Props {
   symbol?: string;
 }
 
+function formatPrice(p: number) {
+  if (p >= 1000) return p.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  if (p >= 1) return p.toFixed(2);
+  return p.toFixed(4);
+}
+
 export default function PortfolioChart({ klines, symbol }: Props) {
   const useReal = klines && klines.length > 0;
-  const values = useReal
+
+  const values: number[] = useReal
     ? klines.map((k) => parseFloat(k.c))
     : portfolioData.map((p) => p.value);
-  const label = useReal ? `${symbol ?? ""} Price` : "Portfolio Performance";
-  const subtitle = useReal
-    ? `Last ${klines.length} candles`
-    : "Last 30 days";
 
   const max = Math.max(...values);
   const min = Math.min(...values);
   const range = max - min || 1;
 
-  const w = 700;
-  const h = 200;
-  const padX = 0;
-  const padY = 10;
+  const pad = { top: 12, right: 48, bottom: 20, left: 0 };
+  const vbW = 600;
+  const vbH = 220;
+  const plotW = vbW - pad.right;
 
-  const points = values
-    .map((v, i) => {
-      const x = padX + (i / (values.length - 1)) * (w - padX * 2);
-      const y = h - padY - ((v - min) / range) * (h - padY * 2);
-      return `${x},${y}`;
-    })
-    .join(" ");
+  const scaleX = (i: number) => (i / (values.length - 1)) * plotW;
+  const scaleY = (v: number) => vbH - pad.bottom - ((v - min) / range) * (vbH - pad.top - pad.bottom);
 
-  const areaPoints = `${padX},${h} ${points} ${w - padX},${h}`;
+  const linePath = values.map((v, i) => `${i === 0 ? "M" : "L"}${scaleX(i)},${scaleY(v)}`).join(" ");
+  const areaPath = `M0,${vbH - pad.bottom} L${linePath.slice(1)} L${plotW},${vbH - pad.bottom} Z`;
+
+  const latest = values[values.length - 1];
+  const prev = values[values.length - 2] ?? latest;
+  const change = latest - prev;
+  const changePct = prev ? ((change / prev) * 100) : 0;
+  const isUp = change >= 0;
+
+  const gridLines = 4;
+  const label = useReal ? (symbol ?? "BTC/USDC") : "Portfolio Performance";
+  const subtitle = useReal
+    ? `${values.length} candles`
+    : "Last 30 days";
 
   return (
-    <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-5 flex-1">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-semibold text-sm">{label}</h3>
-        <span className="text-xs text-[#666677]">{subtitle}</span>
+    <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-4 flex-1 flex flex-col min-w-0">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <h3 className="font-semibold text-sm truncate">{label}</h3>
+          {useReal && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#ffffff08] text-[#666677] shrink-0">
+              {new Date(klines[0].t).toLocaleDateString(undefined, { month: "short", day: "numeric" })} – {new Date(klines[klines.length - 1].t).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-3 text-xs shrink-0">
+          <span className="font-mono font-semibold text-white">
+            {formatPrice(latest)}
+          </span>
+          <span className={`font-mono text-[11px] ${isUp ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
+            {isUp ? "+" : ""}{formatPrice(change)} ({isUp ? "+" : ""}{changePct.toFixed(2)}%)
+          </span>
+        </div>
       </div>
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-48">
-        {[0.25, 0.5, 0.75].map((frac) => (
-          <line
-            key={frac}
-            x1={0}
-            y1={h - padY - frac * (h - padY * 2)}
-            x2={w}
-            y2={h - padY - frac * (h - padY * 2)}
-            stroke="#ffffff"
-            strokeWidth="0.5"
-            opacity="0.06"
-          />
+
+      {/* Chart */}
+      <svg
+        viewBox={`0 0 ${vbW} ${vbH}`}
+        className="w-full flex-1 min-h-0"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={isUp ? "#00ff88" : "#ff4444"} stopOpacity="0.15" />
+            <stop offset="100%" stopColor={isUp ? "#00ff88" : "#ff4444"} stopOpacity="0.0" />
+          </linearGradient>
+        </defs>
+
+        {/* Grid */}
+        {Array.from({ length: gridLines + 1 }, (_, i) => {
+          const y = pad.top + (i / gridLines) * (vbH - pad.top - pad.bottom);
+          const price = max - (i / gridLines) * range;
+          return (
+            <g key={i}>
+              <line x1={0} y1={y} x2={plotW} y2={y} stroke="#ffffff" strokeWidth="0.5" opacity="0.06" />
+              <text x={plotW + 4} y={y + 3} fill="#555566" fontSize="9">
+                {formatPrice(price)}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Area fill */}
+        <path d={areaPath} fill="url(#areaGrad)" />
+
+        {/* Line */}
+        <path d={linePath} fill="none" stroke={isUp ? "#00ff88" : "#ff4444"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Latest price dot */}
+        <circle cx={scaleX(values.length - 1)} cy={scaleY(latest)} r="3.5" fill={isUp ? "#00ff88" : "#ff4444"} stroke="#12122a" strokeWidth="2" />
+
+        {/* Time labels */}
+        {useReal && [0, Math.floor(values.length / 2), values.length - 1].map((idx) => (
+          <text key={idx} x={scaleX(idx)} y={vbH - 3} fill="#555566" fontSize="9" textAnchor="middle">
+            {new Date(klines[idx].t).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+          </text>
         ))}
-        <polygon points={areaPoints} fill="#00ff88" opacity="0.08" />
-        <polyline
-          points={points}
-          fill="none"
-          stroke="#00ff88"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        {values
-          .map((v, i) => ({ v, i }))
-          .filter(({ i }) => i % 7 === 0 || i === values.length - 1)
-          .map(({ v, i }) => {
-            const x = padX + (i / (values.length - 1)) * (w - padX * 2);
-            const y = h - padY - ((v - min) / range) * (h - padY * 2);
-            return <circle key={i} cx={x} cy={y} r="3" fill="#00d4ff" />;
-          })}
-      </svg>
-      <div className="flex justify-between text-[10px] text-[#444455] mt-1">
-        {useReal && klines ? (
+        {!useReal && (
           <>
-            <span>{new Date(klines[0].t).toLocaleDateString()}</span>
-            <span>{new Date(klines[Math.floor(klines.length / 2)].t).toLocaleDateString()}</span>
-            <span>{new Date(klines[klines.length - 1].t).toLocaleDateString()}</span>
-          </>
-        ) : (
-          <>
-            <span>Day 1</span>
-            <span>Day 15</span>
-            <span>Day 30</span>
+            <text x={scaleX(0)} y={vbH - 3} fill="#555566" fontSize="9" textAnchor="middle">Day 1</text>
+            <text x={scaleX(14)} y={vbH - 3} fill="#555566" fontSize="9" textAnchor="middle">Day 15</text>
+            <text x={scaleX(29)} y={vbH - 3} fill="#555566" fontSize="9" textAnchor="middle">Day 30</text>
           </>
         )}
-      </div>
+      </svg>
     </div>
   );
 }

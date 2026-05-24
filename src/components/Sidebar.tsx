@@ -3,6 +3,7 @@
 const menu = [
   "Dashboard",
   "Signals",
+  "Trading",
   "Trade History",
   "Strategy Config",
   "Data Sources",

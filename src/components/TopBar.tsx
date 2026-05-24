@@ -1,11 +1,16 @@
 "use client";
 
+import WalletButton from "./WalletButton";
+
 interface Props {
   sodexStatus?: "connected" | "error" | "loading";
   tickerCount?: number;
 }
 
-export default function TopBar({ sodexStatus = "loading", tickerCount }: Props) {
+export default function TopBar({
+  sodexStatus = "loading",
+  tickerCount,
+}: Props) {
   const statusColor =
     sodexStatus === "connected" ? "#00ff88" : sodexStatus === "loading" ? "#ff8800" : "#ff4444";
   const statusLabel =
@@ -24,6 +29,7 @@ export default function TopBar({ sodexStatus = "loading", tickerCount }: Props) 
         </span>
       </div>
       <div className="flex items-center gap-2">
+        <WalletButton />
         <span
           className="px-3 py-1 text-xs rounded-full border"
           style={{

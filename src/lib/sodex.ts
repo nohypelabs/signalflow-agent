@@ -6,22 +6,53 @@ function baseUrl(): string {
   return network === "mainnet" ? MAINNET_SPOT : TESTNET_SPOT;
 }
 
-async function sodexFetch<T>(path: string, params?: Record<string, string>): Promise<T> {
+async function sodexFetch<T>(
+  path: string,
+  params?: Record<string, string>,
+  init?: RequestInit,
+): Promise<T> {
   const url = new URL(`${baseUrl()}${path}`);
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined) url.searchParams.set(k, v);
     });
   }
-  const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
-  if (!res.ok) throw new Error(`SoDEX ${res.status}: ${await res.text().catch(() => "")}`);
+  const res = await fetch(url.toString(), {
+    headers: { Accept: "application/json", ...init?.headers },
+    ...init,
+  });
+  if (!res.ok) {
+    throw new Error(`SoDEX ${res.status}: ${await res.text().catch(() => "")}`);
+  }
   const json = await res.json();
   if (json.error) throw new Error(json.error);
   return json.data as T;
 }
 
-import type { SoDEXTicker, SoDEXKline, SoDEXSymbol, OrderBook } from "./sodex-types";
-export type { SoDEXTicker, SoDEXKline, SoDEXSymbol, OrderBook };
+function authHeaders(): Record<string, string> {
+  const keyName = process.env.SODEX_API_KEY_NAME;
+  return keyName ? { "x-api-key": keyName } : {};
+}
+
+import type {
+  SoDEXTicker,
+  SoDEXKline,
+  SoDEXSymbol,
+  OrderBook,
+  SoDEXNewOrderRequest,
+  SoDEXOrder,
+  SoDEXBalance,
+  SoDEXAccountState,
+} from "./sodex-types";
+export type {
+  SoDEXTicker,
+  SoDEXKline,
+  SoDEXSymbol,
+  OrderBook,
+  SoDEXNewOrderRequest,
+  SoDEXOrder,
+  SoDEXBalance,
+};
 
 // ── Public endpoints ───────────────────────────────────
 
@@ -56,4 +87,43 @@ export function getOrderbook(symbol: string, limit?: number) {
 
 export function getAccountState(userAddress: string) {
   return sodexFetch<Record<string, unknown>>(`/accounts/${userAddress}/state`);
+}
+
+// ── Authenticated trading endpoints ─────────────────────
+
+export function placeOrder(order: SoDEXNewOrderRequest) {
+  return sodexFetch<SoDEXOrder>("/orders", undefined, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(),
+    },
+    body: JSON.stringify(order),
+  });
+}
+
+export function getOpenOrders() {
+  return sodexFetch<SoDEXOrder[]>("/orders", undefined, {
+    headers: authHeaders(),
+  });
+}
+
+export async function cancelOrder(orderId: number): Promise<void> {
+  const url = new URL(`${baseUrl()}/orders/${orderId}`);
+  const res = await fetch(url.toString(), {
+    method: "DELETE",
+    headers: { Accept: "application/json", ...authHeaders() },
+  });
+  if (!res.ok) {
+    throw new Error(`SoDEX ${res.status}: ${await res.text().catch(() => "")}`);
+  }
+}
+
+export async function getAccountBalances(userAddress: string): Promise<SoDEXBalance[]> {
+  const state = await sodexFetch<SoDEXAccountState>(
+    `/accounts/${userAddress}/state`,
+    undefined,
+    { headers: authHeaders() },
+  );
+  return state.balances;
 }

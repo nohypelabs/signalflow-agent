@@ -43,3 +43,40 @@ export interface OrderBook {
   bids: [string, string][];
   asks: [string, string][];
 }
+
+// ── Trading types ──
+
+export type OrderSide = "BUY" | "SELL";
+export type OrderType = "MARKET"; // LIMIT added later
+
+export interface SoDEXNewOrderRequest {
+  symbol: string;
+  side: OrderSide;
+  type: OrderType;
+  quantity: string; // DecimalString
+  price?: string; // DecimalString, required for LIMIT
+}
+
+export interface SoDEXOrder {
+  id: number;
+  symbol: string;
+  side: OrderSide;
+  type: OrderType;
+  quantity: string;
+  price: string;
+  executedQty: string;
+  cummQuoteQty: string;
+  status: string; // NEW | FILLED | PARTIALLY_FILLED | CANCELLED | REJECTED
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface SoDEXBalance {
+  asset: string;
+  free: string;
+  locked: string;
+}
+
+export interface SoDEXAccountState {
+  balances: SoDEXBalance[];
+}
