@@ -100,17 +100,32 @@ Deepseek/OpenAI ── AI signal generation with structured reasoning
 
 ## Getting Started
 
+### Prerequisites
+
+- **Node.js** 18+ (check: `node --version`)
+- **pnpm** (install: `npm install -g pnpm`)
+- A wallet with SOSO on ValueChain mainnet for trading
+
+### Setup
+
 ```bash
+# 1. Clone the repo
+git clone https://github.com/nohypelabs/signalflow-agent.git
+cd signalflow-agent
+
+# 2. Install dependencies
 pnpm install
-pnpm dev        # http://localhost:3000
+
+# 3. Create environment file
+cp .env.example .env.local   # or create .env.local manually
 ```
 
 ### Environment Variables
 
-Create `.env.local`:
+Edit `.env.local` with your API keys:
 
 ```env
-# SoDEX
+# SoDEX — Sosovalue DEX
 SODEX_NETWORK=mainnet
 SODEX_API_KEY_NAME=SignalFlowAgent
 
@@ -120,8 +135,19 @@ DEEPSEEK_API_KEY=sk-your-deepseek-key
 # SoSoValue
 SOSOVALUE_API_KEY=SOSO-your-sosovalue-key
 
-# WalletConnect v2 (for mobile)
+# WalletConnect v2 (for mobile) — get from https://cloud.walletconnect.com
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your-walletconnect-project-id
+```
+
+### Run
+
+```bash
+# Development
+pnpm dev          # http://localhost:3000
+
+# Production build
+pnpm build
+pnpm start        # http://localhost:3000
 ```
 
 ## Project Structure
@@ -181,11 +207,7 @@ src/
 
 ## Deployment
 
-Deployed on **Vercel** with automatic CI/CD from `main` branch.
-
-```bash
-pnpm build
-```
+Deployed on **Vercel** with automatic CI/CD from `main` branch. Every push triggers a production build.
 
 ---
 
