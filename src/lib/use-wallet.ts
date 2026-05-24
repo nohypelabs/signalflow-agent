@@ -1,7 +1,7 @@
 "use client";
 
 import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { injected } from "wagmi/connectors";
+import { injected, walletConnect } from "wagmi/connectors";
 
 export function useWallet() {
   const { address, isConnected, chainId } = useAccount();
@@ -9,9 +9,20 @@ export function useWallet() {
   const { disconnectAsync } = useDisconnect();
 
   const connect = async () => {
-    // Always use fresh connection — wagmi's injected() connector
-    // will trigger eth_requestAccounts which shows MetaMask account picker
-    await connectAsync({ connector: injected() });
+    // Try injected (MetaMask extension / mobile in-app browser) first.
+    // Falls back to WalletConnect for regular mobile browsers via QR/deep link.
+    const wcProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
+    if (typeof window !== "undefined" && "ethereum" in window) {
+      await connectAsync({ connector: injected() });
+    } else if (wcProjectId) {
+      await connectAsync({
+        connector: walletConnect({ projectId: wcProjectId, showQrModal: true }),
+      });
+    } else {
+      throw new Error(
+        "No wallet provider found. Install MetaMask extension (desktop) or configure WalletConnect (mobile).",
+      );
+    }
   };
 
   const disconnect = async () => {
