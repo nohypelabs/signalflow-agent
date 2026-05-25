@@ -1,0 +1,316 @@
+"use client";
+
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from "react";
+import type { Signal } from "./mock-data";
+import type { SoDEXTicker, SoDEXNewOrderRequest, SoDEXOrder } from "./sodex-types";
+import type { AIConfig } from "./ai-providers";
+import type { SignalsData } from "./use-signals";
+import type { RecordedSignal } from "./use-signal-history";
+import { useMarket } from "./use-market";
+import { useSignals } from "./use-signals";
+import { useAISignal } from "./use-ai-signal";
+import { useWallet } from "./use-wallet";
+import { useOrders } from "./use-orders";
+import { useAIConfig } from "./use-ai-config";
+import { useSignalHistory } from "./use-signal-history";
+import { getProvider } from "./ai-providers";
+import { pairToSodexSymbol } from "./pair-map";
+
+const DEFAULT_PAIR = "vBTC_vUSDC";
+
+function pairToCoin(pair: string): string {
+  return pair.split("/")[0];
+}
+
+export interface DashboardState {
+  // Market
+  tickers: SoDEXTicker[] | null;
+  klines: import("./sodex-types").SoDEXKline[] | null;
+  marketLoading: boolean;
+  marketError: string | null;
+  sodexStatus: "connected" | "error" | "loading";
+  tickerMap: Map<string, SoDEXTicker>;
+
+  // Signals
+  signalsData: SignalsData | null;
+  signalsLoading: boolean;
+  signalsError: string | null;
+
+  // AI config
+  aiConfig: AIConfig;
+  updateAIConfig: (u: Partial<AIConfig>) => void;
+  aiProviderLabel: string;
+
+  // AI signal generation
+  aiSignal: Signal | null;
+  analyzing: boolean;
+  aiError: string | null;
+  generate: (coin: string) => Promise<Signal | null>;
+  clearAISignal: () => void;
+  aiCoin: string;
+  setAiCoin: (c: string) => void;
+
+  // Wallet
+  address: string | undefined;
+  shortAddress: string | undefined;
+  isConnected: boolean;
+  chainId: number | undefined;
+  connectWallet: () => Promise<void>;
+  disconnectWallet: () => Promise<void>;
+
+  // Orders
+  orders: SoDEXOrder[];
+  ordersLoading: boolean;
+  ordersError: string | null;
+  refreshOrders: () => Promise<void>;
+  placeOrder: (
+    signedOrder: SoDEXNewOrderRequest & { signature?: string; userAddress?: string },
+  ) => Promise<unknown>;
+  cancelOrder: (id: number) => Promise<void>;
+  openOrders: SoDEXOrder[];
+
+  // Signal history
+  history: RecordedSignal[];
+  historyHydrated: boolean;
+  recordSignal: (s: Signal) => void;
+  resolveSignals: (coin: string, price: number) => void;
+  signalStats: {
+    totalResolved: number;
+    totalCorrect: number;
+    accuracy: number | null;
+  };
+  historyByCoin: (coin: string) => {
+    total: number;
+    correct: number;
+    accuracy: number | null;
+  };
+
+  // Selected signal
+  selectedSignal: Signal | null;
+  setSelectedSignal: (s: Signal | null) => void;
+  displaySignal: Signal | null;
+  liveDims: import("./use-signals").SignalDimensions | null;
+
+  // Trade form
+  showTradeForm: boolean;
+  executingSignal: Signal | null;
+  executingTicker: SoDEXTicker | null;
+  handleExecuteSignal: (signal: Signal) => void;
+  handleExecuteOrder: (order: SoDEXNewOrderRequest) => Promise<void>;
+  handleCloseForm: () => void;
+}
+
+const DashboardContext = createContext<DashboardState | null>(null);
+
+export function DashboardProvider({ children }: { children: ReactNode }) {
+  // ── Hooks ──
+
+  // Market
+  const { tickers, klines, loading: marketLoading, error: marketError } = useMarket(DEFAULT_PAIR);
+
+  // Signals
+  const {
+    data: signalsData,
+    loading: signalsLoading,
+    error: signalsError,
+  } = useSignals();
+
+  // Wallet
+  const {
+    address,
+    shortAddress,
+    isConnected,
+    chainId,
+    connect: connectWallet,
+    disconnect: disconnectWallet,
+  } = useWallet();
+
+  // AI config
+  const { config: aiConfig, update: updateAIConfig } = useAIConfig();
+  const aiProviderLabel = getProvider(aiConfig.providerId)?.name || "Deepseek";
+
+  // AI signal generation
+  const {
+    aiSignal,
+    analyzing,
+    error: aiError,
+    generate,
+    clear: clearAISignal,
+  } = useAISignal(aiConfig);
+  const [aiCoin, setAiCoin] = useState("BTC");
+
+  // Signal history
+  const {
+    history,
+    hydrated: historyHydrated,
+    recordSignal,
+    resolveSignals,
+    stats: signalStats,
+    byCoin: historyByCoin,
+  } = useSignalHistory();
+
+  // Orders
+  const {
+    orders,
+    loading: ordersLoading,
+    error: ordersError,
+    refresh: refreshOrders,
+    placeOrder,
+    cancel: cancelOrder,
+  } = useOrders(true);
+
+  // ── Local state ──
+
+  const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
+  const [showTradeForm, setShowTradeForm] = useState(false);
+  const [executingSignal, setExecutingSignal] = useState<Signal | null>(null);
+
+  // ── Derived state ──
+
+  const displaySignal = aiSignal ?? selectedSignal;
+
+  const liveDims =
+    signalsData && displaySignal
+      ? signalsData.dimensions[pairToCoin(displaySignal.pair)] ?? null
+      : null;
+
+  const sodexStatus: "connected" | "error" | "loading" =
+    marketLoading ? "loading" : marketError ? "error" : tickers ? "connected" : "loading";
+
+  // Ticker map
+  const tickerMap = new Map<string, SoDEXTicker>();
+  if (tickers) tickers.forEach((t) => tickerMap.set(t.symbol, t));
+
+  // Find ticker for the executing signal
+  const executingSodSym = executingSignal ? pairToSodexSymbol(executingSignal.pair) : "";
+  const executingTicker = executingSodSym ? tickerMap.get(executingSodSym) ?? null : null;
+
+  // Open orders
+  const openOrders = orders.filter(
+    (o) => o.status === "NEW" || o.status === "PARTIALLY_FILLED",
+  );
+
+  // ── Resolve pending signals ──
+
+  const resolvePending = useCallback(() => {
+    if (!tickers || !historyHydrated) return;
+    for (const t of tickers) {
+      const pair = t.symbol;
+      const coin = pair.startsWith("v") ? pair.split("_")[0].replace("v", "") : pair.split("_")[0];
+      const price = parseFloat(t.lastPx);
+      if (coin && !Number.isNaN(price)) {
+        resolveSignals(coin, price);
+      }
+    }
+  }, [tickers, historyHydrated, resolveSignals]);
+
+  useEffect(() => {
+    resolvePending();
+  }, [resolvePending]);
+
+  // ── Trade execution callbacks ──
+
+  const handleExecuteSignal = useCallback((signal: Signal) => {
+    setExecutingSignal(signal);
+    setShowTradeForm(true);
+  }, []);
+
+  const handleExecuteOrder = useCallback(
+    async (_order: SoDEXNewOrderRequest) => {
+      await refreshOrders();
+    },
+    [refreshOrders],
+  );
+
+  const handleCloseForm = useCallback(() => {
+    setShowTradeForm(false);
+    setExecutingSignal(null);
+  }, []);
+
+  // ── Context value ──
+
+  const value: DashboardState = {
+    // Market
+    tickers,
+    klines,
+    marketLoading,
+    marketError,
+    sodexStatus,
+    tickerMap,
+
+    // Signals
+    signalsData,
+    signalsLoading,
+    signalsError,
+
+    // AI config
+    aiConfig,
+    updateAIConfig,
+    aiProviderLabel,
+
+    // AI signal generation
+    aiSignal,
+    analyzing,
+    aiError,
+    generate,
+    clearAISignal,
+    aiCoin,
+    setAiCoin,
+
+    // Wallet
+    address,
+    shortAddress,
+    isConnected,
+    chainId,
+    connectWallet,
+    disconnectWallet,
+
+    // Orders
+    orders,
+    ordersLoading,
+    ordersError,
+    refreshOrders,
+    placeOrder,
+    cancelOrder,
+    openOrders,
+
+    // Signal history
+    history,
+    historyHydrated,
+    recordSignal,
+    resolveSignals,
+    signalStats,
+    historyByCoin,
+
+    // Selected signal
+    selectedSignal,
+    setSelectedSignal,
+    displaySignal,
+    liveDims,
+
+    // Trade form
+    showTradeForm,
+    executingSignal,
+    executingTicker,
+    handleExecuteSignal,
+    handleExecuteOrder,
+    handleCloseForm,
+  };
+
+  return (
+    <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>
+  );
+}
+
+export function useDashboard(): DashboardState {
+  const ctx = useContext(DashboardContext);
+  if (!ctx) throw new Error("useDashboard must be used within DashboardProvider");
+  return ctx;
+}
