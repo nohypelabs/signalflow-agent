@@ -13,6 +13,7 @@ import TradeHistory from "@/components/TradeHistory";
 import StrategyConfig from "@/components/StrategyConfig";
 import PerformancePage from "@/components/PerformancePage";
 import SettingsPage from "@/components/SettingsPage";
+import DocsPage from "@/components/DocsPage";
 import TradeForm from "@/components/TradeForm";
 import OpenOrders from "@/components/OpenOrders";
 import MobileBottomNav from "@/components/MobileBottomNav";
@@ -312,6 +313,8 @@ export default function Home() {
               onAIConfigChange={updateAIConfig}
             />
           )}
+
+          {activeMenu === "Docs" && <DocsPage />}
 
           <footer className="text-center text-[11px] text-[#444455] py-4 border-t border-[#1a1a2e] mt-auto">
             <p>SignalFlow Agent — Built by <span className="text-[#666677]">NoHype Labs</span></p>

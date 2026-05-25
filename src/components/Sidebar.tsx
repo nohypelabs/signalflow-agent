@@ -11,6 +11,7 @@ const menu = [
   "Data Sources",
   "Performance",
   "Settings",
+  "Docs",
 ];
 
 interface Props {
