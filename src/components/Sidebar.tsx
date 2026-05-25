@@ -43,10 +43,10 @@ export default function Sidebar({ active, onSelect, mobileOpen, onMobileClose }:
         <button
           key={item}
           onClick={() => handleSelect(item)}
-          className={`w-full text-left px-5 py-2.5 text-sm transition-colors ${
+          className={`w-full text-left px-5 py-2.5 text-sm rounded-r-xl border-l-[3px] transition-all duration-200 ease-out ${
             active === item
-              ? "text-white font-semibold bg-[#7b2fff20] border-l-[3px] border-[#7b2fff]"
-              : "text-[#666677] hover:text-white border-l-[3px] border-transparent"
+              ? "text-white font-semibold bg-[#7b2fff26] border-[#7b2fff] shadow-[0_0_18px_-8px_rgba(123,47,255,0.95)]"
+              : "text-[#7e8096] border-transparent hover:text-[#dddfff] hover:bg-[#ffffff08] hover:border-[#7b2fff80]"
           }`}
         >
           {item}

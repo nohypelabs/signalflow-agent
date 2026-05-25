@@ -22,17 +22,26 @@ export default function MobileBottomNav({ active, onSelect }: Props) {
             <button
               key={t.id}
               onClick={() => onSelect(t.id)}
-              className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
-                isActive ? "text-[#7b2fff]" : "text-[#444455]"
+              className={`relative flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all duration-200 ease-out ${
+                isActive
+                  ? "text-white"
+                  : "text-[#7e8096] hover:text-[#dddfff] hover:bg-[#ffffff08]"
               }`}
             >
+              <span
+                className={`absolute top-1.5 h-0.5 w-7 rounded-full transition-all duration-200 ease-out ${
+                  isActive
+                    ? "bg-[#7b2fff] shadow-[0_0_14px_0_rgba(123,47,255,0.95)] opacity-100"
+                    : "bg-transparent opacity-0"
+                }`}
+              />
               <svg
                 width="20"
                 height="20"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth={isActive ? 2 : 1.5}
+                strokeWidth={isActive ? 1.9 : 1.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
