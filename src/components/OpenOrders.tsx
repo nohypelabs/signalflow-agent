@@ -2,6 +2,11 @@
 
 import type { SoDEXOrder } from "@/lib/sodex-types";
 import { useState } from "react";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import Skeleton from "@/components/ui/Skeleton";
+import EmptyState from "@/components/ui/EmptyState";
 
 interface Props {
   orders: SoDEXOrder[];
@@ -10,14 +15,14 @@ interface Props {
   onCancel: (orderId: number) => Promise<void>;
 }
 
-function statusColor(status: string) {
+function statusVariant(status: string): string {
   switch (status) {
-    case "NEW": return "text-[#00d4ff]";
-    case "FILLED": return "text-[#00ff88]";
-    case "PARTIALLY_FILLED": return "text-[#ff8800]";
-    case "CANCELLED": return "text-[#ff4444]";
-    case "REJECTED": return "text-[#ff4444]";
-    default: return "text-[#666677]";
+    case "NEW": return "info";
+    case "FILLED": return "live";
+    case "PARTIALLY_FILLED": return "warning";
+    case "CANCELLED": return "error";
+    case "REJECTED": return "error";
+    default: return "muted";
   }
 }
 
@@ -36,28 +41,35 @@ export default function OpenOrders({ orders, loading, error, onCancel }: Props) 
   };
 
   return (
-    <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a2e]">
-        <h3 className="text-xs font-semibold text-[#666677] uppercase tracking-wide">
+    <Card padding="none" className="overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border-default">
+        <h3 className="text-xs font-semibold text-txt-muted uppercase tracking-wide">
           Open Orders ({orders.length})
         </h3>
-        {loading && <span className="text-[10px] text-[#ff8800] animate-pulse">Refreshing...</span>}
+        {loading && (
+          <span className="text-[10px] text-warning animate-pulse">Refreshing...</span>
+        )}
       </div>
 
       {error && (
-        <div className="px-4 py-3 text-xs text-[#ff4444]">{error}</div>
+        <div className="px-4 py-3 text-xs text-error">{error}</div>
       )}
 
-      {!loading && orders.length === 0 && !error && (
-        <div className="px-4 py-8 text-center text-xs text-[#666677]">
-          No open orders on SoDEX
+      {loading && !error && (
+        <div className="p-4 space-y-3">
+          <Skeleton variant="table-row" />
+          <Skeleton variant="table-row" />
         </div>
       )}
 
-      {orders.length > 0 && (
+      {!loading && orders.length === 0 && !error && (
+        <EmptyState title="No open orders on SoDEX" description="Place an order from the Trading page" />
+      )}
+
+      {!loading && orders.length > 0 && (
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-[#1a1a2e] text-[#666677]">
+            <tr className="border-b border-border-default text-txt-muted">
               <th className="text-left p-3 font-medium">Symbol</th>
               <th className="text-left p-3 font-medium">Side</th>
               <th className="text-right p-3 font-medium">Qty</th>
@@ -68,25 +80,21 @@ export default function OpenOrders({ orders, loading, error, onCancel }: Props) 
           </thead>
           <tbody>
             {orders.map((o) => (
-              <tr key={o.id} className="border-b border-[#1a1a2e] hover:bg-[#1a1a2e40]">
-                <td className="p-3 text-white font-semibold">{o.symbol}</td>
-                <td className={`p-3 font-bold ${o.side === "BUY" ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
-                  {o.side}
+              <tr key={o.id} className="border-b border-border-default hover:bg-elevated">
+                <td className="p-3 text-txt-primary font-semibold">{o.symbol}</td>
+                <td className="p-3">
+                  <Badge variant={o.side === "BUY" ? "buy" : "sell"} size="sm">{o.side}</Badge>
                 </td>
-                <td className="p-3 text-right text-[#aaaaaa]">{o.quantity}</td>
-                <td className="p-3 text-right text-[#aaaaaa]">{o.price}</td>
-                <td className={`p-3 text-center font-semibold ${statusColor(o.status)}`}>
-                  {o.status}
+                <td className="p-3 text-right text-txt-secondary">{o.quantity}</td>
+                <td className="p-3 text-right text-txt-secondary font-mono">{o.price}</td>
+                <td className="p-3 text-center">
+                  <Badge variant={statusVariant(o.status)} size="sm">{o.status}</Badge>
                 </td>
                 <td className="p-3 text-right">
                   {o.status === "NEW" && (
-                    <button
-                      onClick={() => handleCancel(o.id)}
-                      disabled={cancelling === o.id}
-                      className="px-2 py-1 text-[10px] rounded bg-[#ff444415] text-[#ff4444] border border-[#ff444430] hover:bg-[#ff444425] disabled:opacity-50"
-                    >
+                    <Button variant="danger" size="sm" onClick={() => handleCancel(o.id)} disabled={cancelling === o.id}>
                       {cancelling === o.id ? "..." : "Cancel"}
-                    </button>
+                    </Button>
                   )}
                 </td>
               </tr>
@@ -94,6 +102,6 @@ export default function OpenOrders({ orders, loading, error, onCancel }: Props) 
           </tbody>
         </table>
       )}
-    </div>
+    </Card>
   );
 }

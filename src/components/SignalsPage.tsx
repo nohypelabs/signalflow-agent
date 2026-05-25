@@ -5,19 +5,25 @@ import { signals, Signal } from "@/lib/mock-data";
 import type { SoDEXTicker } from "@/lib/sodex-types";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import type { SignalDimensions } from "@/lib/use-signals";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import ConfidenceGauge from "@/components/ui/ConfidenceGauge";
+import ProgressBar from "@/components/ui/ProgressBar";
+import PageHeader from "@/components/ui/PageHeader";
 
 const actionMeta: Record<Signal["action"], { bg: string; border: string; text: string; accent: string; label: string }> = {
-  BUY: { bg: "bg-[#0d2a1a]", border: "border-[#00ff8840]", text: "text-[#00ff88]", accent: "#00ff88", label: "Bullish — Buy" },
-  SELL: { bg: "bg-[#2a0d0d]", border: "border-[#ff444440]", text: "text-[#ff4444]", accent: "#ff4444", label: "Bearish — Sell" },
-  HOLD: { bg: "bg-[#1a1a0d]", border: "border-[#ff880040]", text: "text-[#ff8800]", accent: "#ff8800", label: "Neutral — Hold" },
+  BUY: { bg: "bg-[#0d2a1a]", border: "border-buy-dim", text: "text-buy", accent: "var(--color-buy)", label: "Bullish — Buy" },
+  SELL: { bg: "bg-[#2a0d0d]", border: "border-sell-dim", text: "text-sell", accent: "var(--color-sell)", label: "Bearish — Sell" },
+  HOLD: { bg: "bg-[#1a1a0d]", border: "border-hold-dim", text: "text-hold", accent: "var(--color-hold)", label: "Neutral — Hold" },
 };
 
 const dimLabels = [
-  { key: "etfFlow" as const, label: "ETF Flow", color: "#00d4ff", icon: "📊" },
-  { key: "sentiment" as const, label: "Sentiment", color: "#7b2fff", icon: "📰" },
-  { key: "macro" as const, label: "Macro", color: "#00ff88", icon: "🌐" },
-  { key: "momentum" as const, label: "Momentum", color: "#ff8800", icon: "📈" },
-  { key: "treasury" as const, label: "Treasury", color: "#ff4488", icon: "🏛️" },
+  { key: "etfFlow" as const, label: "ETF Flow", color: "var(--dim-etf)", hex: "#00d4ff", icon: "📊" },
+  { key: "sentiment" as const, label: "Sentiment", color: "var(--dim-sentiment)", hex: "#7b2fff", icon: "📰" },
+  { key: "macro" as const, label: "Macro", color: "var(--dim-macro)", hex: "#00ff88", icon: "🌐" },
+  { key: "momentum" as const, label: "Momentum", color: "var(--dim-momentum)", hex: "#ff8800", icon: "📈" },
+  { key: "treasury" as const, label: "Treasury", color: "var(--dim-treasury)", hex: "#ff4488", icon: "🏛️" },
 ];
 
 function actionRationale(signal: Signal): string[] {
@@ -67,10 +73,7 @@ export default function SignalsPage({ tickers, liveDims, overallScores, weights,
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <h2 className="text-lg font-bold">All Signals</h2>
-        <span className="text-[10px] px-1.5 py-0.5 bg-[#00ff8820] text-[#00ff88] border border-[#00ff8830] rounded">LIVE PRICES</span>
-      </div>
+      <PageHeader title="All Signals" badge={{ variant: "live", label: "LIVE PRICES" }} />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         {signals.map((s) => {
@@ -90,27 +93,25 @@ export default function SignalsPage({ tickers, liveDims, overallScores, weights,
               <div className="p-5">
                 <div className="flex justify-between items-center mb-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-lg font-bold text-white">{s.pair}</span>
-                    <span
-                      className="px-2.5 py-1 text-xs font-bold rounded border"
-                      style={{ color: meta.accent, borderColor: meta.accent }}
-                    >
-                      {s.action}
-                    </span>
-                    {live && <span className="text-[9px] text-[#00ff88]">LIVE</span>}
+                    <span className="text-lg font-bold text-txt-primary">{s.pair}</span>
+                    <Badge variant={s.action.toLowerCase()} size="md">{s.action}</Badge>
+                    {live && <Badge variant="live" size="sm">LIVE</Badge>}
                   </div>
-                  <div className="text-right">
-                    <span className="text-sm text-white font-semibold font-mono">
-                      ${typeof price === "number" ? price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : price}
-                    </span>
-                    <span className={`text-xs ml-2 ${chg >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
-                      {chg >= 0 ? "+" : ""}{typeof chg === "number" ? chg.toFixed(1) : chg}%
-                    </span>
+                  <div className="flex items-center gap-3">
+                    <ConfidenceGauge value={s.confidence} size="sm" />
+                    <div className="text-right">
+                      <span className="text-sm text-txt-primary font-semibold font-mono">
+                        ${typeof price === "number" ? price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : price}
+                      </span>
+                      <span className={`text-xs ml-2 ${chg >= 0 ? "text-buy" : "text-sell"}`}>
+                        {chg >= 0 ? "+" : ""}{typeof chg === "number" ? chg.toFixed(1) : chg}%
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Main reasoning */}
-                <p className="text-sm text-[#cccccc] leading-relaxed mb-4">{s.reasoning}</p>
+                <p className="text-sm text-txt-secondary leading-relaxed mb-4">{s.reasoning}</p>
 
                 {/* Dimension bars */}
                 <div className="flex flex-col gap-1.5 mb-4">
@@ -126,24 +127,15 @@ export default function SignalsPage({ tickers, liveDims, overallScores, weights,
 
                     return (
                       <div key={d.key} className="flex items-center gap-2">
-                        <span className="text-[10px] w-20 shrink-0 text-[#888888]">{d.label}</span>
-                        <div className="flex-1 h-2 bg-[#1a1a2e] rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{ width: `${score}%`, backgroundColor: d.color }}
-                          />
-                        </div>
-                        <span className="text-[10px] w-8 text-right" style={{ color: d.color }}>{score}</span>
+                        <ProgressBar value={score} color={d.hex} height="sm" label={d.label} showValue />
                         {weight != null && (
-                          <span className="text-[10px] w-8 text-right text-[#666677]">{weight}%</span>
+                          <span className="text-[10px] w-8 text-right text-txt-muted tabular-nums">{weight}%</span>
                         )}
                         {isCapped && (
-                          <span className="text-[8px] px-1 py-0.5 rounded bg-[#ff444415] text-[#ff4444]" title="Capped — outlier detected, weight capped at 8%">
-                            CAP
-                          </span>
+                          <Badge variant="error" size="sm" className="text-[8px]">CAP</Badge>
                         )}
                         {detail && (
-                          <span className="text-[10px] text-[#555566] hidden lg:block w-48 truncate" title={detail}>
+                          <span className="text-[10px] text-txt-dim hidden lg:block w-48 truncate" title={detail}>
                             {detail}
                           </span>
                         )}
@@ -155,18 +147,18 @@ export default function SignalsPage({ tickers, liveDims, overallScores, weights,
                 {/* Confidence + overall + toggle */}
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] text-[#666677]">
+                    <span className="text-[10px] text-txt-muted">
                       Confidence: <span className="font-bold" style={{ color: meta.accent }}>{s.confidence}%</span>
                     </span>
                     {overallScores?.[coin] != null && (
-                      <span className="text-[10px] text-[#666677]">
-                        Overall: <span className="font-bold text-[#00d4ff]">{overallScores[coin]}/100</span>
+                      <span className="text-[10px] text-txt-muted">
+                        Overall: <span className="font-bold text-info">{overallScores[coin]}/100</span>
                       </span>
                     )}
                   </div>
                   <button
                     onClick={() => toggle(s.id)}
-                    className="text-[10px] text-[#7b2fff] hover:text-[#9b4fff] transition-colors"
+                    className="text-[10px] text-accent hover:opacity-80"
                   >
                     {isOpen ? "Hide Analysis" : "Show Analysis"}
                   </button>
@@ -175,10 +167,10 @@ export default function SignalsPage({ tickers, liveDims, overallScores, weights,
 
               {/* Expanded analysis */}
               {isOpen && (
-                <div className="border-t border-[#ffffff10] p-5 space-y-4 bg-[#00000020]">
+                <div className="border-t border-border-default p-5 space-y-4 bg-[#00000020] animate-fade-in">
                   {/* Why this signal */}
                   <div>
-                    <h4 className="text-xs font-semibold text-white mb-2" style={{ color: meta.accent }}>
+                    <h4 className="text-xs font-semibold text-txt-primary mb-2" style={{ color: meta.accent }}>
                       Why {s.action}?
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -193,20 +185,20 @@ export default function SignalsPage({ tickers, liveDims, overallScores, weights,
                         const isCapped = coinCapped?.includes(d.key);
 
                         return (
-                          <div key={d.key} className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-2.5">
+                          <Card key={d.key} variant="inset" padding="sm">
                             <div className="flex items-center gap-1.5 mb-1">
                               <span className="text-xs">{d.icon}</span>
-                              <span className="text-[11px] font-semibold" style={{ color: d.color }}>{d.label}</span>
+                              <span className="text-[11px] font-semibold" style={{ color: d.hex }}>{d.label}</span>
                               {weight != null && (
-                                <span className="text-[9px] text-[#666677]">wt: {weight}%</span>
+                                <span className="text-[9px] text-txt-muted">wt: {weight}%</span>
                               )}
                               {isCapped && (
-                                <span className="text-[8px] px-1 py-0.5 rounded bg-[#ff444415] text-[#ff4444]" title="Capped — outlier, weight capped at 8%">CAP</span>
+                                <Badge variant="error" size="sm" className="text-[8px]">CAP</Badge>
                               )}
-                              <span className="text-[10px] font-bold ml-auto" style={{ color: d.color }}>{score}/100</span>
+                              <span className="text-[10px] font-bold ml-auto" style={{ color: d.hex }}>{score}/100</span>
                             </div>
-                            <p className="text-[10px] text-[#888899] leading-relaxed">{detail}</p>
-                          </div>
+                            <p className="text-[10px] text-txt-tertiary leading-relaxed">{detail}</p>
+                          </Card>
                         );
                       })}
                     </div>
@@ -215,10 +207,10 @@ export default function SignalsPage({ tickers, liveDims, overallScores, weights,
                   {/* Key rationales */}
                   {rationale.length > 0 && (
                     <div>
-                      <h4 className="text-xs font-semibold text-white mb-2">Key Factors</h4>
+                      <h4 className="text-xs font-semibold text-txt-primary mb-2">Key Factors</h4>
                       <ul className="space-y-1">
                         {rationale.map((r, i) => (
-                          <li key={i} className="flex items-start gap-2 text-[11px] text-[#aaaabb]">
+                          <li key={i} className="flex items-start gap-2 text-[11px] text-txt-secondary">
                             <span className="mt-0.5 shrink-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: meta.accent }} />
                             {r}
                           </li>
@@ -230,47 +222,45 @@ export default function SignalsPage({ tickers, liveDims, overallScores, weights,
                   {/* Execution plan */}
                   {s.execution.orderType !== "No action" && (
                     <div>
-                      <h4 className="text-xs font-semibold text-white mb-2">Execution Plan</h4>
+                      <h4 className="text-xs font-semibold text-txt-primary mb-2">Execution Plan</h4>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-[10px]">
-                        <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-2">
-                          <span className="text-[#666677]">Entry</span>
-                          <p className="text-white font-mono font-semibold">${s.execution.entry.toLocaleString()}</p>
-                        </div>
-                        <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-2">
-                          <span className="text-[#666677]">Take Profit</span>
-                          <p className="text-[#00ff88] font-mono font-semibold">
+                        <Card variant="inset" padding="sm">
+                          <span className="text-txt-muted">Entry</span>
+                          <p className="text-txt-primary font-mono font-semibold">${s.execution.entry.toLocaleString()}</p>
+                        </Card>
+                        <Card variant="inset" padding="sm">
+                          <span className="text-txt-muted">Take Profit</span>
+                          <p className="text-buy font-mono font-semibold">
                             {s.execution.takeProfit > 0 ? `$${s.execution.takeProfit.toLocaleString()}` : "—"}
                           </p>
-                        </div>
-                        <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-2">
-                          <span className="text-[#666677]">Stop Loss</span>
-                          <p className="text-[#ff4444] font-mono font-semibold">
+                        </Card>
+                        <Card variant="inset" padding="sm">
+                          <span className="text-txt-muted">Stop Loss</span>
+                          <p className="text-sell font-mono font-semibold">
                             {s.execution.stopLoss > 0 ? `$${s.execution.stopLoss.toLocaleString()}` : "—"}
                           </p>
-                        </div>
-                        <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-2">
-                          <span className="text-[#666677]">Position</span>
-                          <p className="text-white font-semibold">{s.execution.positionSize}</p>
-                        </div>
-                        <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-2">
-                          <span className="text-[#666677]">Risk/Reward</span>
-                          <p className="text-white font-semibold">{s.execution.riskReward}</p>
-                        </div>
-                        <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-2">
-                          <span className="text-[#666677]">Type</span>
-                          <p className="text-[#7b2fff] font-semibold">{s.execution.orderType}</p>
-                        </div>
+                        </Card>
+                        <Card variant="inset" padding="sm">
+                          <span className="text-txt-muted">Position</span>
+                          <p className="text-txt-primary font-semibold">{s.execution.positionSize}</p>
+                        </Card>
+                        <Card variant="inset" padding="sm">
+                          <span className="text-txt-muted">Risk/Reward</span>
+                          <p className="text-txt-primary font-semibold">{s.execution.riskReward}</p>
+                        </Card>
+                        <Card variant="inset" padding="sm">
+                          <span className="text-txt-muted">Type</span>
+                          <p className="text-accent font-semibold">{s.execution.orderType}</p>
+                        </Card>
                       </div>
                     </div>
                   )}
 
                   {/* Sources */}
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] text-[#444455]">Data sources:</span>
+                    <span className="text-[10px] text-txt-dim">Data sources:</span>
                     {s.sources.map((src) => (
-                      <span key={src} className="text-[9px] px-1.5 py-0.5 rounded bg-[#ffffff08] text-[#666677] border border-[#ffffff10]">
-                        {src}
-                      </span>
+                      <Badge key={src} variant="muted" size="sm">{src}</Badge>
                     ))}
                   </div>
                 </div>
@@ -278,7 +268,7 @@ export default function SignalsPage({ tickers, liveDims, overallScores, weights,
 
               {/* Time */}
               <div className="px-5 pb-3">
-                <span className="text-[10px] text-[#444455]">{s.timeAgo}</span>
+                <span className="text-[10px] text-txt-dim">{s.timeAgo}</span>
               </div>
             </div>
           );

@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { useStatus } from "@/lib/use-status";
 import { AI_PROVIDERS, getProvider, type AIConfig } from "@/lib/ai-providers";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import Skeleton from "@/components/ui/Skeleton";
+import PageHeader from "@/components/ui/PageHeader";
 
 interface Props {
   walletConnected: boolean;
@@ -10,10 +15,10 @@ interface Props {
   onAIConfigChange: (patch: Partial<AIConfig>) => void;
 }
 
-const statusStyles: Record<string, { bg: string; text: string; border: string }> = {
-  connected: { bg: "bg-[#00ff8815]", text: "text-[#00ff88]", border: "border-[#00ff8830]" },
-  error: { bg: "bg-[#ff444415]", text: "text-[#ff4444]", border: "border-[#ff444430]" },
-  no_key: { bg: "bg-[#ff880015]", text: "text-[#ff8800]", border: "border-[#ff880030]" },
+const statusVariant: Record<string, string> = {
+  connected: "live",
+  error: "error",
+  no_key: "warning",
 };
 
 export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChange }: Props) {
@@ -21,27 +26,28 @@ export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChan
   const selectedProvider = getProvider(aiConfig.providerId);
   const [showKey, setShowKey] = useState(false);
 
+  const inputCls = "w-full bg-inset border border-border-default rounded-lg px-3 py-2 text-sm text-txt-primary focus:outline-none focus:border-accent disabled:opacity-40";
+
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-bold">Settings</h2>
+      <PageHeader title="Settings" />
 
       {/* AI Agent Configuration */}
-      <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-5 space-y-4">
+      <Card padding="lg" className="space-y-4">
         <div className="flex items-center gap-2">
           <h3 className="font-semibold text-sm">AI Agent</h3>
           {!walletConnected && (
-            <span className="text-[10px] text-[#ff8800]">— Connect wallet to configure</span>
+            <span className="text-[10px] text-warning">— Connect wallet to configure</span>
           )}
         </div>
 
-        {/* Provider selector */}
         <div className="space-y-1.5">
-          <label className="text-[10px] text-[#666677]">Provider</label>
+          <label className="text-[10px] text-txt-muted">Provider</label>
           <select
             value={aiConfig.providerId}
             onChange={(e) => onAIConfigChange({ providerId: e.target.value })}
             disabled={!walletConnected}
-            className="w-full bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#7b2fff] transition-colors disabled:opacity-40"
+            className={inputCls}
           >
             {AI_PROVIDERS.map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>
@@ -49,15 +55,14 @@ export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChan
           </select>
         </div>
 
-        {/* Model selector */}
         {selectedProvider && (
           <div className="space-y-1.5">
-            <label className="text-[10px] text-[#666677]">Model</label>
+            <label className="text-[10px] text-txt-muted">Model</label>
             <select
               value={aiConfig.model}
               onChange={(e) => onAIConfigChange({ model: e.target.value })}
               disabled={!walletConnected}
-              className="w-full bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#7b2fff] transition-colors disabled:opacity-40"
+              className={inputCls}
             >
               {selectedProvider.models.map((m) => (
                 <option key={m} value={m}>{m}</option>
@@ -66,9 +71,8 @@ export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChan
           </div>
         )}
 
-        {/* API Key input */}
         <div className="space-y-1.5">
-          <label className="text-[10px] text-[#666677]">
+          <label className="text-[10px] text-txt-muted">
             API Key {selectedProvider ? `(${selectedProvider.name})` : ""}
           </label>
           <div className="flex gap-2">
@@ -78,60 +82,58 @@ export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChan
               onChange={(e) => onAIConfigChange({ apiKey: e.target.value })}
               placeholder={walletConnected ? "sk-..." : "Connect wallet first"}
               disabled={!walletConnected}
-              className="flex-1 bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-[#7b2fff] transition-colors disabled:opacity-40"
+              className={`${inputCls} font-mono flex-1`}
             />
-            <button
-              onClick={() => setShowKey(!showKey)}
-              className="px-3 py-2 text-[10px] rounded-lg bg-[#0d0d1a] border border-[#1a1a2e] text-[#666677] hover:text-white transition-colors"
-            >
+            <Button variant="ghost" size="sm" onClick={() => setShowKey(!showKey)}>
               {showKey ? "Hide" : "Show"}
-            </button>
+            </Button>
           </div>
           {aiConfig.apiKey && (
-            <p className="text-[10px] text-[#00ff88]">
+            <p className="text-[10px] text-buy">
               Using your own {selectedProvider?.name} API key — requests billed to your account
             </p>
           )}
           {!aiConfig.apiKey && walletConnected && (
-            <p className="text-[10px] text-[#666677]">
+            <p className="text-[10px] text-txt-muted">
               Leave blank to use server default (Deepseek)
             </p>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* API Connections */}
-      <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-5 space-y-4">
+      <Card padding="lg" className="space-y-4">
         <h3 className="font-semibold text-sm">API Connections</h3>
         {loading ? (
-          <p className="text-xs text-[#666677]">Checking connections...</p>
+          <div className="space-y-2">
+            <Skeleton variant="table-row" />
+            <Skeleton variant="table-row" />
+            <Skeleton variant="table-row" />
+          </div>
         ) : error ? (
-          <p className="text-xs text-[#ff4444]">Status check failed: {error}</p>
+          <p className="text-xs text-error">Status check failed: {error}</p>
         ) : (
           <div className="flex flex-col gap-2">
-            {services.map((s) => {
-              const style = statusStyles[s.status];
-              return (
-                <div key={s.name} className="flex justify-between items-center bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-3">
-                  <span className="text-xs text-[#888888]">{s.name}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-[#aaaaaa]">{s.detail}</span>
-                    {s.latencyMs > 0 && (
-                      <span className="text-[10px] text-[#666677]">{s.latencyMs}ms</span>
-                    )}
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${style.bg} ${style.text} ${style.border}`}>
-                      {s.status === "connected" ? "Connected" : s.status === "no_key" ? "No Key" : "Error"}
-                    </span>
-                  </div>
+            {services.map((s) => (
+              <Card key={s.name} variant="inset" padding="sm" className="flex justify-between items-center">
+                <span className="text-xs text-txt-tertiary">{s.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-txt-secondary">{s.detail}</span>
+                  {s.latencyMs > 0 && (
+                    <span className="text-[10px] text-txt-muted">{s.latencyMs}ms</span>
+                  )}
+                  <Badge variant={statusVariant[s.status] || "muted"} size="sm">
+                    {s.status === "connected" ? "Connected" : s.status === "no_key" ? "No Key" : "Error"}
+                  </Badge>
                 </div>
-              );
-            })}
+              </Card>
+            ))}
           </div>
         )}
-      </div>
+      </Card>
 
       {/* General Settings */}
-      <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-5 space-y-4">
+      <Card padding="lg" className="space-y-4">
         <h3 className="font-semibold text-sm">General</h3>
         {[
           { label: "AI Model", value: selectedProvider ? `${selectedProvider.name} / ${aiConfig.model || selectedProvider.defaultModel}` : "Deepseek Chat", status: aiConfig.apiKey ? "Custom" : "Server" },
@@ -139,23 +141,19 @@ export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChan
           { label: "Notifications", value: "Coming soon", status: "" },
           { label: "SoDEX Network", value: "Mainnet", status: "" },
         ].map((item) => (
-          <div key={item.label} className="flex justify-between items-center bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-3">
-            <span className="text-xs text-[#888888]">{item.label}</span>
+          <Card key={item.label} variant="inset" padding="sm" className="flex justify-between items-center">
+            <span className="text-xs text-txt-tertiary">{item.label}</span>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-white font-mono">{item.value}</span>
+              <span className="text-xs text-txt-primary font-mono">{item.value}</span>
               {item.status && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
-                  item.status === "Custom"
-                    ? "bg-[#7b2fff15] text-[#7b2fff] border-[#7b2fff30]"
-                    : "bg-[#00ff8815] text-[#00ff88] border-[#00ff8830]"
-                }`}>
+                <Badge variant={item.status === "Custom" ? "accent" : "live"} size="sm">
                   {item.status}
-                </span>
+                </Badge>
               )}
             </div>
-          </div>
+          </Card>
         ))}
-      </div>
+      </Card>
     </div>
   );
 }

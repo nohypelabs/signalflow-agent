@@ -2,6 +2,7 @@
 
 import { stats } from "@/lib/mock-data";
 import type { SoDEXTicker } from "@/lib/sodex-types";
+import Card from "@/components/ui/Card";
 
 interface Props {
   tickers?: SoDEXTicker[] | null;
@@ -50,17 +51,22 @@ export default function KPICards({ tickers }: Props) {
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((c) => (
-        <div key={c.label} className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-4">
-          <p className="text-[11px] text-[#666677] mb-2">{c.label}</p>
-          <p className="text-2xl font-bold" style={{ color: c.color }}>
-            {c.value}
-          </p>
-          <p className="text-xs mt-1" style={{ color: c.color }}>
-            {c.sub}
-          </p>
-        </div>
+        <Card key={c.label} accent={c.color} padding="md">
+          <div
+            style={{ background: `radial-gradient(circle at 0% 0%, ${c.color}08 0%, transparent 50%)` }}
+            className="rounded-lg -m-1 p-1"
+          >
+            <p className="text-[11px] text-txt-muted mb-2 uppercase tracking-wider">{c.label}</p>
+            <p className="text-2xl font-bold font-mono tabular-nums" style={{ color: c.color }}>
+              {c.value}
+            </p>
+            <p className="text-xs mt-1" style={{ color: c.color }}>
+              {c.sub}
+            </p>
+          </div>
+        </Card>
       ))}
     </div>
   );

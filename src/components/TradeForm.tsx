@@ -6,6 +6,10 @@ import type { Signal } from "@/lib/mock-data";
 import type { SoDEXTicker, SoDEXNewOrderRequest, SoDEXBalance } from "@/lib/sodex-types";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import { buildOrderTypedData } from "@/lib/eip712";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import { CloseIcon } from "@/components/ui/icons";
 
 interface Props {
   signal: Signal | null;
@@ -31,7 +35,6 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
   const [success, setSuccess] = useState<string | null>(null);
   const { signTypedDataAsync } = useSignTypedData();
 
-  // Balance state
   const [balances, setBalances] = useState<SoDEXBalance[]>([]);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [balanceError, setBalanceError] = useState<string | null>(null);
@@ -72,15 +75,12 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
   const fee = notional * 0.001;
   const side = signal.action === "SELL" ? "SELL" : "BUY";
 
-  // Find relevant balance
   const balanceAsset = side === "BUY" ? quoteCoin : baseCoin;
   const balance = balances.find(
     (b) => b.asset.toUpperCase() === balanceAsset.toUpperCase(),
   );
   const freeBalance = balance ? parseFloat(String(balance.free)) : 0;
-  const lockedBalance = balance ? parseFloat(String(balance.locked)) : 0;
 
-  // Max quantity based on balance and side
   const maxQty =
     side === "BUY"
       ? price > 0 ? freeBalance / price : 0
@@ -150,58 +150,57 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div
-        className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <Card
+        padding="lg"
+        className="w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto animate-fade-in"
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-base">Execute Trade</h3>
-          <button onClick={onClose} className="text-[#666677] hover:text-white text-lg leading-none">
-            &times;
+          <h3 className="font-semibold text-base text-txt-primary">Execute Trade</h3>
+          <button onClick={onClose} className="text-txt-muted hover:text-txt-primary">
+            <CloseIcon size={18} />
           </button>
         </div>
 
         {/* Signal info */}
-        <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-3 mb-4 space-y-1.5">
+        <Card variant="inset" padding="md" className="mb-4 space-y-1.5">
           <div className="flex justify-between text-xs">
-            <span className="text-[#666677]">Pair</span>
-            <span className="text-white font-semibold">{signal.pair}</span>
+            <span className="text-txt-muted">Pair</span>
+            <span className="text-txt-primary font-semibold">{signal.pair}</span>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-[#666677]">Action</span>
-            <span className={`font-bold ${side === "BUY" ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
-              {side}
-            </span>
+            <span className="text-txt-muted">Action</span>
+            <Badge variant={side === "BUY" ? "buy" : "sell"} size="sm">{side}</Badge>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-[#666677]">Price</span>
-            <span className="text-white font-mono">${formatPrice(price)}</span>
+            <span className="text-txt-muted">Price</span>
+            <span className="text-txt-primary font-mono">${formatPrice(price)}</span>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-[#666677]">Confidence</span>
-            <span className="text-[#00ff88]">{signal.confidence}%</span>
+            <span className="text-txt-muted">Confidence</span>
+            <span className="text-buy font-semibold">{signal.confidence}%</span>
           </div>
-        </div>
+        </Card>
 
         {/* Wallet Balance */}
         {walletConnected && (
-          <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-3 mb-4 space-y-1.5">
+          <Card variant="inset" padding="md" className="mb-4 space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-[#666677]">Wallet Balance</span>
+              <span className="text-[10px] text-txt-muted">Wallet Balance</span>
               {balanceLoading && (
-                <span className="text-[10px] text-[#ff8800] animate-pulse">Loading...</span>
+                <span className="text-[10px] text-warning animate-pulse">Loading...</span>
               )}
               {balanceError && (
-                <span className="text-[10px] text-[#ff4444]">{balanceError}</span>
+                <span className="text-[10px] text-error">{balanceError}</span>
               )}
               {!balanceLoading && !balanceError && balances.length === 0 && (
-                <span className="text-[10px] text-[#666677]">No balances found</span>
+                <span className="text-[10px] text-txt-muted">No balances found</span>
               )}
               <button
                 onClick={fetchBalances}
-                className="text-[10px] text-[#7b2fff] hover:text-[#9b4fff] transition-colors"
+                className="text-[10px] text-accent hover:opacity-80"
               >
                 Refresh
               </button>
@@ -215,18 +214,18 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
                     <div
                       key={b.asset}
                       className={`flex justify-between text-xs rounded p-1.5 ${
-                        isRelevant ? "bg-[#7b2fff15] border border-[#7b2fff20]" : ""
+                        isRelevant ? "bg-accent-muted border border-accent-dim" : ""
                       }`}
                     >
-                      <span className={isRelevant ? "text-white font-semibold" : "text-[#888888]"}>
+                      <span className={isRelevant ? "text-txt-primary font-semibold" : "text-txt-tertiary"}>
                         {b.asset}
                       </span>
                       <div className="flex gap-3">
-                        <span className={isRelevant ? "text-white font-mono" : "text-[#666677] font-mono"}>
+                        <span className={isRelevant ? "text-txt-primary font-mono" : "text-txt-muted font-mono"}>
                           {parseFloat(String(b.free)).toLocaleString(undefined, { maximumFractionDigits: 6 })}
                         </span>
                         {parseFloat(String(b.locked)) > 0 && (
-                          <span className="text-[#ff8800] text-[10px]">
+                          <span className="text-warning text-[10px]">
                             ({parseFloat(String(b.locked)).toLocaleString(undefined, { maximumFractionDigits: 4 })} locked)
                           </span>
                         )}
@@ -237,28 +236,27 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
               </div>
             )}
 
-            {/* Available for this trade */}
             {freeBalance > 0 && (
-              <div className="pt-1.5 mt-1 border-t border-[#1a1a2e] flex justify-between">
-                <span className="text-[10px] text-[#666677]">
+              <div className="pt-1.5 mt-1 border-t border-border-default flex justify-between">
+                <span className="text-[10px] text-txt-muted">
                   Available ({side === "BUY" ? quoteCoin : baseCoin})
                 </span>
-                <span className="text-[10px] text-white font-mono font-semibold">
+                <span className="text-[10px] text-txt-primary font-mono font-semibold">
                   {freeBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })} {balanceAsset}
                   {side === "BUY" && price > 0 && (
-                    <span className="text-[#666677] ml-1">
+                    <span className="text-txt-muted ml-1">
                       (~{(freeBalance / price).toFixed(6)} {baseCoin})
                     </span>
                   )}
                 </span>
               </div>
             )}
-          </div>
+          </Card>
         )}
 
         {/* Quantity input */}
         <div className="mb-4">
-          <label className="text-xs text-[#666677] mb-1.5 block">Quantity ({baseCoin})</label>
+          <label className="text-xs text-txt-muted mb-1.5 block">Quantity ({baseCoin})</label>
           <input
             type="number"
             value={quantity}
@@ -266,17 +264,16 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
             placeholder="0.00"
             step={price >= 1000 ? "0.0001" : price >= 1 ? "0.01" : "0.1"}
             min={0}
-            className="w-full bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-[#7b2fff] transition-colors"
+            className="w-full bg-inset border border-border-default rounded-lg px-3 py-2 text-sm text-txt-primary font-mono focus:outline-none focus:border-accent"
           />
 
-          {/* Percentage quick buttons */}
           {maxQty > 0 && (
             <div className="flex gap-2 mt-2">
               {PCT_OPTIONS.map((pct) => (
                 <button
                   key={pct}
                   onClick={() => handlePercent(pct)}
-                  className="flex-1 py-1.5 text-[10px] font-semibold rounded-lg bg-[#0d0d1a] border border-[#1a1a2e] text-[#7b2fff] hover:bg-[#7b2fff15] hover:border-[#7b2fff40] transition-colors"
+                  className="flex-1 py-1.5 text-[10px] font-semibold rounded-lg bg-inset border border-border-default text-accent hover:bg-accent-muted hover:border-accent-dim"
                 >
                   {pct}%
                 </button>
@@ -287,61 +284,59 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
 
         {/* Order summary */}
         {quantity && (
-          <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-2.5 mb-4 space-y-1 text-xs">
+          <Card variant="inset" padding="sm" className="mb-4 space-y-1 text-xs">
             <div className="flex justify-between">
-              <span className="text-[#666677]">Est. Cost</span>
-              <span className="text-white font-mono">
-                ${formatPrice(notional)}{" "}
-                <span className="text-[#666677]">{quoteCoin}</span>
+              <span className="text-txt-muted">Est. Cost</span>
+              <span className="text-txt-primary font-mono">
+                ${formatPrice(notional)} <span className="text-txt-muted">{quoteCoin}</span>
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#666677]">Est. Fee (0.1%)</span>
-              <span className="text-[#666677] font-mono">
+              <span className="text-txt-muted">Est. Fee (0.1%)</span>
+              <span className="text-txt-muted font-mono">
                 ${formatPrice(fee)} {quoteCoin}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#666677]">Balance After</span>
-              <span className={`font-mono ${notional > freeBalance ? "text-[#ff4444]" : "text-[#aaaaaa]"}`}>
+              <span className="text-txt-muted">Balance After</span>
+              <span className={`font-mono ${notional > freeBalance ? "text-error" : "text-txt-secondary"}`}>
                 ${formatPrice(Math.max(0, freeBalance - notional))} {quoteCoin}
               </span>
             </div>
             {!walletConnected && (
-              <p className="text-[10px] text-[#ff8800] mt-1">Connect wallet to execute trades</p>
+              <p className="text-[10px] text-warning mt-1">Connect wallet to execute trades</p>
             )}
-          </div>
+          </Card>
         )}
 
         {/* Error / Success */}
         {error && (
-          <div className="mb-3 p-2.5 rounded-lg bg-[#ff444415] border border-[#ff444430] text-xs text-[#ff4444]">
-            {error}
-          </div>
+          <Card variant="inset" padding="sm" className="mb-3 bg-sell-muted border-sell-dim">
+            <p className="text-xs text-error">{error}</p>
+          </Card>
         )}
         {success && (
-          <div className="mb-3 p-2.5 rounded-lg bg-[#00ff8815] border border-[#00ff8830] text-xs text-[#00ff88]">
-            {success}
-          </div>
+          <Card variant="inset" padding="sm" className="mb-3 bg-buy-muted border-buy-dim">
+            <p className="text-xs text-buy">{success}</p>
+          </Card>
         )}
 
         {/* Execute button */}
-        <button
+        <Button
+          variant="primary"
+          size="lg"
+          className="w-full"
           onClick={handleExecute}
           disabled={!walletConnected || !quantity || submitting}
-          className="w-full py-2.5 text-sm font-bold rounded-lg bg-[#7b2fff] text-white hover:bg-[#6a1fee] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          loading={submitting}
         >
-          {submitting
-            ? "Signing..."
-            : !walletConnected
-              ? "Connect Wallet to Execute"
-              : "Sign & Submit"}
-        </button>
+          {!walletConnected ? "Connect Wallet to Execute" : "Sign & Submit"}
+        </Button>
 
-        <p className="text-center text-[10px] text-[#444455] mt-3">
+        <p className="text-center text-[10px] text-txt-faint mt-3">
           SoDEX Mainnet — EIP-712 signing required
         </p>
-      </div>
+      </Card>
     </div>
   );
 }

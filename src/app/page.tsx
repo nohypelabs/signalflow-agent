@@ -17,6 +17,7 @@ import DocsPage from "@/components/DocsPage";
 import TradeForm from "@/components/TradeForm";
 import OpenOrders from "@/components/OpenOrders";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import AISignalGenerator from "@/components/AISignalGenerator";
 import { Signal, signals } from "@/lib/mock-data";
 import { useMarket } from "@/lib/use-market";
 import { useSignals } from "@/lib/use-signals";
@@ -123,6 +124,16 @@ export default function Home() {
         sodexStatus={sodexStatus}
         tickerCount={tickers?.length}
         onMenuToggle={() => setMobileMenuOpen(true)}
+        btcPrice={(() => {
+          const t = tickerMap.get("vBTC_vUSDC");
+          return t ? `$${parseFloat(t.lastPx).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : undefined;
+        })()}
+        btcChange={(() => {
+          const t = tickerMap.get("vBTC_vUSDC");
+          if (!t) return undefined;
+          const pct = t.changePct;
+          return typeof pct === "number" && !Number.isNaN(pct) ? pct : undefined;
+        })()}
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
@@ -144,59 +155,25 @@ export default function Home() {
                 />
               </div>
               {/* AI Signal Generator */}
-              <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-4">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="text-sm font-semibold text-white">AI Signal Generator</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#7b2fff20] text-[#7b2fff] border border-[#7b2fff30]">
-                    {aiProviderLabel} {aiConfig.model ? `/ ${aiConfig.model}` : ""}
-                  </span>
-                  <select
-                    value={aiCoin}
-                    onChange={(e) => setAiCoin(e.target.value)}
-                    className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg px-3 py-1.5 text-xs text-white"
-                  >
-                    {["BTC", "ETH", "SOL"].map((c) => (
-                      <option key={c} value={c}>{c}/USDC</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={async () => {
-                      const signal = await generate(aiCoin);
-                      if (signal) recordSignal(signal);
-                    }}
-                    disabled={analyzing}
-                    className="px-4 py-1.5 text-xs font-bold rounded-lg bg-[#7b2fff] text-white hover:bg-[#6a1fee] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {analyzing ? "Analyzing..." : "Generate Signal"}
-                  </button>
-                  {aiSignal && (
-                    <>
-                      <button
-                        onClick={() => {
-                          setSelectedSignal(aiSignal);
-                        }}
-                        className="px-3 py-1.5 text-[10px] rounded-lg bg-[#00ff8820] text-[#00ff88] border border-[#00ff8830] hover:bg-[#00ff8830] transition-colors"
-                      >
-                        Pin to Compare
-                      </button>
-                      <button
-                        onClick={() => handleExecuteSignal(aiSignal)}
-                        className="px-3 py-1.5 text-[10px] rounded-lg bg-[#7b2fff20] text-[#7b2fff] border border-[#7b2fff30] hover:bg-[#7b2fff30] transition-colors"
-                      >
-                        Execute Trade
-                      </button>
-                    </>
-                  )}
-                </div>
-                {aiError && (
-                  <p className="mt-2 text-xs text-[#ff4444]">{aiError}</p>
-                )}
-                {aiSignal && (
-                  <p className="mt-2 text-xs text-[#00ff88]">
-                    AI signal ready: {aiSignal.action} {aiSignal.pair} @ {aiSignal.confidence}% confidence
-                  </p>
-                )}
-              </div>
+              <AISignalGenerator
+                aiConfig={aiConfig}
+                aiProviderLabel={aiProviderLabel}
+                aiCoin={aiCoin}
+                onCoinChange={setAiCoin}
+                analyzing={analyzing}
+                aiSignal={aiSignal}
+                aiError={aiError}
+                onGenerate={async () => {
+                  const signal = await generate(aiCoin);
+                  if (signal) recordSignal(signal);
+                }}
+                onPinSignal={() => {
+                  if (aiSignal) setSelectedSignal(aiSignal);
+                }}
+                onExecuteSignal={() => {
+                  if (aiSignal) handleExecuteSignal(aiSignal);
+                }}
+              />
               <AIReasoning signal={displaySignal} liveDims={liveDims} />
               <DataSources />
             </>
@@ -215,25 +192,25 @@ export default function Home() {
           {activeMenu === "Trading" && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold">Trading</h2>
-                <span className="text-[10px] px-1.5 py-0.5 bg-[#00ff8815] text-[#00ff88] border border-[#00ff8830] rounded">
+                <h2 className="text-lg font-bold text-txt-primary">Trading</h2>
+                <span className="text-[10px] px-1.5 py-0.5 bg-buy-muted text-buy border border-buy-dim rounded">
                   LIVE
                 </span>
                 {!isConnected && (
-                  <span className="text-[10px] text-[#ff8800]">— Connect wallet to trade</span>
+                  <span className="text-[10px] text-hold">&mdash; Connect wallet to trade</span>
                 )}
                 {isConnected && (
-                  <span className="text-[10px] text-[#666677]">
-                    — {address?.slice(0, 6)}...{address?.slice(-4)}
+                  <span className="text-[10px] text-txt-muted">
+                    &mdash; {address?.slice(0, 6)}...{address?.slice(-4)}
                   </span>
                 )}
               </div>
 
               {/* Signals to execute */}
-              <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-4">
-                <h3 className="font-semibold text-sm mb-3">Execute Signals</h3>
+              <div className="bg-card border border-border-default rounded-xl p-4">
+                <h3 className="font-semibold text-sm mb-3 text-txt-primary">Execute Signals</h3>
                 {!isConnected && (
-                  <p className="text-xs text-[#ff8800] mb-3">Connect wallet to execute trades on SoDEX</p>
+                  <p className="text-xs text-hold mb-3">Connect wallet to execute trades on SoDEX</p>
                 )}
                 <div className="flex flex-col gap-2">
                   {signals.map((s, i) => {
@@ -244,18 +221,18 @@ export default function Home() {
                     return (
                       <div
                         key={i}
-                        className="flex items-center justify-between p-3 rounded-lg border border-[#1a1a2e] hover:bg-[#1a1a2e40] transition-colors"
+                        className="flex items-center justify-between p-3 rounded-lg border border-border-default hover:bg-elevated transition-colors"
                       >
                         <div className="flex items-center gap-3">
-                          <span className="text-sm font-semibold text-white">{s.pair}</span>
-                          <span className={`text-xs font-bold ${s.action === "BUY" ? "text-[#00ff88]" : s.action === "SELL" ? "text-[#ff4444]" : "text-[#ff8800]"}`}>
+                          <span className="text-sm font-semibold text-txt-primary">{s.pair}</span>
+                          <span className={`text-xs font-bold ${s.action === "BUY" ? "text-buy" : s.action === "SELL" ? "text-sell" : "text-hold"}`}>
                             {s.action}
                           </span>
-                          <span className="text-[11px] text-[#666677] font-mono">
+                          <span className="text-[11px] text-txt-muted font-mono">
                             ${livePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </span>
                           <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                            s.confidence >= 80 ? "bg-[#00ff8820] text-[#00ff88]" : "bg-[#ff880020] text-[#ff8800]"
+                            s.confidence >= 80 ? "bg-buy-muted text-buy" : "bg-hold-muted text-hold"
                           }`}>
                             {s.confidence}%
                           </span>
@@ -265,8 +242,8 @@ export default function Home() {
                           disabled={!isConnected || hasOpenOrder}
                           className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
                             !isConnected || hasOpenOrder
-                              ? "bg-[#ffffff05] text-[#444455] cursor-not-allowed"
-                              : "bg-[#7b2fff] text-white hover:bg-[#6a1fee]"
+                              ? "bg-inset text-txt-dim cursor-not-allowed"
+                              : "bg-accent text-white hover:bg-[#6a1fee]"
                           }`}
                         >
                           {!isConnected ? "Connect Wallet" : hasOpenOrder ? "Order Open" : "Execute"}
@@ -316,9 +293,9 @@ export default function Home() {
 
           {activeMenu === "Docs" && <DocsPage />}
 
-          <footer className="text-center text-[11px] text-[#444455] py-4 border-t border-[#1a1a2e] mt-auto">
-            <p>SignalFlow Agent — Built by <span className="text-[#666677]">NoHype Labs</span></p>
-            <p className="mt-0.5 text-[#333344]">SoSoValue Buildathon 2026 — Wave 2</p>
+          <footer className="text-center text-[11px] text-txt-dim py-4 border-t border-border-default mt-auto">
+            <p>SignalFlow Agent — Built by <span className="text-txt-muted">NoHype Labs</span></p>
+            <p className="mt-0.5 text-txt-faint">SoSoValue Buildathon 2026 — Wave 2</p>
           </footer>
         </main>
       </div>

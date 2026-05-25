@@ -4,6 +4,12 @@ import { useState } from "react";
 import { signals, type Signal } from "@/lib/mock-data";
 import type { SoDEXTicker, SoDEXOrder } from "@/lib/sodex-types";
 import { pairToSodexSymbol } from "@/lib/pair-map";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import Skeleton from "@/components/ui/Skeleton";
+import EmptyState from "@/components/ui/EmptyState";
+import PageHeader from "@/components/ui/PageHeader";
 
 interface Props {
   orders: SoDEXOrder[];
@@ -16,14 +22,14 @@ interface Props {
 
 type Tab = "open" | "filled" | "signals";
 
-function statusColor(status: string) {
+function statusVariant(status: string): string {
   switch (status) {
-    case "NEW": return "text-[#00d4ff]";
-    case "FILLED": return "text-[#00ff88]";
-    case "PARTIALLY_FILLED": return "text-[#ff8800]";
-    case "CANCELLED": return "text-[#ff4444]";
-    case "REJECTED": return "text-[#ff4444]";
-    default: return "text-[#666677]";
+    case "NEW": return "info";
+    case "FILLED": return "live";
+    case "PARTIALLY_FILLED": return "warning";
+    case "CANCELLED": return "error";
+    case "REJECTED": return "error";
+    default: return "muted";
   }
 }
 
@@ -58,43 +64,38 @@ export default function TradeHistory({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <h2 className="text-lg font-bold">Trade History</h2>
-        <span className="text-[10px] px-1.5 py-0.5 bg-[#00ff8815] text-[#00ff88] border border-[#00ff8830] rounded">
-          LIVE
-        </span>
-      </div>
+      <PageHeader title="Trade History" badge={{ variant: "live", label: "LIVE" }} />
 
       {/* Summary bar */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-3">
-          <p className="text-[10px] text-[#666677]">Open Orders</p>
-          <p className="text-lg font-bold text-[#00d4ff]">{openOrders.length}</p>
-        </div>
-        <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-3">
-          <p className="text-[10px] text-[#666677]">Filled</p>
-          <p className="text-lg font-bold text-[#00ff88]">{filledOrders.length}</p>
-        </div>
-        <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-3">
-          <p className="text-[10px] text-[#666677]">Total Orders</p>
-          <p className="text-lg font-bold text-white">{orders.length}</p>
-        </div>
-        <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-3">
-          <p className="text-[10px] text-[#666677]">Signals</p>
-          <p className="text-lg font-bold text-[#7b2fff]">{signals.length}</p>
-        </div>
+        <Card padding="sm" accent="var(--color-info)">
+          <p className="text-[10px] text-txt-muted uppercase tracking-wider">Open Orders</p>
+          <p className="text-xl font-bold font-mono text-info">{openOrders.length}</p>
+        </Card>
+        <Card padding="sm" accent="var(--color-buy)">
+          <p className="text-[10px] text-txt-muted uppercase tracking-wider">Filled</p>
+          <p className="text-xl font-bold font-mono text-buy">{filledOrders.length}</p>
+        </Card>
+        <Card padding="sm">
+          <p className="text-[10px] text-txt-muted uppercase tracking-wider">Total Orders</p>
+          <p className="text-xl font-bold font-mono text-txt-primary">{orders.length}</p>
+        </Card>
+        <Card padding="sm" accent="var(--accent-primary)">
+          <p className="text-[10px] text-txt-muted uppercase tracking-wider">Signals</p>
+          <p className="text-xl font-bold font-mono text-accent">{signals.length}</p>
+        </Card>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#0d0d1a] rounded-lg p-1 w-fit">
+      <div className="flex gap-1 bg-inset rounded-lg p-1 w-fit">
         {(["open", "filled", "signals"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-3 py-1 text-xs rounded-md transition-colors ${
+            className={`px-3 py-1.5 text-xs rounded-md font-medium ${
               tab === t
-                ? "bg-[#7b2fff] text-white font-semibold"
-                : "text-[#666677] hover:text-white"
+                ? "bg-accent text-white"
+                : "text-txt-muted hover:text-txt-secondary"
             }`}
           >
             {t === "open" ? `Open (${openOrders.length})` : t === "filled" ? `History (${historyOrders.length})` : `Signals (${signals.length})`}
@@ -103,19 +104,21 @@ export default function TradeHistory({
       </div>
 
       {/* Content */}
-      <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl overflow-hidden">
+      <Card padding="none" className="overflow-hidden">
         {/* Loading */}
         {ordersLoading && (
-          <div className="px-4 py-10 text-center">
-            <p className="text-sm text-[#ff8800] animate-pulse">Loading orders...</p>
+          <div className="p-4 space-y-3">
+            <Skeleton variant="table-row" />
+            <Skeleton variant="table-row" />
+            <Skeleton variant="table-row" />
           </div>
         )}
 
         {/* Error */}
         {ordersError && !ordersLoading && (
           <div className="px-4 py-10 text-center">
-            <p className="text-sm text-[#ff4444]">{ordersError}</p>
-            <p className="text-[11px] text-[#666677] mt-1">Connect wallet and ensure SoDEX is reachable</p>
+            <p className="text-sm text-error">{ordersError}</p>
+            <p className="text-xs text-txt-muted mt-1">Connect wallet and ensure SoDEX is reachable</p>
           </div>
         )}
 
@@ -123,14 +126,11 @@ export default function TradeHistory({
         {!ordersLoading && !ordersError && tab === "open" && (
           <>
             {openOrders.length === 0 ? (
-              <div className="px-4 py-10 text-center">
-                <p className="text-sm text-[#666677]">No open orders</p>
-                <p className="text-[11px] text-[#444455] mt-1">Execute a signal from the Trading page to place an order</p>
-              </div>
+              <EmptyState title="No open orders" description="Execute a signal from the Trading page to place an order" />
             ) : (
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#1a1a2e] text-[#666677] text-xs">
+                  <tr className="border-b border-border-default text-txt-muted text-xs">
                     <th className="text-left p-3 font-medium">Symbol</th>
                     <th className="text-left p-3 font-medium">Side</th>
                     <th className="text-right p-3 font-medium">Qty</th>
@@ -142,25 +142,21 @@ export default function TradeHistory({
                 </thead>
                 <tbody>
                   {openOrders.map((o) => (
-                    <tr key={o.id} className="border-b border-[#1a1a2e] hover:bg-[#1a1a2e40]">
-                      <td className="p-3 font-semibold text-white">{o.symbol}</td>
-                      <td className={`p-3 font-bold text-xs ${o.side === "BUY" ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
-                        {o.side}
+                    <tr key={o.id} className="border-b border-border-default hover:bg-elevated">
+                      <td className="p-3 font-semibold text-txt-primary">{o.symbol}</td>
+                      <td className="p-3">
+                        <Badge variant={o.side === "BUY" ? "buy" : "sell"} size="sm">{o.side}</Badge>
                       </td>
-                      <td className="p-3 text-right text-[#aaaaaa]">{o.quantity}</td>
-                      <td className="p-3 text-right text-[#aaaaaa]">{o.price || "MARKET"}</td>
-                      <td className="p-3 text-right text-[#aaaaaa]">{o.executedQty || "0"}</td>
-                      <td className={`p-3 text-center font-semibold text-xs ${statusColor(o.status)}`}>
-                        {o.status}
+                      <td className="p-3 text-right text-txt-secondary">{o.quantity}</td>
+                      <td className="p-3 text-right text-txt-secondary font-mono">{o.price || "MARKET"}</td>
+                      <td className="p-3 text-right text-txt-secondary">{o.executedQty || "0"}</td>
+                      <td className="p-3 text-center">
+                        <Badge variant={statusVariant(o.status)} size="sm">{o.status}</Badge>
                       </td>
                       <td className="p-3 text-right">
-                        <button
-                          onClick={() => handleCancel(o.id)}
-                          disabled={cancelling === o.id}
-                          className="px-2 py-1 text-[10px] rounded bg-[#ff444415] text-[#ff4444] border border-[#ff444430] hover:bg-[#ff444425] disabled:opacity-50"
-                        >
+                        <Button variant="danger" size="sm" onClick={() => handleCancel(o.id)} disabled={cancelling === o.id}>
                           {cancelling === o.id ? "..." : "Cancel"}
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -174,14 +170,11 @@ export default function TradeHistory({
         {!ordersLoading && !ordersError && tab === "filled" && (
           <>
             {historyOrders.length === 0 ? (
-              <div className="px-4 py-10 text-center">
-                <p className="text-sm text-[#666677]">No order history yet</p>
-                <p className="text-[11px] text-[#444455] mt-1">Filled and cancelled orders will appear here</p>
-              </div>
+              <EmptyState title="No order history yet" description="Filled and cancelled orders will appear here" />
             ) : (
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#1a1a2e] text-[#666677] text-xs">
+                  <tr className="border-b border-border-default text-txt-muted text-xs">
                     <th className="text-left p-3 font-medium">Symbol</th>
                     <th className="text-left p-3 font-medium">Side</th>
                     <th className="text-right p-3 font-medium">Qty</th>
@@ -193,18 +186,18 @@ export default function TradeHistory({
                 </thead>
                 <tbody>
                   {historyOrders.map((o) => (
-                    <tr key={o.id} className="border-b border-[#1a1a2e] hover:bg-[#1a1a2e40]">
-                      <td className="p-3 font-semibold text-white">{o.symbol}</td>
-                      <td className={`p-3 font-bold text-xs ${o.side === "BUY" ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
-                        {o.side}
+                    <tr key={o.id} className="border-b border-border-default hover:bg-elevated">
+                      <td className="p-3 font-semibold text-txt-primary">{o.symbol}</td>
+                      <td className="p-3">
+                        <Badge variant={o.side === "BUY" ? "buy" : "sell"} size="sm">{o.side}</Badge>
                       </td>
-                      <td className="p-3 text-right text-[#aaaaaa]">{o.quantity}</td>
-                      <td className="p-3 text-right text-[#aaaaaa]">{o.price || "MARKET"}</td>
-                      <td className="p-3 text-right text-[#aaaaaa]">{o.executedQty || o.quantity}</td>
-                      <td className={`p-3 text-center font-semibold text-xs ${statusColor(o.status)}`}>
-                        {o.status}
+                      <td className="p-3 text-right text-txt-secondary">{o.quantity}</td>
+                      <td className="p-3 text-right text-txt-secondary font-mono">{o.price || "MARKET"}</td>
+                      <td className="p-3 text-right text-txt-secondary">{o.executedQty || o.quantity}</td>
+                      <td className="p-3 text-center">
+                        <Badge variant={statusVariant(o.status)} size="sm">{o.status}</Badge>
                       </td>
-                      <td className="p-3 text-right text-[#666677] text-xs">
+                      <td className="p-3 text-right text-txt-muted text-xs">
                         {new Date(o.updatedAt).toLocaleDateString()}
                       </td>
                     </tr>
@@ -219,7 +212,7 @@ export default function TradeHistory({
         {tab === "signals" && (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#1a1a2e] text-[#666677] text-xs">
+              <tr className="border-b border-border-default text-txt-muted text-xs">
                 <th className="text-left p-3 font-medium">Pair</th>
                 <th className="text-left p-3 font-medium">Action</th>
                 <th className="text-right p-3 font-medium">Price</th>
@@ -229,39 +222,30 @@ export default function TradeHistory({
             </thead>
             <tbody>
               {signals.map((s, i) => (
-                <tr key={i} className="border-b border-[#1a1a2e] hover:bg-[#1a1a2e40]">
-                  <td className="p-3 font-semibold text-white">{s.pair}</td>
+                <tr key={i} className="border-b border-border-default hover:bg-elevated">
+                  <td className="p-3 font-semibold text-txt-primary">{s.pair}</td>
                   <td className="p-3">
-                    <span className={`text-xs font-bold ${s.action === "BUY" ? "text-[#00ff88]" : s.action === "SELL" ? "text-[#ff4444]" : "text-[#ff8800]"}`}>
-                      {s.action}
-                    </span>
+                    <Badge variant={s.action.toLowerCase()} size="sm">{s.action}</Badge>
                   </td>
-                  <td className="p-3 text-right text-[#aaaaaa]">
+                  <td className="p-3 text-right text-txt-secondary font-mono">
                     ${s.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </td>
                   <td className="p-3 text-right">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                      s.confidence >= 80 ? "bg-[#00ff8820] text-[#00ff88]" : "bg-[#ff880020] text-[#ff8800]"
-                    }`}>
-                      {s.confidence}%
-                    </span>
+                    <Badge variant={s.confidence >= 80 ? "live" : "warning"} size="sm">{s.confidence}%</Badge>
                   </td>
                   <td className="p-3 text-right">
-                    <button
-                      onClick={() => onExecuteSignal(s)}
-                      className="px-2.5 py-1 text-[10px] rounded font-semibold bg-[#7b2fff20] text-[#7b2fff] border border-[#7b2fff30] hover:bg-[#7b2fff30] transition-colors"
-                    >
+                    <Button variant="secondary" size="sm" onClick={() => onExecuteSignal(s)}>
                       Execute
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-      </div>
+      </Card>
 
-      <p className="text-[10px] text-[#333344] text-right">
+      <p className="text-[10px] text-txt-faint text-right">
         SoDEX — real orders on ValueChain
       </p>
     </div>

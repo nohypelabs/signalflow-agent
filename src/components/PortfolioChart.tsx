@@ -2,6 +2,7 @@
 
 import { portfolioData } from "@/lib/mock-data";
 import type { SoDEXKline } from "@/lib/sodex-types";
+import Card from "@/components/ui/Card";
 
 interface Props {
   klines?: SoDEXKline[] | null;
@@ -50,36 +51,50 @@ export default function PortfolioChart({ klines, symbol, currentPrice }: Props) 
     : "Last 30 days";
 
   return (
-    <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-4 flex-1 flex flex-col min-w-0">
+    <Card padding="md" className="flex-1 flex flex-col min-w-0">
       {/* Header */}
       <div className="flex items-center justify-between mb-2 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <h3 className="font-semibold text-sm truncate">{label}</h3>
           {useReal && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#ffffff08] text-[#666677] shrink-0">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-inset text-txt-muted shrink-0">
               {new Date(klines[0].t).toLocaleDateString(undefined, { month: "short", day: "numeric" })} – {new Date(klines[klines.length - 1].t).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
             </span>
           )}
         </div>
         <div className="flex items-center gap-3 text-xs shrink-0">
-          <span className="font-mono font-semibold text-white">
+          <span className="font-mono font-semibold text-txt-primary">
             {formatPrice(latest)}
           </span>
-          <span className={`font-mono text-[11px] ${isUp ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
+          <span className={`font-mono text-[11px] ${isUp ? "text-buy" : "text-sell"}`}>
             {isUp ? "+" : ""}{formatPrice(change)} ({isUp ? "+" : ""}{changePct.toFixed(2)}%)
           </span>
         </div>
       </div>
 
+      {/* Time period row */}
+      <div className="flex items-center gap-1 mb-2 shrink-0">
+        {["1D", "1W", "1M", "ALL"].map((p, i) => (
+          <span
+            key={p}
+            className={`text-[10px] px-1.5 py-0.5 rounded cursor-default ${
+              i === 2 ? "text-accent" : "text-txt-dim hover:text-txt-secondary"
+            }`}
+          >
+            {p}
+          </span>
+        ))}
+      </div>
+
       {/* Chart */}
       <svg
         viewBox={`0 0 ${vbW} ${vbH}`}
-        className="w-full flex-1 min-h-0"
+        className="w-full flex-1 min-h-0 cursor-crosshair"
         preserveAspectRatio="xMidYMid meet"
       >
         <defs>
           <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={isUp ? "#00ff88" : "#ff4444"} stopOpacity="0.15" />
+            <stop offset="0%" stopColor={isUp ? "#00ff88" : "#ff4444"} stopOpacity="0.20" />
             <stop offset="100%" stopColor={isUp ? "#00ff88" : "#ff4444"} stopOpacity="0.0" />
           </linearGradient>
         </defs>
@@ -90,8 +105,8 @@ export default function PortfolioChart({ klines, symbol, currentPrice }: Props) 
           const price = max - (i / gridLines) * range;
           return (
             <g key={i}>
-              <line x1={0} y1={y} x2={plotW} y2={y} stroke="#ffffff" strokeWidth="0.5" opacity="0.06" />
-              <text x={plotW + 4} y={y + 3} fill="#555566" fontSize="9">
+              <line x1={0} y1={y} x2={plotW} y2={y} stroke="var(--text-dim)" strokeWidth="0.5" opacity="0.15" />
+              <text x={plotW + 4} y={y + 3} fill="var(--text-muted)" fontSize="9">
                 {formatPrice(price)}
               </text>
             </g>
@@ -105,13 +120,14 @@ export default function PortfolioChart({ klines, symbol, currentPrice }: Props) 
         <path d={linePath} fill="none" stroke={isUp ? "#00ff88" : "#ff4444"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Latest price dot */}
-        <circle cx={scaleX(values.length - 1)} cy={scaleY(latest)} r="3.5" fill={isUp ? "#00ff88" : "#ff4444"} stroke="#12122a" strokeWidth="2" />
+        <circle cx={scaleX(values.length - 1)} cy={scaleY(latest)} r="3.5" fill={isUp ? "#00ff88" : "#ff4444"} stroke="var(--bg-card)" strokeWidth="2" />
+        <circle cx={scaleX(values.length - 1)} cy={scaleY(latest)} r="6" fill="none" stroke={isUp ? "#00ff88" : "#ff4444"} strokeWidth="1" opacity="0.2" />
 
         {/* Time labels */}
         {useReal && [0, Math.floor((klines.length - 1) / 2), klines.length - 1].map((kIdx) => {
           const vIdx = currentPrice != null && kIdx === klines.length - 1 ? values.length - 1 : kIdx;
           return (
-            <text key={kIdx} x={scaleX(vIdx)} y={vbH - 3} fill="#555566" fontSize="9" textAnchor="middle">
+            <text key={kIdx} x={scaleX(vIdx)} y={vbH - 3} fill="var(--text-muted)" fontSize="9" textAnchor="middle">
               {new Date(klines[kIdx].t).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
             </text>
           );
@@ -123,12 +139,12 @@ export default function PortfolioChart({ klines, symbol, currentPrice }: Props) 
         )}
         {!useReal && (
           <>
-            <text x={scaleX(0)} y={vbH - 3} fill="#555566" fontSize="9" textAnchor="middle">Day 1</text>
-            <text x={scaleX(14)} y={vbH - 3} fill="#555566" fontSize="9" textAnchor="middle">Day 15</text>
-            <text x={scaleX(29)} y={vbH - 3} fill="#555566" fontSize="9" textAnchor="middle">Day 30</text>
+            <text x={scaleX(0)} y={vbH - 3} fill="var(--text-muted)" fontSize="9" textAnchor="middle">Day 1</text>
+            <text x={scaleX(14)} y={vbH - 3} fill="var(--text-muted)" fontSize="9" textAnchor="middle">Day 15</text>
+            <text x={scaleX(29)} y={vbH - 3} fill="var(--text-muted)" fontSize="9" textAnchor="middle">Day 30</text>
           </>
         )}
       </svg>
-    </div>
+    </Card>
   );
 }

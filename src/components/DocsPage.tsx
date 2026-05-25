@@ -23,8 +23,8 @@ export default function DocsPage() {
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-full">
       {/* Sidebar nav */}
-      <nav className="lg:w-48 shrink-0 bg-[#0c0c18] border border-[#1a1a2e] rounded-xl p-3 lg:max-h-[calc(100vh-120px)] overflow-y-auto">
-        <h3 className="text-xs font-bold text-[#666677] uppercase tracking-wider mb-3 px-2">
+      <nav className="lg:w-48 shrink-0 bg-[#0c0c18] border border-border-default rounded-xl p-3 lg:max-h-[calc(100vh-120px)] overflow-y-auto">
+        <h3 className="text-xs font-bold text-txt-muted uppercase tracking-wider mb-3 px-2">
           Documentation
         </h3>
         {sections.map((s) => (
@@ -33,8 +33,8 @@ export default function DocsPage() {
             onClick={() => setActive(s)}
             className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors mb-0.5 ${
               active === s
-                ? "text-white font-semibold bg-[#7b2fff20] border-l-[3px] border-[#7b2fff]"
-                : "text-[#666677] hover:text-white hover:bg-[#ffffff05]"
+                ? "text-white font-semibold bg-accent-muted border-l-[3px] border-[#7b2fff]"
+                : "text-txt-muted hover:text-white hover:bg-[#ffffff05]"
             }`}
           >
             {s}
@@ -43,7 +43,7 @@ export default function DocsPage() {
       </nav>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto bg-[#12122a] border border-[#1a1a2e] rounded-xl p-6 lg:p-8">
+      <div className="flex-1 overflow-y-auto bg-card border border-border-default rounded-xl p-6 lg:p-8">
         {active === "Overview" && <Overview />}
         {active === "Getting Started" && <GettingStarted />}
         {active === "Architecture" && <Architecture />}
@@ -68,7 +68,7 @@ function Overview() {
     <div className="prose prose-invert max-w-none space-y-6">
       <div className="flex items-center gap-3 mb-6">
         <h2 className="text-2xl font-bold text-white m-0">SignalFlow Agent</h2>
-        <span className="text-[10px] px-2 py-0.5 rounded bg-[#7b2fff20] text-[#7b2fff] border border-[#7b2fff30]">
+        <span className="text-[10px] px-2 py-0.5 rounded bg-accent-muted text-accent border border-accent-dim">
           Wave 2
         </span>
       </div>
@@ -124,7 +124,7 @@ function Overview() {
 
       <table className="w-full text-sm mt-3 border-collapse">
         <thead>
-          <tr className="border-b border-[#1a1a2e] text-[#666677] text-left">
+          <tr className="border-b border-border-default text-txt-muted text-left">
             <th className="py-2 pr-4">Network</th>
             <th className="py-2 pr-4">Chain ID</th>
             <th className="py-2 pr-4">Native Token</th>
@@ -139,7 +139,7 @@ function Overview() {
             <td className="py-2 pr-4 text-white">SOSO</td>
             <td className="py-2 pr-4 font-mono text-[#aaaacc]">vBTC_vUSDC</td>
             <td className="py-2">
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#00ff8815] text-[#00ff88] border border-[#00ff8830]">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#00ff8815] text-buy border border-buy-dim">
                 LIVE
               </span>
             </td>
@@ -150,7 +150,7 @@ function Overview() {
       <h3 className="text-lg font-bold text-white mt-8">Stack</h3>
       <div className="flex flex-wrap gap-2 mt-2">
         {["Next.js 16", "React 19", "Tailwind CSS v4", "TypeScript 5", "wagmi v3", "viem", "WalletConnect v2", "@tanstack/react-query", "Vercel"].map((t) => (
-          <span key={t} className="text-xs px-2 py-1 rounded bg-[#1a1a2e] text-[#aaaacc] border border-[#1a1a2e]">
+          <span key={t} className="text-xs px-2 py-1 rounded bg-[#1a1a2e] text-[#aaaacc] border border-border-default">
             {t}
           </span>
         ))}
@@ -166,8 +166,8 @@ function GettingStarted() {
 
       <h3 className="text-lg font-bold text-white">Prerequisites</h3>
       <ul className="text-[#aaaacc] space-y-1">
-        <li><strong className="text-white">Node.js 18+</strong> — <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">node --version</code></li>
-        <li><strong className="text-white">pnpm</strong> — <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">npm install -g pnpm</code></li>
+        <li><strong className="text-white">Node.js 18+</strong> — <code className="text-accent bg-[#1a1a2e] px-1 rounded">node --version</code></li>
+        <li><strong className="text-white">pnpm</strong> — <code className="text-accent bg-[#1a1a2e] px-1 rounded">npm install -g pnpm</code></li>
         <li>A wallet with <strong className="text-white">SOSO on ValueChain mainnet</strong> for trading</li>
       </ul>
 
@@ -179,7 +179,7 @@ cp .env.example .env.local`}</CodeBlock>
 
       <h3 className="text-lg font-bold text-white mt-6">Environment Variables</h3>
       <p className="text-[#aaaacc]">
-        Create <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">.env.local</code> in the dashboard root:
+        Create <code className="text-accent bg-[#1a1a2e] px-1 rounded">.env.local</code> in the dashboard root:
       </p>
       <CodeBlock>{`# SoDEX — Sosovalue DEX
 SODEX_NETWORK=mainnet
@@ -204,7 +204,7 @@ pnpm lint      # ESLint check`}</CodeBlock>
       <h3 className="text-lg font-bold text-white mt-6">Environment Variable Reference</h3>
       <table className="w-full text-sm mt-3 border-collapse">
         <thead>
-          <tr className="border-b border-[#1a1a2e] text-[#666677] text-left">
+          <tr className="border-b border-border-default text-txt-muted text-left">
             <th className="py-2 pr-4">Variable</th>
             <th className="py-2 pr-4">Required</th>
             <th className="py-2">Description</th>
@@ -219,7 +219,7 @@ pnpm lint      # ESLint check`}</CodeBlock>
             ["NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID", "Optional", "Enables WalletConnect v2 for mobile trading"],
           ].map(([k, r, d]) => (
             <tr key={k} className="border-b border-[#1a1a2e10]">
-              <td className="py-2 pr-4 font-mono text-[#7b2fff] text-xs">{k}</td>
+              <td className="py-2 pr-4 font-mono text-accent text-xs">{k}</td>
               <td className="py-2 pr-4 text-[#aaaacc]">{r}</td>
               <td className="py-2 text-[#aaaacc]">{d}</td>
             </tr>
@@ -227,7 +227,7 @@ pnpm lint      # ESLint check`}</CodeBlock>
         </tbody>
       </table>
 
-      <div className="bg-[#7b2fff10] border border-[#7b2fff30] rounded-lg p-4 mt-6">
+      <div className="bg-[#7b2fff10] border border-accent-dim rounded-lg p-4 mt-6">
         <p className="text-sm text-[#aaaacc] m-0">
           <strong className="text-white">Graceful degradation:</strong> The app works without API keys —
           it falls back to mock data. Live data appears automatically when keys are configured.
@@ -244,13 +244,13 @@ function Architecture() {
 
       <p className="text-[#aaaacc]">
         SignalFlow Agent follows a <strong className="text-white">client-rendered SPA</strong> architecture
-        on Next.js 16 App Router. All components use <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">&quot;use client&quot;</code> —
-        routing is handled by <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">useState</code> in{" "}
-        <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">page.tsx</code>, not Next.js file-based routing.
+        on Next.js 16 App Router. All components use <code className="text-accent bg-[#1a1a2e] px-1 rounded">&quot;use client&quot;</code> —
+        routing is handled by <code className="text-accent bg-[#1a1a2e] px-1 rounded">useState</code> in{" "}
+        <code className="text-accent bg-[#1a1a2e] px-1 rounded">page.tsx</code>, not Next.js file-based routing.
       </p>
 
       <h3 className="text-lg font-bold text-white mt-6">Data Flow</h3>
-      <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-4 font-mono text-xs leading-relaxed">
+      <div className="bg-inset border border-border-default rounded-lg p-4 font-mono text-xs leading-relaxed">
         <pre className="text-[#aaaacc] whitespace-pre-wrap">{`External APIs → Server API Routes → Client Hooks → Components
                          (Next.js SSR proxy)   (React state)    (UI render)
 
@@ -353,8 +353,8 @@ function Architecture() {
           blind-signing attacks.
         </li>
         <li>
-          <strong className="text-white">Dual connector wallet.</strong> <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">injected()</code> for
-          desktop MetaMask and <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">walletConnect()</code> for mobile —
+          <strong className="text-white">Dual connector wallet.</strong> <code className="text-accent bg-[#1a1a2e] px-1 rounded">injected()</code> for
+          desktop MetaMask and <code className="text-accent bg-[#1a1a2e] px-1 rounded">walletConnect()</code> for mobile —
           auto-detected based on environment.
         </li>
         <li>
@@ -380,7 +380,7 @@ function SignalEngine() {
       <h3 className="text-lg font-bold text-white mt-6">Five Signal Dimensions</h3>
       <table className="w-full text-sm mt-3 border-collapse">
         <thead>
-          <tr className="border-b border-[#1a1a2e] text-[#666677] text-left">
+          <tr className="border-b border-border-default text-txt-muted text-left">
             <th className="py-2 pr-4">Dimension</th>
             <th className="py-2 pr-4">Source</th>
             <th className="py-2 pr-4">Weight</th>
@@ -397,7 +397,7 @@ function SignalEngine() {
           ].map(([d, s, w, desc]) => (
             <tr key={d} className="border-b border-[#1a1a2e10]">
               <td className="py-2 pr-4 text-white font-semibold">{d}</td>
-              <td className="py-2 pr-4 font-mono text-[#7b2fff] text-xs">{s}</td>
+              <td className="py-2 pr-4 font-mono text-accent text-xs">{s}</td>
               <td className="py-2 pr-4 text-[#aaaacc]">{w}</td>
               <td className="py-2 text-[#aaaacc]">{desc}</td>
             </tr>
@@ -465,8 +465,8 @@ function SignalEngine() {
         </li>
       </ol>
 
-      <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-4 mt-4">
-        <p className="text-xs text-[#666677] font-mono m-0">
+      <div className="bg-inset border border-border-default rounded-lg p-4 mt-4">
+        <p className="text-xs text-txt-muted font-mono m-0">
           Example: If ETF Flow scores 95 but Sentiment is 45 (std dev = 22), ETF Flow gets capped at
           8% and its excess 12% weight is redistributed to Sentiment, Macro, Momentum, and Treasury proportionally.
         </p>
@@ -475,7 +475,7 @@ function SignalEngine() {
       <h3 className="text-lg font-bold text-white mt-8">Weight Visibility</h3>
       <p className="text-[#aaaacc]">
         The Signals page displays <strong className="text-white">per-coin dynamic weights</strong> and
-        highlights <strong className="text-[#ff8800]">capped dimensions in amber</strong> so users can see
+        highlights <strong className="text-hold">capped dimensions in amber</strong> so users can see
         which data sources are being downweighted due to outlier behavior. The overall score and weight
         breakdown are visible for BTC, ETH, and SOL.
       </p>
@@ -501,7 +501,7 @@ function AIAgents() {
 
       <table className="w-full text-sm mt-3 border-collapse">
         <thead>
-          <tr className="border-b border-[#1a1a2e] text-[#666677] text-left">
+          <tr className="border-b border-border-default text-txt-muted text-left">
             <th className="py-2 pr-4">Provider</th>
             <th className="py-2 pr-4">Base URL</th>
             <th className="py-2 pr-4">Default Model</th>
@@ -516,7 +516,7 @@ function AIAgents() {
           ].map(([p, u, d, m]) => (
             <tr key={p} className="border-b border-[#1a1a2e10]">
               <td className="py-2 pr-4 text-white font-semibold">{p}</td>
-              <td className="py-2 pr-4 font-mono text-[#7b2fff] text-xs">{u}</td>
+              <td className="py-2 pr-4 font-mono text-accent text-xs">{u}</td>
               <td className="py-2 pr-4 font-mono text-[#aaaacc]">{d}</td>
               <td className="py-2 font-mono text-[#aaaacc] text-xs">{m}</td>
             </tr>
@@ -562,7 +562,7 @@ function AIAgents() {
 }`}</CodeBlock>
 
       <h3 className="text-lg font-bold text-white mt-8">AI Generation Flow</h3>
-      <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-4 font-mono text-xs leading-relaxed">
+      <div className="bg-inset border border-border-default rounded-lg p-4 font-mono text-xs leading-relaxed">
         <pre className="text-[#aaaacc] whitespace-pre-wrap">{`User clicks "Generate Signal" for BTC
         │
         ▼
@@ -590,7 +590,7 @@ Return enriched signal: { ...parsed, pair, price, sources[], generated }`}</pre>
 
       <h3 className="text-lg font-bold text-white mt-8">Response Processing</h3>
       <ul className="text-[#aaaacc] space-y-2">
-        <li>Markdown code fences (<code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">```json</code>) are stripped before parsing</li>
+        <li>Markdown code fences (<code className="text-accent bg-[#1a1a2e] px-1 rounded">```json</code>) are stripped before parsing</li>
         <li>Required fields (action, confidence, dimensions, execution) are validated</li>
         <li>Missing fields throw a 502 error with descriptive message</li>
         <li>AI-generated signal is tagged with the source data and generation timestamp</li>
@@ -634,7 +634,7 @@ function RiskEngine() {
       <h3 className="text-lg font-bold text-white mt-8">Heuristic Risk Controls</h3>
       <table className="w-full text-sm mt-3 border-collapse">
         <thead>
-          <tr className="border-b border-[#1a1a2e] text-[#666677] text-left">
+          <tr className="border-b border-border-default text-txt-muted text-left">
             <th className="py-2 pr-4">Control</th>
             <th className="py-2 pr-4">Mechanism</th>
             <th className="py-2">Purpose</th>
@@ -704,11 +704,11 @@ function DataPipeline() {
       <h4 className="text-md font-bold text-white mt-6">1. SoSoValue API</h4>
       <p className="text-[#aaaacc]">
         Primary market intelligence source. Server-side client at{" "}
-        <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">src/lib/sosovalue.ts</code>.
+        <code className="text-accent bg-[#1a1a2e] px-1 rounded">src/lib/sosovalue.ts</code>.
       </p>
       <table className="w-full text-sm mt-3 border-collapse">
         <thead>
-          <tr className="border-b border-[#1a1a2e] text-[#666677] text-left">
+          <tr className="border-b border-border-default text-txt-muted text-left">
             <th className="py-2 pr-4">Module</th>
             <th className="py-2 pr-4">Endpoint</th>
             <th className="py-2">Data</th>
@@ -729,7 +729,7 @@ function DataPipeline() {
           ].map(([m, e, d]) => (
             <tr key={m} className="border-b border-[#1a1a2e10]">
               <td className="py-2 pr-4 text-white font-semibold">{m}</td>
-              <td className="py-2 pr-4 font-mono text-[#7b2fff] text-xs">{e}</td>
+              <td className="py-2 pr-4 font-mono text-accent text-xs">{e}</td>
               <td className="py-2 text-[#aaaacc] text-xs">{d}</td>
             </tr>
           ))}
@@ -739,13 +739,13 @@ function DataPipeline() {
       <h4 className="text-md font-bold text-white mt-8">2. SoDEX API</h4>
       <p className="text-[#aaaacc]">
         Spot trading and market data. Server-side client at{" "}
-        <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">src/lib/sodex.ts</code>.
-        Types at <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">src/lib/sodex-types.ts</code>{" "}
+        <code className="text-accent bg-[#1a1a2e] px-1 rounded">src/lib/sodex.ts</code>.
+        Types at <code className="text-accent bg-[#1a1a2e] px-1 rounded">src/lib/sodex-types.ts</code>{" "}
         (separated so client components can import types without server env refs).
       </p>
       <table className="w-full text-sm mt-3 border-collapse">
         <thead>
-          <tr className="border-b border-[#1a1a2e] text-[#666677] text-left">
+          <tr className="border-b border-border-default text-txt-muted text-left">
             <th className="py-2 pr-4">Endpoint</th>
             <th className="py-2 pr-4">Auth</th>
             <th className="py-2">Description</th>
@@ -763,9 +763,9 @@ function DataPipeline() {
             ["GET /accounts/:address/state", "x-api-key", "Account state including balances array"],
           ].map(([e, a, d]) => (
             <tr key={e} className="border-b border-[#1a1a2e10]">
-              <td className="py-2 pr-4 font-mono text-[#7b2fff] text-xs">{e}</td>
+              <td className="py-2 pr-4 font-mono text-accent text-xs">{e}</td>
               <td className="py-2 pr-4">
-                <span className={`text-[10px] px-1.5 py-0.5 rounded ${a === "Public" ? "bg-[#00ff8815] text-[#00ff88]" : "bg-[#ff880015] text-[#ff8800]"}`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded ${a === "Public" ? "bg-[#00ff8815] text-buy" : "bg-[#ff880015] text-hold"}`}>
                   {a}
                 </span>
               </td>
@@ -778,22 +778,22 @@ function DataPipeline() {
       <h4 className="text-md font-bold text-white mt-8">3. AI Providers</h4>
       <p className="text-[#aaaacc]">
         Chat completions client at{" "}
-        <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">src/lib/deepseek.ts</code>.
+        <code className="text-accent bg-[#1a1a2e] px-1 rounded">src/lib/deepseek.ts</code>.
         Despite the filename, it supports any OpenAI-compatible chat completions endpoint.
       </p>
       <ul className="text-[#aaaacc] space-y-1 ml-4">
         <li>Temperature: 0.3 (low, for consistent structured output)</li>
         <li>Max tokens: 1500</li>
-        <li>Deepseek: uses <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">response_format: json_object</code> for guaranteed JSON</li>
+        <li>Deepseek: uses <code className="text-accent bg-[#1a1a2e] px-1 rounded">response_format: json_object</code> for guaranteed JSON</li>
         <li>OpenAI/OpenRouter: standard chat completion without JSON mode enforcement</li>
-        <li>Server fallback: <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">DEEPSEEK_API_KEY</code> env var</li>
+        <li>Server fallback: <code className="text-accent bg-[#1a1a2e] px-1 rounded">DEEPSEEK_API_KEY</code> env var</li>
         <li>User override: provider, model, and apiKey passed in request body</li>
       </ul>
 
       <h3 className="text-lg font-bold text-white mt-8">Pair Mapping</h3>
       <p className="text-[#aaaacc]">
         The app translates between display pairs (BTC/USDC) and SoDEX symbols (vBTC_vUSDC) via{" "}
-        <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">src/lib/pair-map.ts</code>.
+        <code className="text-accent bg-[#1a1a2e] px-1 rounded">src/lib/pair-map.ts</code>.
         Currently supports 9 assets: BTC, ETH, SOL, AVAX, LINK, DOGE, ADA, XRP, BNB.
       </p>
 
@@ -834,7 +834,7 @@ function TradingExecution() {
       <h2 className="text-2xl font-bold text-white">Trading &amp; Execution</h2>
 
       <h3 className="text-lg font-bold text-white mt-4">Order Flow</h3>
-      <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-4 font-mono text-xs leading-relaxed">
+      <div className="bg-inset border border-border-default rounded-lg p-4 font-mono text-xs leading-relaxed">
         <pre className="text-[#aaaacc] whitespace-pre-wrap">{`User clicks "Execute" on a signal
         │
         ▼
@@ -872,7 +872,7 @@ TradeForm modal opens:
       <h3 className="text-lg font-bold text-white mt-8">EIP-712 Typed Data</h3>
       <p className="text-[#aaaacc]">
         Orders use EIP-712 typed data signing (not raw transaction signing). Defined in{" "}
-        <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">src/lib/eip712.ts</code>:
+        <code className="text-accent bg-[#1a1a2e] px-1 rounded">src/lib/eip712.ts</code>:
       </p>
       <CodeBlock>{`// Domain
 { name: "spot", version: "1", chainId: 286623,
@@ -926,17 +926,17 @@ function WalletInfrastructure() {
       <h3 className="text-lg font-bold text-white mt-4">Connection Architecture</h3>
       <p className="text-[#aaaacc]">
         Dual-connector setup via wagmi v3. Config at{" "}
-        <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">src/lib/wallet-config.ts</code>:
+        <code className="text-accent bg-[#1a1a2e] px-1 rounded">src/lib/wallet-config.ts</code>:
       </p>
       <ul className="text-[#aaaacc] space-y-3 ml-4">
         <li>
-          <strong className="text-white">Injected connector</strong> — detects <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">window.ethereum</code>{" "}
+          <strong className="text-white">Injected connector</strong> — detects <code className="text-accent bg-[#1a1a2e] px-1 rounded">window.ethereum</code>{" "}
           for MetaMask, Rabby, and other browser wallets. Always available.
         </li>
         <li>
           <strong className="text-white">WalletConnect v2 connector</strong> — QR code modal for mobile wallets
           (MetaMask Mobile, Trust Wallet, etc.). Enabled when{" "}
-          <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID</code> is set.
+          <code className="text-accent bg-[#1a1a2e] px-1 rounded">NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID</code> is set.
         </li>
       </ul>
 
@@ -953,7 +953,7 @@ function WalletInfrastructure() {
       <h3 className="text-lg font-bold text-white mt-6">Wallet Features</h3>
       <table className="w-full text-sm mt-3 border-collapse">
         <thead>
-          <tr className="border-b border-[#1a1a2e] text-[#666677] text-left">
+          <tr className="border-b border-border-default text-txt-muted text-left">
             <th className="py-2 pr-4">Feature</th>
             <th className="py-2">Implementation</th>
           </tr>
@@ -982,12 +982,12 @@ function WalletInfrastructure() {
         Located in the TopBar. Three states:
       </p>
       <ul className="text-[#aaaacc] space-y-1 ml-4">
-        <li><strong className="text-[#7b2fff]">Disconnected:</strong> Shows &quot;Connect Wallet&quot; button</li>
-        <li><strong className="text-[#00ff88]">Connected (correct network):</strong> Shows truncated address + SOSO balance. Click opens dropdown with Copy Address, View Balance, Disconnect</li>
-        <li><strong className="text-[#ff8800]">Wrong network:</strong> Shows &quot;Wrong Network&quot; with Switch Network and Disconnect options</li>
+        <li><strong className="text-accent">Disconnected:</strong> Shows &quot;Connect Wallet&quot; button</li>
+        <li><strong className="text-buy">Connected (correct network):</strong> Shows truncated address + SOSO balance. Click opens dropdown with Copy Address, View Balance, Disconnect</li>
+        <li><strong className="text-hold">Wrong network:</strong> Shows &quot;Wrong Network&quot; with Switch Network and Disconnect options</li>
       </ul>
 
-      <div className="bg-[#7b2fff10] border border-[#7b2fff30] rounded-lg p-4 mt-6">
+      <div className="bg-[#7b2fff10] border border-accent-dim rounded-lg p-4 mt-6">
         <p className="text-sm text-[#aaaacc] m-0">
           <strong className="text-white">Security note:</strong> Private keys never leave the wallet.
           The app only requests EIP-712 signatures for order data. No raw transactions, no token approvals,
@@ -1004,7 +1004,7 @@ function APIReference() {
       <h2 className="text-2xl font-bold text-white">API Reference</h2>
       <p className="text-[#aaaacc]">
         All external APIs are proxied through Next.js API routes in{" "}
-        <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">src/app/api/</code>.
+        <code className="text-accent bg-[#1a1a2e] px-1 rounded">src/app/api/</code>.
         This keeps API keys server-side and enables rate limiting, caching, and error normalization.
       </p>
 
@@ -1012,7 +1012,7 @@ function APIReference() {
       <p className="text-[#aaaacc]">
         Fetches live data from SoSoValue, computes heuristic 5-dimension scores with dynamic weights.
       </p>
-      <p className="text-xs text-[#666677]">Cache: 60 seconds in-memory · Rate: auto-refreshed client-side every 60s</p>
+      <p className="text-xs text-txt-muted">Cache: 60 seconds in-memory · Rate: auto-refreshed client-side every 60s</p>
       <h4 className="text-sm font-bold text-white mt-3">Response</h4>
       <CodeBlock>{`{
   "updated": 1716153600000,
@@ -1082,7 +1082,7 @@ function APIReference() {
       <p className="text-[#aaaacc]">Proxies SoDEX market data endpoints.</p>
       <table className="w-full text-sm mt-2 border-collapse">
         <thead>
-          <tr className="border-b border-[#1a1a2e] text-[#666677] text-left">
+          <tr className="border-b border-border-default text-txt-muted text-left">
             <th className="py-2 pr-4">Type</th>
             <th className="py-2 pr-4">Query Params</th>
             <th className="py-2">Returns</th>
@@ -1095,7 +1095,7 @@ function APIReference() {
             ["symbols", "symbol?", "SoDEXSymbol[] — available pairs"],
           ].map(([t, q, r]) => (
             <tr key={t} className="border-b border-[#1a1a2e10]">
-              <td className="py-2 pr-4 font-mono text-[#7b2fff]">{t}</td>
+              <td className="py-2 pr-4 font-mono text-accent">{t}</td>
               <td className="py-2 pr-4 text-[#aaaacc] text-xs">{q}</td>
               <td className="py-2 text-[#aaaacc] text-xs">{r}</td>
             </tr>
@@ -1114,7 +1114,7 @@ function APIReference() {
 
       <h3 className="text-lg font-bold text-white mt-8">GET /api/balance</h3>
       <p className="text-[#aaaacc]">
-        Fetches account balances for a wallet address. Query: <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">?address=0x...</code>
+        Fetches account balances for a wallet address. Query: <code className="text-accent bg-[#1a1a2e] px-1 rounded">?address=0x...</code>
       </p>
 
       <h3 className="text-lg font-bold text-white mt-6">GET /api/performance</h3>
@@ -1134,7 +1134,7 @@ function APIReference() {
         <li><strong className="text-white">502</strong> — upstream API failure (SoSoValue, SoDEX, or AI provider)</li>
       </ul>
       <p className="text-[#aaaacc] text-xs mt-2">
-        Error responses include <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">{`{ "error": "human-readable message" }`}</code>.
+        Error responses include <code className="text-accent bg-[#1a1a2e] px-1 rounded">{`{ "error": "human-readable message" }`}</code>.
         Upstream errors are caught per-source (individual Promise failures don&apos;t crash the route).
       </p>
     </div>
@@ -1149,7 +1149,7 @@ function Deployment() {
       <h3 className="text-lg font-bold text-white mt-4">Vercel</h3>
       <p className="text-[#aaaacc]">
         SignalFlow Agent is deployed on <strong className="text-white">Vercel</strong> with automatic CI/CD
-        from the <code className="text-[#7b2fff] bg-[#1a1a2e] px-1 rounded">main</code> branch.
+        from the <code className="text-accent bg-[#1a1a2e] px-1 rounded">main</code> branch.
         Every push triggers a production build.
       </p>
       <ul className="text-[#aaaacc] space-y-1 ml-4">
@@ -1206,7 +1206,7 @@ function Roadmap() {
     <div className="prose prose-invert max-w-none space-y-6">
       <h2 className="text-2xl font-bold text-white">Roadmap</h2>
 
-      <h3 className="text-lg font-bold text-[#7b2fff] mt-6">Wave 1 — Baseline ✅</h3>
+      <h3 className="text-lg font-bold text-accent mt-6">Wave 1 — Baseline ✅</h3>
       <ul className="text-[#aaaacc] space-y-1 ml-4 mt-2">
         {[
           "Next.js dashboard shell with dark-themed trading interface",
@@ -1217,12 +1217,12 @@ function Roadmap() {
           "Full sidebar navigation with 8 pages",
         ].map((item) => (
           <li key={item} className="flex items-center gap-2">
-            <span className="text-[#00ff88] text-xs">✓</span> {item}
+            <span className="text-buy text-xs">✓</span> {item}
           </li>
         ))}
       </ul>
 
-      <h3 className="text-lg font-bold text-[#7b2fff] mt-8">Wave 2 — Execution ✅</h3>
+      <h3 className="text-lg font-bold text-accent mt-8">Wave 2 — Execution ✅</h3>
       <ul className="text-[#aaaacc] space-y-1 ml-4 mt-2">
         {[
           "Wallet connection — MetaMask (desktop) + WalletConnect v2 (mobile)",
@@ -1239,12 +1239,12 @@ function Roadmap() {
           "Signal history tracking with accuracy validation",
         ].map((item) => (
           <li key={item} className="flex items-center gap-2">
-            <span className="text-[#00ff88] text-xs">✓</span> {item}
+            <span className="text-buy text-xs">✓</span> {item}
           </li>
         ))}
       </ul>
 
-      <h3 className="text-lg font-bold text-[#ff8800] mt-8">Wave 3 — Production 🔨</h3>
+      <h3 className="text-lg font-bold text-hold mt-8">Wave 3 — Production 🔨</h3>
       <ul className="text-[#aaaacc] space-y-1 ml-4 mt-2">
         {[
           "Backtesting engine — validate signal accuracy against historical data",
@@ -1256,12 +1256,12 @@ function Roadmap() {
           "Public launch — documentation, onboarding wizard, community channels",
         ].map((item) => (
           <li key={item} className="flex items-center gap-2">
-            <span className="text-[#ff8800] text-xs">◻</span> {item}
+            <span className="text-hold text-xs">◻</span> {item}
           </li>
         ))}
       </ul>
 
-      <h3 className="text-lg font-bold text-[#666677] mt-8">Wave 4 — Ecosystem</h3>
+      <h3 className="text-lg font-bold text-txt-muted mt-8">Wave 4 — Ecosystem</h3>
       <ul className="text-[#aaaacc] space-y-1 ml-4 mt-2">
         {[
           "Multi-chain expansion — cross-chain signal aggregation, unified portfolio view",
@@ -1271,7 +1271,7 @@ function Roadmap() {
           "Public REST API, WebSocket feeds, and trading bot SDK (TypeScript/Python)",
         ].map((item) => (
           <li key={item} className="flex items-center gap-2">
-            <span className="text-[#666677] text-xs">◻</span> {item}
+            <span className="text-txt-muted text-xs">◻</span> {item}
           </li>
         ))}
       </ul>
@@ -1282,7 +1282,7 @@ function Roadmap() {
       </p>
       <table className="w-full text-sm mt-3 border-collapse">
         <thead>
-          <tr className="border-b border-[#1a1a2e] text-[#666677] text-left">
+          <tr className="border-b border-border-default text-txt-muted text-left">
             <th className="py-2 pr-4">Platform</th>
             <th className="py-2 pr-4">Agents</th>
             <th className="py-2 pr-4">Integrations</th>
@@ -1311,17 +1311,17 @@ function Roadmap() {
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-xl p-4">
-      <p className="text-xs text-[#666677] uppercase tracking-wider mb-1">{label}</p>
+    <div className="bg-inset border border-border-default rounded-xl p-4">
+      <p className="text-xs text-txt-muted uppercase tracking-wider mb-1">{label}</p>
       <p className="text-2xl font-bold text-white">{value}</p>
-      <p className="text-xs text-[#666677] mt-1">{sub}</p>
+      <p className="text-xs text-txt-muted mt-1">{sub}</p>
     </div>
   );
 }
 
 function PrincipleCard({ title, desc }: { title: string; desc: string }) {
   return (
-    <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-4">
+    <div className="bg-inset border border-border-default rounded-lg p-4">
       <h4 className="text-sm font-bold text-white m-0 mb-1">{title}</h4>
       <p className="text-xs text-[#aaaacc] m-0">{desc}</p>
     </div>
@@ -1330,21 +1330,21 @@ function PrincipleCard({ title, desc }: { title: string; desc: string }) {
 
 function DimensionScoring({ name, formula, desc }: { name: string; formula: string; desc: string }) {
   return (
-    <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-4">
+    <div className="bg-inset border border-border-default rounded-lg p-4">
       <h4 className="text-sm font-bold text-white m-0">{name}</h4>
-      <p className="font-mono text-xs text-[#7b2fff] mt-2 mb-2">{formula}</p>
-      <p className="text-xs text-[#666677] m-0">{desc}</p>
+      <p className="font-mono text-xs text-accent mt-2 mb-2">{formula}</p>
+      <p className="text-xs text-txt-muted m-0">{desc}</p>
     </div>
   );
 }
 
 function CacheCard({ layer, route, ttl, strategy }: { layer: string; route: string; ttl: string; strategy: string }) {
   return (
-    <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-4">
+    <div className="bg-inset border border-border-default rounded-lg p-4">
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#7b2fff20] text-[#7b2fff]">{layer}</span>
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-muted text-accent">{layer}</span>
         <span className="font-mono text-xs text-white">{route}</span>
-        <span className="text-[10px] text-[#666677]">{ttl}</span>
+        <span className="text-[10px] text-txt-muted">{ttl}</span>
       </div>
       <p className="text-xs text-[#aaaacc] m-0">{strategy}</p>
     </div>
@@ -1353,7 +1353,7 @@ function CacheCard({ layer, route, ttl, strategy }: { layer: string; route: stri
 
 function CodeBlock({ children }: { children: string }) {
   return (
-    <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-4 overflow-x-auto">
+    <div className="bg-inset border border-border-default rounded-lg p-4 overflow-x-auto">
       <pre className="text-xs font-mono text-[#aaaacc] whitespace-pre-wrap m-0">{children}</pre>
     </div>
   );

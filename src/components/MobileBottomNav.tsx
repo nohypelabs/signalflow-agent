@@ -1,10 +1,19 @@
 "use client";
 
+import {
+  HomeIcon,
+  SignalIcon,
+  TradeIcon,
+  PerformanceIcon,
+  SettingsIcon,
+} from "@/components/ui/icons";
+
 const tabs = [
-  { id: "Dashboard", label: "Home", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1" },
-  { id: "Signals", label: "Signals", icon: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" },
-  { id: "Trading", label: "Trade", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
-  { id: "Settings", label: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
+  { id: "Dashboard", label: "Dashboard", Icon: HomeIcon },
+  { id: "Signals", label: "Signals", Icon: SignalIcon },
+  { id: "Trading", label: "Trading", Icon: TradeIcon },
+  { id: "Performance", label: "Performance", Icon: PerformanceIcon },
+  { id: "Settings", label: "Settings", Icon: SettingsIcon },
 ];
 
 interface Props {
@@ -14,40 +23,27 @@ interface Props {
 
 export default function MobileBottomNav({ active, onSelect }: Props) {
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0e0e1a] border-t border-[#1a1a2e] z-40 safe-bottom">
-      <div className="flex items-center justify-around h-14">
-        {tabs.map((t) => {
-          const isActive = active === t.id;
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 backdrop-blur-xl bg-surface/90 border-t border-border-default z-40 safe-bottom">
+      <div className="flex items-center justify-around h-16">
+        {tabs.map(({ id, label, Icon }) => {
+          const isActive = active === id;
           return (
             <button
-              key={t.id}
-              onClick={() => onSelect(t.id)}
-              className={`relative flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all duration-200 ease-out ${
-                isActive
-                  ? "text-white"
-                  : "text-[#7e8096] hover:text-[#dddfff] hover:bg-[#ffffff08]"
-              }`}
+              key={id}
+              onClick={() => onSelect(id)}
+              className={`
+                flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors
+                ${isActive ? "text-accent" : "text-txt-dim"}
+              `}
             >
+              {/* Active indicator dot */}
               <span
-                className={`absolute top-1.5 h-0.5 w-7 rounded-full transition-all duration-200 ease-out ${
-                  isActive
-                    ? "bg-[#7b2fff] shadow-[0_0_14px_0_rgba(123,47,255,0.95)] opacity-100"
-                    : "bg-transparent opacity-0"
+                className={`w-1 h-1 rounded-full transition-opacity ${
+                  isActive ? "bg-accent opacity-100" : "opacity-0"
                 }`}
               />
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={isActive ? 1.9 : 1.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d={t.icon} />
-              </svg>
-              <span className="text-[10px] font-medium">{t.label}</span>
+              <Icon size={20} />
+              <span className="text-[10px] font-medium">{label}</span>
             </button>
           );
         })}

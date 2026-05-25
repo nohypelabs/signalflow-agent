@@ -5,6 +5,9 @@ import { useWallet } from "@/lib/use-wallet";
 import { useSwitchChain } from "wagmi";
 import { valuechain } from "@/lib/wallet-config";
 import type { SoDEXBalance } from "@/lib/sodex-types";
+import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
+import StatusDot from "@/components/ui/StatusDot";
 
 function formatAddr(addr: string) {
   return `${addr.slice(0, 8)}...${addr.slice(-6)}`;
@@ -19,13 +22,11 @@ export default function WalletButton() {
   const panelRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
 
-  // Balance
   const [balances, setBalances] = useState<SoDEXBalance[]>([]);
   const [balanceLoading, setBalanceLoading] = useState(false);
 
   const correctChain = chainId === valuechain.id;
 
-  // Close panel on outside click
   useEffect(() => {
     if (!panelOpen) return;
     const handler = (e: MouseEvent) => {
@@ -42,7 +43,6 @@ export default function WalletButton() {
     return () => document.removeEventListener("mousedown", handler);
   }, [panelOpen]);
 
-  // Fetch balance when panel opens
   useEffect(() => {
     if (!panelOpen || !address) return;
     let cancelled = false;
@@ -97,15 +97,11 @@ export default function WalletButton() {
   if (!isConnected) {
     return (
       <div className="flex items-center gap-2">
-        <button
-          onClick={handleConnect}
-          disabled={connecting}
-          className="px-4 py-2 text-xs font-semibold rounded-lg bg-[#7b2fff] text-white hover:bg-[#6a1fee] disabled:opacity-50 transition-colors"
-        >
-          {connecting ? "Connecting..." : "Connect Wallet"}
-        </button>
+        <Button variant="primary" size="sm" onClick={handleConnect} loading={connecting}>
+          Connect Wallet
+        </Button>
         {error && (
-          <span className="text-[10px] text-[#ff4444]">{error}</span>
+          <span className="text-[10px] text-error">{error}</span>
         )}
       </div>
     );
@@ -115,22 +111,17 @@ export default function WalletButton() {
   if (!correctChain) {
     return (
       <div className="flex flex-col gap-1.5">
-        <span className="text-[10px] px-2 py-0.5 rounded bg-[#ff444420] text-[#ff4444] border border-[#ff444430] self-start">
-          Wrong Network
-        </span>
+        <Badge variant="error" size="md">Wrong Network</Badge>
         <div className="flex items-center gap-1.5">
           <button
             onClick={handleSwitch}
-            className="px-2 py-1 text-[10px] font-semibold rounded-lg bg-[#ff8800] text-white hover:bg-[#e67a00] transition-colors whitespace-nowrap"
+            className="px-2.5 py-1 text-[10px] font-semibold rounded-lg bg-hold text-white hover:opacity-90 whitespace-nowrap"
           >
             Switch
           </button>
-          <button
-            onClick={handleDisconnect}
-            className="px-2 py-1 text-[10px] rounded-lg bg-[#ff444415] text-[#ff4444] border border-[#ff444430] hover:bg-[#ff444425] transition-colors whitespace-nowrap"
-          >
+          <Button variant="danger" size="sm" onClick={handleDisconnect}>
             Disconnect
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -142,37 +133,34 @@ export default function WalletButton() {
       <button
         ref={btnRef}
         onClick={() => setPanelOpen(!panelOpen)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0d0d1a] border border-[#1a1a2e] hover:border-[#7b2fff50] transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-inset border border-border-default hover:border-accent-dim"
       >
-        <div className="w-2 h-2 rounded-full bg-[#00ff88] animate-pulse-glow" />
-        <span className="text-xs text-white font-mono">{shortAddress}</span>
-        <svg className="w-3 h-3 text-[#666677]" viewBox="0 0 16 16" fill="currentColor">
+        <StatusDot status="live" size="sm" />
+        <span className="text-xs text-txt-primary font-mono">{shortAddress}</span>
+        <svg className="w-3 h-3 text-txt-muted" viewBox="0 0 16 16" fill="currentColor">
           <path d="M4 6l4 4 4-4" />
         </svg>
       </button>
 
-      {/* Dropdown panel */}
       {panelOpen && (
         <div
           ref={panelRef}
-          className="absolute right-0 mt-2 w-72 bg-[#12122a] border border-[#1a1a2e] rounded-xl shadow-2xl z-50 overflow-hidden"
+          className="absolute right-0 mt-2 w-72 bg-card border border-border-default rounded-xl shadow-2xl z-50 overflow-hidden animate-fade-in"
         >
           {/* Header */}
-          <div className="p-4 border-b border-[#1a1a2e]">
+          <div className="p-4 border-b border-border-default">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#00ff88]" />
-                <span className="text-sm font-semibold text-white">Wallet</span>
+                <StatusDot status="live" size="sm" />
+                <span className="text-sm font-semibold text-txt-primary">Wallet</span>
               </div>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#00ff8815] text-[#00ff88] border border-[#00ff8830]">
-                ValueChain
-              </span>
+              <Badge variant="live" size="sm">ValueChain</Badge>
             </div>
-            <div className="flex items-center gap-2 bg-[#0a0a14] rounded-lg px-3 py-2">
-              <span className="text-xs text-white font-mono flex-1 break-all">{address}</span>
+            <div className="flex items-center gap-2 bg-background rounded-lg px-3 py-2">
+              <span className="text-xs text-txt-primary font-mono flex-1 break-all">{address}</span>
               <button
                 onClick={copyAddress}
-                className="shrink-0 text-[10px] text-[#7b2fff] hover:text-[#9b4fff] transition-colors"
+                className="shrink-0 text-[10px] text-accent hover:text-[#9b4fff]"
               >
                 Copy
               </button>
@@ -180,27 +168,27 @@ export default function WalletButton() {
           </div>
 
           {/* Balances */}
-          <div className="p-4 border-b border-[#1a1a2e]">
+          <div className="p-4 border-b border-border-default">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] text-[#666677] font-semibold uppercase tracking-wider">Balances</span>
+              <span className="text-[10px] text-txt-muted font-semibold uppercase tracking-wider">Balances</span>
               {balanceLoading && (
-                <span className="text-[10px] text-[#ff8800] animate-pulse">Loading...</span>
+                <span className="text-[10px] text-warning animate-pulse">Loading...</span>
               )}
             </div>
             {!balanceLoading && balances.length === 0 && (
-              <p className="text-[10px] text-[#444455]">No balances found</p>
+              <p className="text-[10px] text-txt-dim">No balances found</p>
             )}
             {balances.length > 0 && (
               <div className="space-y-1">
                 {balances.map((b) => (
                   <div key={b.asset} className="flex items-center justify-between text-xs">
-                    <span className="text-[#aaaaaa]">{b.asset}</span>
+                    <span className="text-txt-secondary">{b.asset}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-mono">
+                      <span className="text-txt-primary font-mono">
                         {parseFloat(String(b.free)).toLocaleString(undefined, { maximumFractionDigits: 4 })}
                       </span>
                       {parseFloat(String(b.locked)) > 0 && (
-                        <span className="text-[10px] text-[#ff8800]">
+                        <span className="text-[10px] text-warning">
                           ({parseFloat(String(b.locked)).toLocaleString(undefined, { maximumFractionDigits: 4 })})
                         </span>
                       )}
@@ -212,13 +200,10 @@ export default function WalletButton() {
           </div>
 
           {/* Actions */}
-          <div className="p-4 space-y-2">
-            <button
-              onClick={handleDisconnect}
-              className="w-full py-2 text-xs font-semibold rounded-lg bg-[#ff444415] text-[#ff4444] border border-[#ff444430] hover:bg-[#ff444425] transition-colors"
-            >
+          <div className="p-4">
+            <Button variant="danger" size="sm" className="w-full" onClick={handleDisconnect}>
               Disconnect Wallet
-            </button>
+            </Button>
           </div>
         </div>
       )}

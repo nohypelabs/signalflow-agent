@@ -2,6 +2,11 @@
 
 import { Signal } from "@/lib/mock-data";
 import type { SignalDimensions } from "@/lib/use-signals";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import StatusDot from "@/components/ui/StatusDot";
+import ProgressBar from "@/components/ui/ProgressBar";
+import EmptyState from "@/components/ui/EmptyState";
 
 const dimLabels: { key: keyof Signal["dimensions"]; label: string; color: string }[] = [
   { key: "etfFlow", label: "ETF Flow", color: "#00d4ff" },
@@ -11,12 +16,6 @@ const dimLabels: { key: keyof Signal["dimensions"]; label: string; color: string
   { key: "treasury", label: "Treasury", color: "#ff4488" },
 ];
 
-const actionBadge: Record<string, string> = {
-  BUY: "bg-[#00ff8820] border-[#00ff88] text-[#00ff88]",
-  SELL: "bg-[#ff444420] border-[#ff4444] text-[#ff4444]",
-  HOLD: "bg-[#ff880020] border-[#ff8800] text-[#ff8800]",
-};
-
 interface Props {
   signal: Signal | null;
   liveDims?: SignalDimensions | null;
@@ -25,43 +24,45 @@ interface Props {
 export default function AIReasoning({ signal, liveDims }: Props) {
   if (!signal) {
     return (
-      <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-5">
-        <p className="text-[#666677] text-sm">Select a signal to view AI reasoning</p>
-      </div>
+      <Card padding="lg">
+        <EmptyState title="Select a signal" description="Choose a signal to view AI reasoning and execution plan" />
+      </Card>
     );
   }
 
   const hasLive = liveDims !== undefined && liveDims !== null;
 
   return (
-    <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-5 animate-slide-up">
+    <Card padding="lg" className="animate-slide-up">
       <div className="flex items-center gap-3 mb-4">
         <h3 className="font-semibold text-sm">
           {hasLive ? "Live Signal Data" : "AI Reasoning"}
         </h3>
-        <span
-          className={`px-2 py-0.5 text-xs font-bold rounded border ${actionBadge[signal.action]}`}
-        >
-          {signal.action}
-        </span>
-        <span className="text-sm text-white">{signal.pair}</span>
+        <Badge variant={signal.action.toLowerCase()} size="md">{signal.action}</Badge>
+        <span className="text-sm text-txt-primary">{signal.pair}</span>
         {hasLive && (
-          <span className="px-1.5 py-0.5 text-[10px] bg-[#00ff8820] text-[#00ff88] border border-[#00ff8830] rounded">
-            LIVE
+          <span className="flex items-center gap-1.5">
+            <StatusDot status="live" size="sm" />
+            <Badge variant="live" size="sm">LIVE</Badge>
           </span>
         )}
-        <span className="text-xs text-[#666677] ml-auto">{signal.timeAgo}</span>
+        <Badge variant="accent" size="sm" className="ml-auto">
+          {hasLive ? "SoSoValue" : "AI Generated"}
+        </Badge>
+        <span className="text-xs text-txt-muted">{signal.timeAgo}</span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div>
-          <p className="text-xs text-[#888888] mb-1">Signal Thesis</p>
-          <p className="text-sm text-[#cccccc] leading-relaxed bg-[#0d0d2a] border border-[#7b2fff30] rounded-lg p-3">
-            &ldquo;{signal.reasoning}&rdquo;
-          </p>
+          <p className="text-xs text-txt-tertiary mb-1">Signal Thesis</p>
+          <Card variant="inset" padding="md" className="border-l-2 border-l-accent">
+            <p className="text-sm text-txt-secondary leading-relaxed">
+              &ldquo;{signal.reasoning}&rdquo;
+            </p>
+          </Card>
 
           <div className="mt-4">
-            <p className="text-xs text-[#888888] mb-2">
+            <p className="text-xs text-txt-tertiary mb-2">
               {hasLive ? "Live Dimensions (SoSoValue)" : "Signal Dimensions"}
             </p>
             <div className="flex flex-col gap-2">
@@ -73,22 +74,15 @@ export default function AIReasoning({ signal, liveDims }: Props) {
                   null;
                 return (
                   <div key={d.key}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs w-20 shrink-0" style={{ color: d.color }}>
-                        {d.label}
-                      </span>
-                      <div className="flex-1 h-3 bg-[#1a1a2e] rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-700"
-                          style={{ width: `${score}%`, backgroundColor: d.color }}
-                        />
-                      </div>
-                      <span className="text-xs w-8 text-right font-semibold" style={{ color: d.color }}>
-                        {score}%
-                      </span>
-                    </div>
+                    <ProgressBar
+                      value={score}
+                      color={d.color}
+                      height="md"
+                      label={d.label}
+                      showValue
+                    />
                     {detail && (
-                      <p className="text-[10px] text-[#555566] mt-0.5 ml-[5.5rem] leading-relaxed">
+                      <p className="text-[10px] text-txt-dim mt-0.5 ml-[5.5rem] leading-relaxed">
                         {detail}
                       </p>
                     )}
@@ -100,14 +94,14 @@ export default function AIReasoning({ signal, liveDims }: Props) {
         </div>
 
         <div>
-          <p className="text-xs text-[#888888] mb-2">Trade Execution Plan</p>
+          <p className="text-xs text-txt-tertiary mb-2">Trade Execution Plan</p>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { label: "Order Type", value: signal.execution.orderType, color: "#00ff88" },
+              { label: "Order Type", value: signal.execution.orderType, color: "text-accent" },
               {
                 label: "Entry Price",
                 value: `$${signal.execution.entry.toLocaleString()}`,
-                color: "#ffffff",
+                color: "text-txt-primary",
               },
               {
                 label: "Take Profit",
@@ -115,7 +109,7 @@ export default function AIReasoning({ signal, liveDims }: Props) {
                   signal.execution.takeProfit > 0
                     ? `$${signal.execution.takeProfit.toLocaleString()}`
                     : "—",
-                color: "#00ff88",
+                color: "text-buy",
               },
               {
                 label: "Stop Loss",
@@ -123,44 +117,36 @@ export default function AIReasoning({ signal, liveDims }: Props) {
                   signal.execution.stopLoss > 0
                     ? `$${signal.execution.stopLoss.toLocaleString()}`
                     : "—",
-                color: "#ff4444",
+                color: "text-sell",
               },
-              { label: "Position Size", value: signal.execution.positionSize, color: "#ffffff" },
-              { label: "Risk/Reward", value: signal.execution.riskReward, color: "#00ff88" },
+              { label: "Position Size", value: signal.execution.positionSize, color: "text-txt-primary" },
+              { label: "Risk/Reward", value: signal.execution.riskReward, color: "text-buy" },
             ].map((item) => (
-              <div
-                key={item.label}
-                className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-2.5"
-              >
-                <p className="text-[10px] text-[#666677]">{item.label}</p>
-                <p className="text-xs font-semibold mt-0.5" style={{ color: item.color }}>
+              <Card key={item.label} variant="inset" padding="sm">
+                <p className="text-[10px] text-txt-muted">{item.label}</p>
+                <p className={`text-xs font-semibold mt-0.5 ${item.color}`}>
                   {item.value}
                 </p>
-              </div>
+              </Card>
             ))}
           </div>
 
-          <p className="text-xs text-[#888888] mt-4 mb-2">Data Sources Used</p>
+          <p className="text-xs text-txt-tertiary mt-4 mb-2">Data Sources Used</p>
           <div className="flex flex-wrap gap-1.5">
             {signal.sources.map((src) => (
-              <span
-                key={src}
-                className="px-2 py-1 text-[10px] bg-[#1a1a2e] border border-[#333355] rounded-md text-[#aaaaaa]"
-              >
-                {src}
-              </span>
+              <Badge key={src} variant="muted" size="sm">{src}</Badge>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="mt-4 bg-[#0a0a14] border border-[#333355] rounded-lg px-3 py-2">
-        <p className="text-[10px] text-[#666677] font-mono">
+      <Card variant="ghost" padding="sm" className="mt-4 bg-background border border-border-strong">
+        <p className="text-[10px] text-txt-muted font-mono">
           Signal generated: {new Date().toISOString().slice(0, 19)}Z | Confidence:{" "}
           {signal.confidence}% | Dimensions: 5 scored | SoSoValue API calls:{" "}
           {signal.sources.length}
         </p>
-      </div>
-    </div>
+      </Card>
+    </Card>
   );
 }

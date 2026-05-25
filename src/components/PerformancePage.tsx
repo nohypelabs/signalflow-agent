@@ -3,8 +3,19 @@
 import { usePerformance } from "@/lib/use-performance";
 import { useSignals } from "@/lib/use-signals";
 import type { RecordedSignal } from "@/lib/use-signal-history";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Skeleton from "@/components/ui/Skeleton";
+import PageHeader from "@/components/ui/PageHeader";
+import ProgressBar from "@/components/ui/ProgressBar";
 
 const COIN_COLORS: Record<string, string> = {
+  BTC: "var(--color-hold)",
+  ETH: "var(--color-info)",
+  SOL: "var(--accent-primary)",
+};
+
+const COIN_HEX: Record<string, string> = {
   BTC: "#ff8800",
   ETH: "#00d4ff",
   SOL: "#7b2fff",
@@ -23,10 +34,14 @@ export default function PerformancePage({ signalHistory = [], signalStats, histo
   if (loading) {
     return (
       <div className="space-y-4">
-        <h2 className="text-lg font-bold">Performance Analytics</h2>
-        <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-5">
-          <p className="text-xs text-[#666677]">Loading real market data...</p>
-        </div>
+        <PageHeader title="Performance Analytics" badge={{ variant: "accent", label: "LIVE DATA" }} />
+        <Card padding="lg">
+          <div className="space-y-3">
+            <Skeleton variant="table-row" />
+            <Skeleton variant="table-row" />
+            <Skeleton variant="table-row" />
+          </div>
+        </Card>
       </div>
     );
   }
@@ -34,29 +49,27 @@ export default function PerformancePage({ signalHistory = [], signalStats, histo
   if (error) {
     return (
       <div className="space-y-4">
-        <h2 className="text-lg font-bold">Performance Analytics</h2>
-        <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-5">
-          <p className="text-xs text-[#ff4444]">Failed to load: {error}</p>
-        </div>
+        <PageHeader title="Performance Analytics" badge={{ variant: "accent", label: "LIVE DATA" }} />
+        <Card padding="lg">
+          <p className="text-sm text-error">{error}</p>
+        </Card>
       </div>
     );
   }
 
-  // Aggregate metrics across coins
   const avgChange24h = coins.length ? coins.reduce((s, c) => s + c.change24h, 0) / coins.length : 0;
   const avgChange30d = coins.length ? coins.reduce((s, c) => s + c.change30d, 0) / coins.length : 0;
   const avgVolatility = coins.length ? coins.reduce((s, c) => s + c.volatility30d, 0) / coins.length : 0;
 
   const metrics = [
-    { label: "Avg 24H Change", value: `${avgChange24h >= 0 ? "+" : ""}${avgChange24h.toFixed(1)}%`, color: avgChange24h >= 0 ? "#00ff88" : "#ff4444" },
-    { label: "Avg 30D Return", value: `${avgChange30d >= 0 ? "+" : ""}${avgChange30d.toFixed(1)}%`, color: avgChange30d >= 0 ? "#00ff88" : "#ff4444" },
-    { label: "Avg Volatility", value: `${avgVolatility.toFixed(1)}%`, color: "#7b2fff" },
-    { label: "Tracked Coins", value: String(coins.length), color: "#00d4ff" },
+    { label: "Avg 24H Change", value: `${avgChange24h >= 0 ? "+" : ""}${avgChange24h.toFixed(1)}%`, color: avgChange24h >= 0 ? "var(--color-buy)" : "var(--color-sell)" },
+    { label: "Avg 30D Return", value: `${avgChange30d >= 0 ? "+" : ""}${avgChange30d.toFixed(1)}%`, color: avgChange30d >= 0 ? "var(--color-buy)" : "var(--color-sell)" },
+    { label: "Avg Volatility", value: `${avgVolatility.toFixed(1)}%`, color: "var(--accent-primary)" },
+    { label: "Tracked Coins", value: String(coins.length), color: "var(--color-info)" },
   ];
 
-  // Monthly returns from klines
   const monthlyBars = coins.map((coin) => {
-    const color = COIN_COLORS[coin.symbol] || "#ffffff";
+    const color = COIN_HEX[coin.symbol] || "#ffffff";
     return {
       label: coin.symbol,
       change30d: coin.change30d,
@@ -72,58 +85,53 @@ export default function PerformancePage({ signalHistory = [], signalStats, histo
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <h2 className="text-lg font-bold">Performance Analytics</h2>
-        <span className="text-[10px] px-1.5 py-0.5 bg-[#7b2fff20] text-[#7b2fff] border border-[#7b2fff30] rounded">LIVE DATA</span>
-      </div>
+      <PageHeader title="Performance Analytics" badge={{ variant: "accent", label: "LIVE DATA" }} />
 
       {/* Summary metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {metrics.map((m) => (
-          <div key={m.label} className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-4">
-            <p className="text-[10px] text-[#666677] mb-1">{m.label}</p>
-            <p className="text-xl font-bold" style={{ color: m.color }}>{m.value}</p>
-          </div>
+          <Card key={m.label} padding="sm" accent={m.color}>
+            <p className="text-[10px] text-txt-muted mb-1 uppercase tracking-wider">{m.label}</p>
+            <p className="text-xl font-bold font-mono tabular-nums" style={{ color: m.color }}>{m.value}</p>
+          </Card>
         ))}
       </div>
 
       {/* Signal Accuracy */}
       {historyHydrated && signalHistory.length > 0 && (
-        <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-5">
+        <Card padding="lg">
           <div className="flex items-center gap-2 mb-4">
             <h3 className="font-semibold text-sm">Signal Accuracy</h3>
-            <span className="text-[10px] px-1.5 py-0.5 bg-[#00ff8815] text-[#00ff88] border border-[#00ff8830] rounded">
-              LOCAL TRACKING
-            </span>
+            <Badge variant="live" size="sm">LOCAL TRACKING</Badge>
           </div>
 
-          {/* Accuracy stat cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <div className="bg-[#0d0d1a] rounded-lg p-3">
-              <p className="text-[10px] text-[#666677]">Signals Tracked</p>
-              <p className="text-lg font-bold text-white">{signalHistory.length}</p>
-            </div>
-            <div className="bg-[#0d0d1a] rounded-lg p-3">
-              <p className="text-[10px] text-[#666677]">Resolved</p>
-              <p className="text-lg font-bold text-[#00d4ff]">{signalStats?.totalResolved ?? 0}</p>
-            </div>
-            <div className="bg-[#0d0d1a] rounded-lg p-3">
-              <p className="text-[10px] text-[#666677]">Correct</p>
-              <p className="text-lg font-bold text-[#00ff88]">{signalStats?.totalCorrect ?? 0}</p>
-            </div>
-            <div className="bg-[#0d0d1a] rounded-lg p-3">
-              <p className="text-[10px] text-[#666677]">Accuracy</p>
-              <p className="text-lg font-bold" style={{ color: (signalStats?.accuracy ?? 0) >= 60 ? "#00ff88" : (signalStats?.accuracy ?? 0) >= 40 ? "#ff8800" : "#ff4444" }}>
+            <Card variant="inset" padding="sm">
+              <p className="text-[10px] text-txt-muted">Signals Tracked</p>
+              <p className="text-lg font-bold font-mono text-txt-primary">{signalHistory.length}</p>
+            </Card>
+            <Card variant="inset" padding="sm">
+              <p className="text-[10px] text-txt-muted">Resolved</p>
+              <p className="text-lg font-bold font-mono text-info">{signalStats?.totalResolved ?? 0}</p>
+            </Card>
+            <Card variant="inset" padding="sm">
+              <p className="text-[10px] text-txt-muted">Correct</p>
+              <p className="text-lg font-bold font-mono text-buy">{signalStats?.totalCorrect ?? 0}</p>
+            </Card>
+            <Card variant="inset" padding="sm">
+              <p className="text-[10px] text-txt-muted">Accuracy</p>
+              <p className="text-lg font-bold font-mono" style={{
+                color: (signalStats?.accuracy ?? 0) >= 60 ? "var(--color-buy)" : (signalStats?.accuracy ?? 0) >= 40 ? "var(--color-hold)" : "var(--color-sell)"
+              }}>
                 {signalStats?.accuracy != null ? `${signalStats.accuracy.toFixed(0)}%` : "—"}
               </p>
-            </div>
+            </Card>
           </div>
 
-          {/* Signal history table */}
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-[#1a1a2e] text-[#666677]">
+                <tr className="border-b border-border-default text-txt-muted">
                   <th className="text-left p-2 font-medium">Time</th>
                   <th className="text-left p-2 font-medium">Coin</th>
                   <th className="text-left p-2 font-medium">Action</th>
@@ -135,26 +143,28 @@ export default function PerformancePage({ signalHistory = [], signalStats, histo
               </thead>
               <tbody>
                 {signalHistory.slice(0, 20).map((s) => (
-                  <tr key={s.id} className="border-b border-[#1a1a2e] hover:bg-[#1a1a2e40]">
-                    <td className="p-2 text-[#888899]">
+                  <tr key={s.id} className="border-b border-border-default hover:bg-elevated">
+                    <td className="p-2 text-txt-tertiary">
                       {new Date(s.timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </td>
-                    <td className="p-2 font-semibold" style={{ color: COIN_COLORS[s.coin] || "#fff" }}>{s.coin}</td>
-                    <td className={`p-2 font-bold ${s.action === "BUY" ? "text-[#00ff88]" : s.action === "SELL" ? "text-[#ff4444]" : "text-[#ff8800]"}`}>{s.action}</td>
-                    <td className="p-2 text-right text-white">{s.confidence}%</td>
-                    <td className="p-2 text-right text-[#aaaaaa]">${s.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                    <td className="p-2 text-right text-[#aaaaaa]">
+                    <td className="p-2 font-semibold" style={{ color: COIN_COLORS[s.coin] || "var(--text-primary)" }}>{s.coin}</td>
+                    <td className="p-2">
+                      <Badge variant={s.action.toLowerCase()} size="sm">{s.action}</Badge>
+                    </td>
+                    <td className="p-2 text-right text-txt-primary tabular-nums">{s.confidence}%</td>
+                    <td className="p-2 text-right text-txt-secondary font-mono">${s.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                    <td className="p-2 text-right text-txt-secondary font-mono">
                       {s.resolved ? `$${s.resolved.finalPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "Pending"}
                     </td>
                     <td className="p-2 text-center">
                       {s.resolved ? (
                         s.resolved.correct ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#00ff8815] text-[#00ff88]">✓</span>
+                          <Badge variant="live" size="sm">✓</Badge>
                         ) : (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#ff444415] text-[#ff4444]">✗</span>
+                          <Badge variant="error" size="sm">✗</Badge>
                         )
                       ) : (
-                        <span className="text-[10px] text-[#666677]">—</span>
+                        <span className="text-[10px] text-txt-muted">—</span>
                       )}
                     </td>
                   </tr>
@@ -163,22 +173,22 @@ export default function PerformancePage({ signalHistory = [], signalStats, histo
             </table>
           </div>
           {signalHistory.length > 20 && (
-            <p className="text-[10px] text-[#666677] mt-2">Showing last 20 of {signalHistory.length} signals</p>
+            <p className="text-[10px] text-txt-muted mt-2">Showing last 20 of {signalHistory.length} signals</p>
           )}
-          <p className="text-[10px] text-[#444455] mt-3">
+          <p className="text-[10px] text-txt-dim mt-3">
             Signals resolve automatically 1 hour after generation — BUY correct if price rises, SELL correct if price falls.
           </p>
-        </div>
+        </Card>
       )}
 
-      {/* Per-coin performance cards */}
-      <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-5">
+      {/* Per-coin bar chart */}
+      <Card padding="lg">
         <h3 className="font-semibold text-sm mb-4">30-Day Returns (SoSoValue)</h3>
         <div className="flex items-end gap-8 h-48">
           {monthlyBars.map((b) => (
             <div key={b.label} className="flex-1 flex flex-col items-center gap-1">
-              <span className="text-[10px] text-[#666677]">${b.price.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-              <span className={`text-xs font-bold ${b.change30d >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
+              <span className="text-[10px] text-txt-muted font-mono">${b.price.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+              <span className={`text-xs font-bold tabular-nums ${b.change30d >= 0 ? "text-buy" : "text-sell"}`}>
                 {b.change30d >= 0 ? "+" : ""}{b.change30d.toFixed(1)}%
               </span>
               <div
@@ -194,16 +204,16 @@ export default function PerformancePage({ signalHistory = [], signalStats, histo
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
-      {/* Per-coin detail table */}
-      <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl overflow-hidden">
+      {/* Coin detail table */}
+      <Card padding="none" className="overflow-hidden">
         <div className="p-4 pb-0">
           <h3 className="font-semibold text-sm mb-3">Coin Details</h3>
         </div>
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-t border-[#1a1a2e] text-[#666677] text-xs">
+            <tr className="border-b border-t border-border-default text-txt-muted text-xs">
               <th className="text-left p-3 font-medium">Coin</th>
               <th className="text-right p-3 font-medium">Price</th>
               <th className="text-right p-3 font-medium">24H</th>
@@ -216,55 +226,55 @@ export default function PerformancePage({ signalHistory = [], signalStats, histo
           </thead>
           <tbody>
             {coins.map((c) => (
-              <tr key={c.symbol} className="border-b border-[#1a1a2e] hover:bg-[#1a1a2e40]">
+              <tr key={c.symbol} className="border-b border-border-default hover:bg-elevated">
                 <td className="p-3 font-bold" style={{ color: COIN_COLORS[c.symbol] }}>{c.symbol}</td>
-                <td className="p-3 text-right text-white">${c.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className={`p-3 text-right font-semibold ${c.change24h >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
+                <td className="p-3 text-right text-txt-primary font-mono">${c.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className={`p-3 text-right font-semibold tabular-nums ${c.change24h >= 0 ? "text-buy" : "text-sell"}`}>
                   {c.change24h >= 0 ? "+" : ""}{c.change24h.toFixed(1)}%
                 </td>
-                <td className={`p-3 text-right font-semibold ${c.change7d >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
+                <td className={`p-3 text-right font-semibold tabular-nums ${c.change7d >= 0 ? "text-buy" : "text-sell"}`}>
                   {c.change7d >= 0 ? "+" : ""}{c.change7d.toFixed(1)}%
                 </td>
-                <td className={`p-3 text-right font-semibold ${c.change30d >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
+                <td className={`p-3 text-right font-semibold tabular-nums ${c.change30d >= 0 ? "text-buy" : "text-sell"}`}>
                   {c.change30d >= 0 ? "+" : ""}{c.change30d.toFixed(1)}%
                 </td>
-                <td className="p-3 text-right text-[#aaaaaa]">${c.high30d.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                <td className="p-3 text-right text-[#aaaaaa]">${c.low30d.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                <td className="p-3 text-right text-[#7b2fff]">{c.volatility30d.toFixed(1)}%</td>
+                <td className="p-3 text-right text-txt-secondary font-mono">${c.high30d.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right text-txt-secondary font-mono">${c.low30d.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right text-accent tabular-nums">{c.volatility30d.toFixed(1)}%</td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
 
-      {/* Signal dimension accuracy (live from SoSoValue) */}
+      {/* Live dimensions */}
       {signalsData?.dimensions?.BTC && (
-        <div className="bg-[#12122a] border border-[#1a1a2e] rounded-xl p-5">
+        <Card padding="lg">
           <h3 className="font-semibold text-sm mb-3">Live Signal Dimensions (BTC)</h3>
           <div className="flex flex-col gap-2">
             {[
-              { key: "etfFlow" as const, label: "ETF Flow", color: "#00d4ff" },
-              { key: "sentiment" as const, label: "Sentiment", color: "#7b2fff" },
-              { key: "macro" as const, label: "Macro", color: "#00ff88" },
-              { key: "momentum" as const, label: "Momentum", color: "#ff8800" },
-              { key: "treasury" as const, label: "Treasury", color: "#ff4488" },
+              { key: "etfFlow" as const, label: "ETF Flow", color: "var(--dim-etf)" },
+              { key: "sentiment" as const, label: "Sentiment", color: "var(--dim-sentiment)" },
+              { key: "macro" as const, label: "Macro", color: "var(--dim-macro)" },
+              { key: "momentum" as const, label: "Momentum", color: "var(--dim-momentum)" },
+              { key: "treasury" as const, label: "Treasury", color: "var(--dim-treasury)" },
             ].map((d) => {
               const dim = signalsData.dimensions.BTC[d.key];
               return (
                 <div key={d.key}>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs w-28 shrink-0" style={{ color: d.color }}>{d.label}</span>
-                    <div className="flex-1 h-3 bg-[#1a1a2e] rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${dim.score}%`, backgroundColor: d.color }} />
-                    </div>
-                    <span className="text-xs w-8 text-right font-semibold" style={{ color: d.color }}>{dim.score}%</span>
-                  </div>
-                  <p className="text-[10px] text-[#444455] mt-0.5 ml-[8rem]">{dim.detail}</p>
+                  <ProgressBar
+                    value={dim.score}
+                    color={d.color}
+                    height="md"
+                    label={d.label}
+                    showValue
+                  />
+                  <p className="text-[10px] text-txt-dim mt-0.5 ml-[7.5rem]">{dim.detail}</p>
                 </div>
               );
             })}
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
