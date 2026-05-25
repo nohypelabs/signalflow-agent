@@ -1,6 +1,46 @@
-import type { Signal, PortfolioPoint } from "./types/signal";
+export interface DimensionScore {
+  score: number;
+  detail?: string;
+}
 
-export type { Signal, PortfolioPoint };
+export type Signal = {
+  id: string;
+  pair: string;
+  action: "BUY" | "SELL" | "HOLD";
+  confidence: number;
+  price: number;
+  change24h: number;
+  reasoning: string;
+  dimensions: {
+    etfFlow: number;
+    sentiment: number;
+    macro: number;
+    momentum: number;
+    treasury: number;
+  };
+  dimensionDetails?: {
+    etfFlow: DimensionScore;
+    sentiment: DimensionScore;
+    macro: DimensionScore;
+    momentum: DimensionScore;
+    treasury: DimensionScore;
+  };
+  execution: {
+    orderType: string;
+    entry: number;
+    takeProfit: number;
+    stopLoss: number;
+    positionSize: string;
+    riskReward: string;
+  };
+  sources: string[];
+  timeAgo: string;
+};
+
+export type PortfolioPoint = {
+  day: number;
+  value: number;
+};
 
 export const signals: Signal[] = [
   {

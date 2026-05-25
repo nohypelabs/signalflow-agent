@@ -19,7 +19,7 @@ const groups = [
   {
     label: "ANALYTICS",
     items: [
-      { href: "/", label: "Dashboard", Icon: HomeIcon },
+      { href: "/dashboard", label: "Dashboard", Icon: HomeIcon },
       { href: "/signals", label: "Signals", Icon: SignalIcon },
       { href: "/performance", label: "Performance", Icon: PerformanceIcon },
     ],
@@ -29,7 +29,7 @@ const groups = [
     items: [
       { href: "/trading", label: "Trading", Icon: TradeIcon },
       { href: "/trade-history", label: "Trade History", Icon: HistoryIcon },
-      { href: "/strategy", label: "Strategy Config", Icon: StrategyIcon },
+      { href: "/strategy-config", label: "Strategy Config", Icon: StrategyIcon },
     ],
   },
   {

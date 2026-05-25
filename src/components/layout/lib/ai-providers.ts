@@ -1,6 +1,10 @@
-import type { AIProvider, AIConfig } from "./types/datasource";
-
-export type { AIProvider, AIConfig };
+export interface AIProvider {
+  id: string;
+  name: string;
+  baseUrl: string;
+  defaultModel: string;
+  models: string[];
+}
 
 export const AI_PROVIDERS: AIProvider[] = [
   {
@@ -34,4 +38,10 @@ export const AI_PROVIDERS: AIProvider[] = [
 
 export function getProvider(id: string): AIProvider | undefined {
   return AI_PROVIDERS.find((p) => p.id === id);
+}
+
+export interface AIConfig {
+  providerId: string;
+  apiKey: string;
+  model: string;
 }

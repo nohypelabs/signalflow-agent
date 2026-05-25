@@ -8,18 +8,18 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import type { Signal } from "./types/signal";
-import type { SoDEXTicker, SoDEXNewOrderRequest, SoDEXOrder } from "./types/trade";
-import type { AIConfig } from "./types/datasource";
-import type { SignalsData } from "./hooks/useSignals";
-import type { RecordedSignal } from "./hooks/useSignalHistory";
-import { useMarket } from "./hooks/useMarket";
-import { useSignals } from "./hooks/useSignals";
-import { useAISignal } from "./hooks/useAISignal";
-import { useWallet } from "./hooks/useWallet";
-import { useTradeExecution } from "./hooks/useTradeExecution";
-import { useAIConfig } from "./hooks/useAIConfig";
-import { useSignalHistory } from "./hooks/useSignalHistory";
+import type { Signal } from "./mock-data";
+import type { SoDEXTicker, SoDEXNewOrderRequest, SoDEXOrder } from "./sodex-types";
+import type { AIConfig } from "./ai-providers";
+import type { SignalsData } from "./use-signals";
+import type { RecordedSignal } from "./use-signal-history";
+import { useMarket } from "./use-market";
+import { useSignals } from "./use-signals";
+import { useAISignal } from "./use-ai-signal";
+import { useWallet } from "./use-wallet";
+import { useOrders } from "./use-orders";
+import { useAIConfig } from "./use-ai-config";
+import { useSignalHistory } from "./use-signal-history";
 import { getProvider } from "./ai-providers";
 import { pairToSodexSymbol } from "./pair-map";
 
@@ -32,7 +32,7 @@ function pairToCoin(pair: string): string {
 export interface DashboardState {
   // Market
   tickers: SoDEXTicker[] | null;
-  klines: import("./types/trade").SoDEXKline[] | null;
+  klines: import("./sodex-types").SoDEXKline[] | null;
   marketLoading: boolean;
   marketError: string | null;
   sodexStatus: "connected" | "error" | "loading";
@@ -96,7 +96,7 @@ export interface DashboardState {
   selectedSignal: Signal | null;
   setSelectedSignal: (s: Signal | null) => void;
   displaySignal: Signal | null;
-  liveDims: import("./hooks/useSignals").SignalDimensions | null;
+  liveDims: import("./use-signals").SignalDimensions | null;
 
   // Trade form
   showTradeForm: boolean;
@@ -156,7 +156,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     byCoin: historyByCoin,
   } = useSignalHistory();
 
-  // Orders (renamed hook)
+  // Orders
   const {
     orders,
     loading: ordersLoading,
@@ -164,7 +164,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     refresh: refreshOrders,
     placeOrder,
     cancel: cancelOrder,
-  } = useTradeExecution(true);
+  } = useOrders(true);
 
   // ── Local state ──
 
@@ -237,18 +237,25 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   // ── Context value ──
 
   const value: DashboardState = {
+    // Market
     tickers,
     klines,
     marketLoading,
     marketError,
     sodexStatus,
     tickerMap,
+
+    // Signals
     signalsData,
     signalsLoading,
     signalsError,
+
+    // AI config
     aiConfig,
     updateAIConfig,
     aiProviderLabel,
+
+    // AI signal generation
     aiSignal,
     analyzing,
     aiError,
@@ -256,12 +263,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     clearAISignal,
     aiCoin,
     setAiCoin,
+
+    // Wallet
     address,
     shortAddress,
     isConnected,
     chainId,
     connectWallet,
     disconnectWallet,
+
+    // Orders
     orders,
     ordersLoading,
     ordersError,
@@ -269,16 +280,22 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     placeOrder,
     cancelOrder,
     openOrders,
+
+    // Signal history
     history,
     historyHydrated,
     recordSignal,
     resolveSignals,
     signalStats,
     historyByCoin,
+
+    // Selected signal
     selectedSignal,
     setSelectedSignal,
     displaySignal,
     liveDims,
+
+    // Trade form
     showTradeForm,
     executingSignal,
     executingTicker,
