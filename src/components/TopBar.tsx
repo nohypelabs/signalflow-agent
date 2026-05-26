@@ -59,8 +59,8 @@ export default function TopBar({
         onToggleFavorite={toggleFavorite}
       />
 
-      {/* Favorite watchlist bar */}
-      <FavoriteTickerBar tickers={favoriteTickers} />
+      {/* Favorite watchlist bar — hidden for now, too busy with market tape */}
+      {/* <FavoriteTickerBar tickers={favoriteTickers} /> */}
 
       {/* Main header bar */}
       <header className="flex items-center justify-between px-3 md:px-4 h-11 bg-surface border-b border-border-default">
