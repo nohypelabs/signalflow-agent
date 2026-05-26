@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { createChart, ColorType, CrosshairMode, createSeriesMarkers, CandlestickSeries, HistogramSeries } from "lightweight-charts";
+import { createChart, ColorType, CrosshairMode, createSeriesMarkers, CandlestickSeries, HistogramSeries, LineSeries } from "lightweight-charts";
 import type {
   IChartApi,
   ISeriesApi,
@@ -140,6 +140,7 @@ export default function TradingChart({
   const chartRef = useRef<IChartApi | null>(null);
   const candleRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const volumeRef = useRef<ISeriesApi<"Histogram"> | null>(null);
+  const lineSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const markerLinesRef = useRef<IPriceLine[]>([]);
   const markersPluginRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
 
@@ -151,6 +152,12 @@ export default function TradingChart({
   const [hoverData, setHoverData] = useState<{
     time: number; open: number; high: number; low: number; close: number; volume: number;
   } | null>(null);
+
+  // Chart display toggles
+  const [chartType, setChartType] = useState<"candles" | "line">("candles");
+  const [showSignals, setShowSignals] = useState(true);
+  const [showTradePlan, setShowTradePlan] = useState(true);
+  const [showVolume, setShowVolume] = useState(true);
 
   const sodexSymbol = pairToSodexSymbol(pair.split("/")[0]);
 
@@ -283,6 +290,19 @@ export default function TradingChart({
     });
     volumeRef.current = volumeSeries;
 
+    // Line series (for "Line" chart mode)
+    const lineSeries = chart.addSeries(LineSeries, {
+      color: "#00E5A8",
+      lineWidth: 2,
+      crosshairMarkerVisible: true,
+      crosshairMarkerRadius: 3,
+      crosshairMarkerBackgroundColor: "#00E5A8",
+      lastValueVisible: false,
+      priceLineVisible: false,
+      visible: false, // hidden by default (candles mode)
+    });
+    lineSeriesRef.current = lineSeries;
+
     // Crosshair handler
     chart.subscribeCrosshairMove((param: MouseEventParams<Time>) => {
       if (!param.time || !param.point) {
@@ -308,6 +328,7 @@ export default function TradingChart({
       chartRef.current = null;
       candleRef.current = null;
       volumeRef.current = null;
+      lineSeriesRef.current = null;
       markersPluginRef.current = null;
     };
   }, []);
@@ -320,7 +341,25 @@ export default function TradingChart({
     const volumes = klines.map(klineToVolume);
 
     candleRef.current.setData(candles);
+
+    // Line series data (close prices)
+    if (lineSeriesRef.current) {
+      const lineData = klines.map((k) => ({
+        time: (k.t / 1000) as Time,
+        value: parseFloat(k.c),
+      }));
+      lineSeriesRef.current.setData(lineData);
+    }
+
+    // Candle vs Line mode toggle
+    candleRef.current.applyOptions({ visible: chartType === "candles" });
+    if (lineSeriesRef.current) {
+      lineSeriesRef.current.applyOptions({ visible: chartType === "line" });
+    }
+
+    // Volume visibility
     volumeRef.current.setData(volumes);
+    volumeRef.current.applyOptions({ visible: showVolume });
 
     // Remove old marker lines
     markerLinesRef.current.forEach((line) => {
@@ -328,33 +367,37 @@ export default function TradingChart({
     });
     markerLinesRef.current = [];
 
-    // Add signal markers (BUY/SELL/HOLD) on chart
-    const latestKlineTime = klines[klines.length - 1].t / 1000;
-    const markers = pairSignals
-      .filter((s) => s.execution?.entry)
-      .map((s) => {
-        // Find closest kline to signal time (use latest kline as proxy since signals don't have exact timestamps)
-        const closestKline = klines.reduce((best, k) => {
-          const diff = Math.abs(k.t / 1000 - latestKlineTime);
-          return diff < Math.abs(best.t / 1000 - latestKlineTime) ? k : best;
-        });
+    // Add signal markers (BUY/SELL/HOLD) on chart — only when showSignals is on
+    if (showSignals) {
+      const latestKlineTime = klines[klines.length - 1].t / 1000;
+      const markers = pairSignals
+        .filter((s) => s.execution?.entry)
+        .map((s) => {
+          // Find closest kline to signal time (use latest kline as proxy since signals don't have exact timestamps)
+          const closestKline = klines.reduce((best, k) => {
+            const diff = Math.abs(k.t / 1000 - latestKlineTime);
+            return diff < Math.abs(best.t / 1000 - latestKlineTime) ? k : best;
+          });
 
-        return {
-          time: (closestKline.t / 1000) as Time,
-          position: "belowBar" as const,
-          color: s.action === "BUY" ? CHART_COLORS.buyLine : s.action === "SELL" ? CHART_COLORS.sellLine : CHART_COLORS.holdLine,
-          shape: s.action === "BUY" ? "arrowUp" as const : s.action === "SELL" ? "arrowDown" as const : "circle" as const,
-          text: s.action,
-        };
-      })
-      .sort((a, b) => (a.time as number) - (b.time as number));
+          return {
+            time: (closestKline.t / 1000) as Time,
+            position: "belowBar" as const,
+            color: s.action === "BUY" ? CHART_COLORS.buyLine : s.action === "SELL" ? CHART_COLORS.sellLine : CHART_COLORS.holdLine,
+            shape: s.action === "BUY" ? "arrowUp" as const : s.action === "SELL" ? "arrowDown" as const : "circle" as const,
+            text: s.action,
+          };
+        })
+        .sort((a, b) => (a.time as number) - (b.time as number));
 
-    if (markers.length > 0 && markersPluginRef.current) {
-      markersPluginRef.current.setMarkers(markers);
+      if (markers.length > 0 && markersPluginRef.current) {
+        markersPluginRef.current.setMarkers(markers);
+      }
+    } else if (markersPluginRef.current) {
+      markersPluginRef.current.setMarkers([]);
     }
 
-    // Add entry / TP / SL lines for latest signal
-    if (latestSignal?.execution) {
+    // Add entry / TP / SL lines for latest signal — only when showTradePlan is on
+    if (showTradePlan && latestSignal?.execution) {
       const ex = latestSignal.execution;
 
       if (ex.entry > 0 && candleRef.current) {
@@ -396,7 +439,7 @@ export default function TradingChart({
 
     // Fit content
     chartRef.current?.timeScale().fitContent();
-  }, [klines, pairSignals, latestSignal]);
+  }, [klines, pairSignals, latestSignal, showVolume, showSignals, showTradePlan, chartType]);
 
   // Handle resize
   useEffect(() => {
@@ -426,11 +469,10 @@ export default function TradingChart({
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-card border border-border-default rounded-lg overflow-hidden">
       {/* Header */}
-      <div className="px-4 pt-3 pb-2 flex flex-col gap-2 shrink-0 border-b border-border-default">
+      <div className="px-4 pt-3 pb-2 flex flex-col gap-1.5 shrink-0 border-b border-border-default">
+        {/* Row 1: Pair + Price + Signal badge + freshness */}
         <div className="flex items-center justify-between">
-          {/* Left: pair selector + price */}
           <div className="flex items-center gap-3">
-            {/* Pair selector */}
             <select
               value={pair}
               onChange={(e) => setPair(e.target.value)}
@@ -445,8 +487,6 @@ export default function TradingChart({
                 <option key={p} value={p}>{p}</option>
               ))}
             </select>
-
-            {/* Current price */}
             {displayPrice != null && (
               <div className="flex items-baseline gap-2">
                 <span className="text-lg font-bold font-mono text-txt-primary tabular-nums">
@@ -460,10 +500,7 @@ export default function TradingChart({
               </div>
             )}
           </div>
-
-          {/* Right: timeframe + freshness */}
           <div className="flex items-center gap-3">
-            {/* Signal badge */}
             {latestSignal && (
               <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${
                 latestSignal.action === "BUY"
@@ -475,8 +512,6 @@ export default function TradingChart({
                 {latestSignal.action} {latestSignal.confidence}%
               </span>
             )}
-
-            {/* Data freshness */}
             {dataAge !== null && dataAge < 120_000 && (
               <span className="text-[9px] text-txt-faint flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-buy animate-pulse" />
@@ -486,7 +521,28 @@ export default function TradingChart({
           </div>
         </div>
 
-        {/* Timeframe pills + signal info row */}
+        {/* Row 2: Context line */}
+        <div className="flex items-center gap-2 text-[10px] text-txt-dim">
+          <span>SoDEX Klines</span>
+          <span className="text-txt-faint">·</span>
+          {lastKline && (
+            <>
+              <span>Updated {dataAge !== null ? `${Math.floor(dataAge / 1000)}s ago` : "—"}</span>
+              <span className="text-txt-faint">·</span>
+            </>
+          )}
+          {latestSignal && (
+            <span>
+              Latest Signal: <span className={
+                latestSignal.action === "BUY" ? "text-buy" :
+                latestSignal.action === "SELL" ? "text-sell" : "text-hold"
+              }>{latestSignal.action}</span>{" "}
+              <span className="text-txt-muted">{latestSignal.confidence}% confidence</span>
+            </span>
+          )}
+        </div>
+
+        {/* Row 3: Timeframe pills + toggles */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
             {(Object.keys(TF_CONFIG) as Timeframe[]).map((t) => (
@@ -507,16 +563,72 @@ export default function TradingChart({
             )}
           </div>
 
-          {/* Latest signal info */}
-          {latestSignal?.execution && (
-            <div className="flex items-center gap-3 text-[9px] font-mono text-txt-faint">
-              <span>Entry <span className="text-accent">{fmtPrice(latestSignal.execution.entry)}</span></span>
-              <span>TP <span className="text-buy">{fmtPrice(latestSignal.execution.takeProfit)}</span></span>
-              <span>SL <span className="text-sell">{fmtPrice(latestSignal.execution.stopLoss)}</span></span>
-              <span>R:R <span className="text-txt-secondary">{latestSignal.execution.riskReward}</span></span>
+          <div className="flex items-center gap-2">
+            {/* Candles | Line toggle */}
+            <div className="flex items-center bg-inset rounded border border-border-default overflow-hidden">
+              <button
+                onClick={() => setChartType("candles")}
+                className={`text-[9px] px-2 py-0.5 transition-all cursor-pointer ${
+                  chartType === "candles" ? "text-accent bg-elevated" : "text-txt-dim hover:text-txt-secondary"
+                }`}
+              >
+                Candles
+              </button>
+              <div className="w-px h-3 bg-border-default" />
+              <button
+                onClick={() => setChartType("line")}
+                className={`text-[9px] px-2 py-0.5 transition-all cursor-pointer ${
+                  chartType === "line" ? "text-accent bg-elevated" : "text-txt-dim hover:text-txt-secondary"
+                }`}
+              >
+                Line
+              </button>
             </div>
-          )}
+
+            {/* Separator */}
+            <div className="w-px h-3 bg-border-default" />
+
+            {/* Signals toggle */}
+            <button
+              onClick={() => setShowSignals((v) => !v)}
+              className={`text-[9px] px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                showSignals ? "text-accent bg-accent/10" : "text-txt-faint hover:text-txt-dim"
+              }`}
+            >
+              Signals {showSignals ? "On" : "Off"}
+            </button>
+
+            {/* Trade Plan toggle */}
+            <button
+              onClick={() => setShowTradePlan((v) => !v)}
+              className={`text-[9px] px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                showTradePlan ? "text-accent bg-accent/10" : "text-txt-faint hover:text-txt-dim"
+              }`}
+            >
+              Trade Plan {showTradePlan ? "On" : "Off"}
+            </button>
+
+            {/* Volume toggle */}
+            <button
+              onClick={() => setShowVolume((v) => !v)}
+              className={`text-[9px] px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                showVolume ? "text-accent bg-accent/10" : "text-txt-faint hover:text-txt-dim"
+              }`}
+            >
+              Volume {showVolume ? "On" : "Off"}
+            </button>
+          </div>
         </div>
+
+        {/* Row 4: Trade plan info (only when visible) */}
+        {showTradePlan && latestSignal?.execution && (
+          <div className="flex items-center gap-3 text-[9px] font-mono text-txt-faint">
+            <span>Entry <span className="text-accent">{fmtPrice(latestSignal.execution.entry)}</span></span>
+            <span>TP <span className="text-buy">{fmtPrice(latestSignal.execution.takeProfit)}</span></span>
+            <span>SL <span className="text-sell">{fmtPrice(latestSignal.execution.stopLoss)}</span></span>
+            <span>R:R <span className="text-txt-secondary">{latestSignal.execution.riskReward}</span></span>
+          </div>
+        )}
       </div>
 
       {/* Chart container */}
