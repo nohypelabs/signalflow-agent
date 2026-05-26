@@ -332,7 +332,13 @@ function Architecture() {
 │       │   ├── useStatus.ts        # Hook: connection health
 │       │   ├── useAIConfig.ts      # Hook: AI provider config
 │       │   ├── useSignalHistory.ts # Hook: signal accuracy tracking
-│       │   └── useChartDrawings.ts # Hook: chart drawing tools
+│       │   ├── useChartDrawings.ts # Hook: chart drawing tools
+│       │   ├── useAISignal.ts         # Hook: AI signal fetch
+│       │   ├── useDashboardMetrics.ts # Hook: dashboard KPI computation
+│       │   └── useFavoriteTickers.ts  # Hook: user watchlist
+│       ├── ai/
+│       │   └── providerErrors.ts  # AI error mapping & classification
+│       ├── dashboard-context.tsx  # React context for global dashboard state
 │       ├── types/
 │       │   ├── signal.ts           # Signal, dimensions, execution types
 │       │   ├── trade.ts            # SoDEX types (ticker, kline, order)
@@ -370,7 +376,7 @@ function Architecture() {
           auto-detected based on environment.
         </li>
         <li>
-          <strong className="text-white">In-memory caching.</strong> Signal data is cached for 60 seconds
+          <strong className="text-white">In-memory caching.</strong> Signal data is cached for 5 minutes
           server-side to avoid rate-limiting SoSoValue and SoDEX APIs on rapid refreshes.
         </li>
       </ul>
@@ -440,8 +446,8 @@ function SignalEngine() {
         />
         <DimensionScoring
           name="Momentum Scoring"
-          formula="50 + clamp(-40, 40, 24h_change% × 8)"
-          desc="Linear mapping of 24h price change to a score. -5% ≈ score 10; +5% ≈ score 90. Clamped to [0, 100]."
+          formula="RSI-based TA (60%) + snapshot (40%): ta.momentum × 0.6 + (50 + clamp(-40, 40, 24h% × 8)) × 0.4"
+          desc="RSI < 30 (oversold) scores ~80+, RSI > 70 (overbought) scores ~20. TA score blended 60/40 with SoSoValue 24h snapshot momentum."
         />
         <DimensionScoring
           name="Treasury Scoring"
@@ -484,6 +490,25 @@ function SignalEngine() {
         </p>
       </div>
 
+      <h3 className="text-lg font-bold text-white mt-8">Action Decision Engine</h3>
+      <p className="text-[#aaaacc]">
+        The BUY/SELL/HOLD decision uses a <strong className="text-white">separate composite weighting</strong> from the displayed overall score:
+      </p>
+      <div className="bg-inset border border-border-default rounded-lg p-4 mt-3 font-mono text-xs text-[#aaaacc]">
+        <pre className="whitespace-pre-wrap m-0">{`Composite = TA (55%) + Sentiment (25%) + Fundamental (20%)
+
+TA Score = momentum × 0.35 + trend × 0.35 + volatility × 0.30
+Sentiment = news headline keyword scoring
+Fundamental = ETF × 0.30 + Macro × 0.40 + Treasury × 0.30
+
+BUY:  composite > 60 AND momentum > 55 AND trend > 50 AND sentiment > 45
+SELL: composite < 40 AND momentum < 45 AND trend < 50 AND sentiment < 55
+HOLD: everything else
+
+Confidence = 50 + |composite - 50| × 1.5, capped at 98
+TP/SL = ATR-based: BUY TP = price × (1 + 2×ATR%), SL = price × (1 - ATR%)`}</pre>
+      </div>
+
       <h3 className="text-lg font-bold text-white mt-8">Weight Visibility</h3>
       <p className="text-[#aaaacc]">
         The Signals page displays <strong className="text-white">per-coin dynamic weights</strong> and
@@ -523,14 +548,14 @@ function AIAgents() {
         <tbody>
           {[
             ["DeepSeek", "api.deepseek.com/v1", "deepseek-chat", "deepseek-chat, deepseek-reasoner"],
-            ["OpenAI", "api.openai.com/v1", "gpt-4o", "gpt-4o, gpt-4.1, o3-mini, o1"],
+            ["OpenAI", "api.openai.com/v1", "gpt-4o", "gpt-4o, gpt-4o-mini, gpt-4.1, gpt-4.1-mini, gpt-4.1-nano, o3-mini, o1"],
             ["Anthropic (Claude)", "api.anthropic.com/v1", "claude-sonnet-4", "opus-4, sonnet-4, 3.5-haiku"],
             ["Google (Gemini)", "generativelanguage.googleapis.com", "gemini-2.5-pro", "gemini-2.5-pro, 2.5-flash, 2.0-flash"],
             ["xAI (Grok)", "api.x.ai/v1", "grok-3", "grok-3, grok-3-mini, grok-2"],
             ["Xiaomi (MiMo)", "api.xiaomi.com/v1", "mimo-v2.5-pro", "mimo-v2.5-pro, mimo-v2.5-flash"],
-            ["Zhipu AI (GLM)", "open.bigmodel.cn/api/paas/v4", "glm-4-plus", "glm-4-plus, glm-4-flash, glm-4-long"],
-            ["Alibaba (Qwen)", "dashscope.aliyuncs.com", "qwen-max", "qwen-max, qwen-plus, qwen-turbo"],
-            ["Mistral AI", "api.mistral.ai/v1", "mistral-large", "mistral-large, codestral, mistral-small"],
+            ["Zhipu AI (GLM)", "open.bigmodel.cn/api/paas/v4", "glm-4-plus", "glm-4-plus, glm-4-flash, glm-4-long, glm-4-air"],
+            ["Alibaba (Qwen)", "dashscope.aliyuncs.com", "qwen-max", "qwen-max, qwen-plus, qwen-turbo, qwen-long"],
+            ["Mistral AI", "api.mistral.ai/v1", "mistral-large-latest", "mistral-large-latest, mistral-medium-latest, codestral-latest, mistral-small-latest"],
             ["Groq", "api.groq.com/openai/v1", "llama-3.3-70b", "llama-3.3, mixtral, gemma2"],
             ["OpenRouter", "openrouter.ai/api/v1", "openai/gpt-4o", "All providers via gateway"],
           ].map(([p, u, d, m]) => (
@@ -591,7 +616,7 @@ POST /api/signals/analyze { coin: "BTC", provider, model, apiKey }
         ▼
 Server gathers 5 data sources in parallel:
   ├─ SoSoValue: currencies, ETF summary, macro events, BTC treasuries, hot news
-  └─ SoDEX: tickers (for live vBTC_vUSDC price)
+  └─ SoDEX: tickers + klines (for live price + TA engine data)
         │
         ▼
 Build structured prompt with raw data (NOT heuristic scores)
@@ -664,7 +689,7 @@ function RiskEngine() {
           {[
             ["Dynamic outlier capping", "Dimensions >1.5σ from mean capped at 8% weight", "Prevents single anomalous data point from dominating signal"],
             ["Score clamping", "All dimension scores clamped to [0, 100]", "Prevents extreme values from breaking the weighted average"],
-            ["60s cache TTL", "In-memory server cache on /api/signals", "Prevents rate limiting and ensures data consistency"],
+            ["5 min cache TTL", "In-memory server cache on /api/signals", "Prevents rate limiting and ensures data consistency"],
             ["Signal history resolution", "1-hour delay before signals are evaluated for accuracy", "Ensures sufficient price movement for meaningful accuracy assessment"],
           ].map(([c, m, p]) => (
             <tr key={c} className="border-b border-[#1E293B20]">
@@ -822,13 +847,13 @@ function DataPipeline() {
         <CacheCard
           layer="Server"
           route="/api/signals"
-          ttl="60 seconds"
+          ttl="5 minutes"
           strategy="In-memory object cache. Returns stale data within TTL window to avoid rate-limiting upstream APIs."
         />
         <CacheCard
           layer="Client"
           route="useSignals()"
-          ttl="60 seconds"
+          ttl="5 minutes"
           strategy="setInterval polling. Refetches every 60s. Cleanup on unmount via clearInterval."
         />
         <CacheCard
@@ -1032,10 +1057,17 @@ function APIReference() {
       <p className="text-[#aaaacc]">
         Fetches live data from SoSoValue, computes heuristic 5-dimension scores with dynamic weights.
       </p>
-      <p className="text-xs text-txt-muted">Cache: 60 seconds in-memory · Rate: auto-refreshed client-side every 60s</p>
+      <p className="text-xs text-txt-muted">Cache: 5 minutes in-memory · Rate: auto-refreshed client-side every 60s</p>
       <h4 className="text-sm font-bold text-white mt-3">Response</h4>
       <CodeBlock>{`{
   "updated": 1716153600000,
+  "signals": [
+    { "id": "ta-btc-...", "pair": "BTC/USDC", "action": "BUY", "confidence": 72,
+      "price": 68420, "change24h": 3.2, "reasoning": "...",
+      "dimensions": { "etfFlow": 95, "sentiment": 88, "macro": 85, "momentum": 80, "treasury": 90 },
+      "execution": { "entry": 68420, "takeProfit": 72000, "stopLoss": 65500, ... },
+      "sources": ["SoDEX Klines", "TA Engine", "SoSoValue News", ...] }
+  ],
   "sources": {
     "etf": true,
     "macro": true,
@@ -1072,30 +1104,31 @@ function APIReference() {
 }`}</CodeBlock>
       <h4 className="text-sm font-bold text-white mt-3">Response</h4>
       <CodeBlock>{`{
-  "action": "BUY",
-  "confidence": 87,
-  "reasoning": "BTC ETF inflows surged...",
-  "dimensions": {
-    "etfFlow":    { "score": 92, "detail": "ETF inflow $520M in 24h..." },
-    "sentiment":  { "score": 85, "detail": "News sentiment 85% bullish..." },
-    "macro":      { "score": 78, "detail": "Fed holding rates steady..." },
-    "momentum":   { "score": 82, "detail": "BTC +3.2% with strong volume..." },
-    "treasury":   { "score": 90, "detail": "12 public companies accumulating..." }
+  "baseSignal": {
+    "id": "ta-btc-...", "pair": "BTC/USDC", "action": "BUY", "confidence": 72,
+    "price": 68420, "change24h": 3.2,
+    "reasoning": "Bullish setup on BTC/USDC. RSI 45 (neutral)...",
+    "dimensions": { "etfFlow": 95, "sentiment": 88, "macro": 85, "momentum": 80, "treasury": 90 },
+    "execution": { "entry": 68420, "takeProfit": 72000, "stopLoss": 65500, ... },
+    "sources": ["SoDEX Klines", "TA Engine", "SoSoValue News", ...]
   },
-  "execution": {
-    "orderType": "Limit Buy on SoDEX",
-    "entry": 68420,
-    "takeProfit": 71841,
-    "stopLoss": 64999,
-    "positionSize": "5% of portfolio",
-    "riskReward": "1 : 1.21"
+  "aiThesis": {
+    "reasoning": "BTC ETF inflows surged +$520M in 24h...",
+    "dimensionDetails": {
+      "etfFlow":    { "score": 92, "detail": "ETF inflow $520M in 24h..." },
+      "sentiment":  { "score": 85, "detail": "News sentiment 85% bullish..." },
+      "macro":      { "score": 78, "detail": "Fed holding rates steady..." },
+      "momentum":   { "score": 82, "detail": "BTC +3.2% with strong volume..." },
+      "treasury":   { "score": 90, "detail": "12 public companies accumulating..." }
+    },
+    "execution": {
+      "orderType": "Limit Buy on SoDEX", "entry": 68420,
+      "takeProfit": 71841, "stopLoss": 64999, "positionSize": "5%", "riskReward": "1:1.21"
+    }
   },
-  "coin": "BTC",
-  "pair": "BTC/USDC",
-  "price": 68420,
-  "change24h": 3.2,
-  "generated": 1716153600000,
-  "sources": ["ETF Module (SoSoValue)", "News Feeds (SoSoValue)", ...]
+  "aiError": null,
+  "sources": ["ETF Module (SoSoValue)", "News Feeds", ..., "AI Thesis"],
+  "generated": 1716153600000
 }`}</CodeBlock>
 
       <h3 className="text-lg font-bold text-white mt-8">GET /api/market/[type]</h3>
@@ -1144,7 +1177,7 @@ function APIReference() {
       <p className="text-[#aaaacc]">SoSoValue API module status — which modules are returning data.</p>
 
       <h3 className="text-lg font-bold text-white mt-6">GET /api/status</h3>
-      <p className="text-[#aaaacc]">SoDEX connection health check.</p>
+      <p className="text-[#aaaacc]">SoSoValue, SoDEX, and AI provider connection health check. Accepts query params: <code className="text-accent bg-[#1E293B] px-1 rounded">?provider=id&model=name&apiKey=key</code> for dynamic AI provider testing.</p>
 
       <h3 className="text-lg font-bold text-white mt-8">Error Handling</h3>
       <p className="text-[#aaaacc]">All API routes follow a consistent error pattern:</p>
