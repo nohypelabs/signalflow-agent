@@ -1257,9 +1257,19 @@ function Roadmap() {
           "Wallet panel — address copy, balance view, clear disconnect button",
           "Dynamic weight engine with outlier capping",
           "Signal history tracking with accuracy validation",
+          "Zero mock data — 100% real data from SoSoValue + SoDEX, no fallback to mock",
+          "TradingChart hardened — kline normalization, OHLCV validation, dedup, ascending sort safety, empty/error states",
+          "Chart drawing tools — Measure, Horizontal Line, Trendline, Fibonacci Retracement with localStorage persistence per pair/timeframe",
+          "Chart header controls — Candles/Line toggle, Signals on/off, Trade Plan on/off, Volume on/off, context line with freshness",
+          "Signals page redesign — premium dark fintech UI with 11 components: header, summary cards, filters (search/type/confidence/sort/view mode), signal cards, compact table, analysis drawer, top signal highlight",
+          "Performance page — 8 enhancements: confidence calibration chart, simulated equity curve, resolution window selector (1h/4h/24h/7d), per-coin accuracy breakdown, win/loss streak tracking, signal frequency stats, max drawdown, CSV export",
+          "Settings page — visual provider grid for 11 AI providers, model selector cards, API key management with save feedback, dynamic AI provider display",
+          "Data Sources page — dynamic AI provider detection from localStorage, per-module status table, latency display, accent-striped cards",
+          "Docs page — updated architecture diagram, project structure, provider table (11 providers), removed mock-data references",
+          "API status endpoint — dynamic AI provider testing based on user's selected provider/model/key",
         ].map((item) => (
-          <li key={item} className="flex items-center gap-2">
-            <span className="text-buy text-xs">✓</span> {item}
+          <li key={item} className="flex items-start gap-2">
+            <span className="text-buy text-xs mt-0.5 shrink-0">✓</span> <span>{item}</span>
           </li>
         ))}
       </ul>
@@ -1311,8 +1321,7 @@ function Roadmap() {
         </thead>
         <tbody>
           {[
-            ["SignalFlow Agent", "1 AI agent (multi-provider)", "SoSoValue + SoDEX", "Your keys, your models. Non-custodial EIP-712 execution."],
-            ["SoSoMind", "5 specialist agents", "SoSoValue + SoDEX + 6 AI providers", "Agent specialization: Research, Risk, Execution, Macro, Sector Rotation"],
+            ["SignalFlow Agent", "1 AI agent (11 providers)", "SoSoValue + SoDEX", "Your keys, your models. Non-custodial EIP-712 execution. Zero mock data."],
           ].map(([p, a, i, d]) => (
             <tr key={p} className="border-b border-[#1E293B20]">
               <td className="py-2 pr-4 text-white font-semibold">{p}</td>
