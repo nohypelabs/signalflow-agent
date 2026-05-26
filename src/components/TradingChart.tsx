@@ -146,7 +146,9 @@ export default function TradingChart({
 
   const [tf, setTf] = useState<Timeframe>("1h");
   const [pair, setPair] = useState(initialSymbol);
-  const [klines, setKlines] = useState<SoDEXKline[] | null>(initialKlines ?? null);
+  const [klines, setKlines] = useState<SoDEXKline[] | null>(
+    initialKlines ? normalizeKlines(initialKlines) : null,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hoverData, setHoverData] = useState<{
@@ -340,7 +342,9 @@ export default function TradingChart({
     const candles = klines.map(klineToCandle);
     const volumes = klines.map(klineToVolume);
 
-    candleRef.current.setData(candles);
+    // Safety: ensure ascending order (normalizeKlines should handle this, but belt-and-suspenders)
+    const sortedCandles = [...candles].sort((a, b) => (a.time as number) - (b.time as number));
+    candleRef.current.setData(sortedCandles);
 
     // Line series data (close prices)
     if (lineSeriesRef.current) {
@@ -348,7 +352,8 @@ export default function TradingChart({
         time: (k.t / 1000) as Time,
         value: parseFloat(k.c),
       }));
-      lineSeriesRef.current.setData(lineData);
+      const sortedLineData = [...lineData].sort((a, b) => (a.time as number) - (b.time as number));
+      lineSeriesRef.current.setData(sortedLineData);
     }
 
     // Candle vs Line mode toggle
@@ -358,7 +363,8 @@ export default function TradingChart({
     }
 
     // Volume visibility
-    volumeRef.current.setData(volumes);
+    const sortedVolumes = [...volumes].sort((a, b) => (a.time as number) - (b.time as number));
+    volumeRef.current.setData(sortedVolumes);
     volumeRef.current.applyOptions({ visible: showVolume });
 
     // Remove old marker lines
