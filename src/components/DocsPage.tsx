@@ -530,11 +530,51 @@ function AIAgents() {
         via the Dashboard or Signals page.
       </p>
 
-      <h3 className="text-lg font-bold text-white mt-6">Multi-Provider Architecture</h3>
-      <p className="text-[#aaaacc]">
-        Users choose their AI provider and bring their own API key (stored in localStorage).
-        The server-side route handler accepts user provider configuration per-request.
-      </p>
+      <h3 className="text-lg font-bold text-white mt-6">Key Features</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+        <RiskCard
+          title="Multi-Provider Support"
+          desc="11 AI providers — DeepSeek, OpenAI, Claude, Gemini, Grok, MiMo, Qwen, GLM, Mistral, Groq, OpenRouter. Users select their preferred provider and model from Settings."
+        />
+        <RiskCard
+          title="User-Owned API Keys"
+          desc="API keys stored in localStorage, never on server. Users bring their own keys for full control over costs and usage. Server fallback via DEEPSEEK_API_KEY env var."
+        />
+        <RiskCard
+          title="Graceful Fallback"
+          desc="If AI provider fails, the base TA signal is still returned. AI errors never block signal generation. Markdown fences stripped, JSON validated, missing fields throw 502."
+        />
+        <RiskCard
+          title="JSON Mode"
+          desc="DeepSeek uses response_format: json_object for guaranteed structured output. Other providers use standard chat completion with prompt-level JSON enforcement."
+        />
+      </div>
+
+      <h3 className="text-lg font-bold text-white mt-8">Provider Flow</h3>
+      <CodeBlock>{`User Settings (localStorage)          Server-Side Route Handler
+┌──────────────────────┐           ┌──────────────────────────┐
+│ provider: "openai"   │           │ POST /api/signals/analyze│
+│ model: "gpt-4o"      │ ───────►  │ { coin, provider, model, │
+│ apiKey: "sk-..."     │           │   apiKey }               │
+└──────────────────────┘           └────────────┬─────────────┘
+                                                │
+                                    ┌───────────▼───────────┐
+                                    │ Build structured prompt│
+                                    │ with 5 data sources    │
+                                    └───────────┬───────────┘
+                                                │
+                                    ┌───────────▼───────────┐
+                                    │ Call AI provider       │
+                                    │ (user config or        │
+                                    │  server fallback)      │
+                                    └───────────┬───────────┘
+                                                │
+                                    ┌───────────▼───────────┐
+                                    │ Parse JSON → Validate  │
+                                    │ → Return signal        │
+                                    └───────────────────────┘`}</CodeBlock>
+
+      <h3 className="text-lg font-bold text-white mt-8">Supported Providers</h3>
 
       <table className="w-full text-sm mt-3 border-collapse">
         <thead>
@@ -992,32 +1032,32 @@ NewOrder: [
 ]`}</CodeBlock>
 
       <h3 className="text-lg font-bold text-white mt-8">Order Types</h3>
-      <ul className="text-[#aaaacc] space-y-2 ml-4">
-        <li>
-          <strong className="text-white">LIMIT orders</strong> — placed at the signal&apos;s entry price.
-          Remain on the order book until filled or canceled.
-        </li>
-        <li>
-          <strong className="text-white">IOC (Immediate-or-Cancel)</strong> — fill immediately at best available
-          price, cancel any unfilled portion. Suitable for market entry/exit.
-        </li>
-      </ul>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+        <RiskCard
+          title="LIMIT"
+          desc="Placed at the signal's entry price. Remains on the order book until filled or canceled. Default for BUY/SELL signals with defined entry levels."
+        />
+        <RiskCard
+          title="IOC (Immediate-or-Cancel)"
+          desc="Fill immediately at best available price, cancel any unfilled portion. Suitable for market entry/exit when slippage is acceptable."
+        />
+      </div>
 
       <h3 className="text-lg font-bold text-white mt-8">Order Management</h3>
-      <ul className="text-[#aaaacc] space-y-2 ml-4">
-        <li>
-          <strong className="text-white">Open Orders panel</strong> — shows active orders (NEW, PARTIALLY_FILLED)
-          with cancel button. Color-coded status badges.
-        </li>
-        <li>
-          <strong className="text-white">Trade History page</strong> — full order table with status,
-          filled quantity, average price, timestamp. One-row-per-action layout. Cancel action for open orders.
-        </li>
-        <li>
-          <strong className="text-white">Duplicate prevention</strong> — &quot;Execute&quot; button shows &quot;Order Open&quot;
-          when an active order exists for the same symbol, preventing accidental double-entry.
-        </li>
-      </ul>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+        <RiskCard
+          title="Open Orders Panel"
+          desc="Shows active orders (NEW, PARTIALLY_FILLED) with cancel button. Color-coded status badges. Real-time updates after trade execution."
+        />
+        <RiskCard
+          title="Trade History"
+          desc="Full order table with status, filled quantity, average price, timestamp. One-row-per-action layout with cancel action for open orders."
+        />
+        <RiskCard
+          title="Duplicate Prevention"
+          desc="Execute button shows 'Order Open' when an active order exists for the same symbol, preventing accidental double-entry."
+        />
+      </div>
     </div>
   );
 }
@@ -1032,17 +1072,16 @@ function WalletInfrastructure() {
         Dual-connector setup via wagmi v3. Config at{" "}
         <code className="text-accent bg-[#1E293B] px-1 rounded">src/lib/wallet-config.ts</code>:
       </p>
-      <ul className="text-[#aaaacc] space-y-3 ml-4">
-        <li>
-          <strong className="text-white">Injected connector</strong> — detects <code className="text-accent bg-[#1E293B] px-1 rounded">window.ethereum</code>{" "}
-          for MetaMask, Rabby, and other browser wallets. Always available.
-        </li>
-        <li>
-          <strong className="text-white">WalletConnect v2 connector</strong> — QR code modal for mobile wallets
-          (MetaMask Mobile, Trust Wallet, etc.). Enabled when{" "}
-          <code className="text-accent bg-[#1E293B] px-1 rounded">NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID</code> is set.
-        </li>
-      </ul>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+        <RiskCard
+          title="Injected Connector"
+          desc="Detects window.ethereum for MetaMask, Rabby, and other browser wallets. Always available on desktop. Primary connector for trading."
+        />
+        <RiskCard
+          title="WalletConnect v2"
+          desc="QR code modal for mobile wallets (MetaMask Mobile, Trust Wallet, etc.). Enabled when NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is set."
+        />
+      </div>
 
       <h3 className="text-lg font-bold text-white mt-6">ValueChain Network</h3>
       <CodeBlock>{`defineChain({
@@ -1081,15 +1120,21 @@ function WalletInfrastructure() {
         </tbody>
       </table>
 
-      <h3 className="text-lg font-bold text-white mt-8">Component: WalletButton</h3>
-      <p className="text-[#aaaacc]">
-        Located in the TopBar. Three states:
-      </p>
-      <ul className="text-[#aaaacc] space-y-1 ml-4">
-        <li><strong className="text-accent">Disconnected:</strong> Shows &quot;Connect Wallet&quot; button</li>
-        <li><strong className="text-buy">Connected (correct network):</strong> Shows truncated address + SOSO balance. Click opens dropdown with Copy Address, View Balance, Disconnect</li>
-        <li><strong className="text-hold">Wrong network:</strong> Shows &quot;Wrong Network&quot; with Switch Network and Disconnect options</li>
-      </ul>
+      <h3 className="text-lg font-bold text-white mt-8">WalletButton States</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+        <div className="bg-inset border border-accent-dim rounded-lg p-3">
+          <h4 className="text-xs font-bold text-accent m-0 mb-1">Disconnected</h4>
+          <p className="text-[10px] text-[#aaaacc] m-0">Shows "Connect Wallet" button. All trading UI disabled.</p>
+        </div>
+        <div className="bg-inset border border-buy-dim rounded-lg p-3">
+          <h4 className="text-xs font-bold text-buy m-0 mb-1">Connected</h4>
+          <p className="text-[10px] text-[#aaaacc] m-0">Truncated address + SOSO balance. Click opens dropdown: Copy Address, View Balance, Disconnect.</p>
+        </div>
+        <div className="bg-inset border border-hold-dim rounded-lg p-3">
+          <h4 className="text-xs font-bold text-hold m-0 mb-1">Wrong Network</h4>
+          <p className="text-[10px] text-[#aaaacc] m-0">Shows "Wrong Network" with Switch Network and Disconnect options.</p>
+        </div>
+      </div>
 
       <div className="bg-[#00E5A810] border border-accent-dim rounded-lg p-4 mt-6">
         <p className="text-sm text-[#aaaacc] m-0">
@@ -1258,19 +1303,25 @@ function Deployment() {
     <div className="prose prose-invert max-w-none space-y-6">
       <h2 className="text-2xl font-bold text-white">Deployment</h2>
 
-      <h3 className="text-lg font-bold text-white mt-4">Vercel</h3>
-      <p className="text-[#aaaacc]">
-        SignalFlow Agent is deployed on <strong className="text-white">Vercel</strong> with automatic CI/CD
-        from the <code className="text-accent bg-[#1E293B] px-1 rounded">main</code> branch.
-        Every push triggers a production build.
-      </p>
-      <ul className="text-[#aaaacc] space-y-1 ml-4">
-        <li><strong className="text-white">Project:</strong> dashboard</li>
-        <li><strong className="text-white">Organization:</strong> team_tUzAbpJU8X4n5mrQJV03eZm9</li>
-        <li><strong className="text-white">Framework:</strong> Next.js (auto-detected by Vercel)</li>
-        <li><strong className="text-white">Build command:</strong> next build (auto-detected)</li>
-        <li><strong className="text-white">Output directory:</strong> .next (auto-detected)</li>
-      </ul>
+      <h3 className="text-lg font-bold text-white mt-4">Vercel Deployment</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+        <div className="bg-inset border border-border-default rounded-lg p-3">
+          <p className="text-[10px] text-txt-muted uppercase tracking-wider">Project</p>
+          <p className="text-sm font-bold text-white font-mono">dashboard</p>
+        </div>
+        <div className="bg-inset border border-border-default rounded-lg p-3">
+          <p className="text-[10px] text-txt-muted uppercase tracking-wider">Framework</p>
+          <p className="text-sm font-bold text-white">Next.js (auto-detected)</p>
+        </div>
+        <div className="bg-inset border border-border-default rounded-lg p-3">
+          <p className="text-[10px] text-txt-muted uppercase tracking-wider">CI/CD</p>
+          <p className="text-sm font-bold text-white">Auto-deploy from main branch</p>
+        </div>
+        <div className="bg-inset border border-border-default rounded-lg p-3">
+          <p className="text-[10px] text-txt-muted uppercase tracking-wider">Build</p>
+          <p className="text-sm font-bold text-white font-mono">next build → .next</p>
+        </div>
+      </div>
 
       <h3 className="text-lg font-bold text-white mt-6">Environment Variables on Vercel</h3>
       <p className="text-[#aaaacc]">
@@ -1293,22 +1344,40 @@ export default config;`}</CodeBlock>
       </p>
 
       <h3 className="text-lg font-bold text-white mt-6">PWA Configuration</h3>
-      <p className="text-[#aaaacc]">
-        The app is a Progressive Web App with:
-      </p>
-      <ul className="text-[#aaaacc] space-y-1 ml-4">
-        <li><strong className="text-white">manifest.json</strong> — app name, icons (192px + 512px), standalone display, theme color</li>
-        <li><strong className="text-white">sw.js</strong> — basic offline service worker with cache-first strategy</li>
-        <li><strong className="text-white">Apple Web App meta tags</strong> — black-translucent status bar, apple-touch-icon</li>
-        <li><strong className="text-white">PWARegister component</strong> — client-only service worker registration in layout.tsx</li>
-      </ul>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+        <RiskCard
+          title="manifest.json"
+          desc="App name, icons (192px + 512px), standalone display mode, theme color. Enables 'Add to Home Screen' on mobile."
+        />
+        <RiskCard
+          title="Service Worker"
+          desc="Basic offline cache-first strategy via sw.js. PWARegister component handles client-only registration in layout.tsx."
+        />
+        <RiskCard
+          title="Apple Web App"
+          desc="Black-translucent status bar, apple-touch-icon meta tags. Full-screen standalone experience on iOS."
+        />
+        <RiskCard
+          title="Cache Management"
+          desc="CacheBuster component handles stale service worker cleanup. Prevents outdated cached assets from serving."
+        />
+      </div>
 
       <h3 className="text-lg font-bold text-white mt-6">Production Health</h3>
-      <ul className="text-[#aaaacc] space-y-1 ml-4">
-        <li>SoDEX status indicator in TopBar (green dot = connected, red = error)</li>
-        <li>API route health: GET /api/status returns SoDEX connection state</li>
-        <li>Graceful degradation: all components work with mock data when APIs are unreachable</li>
-      </ul>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+        <RiskCard
+          title="Status Indicator"
+          desc="SoDEX connection status in TopBar — green dot = connected, red = error. Real-time health monitoring."
+        />
+        <RiskCard
+          title="API Health"
+          desc="GET /api/status returns SoSoValue, SoDEX, and AI provider connection state with latency measurements."
+        />
+        <RiskCard
+          title="Graceful Degradation"
+          desc="All components show loading/error/empty states when APIs are unreachable. No crashes, no blank screens."
+        />
+      </div>
     </div>
   );
 }
