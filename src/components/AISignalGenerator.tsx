@@ -143,23 +143,43 @@ export default function AISignalGenerator({
           </div>
         </div>
 
-        {/* AI Thesis toggle row */}
-        <div className="flex items-center gap-3 mt-2.5">
-          <label className="flex items-center gap-1.5 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={includeAI}
-              onChange={(e) => onIncludeAIChange(e.target.checked)}
-              className="accent-[#00E5A8] w-3 h-3"
-            />
-            <span className="text-[10px] text-txt-secondary">Include AI Thesis</span>
-          </label>
-          <span className="text-[9px] text-txt-faint">Optional: adds AI reasoning, risk notes, and scenario analysis</span>
+        {/* AI Thesis toggle */}
+        <div className="flex items-center justify-between mt-3 py-2 px-3 rounded-lg bg-elevated/30 border border-border-default">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={includeAI}
+              onClick={() => onIncludeAIChange(!includeAI)}
+              className={`
+                relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out
+                ${includeAI ? "bg-accent" : "bg-border-default"}
+              `}
+            >
+              <span
+                className={`
+                  pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-lg transform ring-0 transition duration-200 ease-in-out
+                  ${includeAI ? "translate-x-4" : "translate-x-0"}
+                `}
+              />
+            </button>
+            <div>
+              <span className="text-sm font-medium text-txt-primary">Include AI Thesis</span>
+              <p className="text-[10px] text-txt-muted mt-0.5">
+                Adds AI reasoning, risk notes, and scenario analysis
+              </p>
+            </div>
+          </div>
+          <span className={`text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded ${
+            includeAI ? "bg-accent-muted text-accent" : "bg-elevated text-txt-faint"
+          }`}>
+            {includeAI ? "ON" : "OFF"}
+          </span>
         </div>
 
         {/* AI config warnings */}
         {includeAI && !aiConfig.apiKey && (
-          <p className="text-[9px] text-hold mt-1.5 ml-5">
+          <p className="text-[10px] text-hold mt-2 ml-1">
             No API key configured. Will attempt server default.
           </p>
         )}
