@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { portfolioData } from "@/lib/mock-data";
 import type { SoDEXKline } from "@/lib/sodex-types";
 import { fetchKlines } from "@/lib/api/datasources";
 import Card from "@/components/ui/Card";
+import EmptyState from "@/components/ui/EmptyState";
+import Skeleton from "@/components/ui/Skeleton";
 
 type Timeframe = "15m" | "1h" | "4h" | "1D" | "1W";
 
@@ -76,16 +77,71 @@ export default function PortfolioChart({ klines: initialKlines, symbol, currentP
   const activeKlines = tfKlines ?? initialKlines;
   const useReal = activeKlines && activeKlines.length > 0;
 
-  // Build price series
-  const closes: number[] = useReal
-    ? activeKlines!.map((k) => parseFloat(k.c))
-    : portfolioData.map((p) => p.value);
-  const values = currentPrice != null && useReal ? [...closes, currentPrice] : closes;
+  // Loading state
+  if (tfLoading && !useReal) {
+    return (
+      <Card padding="none" className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="px-5 pt-4 pb-3">
+          <Skeleton variant="text" className="w-32 mb-3" />
+          <div className="flex gap-1">
+            {["15m", "1h", "4h", "1D", "1W"].map((t) => (
+              <Skeleton key={t} variant="text-sm" className="w-10" />
+            ))}
+          </div>
+        </div>
+        <div className="flex-1 min-h-[200px] flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <Skeleton variant="card" className="h-40 max-w-md" />
+            <span className="text-[10px] text-txt-dim animate-pulse">Loading chart data from SoDEX...</span>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // Empty state — no data available
+  if (!useReal) {
+    return (
+      <Card padding="none" className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="px-5 pt-4 pb-1 shrink-0">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-txt-secondary">{symbol ?? "BTC/USDC"}</h3>
+            <span className="text-[10px] text-txt-dim">No chart data</span>
+          </div>
+          <div className="flex items-center gap-1 mt-2">
+            {(Object.keys(TF_CONFIG) as Timeframe[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTf(t)}
+                className={`text-[10px] font-medium px-2.5 py-1 rounded-md transition-all cursor-pointer tracking-wide ${
+                  tf === t
+                    ? "text-txt-primary bg-elevated/80 shadow-sm"
+                    : "text-txt-dim hover:text-txt-secondary hover:bg-inset/60"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+        <EmptyState
+          title="No price data available"
+          description="SoDEX klines are unavailable for this pair. Select a different pair or timeframe, or wait for the API to recover."
+          icon="data"
+        />
+      </Card>
+    );
+  }
+
+  // Build price series (real data only)
+  const closes = activeKlines!.map((k) => parseFloat(k.c));
+  const values = currentPrice != null ? [...closes, currentPrice] : closes;
 
   // Timestamps for tooltip
-  const timestamps: number[] = useReal
-    ? [...activeKlines!.map((k) => k.t), ...(currentPrice != null ? [Date.now()] : [])]
-    : [];
+  const timestamps: number[] = [
+    ...activeKlines!.map((k) => k.t),
+    ...(currentPrice != null ? [Date.now()] : []),
+  ];
 
   const max = Math.max(...values);
   const min = Math.min(...values);
@@ -133,12 +189,11 @@ export default function PortfolioChart({ klines: initialKlines, symbol, currentP
   const changePct = first ? ((change / first) * 100) : 0;
   const isUp = change >= 0;
   const lineColor = isUp ? "#00ff88" : "#ff4444";
-  const lineColorDim = isUp ? "#00ff8830" : "#ff444430";
 
-  const label = useReal ? (symbol ?? "BTC/USDC") : "Price Action";
+  const label = symbol ?? "BTC/USDC";
 
   let dateLabel = "";
-  if (useReal && activeKlines!.length > 0) {
+  if (activeKlines!.length > 0) {
     const kl = activeKlines!;
     const from = new Date(kl[0].t);
     const to = new Date(kl[kl.length - 1].t);
@@ -291,7 +346,7 @@ export default function PortfolioChart({ klines: initialKlines, symbol, currentP
           </text>
 
           {/* Time labels */}
-          {useReal && activeKlines!.length > 0 && (() => {
+          {activeKlines!.length > 0 && (() => {
             const kl = activeKlines!;
             const positions = [
               0,

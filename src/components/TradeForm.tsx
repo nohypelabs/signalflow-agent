@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSignTypedData } from "wagmi";
-import type { Signal } from "@/lib/mock-data";
+import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker, SoDEXNewOrderRequest, SoDEXBalance } from "@/lib/sodex-types";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import { buildOrderTypedData } from "@/lib/eip712";

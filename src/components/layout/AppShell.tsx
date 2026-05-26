@@ -5,7 +5,7 @@ import Header from "./Header";
 import Sidebar from "./Sidebar";
 import MobileBottomNav from "./MobileBottomNav";
 import TradeForm from "@/components/TradeForm";
-import type { Signal } from "@/lib/mock-data";
+import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker, SoDEXNewOrderRequest } from "@/lib/sodex-types";
 
 interface AppShellProps {

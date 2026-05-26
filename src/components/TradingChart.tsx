@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createChart, ColorType, CrosshairMode, createSeriesMarkers, CandlestickSeries, HistogramSeries } from "lightweight-charts";
 import type {
   IChartApi,
@@ -143,14 +143,14 @@ export default function TradingChart({
 
   useEffect(() => { fetchTfKlines(); }, [fetchTfKlines]);
 
-  // Get signals for current pair
-  const pairSignals = liveSignals.filter((s) => {
+  // Get signals for current pair (memoized to avoid infinite re-render)
+  const pairSignals = useMemo(() => {
     const base = pair.split("/")[0];
-    return s.pair.startsWith(base);
-  });
+    return liveSignals.filter((s) => s.pair.startsWith(base));
+  }, [liveSignals, pair]);
 
   // Get the latest signal for entry/SL/TP lines
-  const latestSignal = pairSignals[0] ?? null;
+  const latestSignal = useMemo(() => pairSignals[0] ?? null, [pairSignals]);
 
   // Create chart
   useEffect(() => {
