@@ -3,15 +3,30 @@
 import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/sodex-types";
 import { pairToSodexSymbol } from "@/lib/pair-map";
-import Card from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
 import ConfidenceGauge from "@/components/ui/ConfidenceGauge";
 
-const actionStyles: Record<string, { border: string; bg: string; dot: string }> = {
-  buy: { border: "border-l-buy", bg: "hover:bg-buy-muted/30", dot: "bg-buy" },
-  sell: { border: "border-l-sell", bg: "hover:bg-sell-muted/30", dot: "bg-sell" },
-  hold: { border: "border-l-hold", bg: "hover:bg-hold-muted/30", dot: "bg-hold" },
+/* ── Helpers ── */
+
+function fmtPrice(p: number): string {
+  if (p >= 10000) return `$${p.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  if (p >= 100) return `$${p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (p >= 1) return `$${p.toFixed(3)}`;
+  return `$${p.toFixed(5)}`;
+}
+
+function truncate(s: string, max: number): string {
+  return s.length > max ? s.slice(0, max) + "..." : s;
+}
+
+/* ── Action config ── */
+
+const actionConfig: Record<string, { color: string; bg: string; border: string; glow: string }> = {
+  BUY: { color: "text-buy", bg: "bg-buy-muted", border: "border-l-buy", glow: "shadow-[inset_0_0_20px_rgba(0,230,118,0.05)]" },
+  SELL: { color: "text-sell", bg: "bg-sell-muted", border: "border-l-sell", glow: "shadow-[inset_0_0_20px_rgba(239,68,68,0.05)]" },
+  HOLD: { color: "text-hold", bg: "bg-hold-muted", border: "border-l-hold", glow: "shadow-[inset_0_0_20px_rgba(245,158,11,0.05)]" },
 };
+
+/* ── Props ── */
 
 interface Props {
   onSelect: (s: Signal) => void;
@@ -20,77 +35,132 @@ interface Props {
   liveSignals?: Signal[];
 }
 
+/* ── Component ── */
+
 export default function SignalList({ onSelect, selected, tickers, liveSignals }: Props) {
   const tickerMap = new Map<string, SoDEXTicker>();
   if (tickers) tickers.forEach((t) => tickerMap.set(t.symbol, t));
 
-  // Only show live signals — no mock fallback
   const displaySignals = liveSignals && liveSignals.length > 0 ? liveSignals : [];
   const isLive = liveSignals && liveSignals.length > 0;
 
+  // Find highest-confidence signal
+  const topSignal = displaySignals.reduce<Signal | null>(
+    (best, s) => (!best || s.confidence > best.confidence ? s : best),
+    null,
+  );
+
   return (
-    <Card padding="none" className="w-full lg:w-72 shrink-0 overflow-hidden">
-      <div className="px-4 py-3 border-b border-border-default flex items-center justify-between">
-        <h3 className="font-semibold text-xs uppercase tracking-wider text-txt-muted">Latest Signals</h3>
-        <div className="flex items-center gap-1.5">
-          {isLive && <Badge variant="live" size="sm">LIVE</Badge>}
-          <span className="text-[10px] text-txt-dim">{displaySignals.length} active</span>
+    <div className="w-full lg:w-80 shrink-0 flex flex-col bg-card border border-border-default rounded-lg overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-border-default flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-xs uppercase tracking-wider text-txt-secondary">Live Signal Feed</h3>
+          {isLive && (
+            <span className="flex items-center gap-1 text-[8px] uppercase tracking-wider font-bold text-buy bg-buy-muted px-1.5 py-0.5 rounded">
+              <span className="w-1.5 h-1.5 rounded-full bg-buy animate-pulse" />
+              LIVE
+            </span>
+          )}
         </div>
+        <span className="text-[10px] text-txt-faint font-mono">{displaySignals.length}</span>
       </div>
-      <div className="flex flex-col divide-y divide-border-default">
+
+      {/* Signal list */}
+      <div className="flex-1 overflow-y-auto scrollbar-none">
         {displaySignals.length === 0 && (
-          <div className="px-4 py-8 text-center">
-            <p className="text-xs text-txt-muted">Loading signals...</p>
+          <div className="px-4 py-12 text-center">
+            <div className="w-8 h-8 rounded-full bg-elevated mx-auto mb-3 flex items-center justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="2" strokeLinecap="round">
+                <path d="M2 20h.01M7 20v-4M12 20v-8M17 20V8M22 4v16" />
+              </svg>
+            </div>
+            <p className="text-xs text-txt-muted">Waiting for signals</p>
+            <p className="text-[10px] text-txt-faint mt-1">Data loading from SoSoValue + SoDEX</p>
           </div>
         )}
+
         {displaySignals.map((s) => {
           const sodSym = pairToSodexSymbol(s.pair);
           const live = sodSym ? tickerMap.get(sodSym) : undefined;
           const price = live ? parseFloat(live.lastPx) : s.price;
           const chg = live ? live.changePct : s.change24h;
-          const style = actionStyles[s.action.toLowerCase()] ?? actionStyles.hold;
+          const cfg = actionConfig[s.action] ?? actionConfig.HOLD;
+          const isSelected = selected === s.id;
+          const isTop = topSignal?.id === s.id;
 
           return (
             <button
               key={s.id}
               onClick={() => onSelect(s)}
               className={`
-                text-left w-full px-4 py-3 cursor-pointer transition-all border-l-2
-                ${style.border} ${style.bg}
-                ${selected === s.id ? "bg-elevated/80 ring-1 ring-inset ring-accent-dim" : "bg-transparent"}
+                text-left w-full px-4 py-3 cursor-pointer transition-all border-l-2 ${cfg.border}
+                ${isSelected
+                  ? `bg-elevated/80 ring-1 ring-inset ring-accent-dim ${cfg.glow}`
+                  : isTop
+                    ? `bg-elevated/30 ${cfg.glow}`
+                    : "bg-transparent hover:bg-elevated/20"
+                }
               `}
             >
-              {/* Row 1: Pair + Action badge */}
-              <div className="flex justify-between items-center">
+              {/* Row 1: Pair + Action + Confidence */}
+              <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-2">
-                  <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
-                  <span className="text-xs font-semibold text-txt-primary">
-                    {s.pair}
+                  <span className="text-sm font-bold text-txt-primary">{s.pair}</span>
+                  <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${cfg.bg} ${cfg.color}`}>
+                    {s.action}
                   </span>
-                  {live && (
-                    <Badge variant="live" size="sm" className="animate-pulse-glow">LIVE</Badge>
+                  {isTop && (
+                    <span className="text-[8px] uppercase tracking-wider font-bold px-1 py-0.5 rounded bg-accent-muted text-accent">
+                      TOP
+                    </span>
                   )}
                 </div>
-                <Badge variant={s.action.toLowerCase()} size="sm">{s.action}</Badge>
-              </div>
-
-              {/* Row 2: Price + Change + Confidence */}
-              <div className="flex justify-between items-center mt-1.5">
-                <span className="text-[11px] text-txt-secondary font-mono">
-                  ${typeof price === "number" ? price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : price}
-                  <span className={`ml-1.5 text-[10px] font-semibold ${chg >= 0 ? "text-buy" : "text-sell"}`}>
-                    {chg >= 0 ? "+" : ""}{typeof chg === "number" ? chg.toFixed(1) : chg}%
-                  </span>
-                </span>
                 <ConfidenceGauge value={s.confidence} size="sm" />
               </div>
 
-              {/* Row 3: Time */}
-              <span className="text-[10px] text-txt-dim mt-0.5 block">{s.timeAgo}</span>
+              {/* Row 2: Price + Change */}
+              <div className="flex items-baseline gap-2 mb-1.5">
+                <span className="text-xs font-mono font-semibold text-txt-primary tabular-nums">
+                  {fmtPrice(price)}
+                </span>
+                <span className={`text-[10px] font-mono font-semibold tabular-nums ${chg >= 0 ? "text-buy" : "text-sell"}`}>
+                  {chg >= 0 ? "+" : ""}{chg.toFixed(2)}%
+                </span>
+              </div>
+
+              {/* Row 3: Reasoning snippet */}
+              {s.reasoning && (
+                <p className="text-[10px] text-txt-dim leading-relaxed mb-1.5">
+                  {truncate(s.reasoning, 100)}
+                </p>
+              )}
+
+              {/* Row 4: Execution preview + time */}
+              <div className="flex items-center justify-between">
+                {s.execution.entry > 0 && (
+                  <div className="flex items-center gap-2 text-[9px] font-mono text-txt-faint">
+                    <span>Entry <span className="text-accent">{fmtPrice(s.execution.entry)}</span></span>
+                    <span>TP <span className="text-buy">{fmtPrice(s.execution.takeProfit)}</span></span>
+                    <span>SL <span className="text-sell">{fmtPrice(s.execution.stopLoss)}</span></span>
+                  </div>
+                )}
+                <span className="text-[9px] text-txt-faint ml-auto">{s.timeAgo}</span>
+              </div>
             </button>
           );
         })}
       </div>
-    </Card>
+
+      {/* Footer */}
+      {displaySignals.length > 0 && (
+        <div className="px-4 py-2 border-t border-border-default shrink-0">
+          <div className="flex items-center justify-between text-[9px] text-txt-faint">
+            <span>SoSoValue + SoDEX</span>
+            <span>{displaySignals.length} signals</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
