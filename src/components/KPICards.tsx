@@ -159,7 +159,7 @@ export default function KPICards({ metrics }: Props) {
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
       {cards.map((c) => (
         <div
           key={c.label}

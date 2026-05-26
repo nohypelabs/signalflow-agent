@@ -135,7 +135,7 @@ export default function PortfolioChart({ klines: initialKlines, symbol, currentP
   const lineColor = isUp ? "#00ff88" : "#ff4444";
   const lineColorDim = isUp ? "#00ff8830" : "#ff444430";
 
-  const label = useReal ? (symbol ?? "BTC/USDC") : "Portfolio Performance";
+  const label = useReal ? (symbol ?? "BTC/USDC") : "Price Action";
 
   let dateLabel = "";
   if (useReal && activeKlines!.length > 0) {

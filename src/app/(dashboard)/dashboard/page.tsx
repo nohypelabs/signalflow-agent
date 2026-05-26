@@ -19,7 +19,7 @@ export default function DashboardPage() {
       <KPICards metrics={metrics} />
 
       {/* Chart + Signals row */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col md:flex-row gap-4">
         <TradingChart
           klines={d.klines}
           symbol="BTC/USDC"

@@ -69,7 +69,7 @@ export default function TradeHistory({
       <PageHeader title="Trade History" badge={{ variant: "live", label: "LIVE" }} />
 
       {/* Summary bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <Card padding="sm" accent="var(--color-info)">
           <p className="text-[10px] text-txt-muted uppercase tracking-wider">Open Orders</p>
           <p className="text-xl font-bold font-mono text-info">{openOrders.length}</p>
@@ -130,7 +130,8 @@ export default function TradeHistory({
             {openOrders.length === 0 ? (
               <EmptyState title="No open orders" description="Execute a signal from the Trading page to place an order" />
             ) : (
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[540px]">
                 <thead>
                   <tr className="border-b border-border-default text-txt-muted text-xs">
                     <th className="text-left p-3 font-medium">Symbol</th>
@@ -164,6 +165,7 @@ export default function TradeHistory({
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </>
         )}
@@ -174,7 +176,8 @@ export default function TradeHistory({
             {historyOrders.length === 0 ? (
               <EmptyState title="No order history yet" description="Filled and cancelled orders will appear here" />
             ) : (
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[540px]">
                 <thead>
                   <tr className="border-b border-border-default text-txt-muted text-xs">
                     <th className="text-left p-3 font-medium">Symbol</th>
@@ -206,6 +209,7 @@ export default function TradeHistory({
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </>
         )}
@@ -217,7 +221,8 @@ export default function TradeHistory({
           </div>
         )}
         {tab === "signals" && liveSignals.length > 0 && (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[440px]">
             <thead>
               <tr className="border-b border-border-default text-txt-muted text-xs">
                 <th className="text-left p-3 font-medium">Pair</th>
@@ -249,6 +254,7 @@ export default function TradeHistory({
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
 

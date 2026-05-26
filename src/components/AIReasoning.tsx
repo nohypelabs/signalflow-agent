@@ -40,7 +40,7 @@ export default function AIReasoning({ signal, liveDims, tickerMap }: Props) {
       <Card padding="lg">
         <EmptyState
           title="No signal selected"
-          description="Choose a signal from the list or generate one with AI to view detailed reasoning and execution plan"
+          description="Select a live signal from the feed or generate an AI thesis to view multi-dimensional analysis and trade execution plan"
           icon="signal"
         />
       </Card>
@@ -104,7 +104,7 @@ export default function AIReasoning({ signal, liveDims, tickerMap }: Props) {
         </div>
       </div>
 
-      <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Left: Thesis + Dimensions */}
         <div className="space-y-4">
           <div>

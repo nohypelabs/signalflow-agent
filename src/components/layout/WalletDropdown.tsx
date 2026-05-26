@@ -117,7 +117,7 @@ export default function WalletDropdown({ onClose }: Props) {
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 mt-2 w-72 bg-card border border-border-default rounded-xl shadow-2xl z-50 overflow-hidden animate-fade-in"
+      className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-1rem)] bg-card border border-border-default rounded-xl shadow-2xl z-50 overflow-hidden animate-fade-in"
     >
       {/* ── Address + Network ── */}
       <div className="p-3 border-b border-border-default">

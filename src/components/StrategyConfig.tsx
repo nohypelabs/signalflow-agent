@@ -85,7 +85,7 @@ export default function StrategyConfig() {
         badge={saved ? { variant: "live", label: "SAVED" } : undefined}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Dimension Weights */}
         <Card padding="lg">
           <h3 className="font-semibold text-sm mb-4 text-txt-primary">Signal Dimension Weights</h3>

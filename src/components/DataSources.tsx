@@ -57,7 +57,7 @@ export default function DataSources() {
     if (g.name === "AI Provider") {
       // Use status check for AI provider
       const aiService = services.find((s) => s.name === "Deepseek AI");
-      if (!aiService) return { ...g, status: "loading" as const, healthy: 0, total: 1, detail: "Checking..." };
+      if (!aiService) return { ...g, status: "loading" as const, healthy: 0, total: 1, detail: "Verifying connection..." };
       return {
         ...g,
         status: aiService.status === "connected" ? "live" as const : aiService.status === "no_key" ? "degraded" as const : "offline" as const,
@@ -72,7 +72,7 @@ export default function DataSources() {
     const healthy = groupModules.filter((m) => m.status === "active").length;
     const total = groupModules.length;
 
-    if (loading) return { ...g, status: "loading" as const, healthy: 0, total: 0, detail: "Checking..." };
+    if (loading) return { ...g, status: "loading" as const, healthy: 0, total: 0, detail: "Verifying live data sources" };
     if (total === 0) return { ...g, status: "offline" as const, healthy: 0, total: 0, detail: "No data" };
 
     const status = healthy === total ? "live" as const : healthy > 0 ? "degraded" as const : "offline" as const;

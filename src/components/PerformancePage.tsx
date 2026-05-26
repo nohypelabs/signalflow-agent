@@ -88,7 +88,7 @@ export default function PerformancePage({ signalHistory = [], signalStats, histo
       <PageHeader title="Performance Analytics" badge={{ variant: "accent", label: "LIVE DATA" }} />
 
       {/* Summary metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         {metrics.map((m) => (
           <Card key={m.label} padding="sm" accent={m.color}>
             <p className="text-[10px] text-txt-muted mb-1 uppercase tracking-wider">{m.label}</p>
@@ -105,7 +105,7 @@ export default function PerformancePage({ signalHistory = [], signalStats, histo
             <Badge variant="live" size="sm">LOCAL TRACKING</Badge>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
             <Card variant="inset" padding="sm">
               <p className="text-[10px] text-txt-muted">Signals Tracked</p>
               <p className="text-lg font-bold font-mono text-txt-primary">{signalHistory.length}</p>
@@ -211,7 +211,8 @@ export default function PerformancePage({ signalHistory = [], signalStats, histo
         <div className="p-4 pb-0">
           <h3 className="font-semibold text-sm mb-3">Coin Details</h3>
         </div>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[640px]">
           <thead>
             <tr className="border-b border-t border-border-default text-txt-muted text-xs">
               <th className="text-left p-3 font-medium">Coin</th>
@@ -245,6 +246,7 @@ export default function PerformancePage({ signalHistory = [], signalStats, histo
             ))}
           </tbody>
         </table>
+        </div>
       </Card>
 
       {/* Live dimensions */}
