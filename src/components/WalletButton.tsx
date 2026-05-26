@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useWallet } from "@/lib/use-wallet";
+import { useWallet } from "@/lib/hooks/useWallet";
 import { useSwitchChain } from "wagmi";
 import { valuechain } from "@/lib/wallet-config";
 import type { SoDEXBalance } from "@/lib/sodex-types";

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { signals, Signal } from "@/lib/mock-data";
 import type { SoDEXTicker } from "@/lib/sodex-types";
 import { pairToSodexSymbol } from "@/lib/pair-map";
-import type { SignalDimensions } from "@/lib/use-signals";
+import type { SignalDimensions } from "@/lib/hooks/useSignals";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";

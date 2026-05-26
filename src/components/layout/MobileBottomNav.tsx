@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/icons";
 
 const tabs = [
-  { href: "/", label: "Dashboard", Icon: HomeIcon },
+  { href: "/dashboard", label: "Dashboard", Icon: HomeIcon },
   { href: "/signals", label: "Signals", Icon: SignalIcon },
   { href: "/trading", label: "Trading", Icon: TradeIcon },
   { href: "/performance", label: "Performance", Icon: PerformanceIcon },

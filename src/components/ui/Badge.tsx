@@ -9,9 +9,11 @@ const variants: Record<string, string> = {
   live: "bg-buy-muted text-live border border-buy-dim",
   warning: "bg-hold-muted text-warning border border-hold-dim",
   error: "bg-sell-muted text-error border border-sell-dim",
-  info: "bg-[#00d4ff15] text-info border border-[#00d4ff40]",
+  info: "bg-[#00d4ff10] text-info border border-[#00d4ff30]",
   accent: "bg-accent-muted text-accent border border-accent-dim",
-  muted: "bg-[#ffffff08] text-txt-muted border border-border-default",
+  muted: "bg-[#ffffff06] text-txt-muted border border-border-default",
+  danger: "bg-sell-muted text-sell border border-sell-dim",
+  success: "bg-buy-muted text-buy border border-buy-dim",
 };
 
 const sizes: Record<string, string> = {
@@ -36,12 +38,15 @@ export default function Badge({
   return (
     <span
       className={`
-        inline-flex items-center font-semibold rounded-md
+        inline-flex items-center gap-1 font-semibold rounded-md select-none
         ${variants[variant] || variants.muted}
         ${sizes[size]}
         ${className}
       `}
     >
+      {variant === "live" && (
+        <span className="w-1.5 h-1.5 rounded-full bg-live animate-pulse-glow" />
+      )}
       {children}
     </span>
   );

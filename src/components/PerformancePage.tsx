@@ -1,8 +1,8 @@
 "use client";
 
-import { usePerformance } from "@/lib/use-performance";
-import { useSignals } from "@/lib/use-signals";
-import type { RecordedSignal } from "@/lib/use-signal-history";
+import { usePerformance } from "@/lib/hooks/usePerformance";
+import { useSignals } from "@/lib/hooks/useSignals";
+import type { RecordedSignal } from "@/lib/hooks/useSignalHistory";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";

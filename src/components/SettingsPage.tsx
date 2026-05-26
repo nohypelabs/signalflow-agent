@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useStatus } from "@/lib/use-status";
+import { useStatus } from "@/lib/hooks/useStatus";
 import { AI_PROVIDERS, getProvider, type AIConfig } from "@/lib/ai-providers";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";

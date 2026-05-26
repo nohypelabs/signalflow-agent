@@ -13,8 +13,6 @@ export const valuechain = defineChain({
 
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
 
-// wagmi v3 infers connector array type from the first element; walletConnect
-// has a different storage type than injected, so we widen to any[].
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const connectors: any[] = [injected()];
 if (projectId) {

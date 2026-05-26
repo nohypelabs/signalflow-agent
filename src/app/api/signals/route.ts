@@ -8,8 +8,14 @@ import {
   getCurrencies,
 } from "@/lib/sosovalue";
 import type { ETFSummaryItem, MarketSnapshot, NewsItem, MacroEvent } from "@/lib/sosovalue";
+import { getKlines as getSodexKlines } from "@/lib/sodex";
+import type { SoDEXKline } from "@/lib/sodex-types";
+import { pairToSodexSymbol } from "@/lib/pair-map";
+import { generateSignals } from "@/lib/strategy/signal-engine";
+import type { BatchSignalInput } from "@/lib/strategy/signal-engine";
+import type { Signal } from "@/lib/types/signal";
 
-// ── Dimension scoring (heuristic, pre-AI agent) ────────
+// ── Dimension scoring (for hook-based live dimensions) ────
 
 function scoreETF(summary: ETFSummaryItem[]): { score: number; detail: string } {
   if (!summary.length) return { score: 50, detail: "No ETF data" };
@@ -77,7 +83,7 @@ function scoreTreasury(companies: { ticker: string; name: string }[]): { score: 
   };
 }
 
-// ── Dynamic weight engine ────────────────────────────
+// ── Dynamic weight engine ────────────────────────────────
 
 const BASE_WEIGHTS = {
   etfFlow: 20,
@@ -117,14 +123,12 @@ function dynamicWeightScore(dims: WeightedDims): {
   const variance = scores.reduce((s, d) => s + (d.score - mean) ** 2, 0) / scores.length;
   const stdDev = Math.sqrt(variance);
 
-  // Detect outliers (>1.5 std dev from mean)
   const capped: string[] = [];
   const weights: Record<string, number> = {};
   let totalWeight = 100;
 
   for (const d of scores) {
     if (stdDev > 8 && Math.abs(d.score - mean) > 1.5 * stdDev) {
-      // Outlier — cap weight at 8%
       weights[d.key] = 8;
       capped.push(d.key);
       totalWeight -= 8;
@@ -134,7 +138,6 @@ function dynamicWeightScore(dims: WeightedDims): {
     }
   }
 
-  // Redistribute capped weight proportionally to non-capped dimensions by their score
   if (capped.length > 0 && totalWeight > 0) {
     const uncapped = scores.filter((d) => !capped.includes(d.key));
     const uncappedTotal = uncapped.reduce((s, d) => s + d.score, 0);
@@ -145,7 +148,6 @@ function dynamicWeightScore(dims: WeightedDims): {
     }
   }
 
-  // Compute final weighted score
   const overall = Math.round(
     scores.reduce((s, d) => s + d.score * (weights[d.key] / 100), 0),
   );
@@ -153,12 +155,31 @@ function dynamicWeightScore(dims: WeightedDims): {
   return { overall, weights, capped };
 }
 
-// ── Simple in-memory cache (avoids rate limits) ───────
+// ── Pairs to generate signals for ────────────────────────
+
+const SIGNAL_PAIRS = [
+  "BTC/USDC",
+  "ETH/USDC",
+  "SOL/USDC",
+  "AVAX/USDC",
+  "LINK/USDC",
+];
+
+// ── In-memory cache ──────────────────────────────────────
 
 let cache: { data: unknown; ts: number } | null = null;
-const CACHE_MS = 60_000; // 1 minute
+const CACHE_MS = 5 * 60_000; // 5 min — klines & fundamentals don't change fast
 
-// ── Route handler ──────────────────────────────────────
+// ── Fetch with timeout ───────────────────────────────────
+
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
+// ── Route handler ─────────────────────────────────────────
 
 export async function GET() {
   if (cache && Date.now() - cache.ts < CACHE_MS) {
@@ -166,6 +187,7 @@ export async function GET() {
   }
 
   try {
+    // Fetch all SoSoValue data in parallel
     const [currencies, etfSummary, macroEvents, btcTreasuries, hotNews] = await Promise.all([
       getCurrencies().catch(() => []),
       getETFSummary("BTC", "US", 5).catch(() => []),
@@ -174,29 +196,63 @@ export async function GET() {
       getNewsHot(1, 20).catch(() => ({ list: [], page: 1, page_size: 20, total: 0 })),
     ]);
 
-    const btc = currencies.find(
-      (c) => c.symbol.toLowerCase() === "btc",
-    );
-    const eth = currencies.find(
-      (c) => c.symbol.toLowerCase() === "eth",
-    );
-    const sol = currencies.find(
-      (c) => c.symbol.toLowerCase() === "sol",
-    );
+    const btc = currencies.find((c) => c.symbol.toLowerCase() === "btc");
+    const eth = currencies.find((c) => c.symbol.toLowerCase() === "eth");
+    const sol = currencies.find((c) => c.symbol.toLowerCase() === "sol");
 
     const newsList = "list" in hotNews ? hotNews.list : [];
 
-    // Fetch market snapshots for the coins we care about
+    // Fetch market snapshots in parallel with timeout
+    const snapshotCoins = [btc, eth, sol].filter(Boolean);
+    const snapshotResults = await Promise.all(
+      snapshotCoins.map((c) =>
+        withTimeout(
+          getMarketSnapshot(c!.currency_id).then((s) => ({ id: c!.currency_id, s })),
+          5_000,
+          null,
+        ).catch(() => null),
+      ),
+    );
     const snapshots: Record<string, MarketSnapshot> = {};
-    for (const c of [btc, eth, sol].filter(Boolean)) {
-      await getMarketSnapshot(c!.currency_id)
-        .then((s) => {
-          snapshots[c!.currency_id] = s;
-        })
-        .catch(() => {});
+    for (const r of snapshotResults) {
+      if (r) snapshots[r.id] = r.s;
     }
 
-    function buildDimensions(currencyId: string | undefined, snap: MarketSnapshot | undefined) {
+    // ── Fetch SoDEX klines for TA signals (parallel, 5s timeout per pair) ──
+    const klinesMap = new Map<string, SoDEXKline[]>();
+    await Promise.all(
+      SIGNAL_PAIRS.map(async (pair) => {
+        const base = pair.split("/")[0];
+        const symbol = pairToSodexSymbol(pair);
+        if (!symbol) return;
+        const klines = await withTimeout(
+          getSodexKlines(symbol, "1h", 100).catch(() => []),
+          5_000,
+          [] as SoDEXKline[],
+        );
+        if (klines.length > 0) klinesMap.set(base, klines);
+      }),
+    );
+
+    // Build snapshots map for signal engine
+    const snapshotMap = new Map<string, MarketSnapshot>();
+    if (btc && snapshots[btc.currency_id]) snapshotMap.set("BTC", snapshots[btc.currency_id]);
+    if (eth && snapshots[eth.currency_id]) snapshotMap.set("ETH", snapshots[eth.currency_id]);
+    if (sol && snapshots[sol.currency_id]) snapshotMap.set("SOL", snapshots[sol.currency_id]);
+
+    // ── Generate TA-based signals ────────────────────────
+    const taSignals = generateSignals({
+      pairs: SIGNAL_PAIRS,
+      klinesMap,
+      news: newsList as NewsItem[],
+      etfSummary: etfSummary as ETFSummaryItem[],
+      macroEvents: macroEvents as MacroEvent[],
+      btcTreasuries: btcTreasuries as { ticker: string; name: string }[],
+      snapshots: snapshotMap,
+    });
+
+    // ── Build dimension data (for live dimensions in UI) ──
+    function buildDimensions(_currencyId: string | undefined, snap: MarketSnapshot | undefined) {
       return {
         etfFlow: scoreETF(etfSummary as ETFSummaryItem[]),
         sentiment: scoreSentiment(newsList as NewsItem[]),
@@ -216,12 +272,14 @@ export async function GET() {
 
     const result = {
       updated: Date.now(),
+      signals: taSignals,
       sources: {
-        etf: etfSummary.length > 0,
-        macro: macroEvents.length > 0,
-        treasuries: btcTreasuries.length > 0,
-        news: newsList.length > 0,
+        etf: (etfSummary as ETFSummaryItem[]).length > 0,
+        macro: (macroEvents as MacroEvent[]).length > 0,
+        treasuries: (btcTreasuries as { ticker: string; name: string }[]).length > 0,
+        news: (newsList as NewsItem[]).length > 0,
         snapshots: Object.keys(snapshots).length,
+        sodexKlines: klinesMap.size,
       },
       dimensions: {
         BTC: btcDims,
@@ -236,7 +294,7 @@ export async function GET() {
       weights: {
         BTC: btcWeighted.weights,
         ETH: ethWeighted.weights,
-        SOL: solWeighted.weights,
+        SOL: solWeighted.capped,
       },
       capped: {
         BTC: btcWeighted.capped,
@@ -244,6 +302,7 @@ export async function GET() {
         SOL: solWeighted.capped,
       },
     };
+
     cache = { data: result, ts: Date.now() };
     return NextResponse.json(result);
   } catch (err) {

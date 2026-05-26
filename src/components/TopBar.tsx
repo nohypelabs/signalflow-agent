@@ -32,29 +32,37 @@ export default function TopBar({
         : "SoDEX Offline";
 
   return (
-    <header className="flex items-center justify-between px-3 md:px-6 h-14 bg-surface border-b border-border-default shrink-0">
+    <header className="flex items-center justify-between px-3 md:px-5 h-12 bg-surface border-b border-border-default shrink-0">
       <div className="flex items-center gap-2 md:gap-3">
-        {/* Hamburger — mobile only */}
         <button
           onClick={onMenuToggle}
-          className="md:hidden p-1.5 text-txt-muted hover:text-txt-primary transition-colors"
+          className="md:hidden p-1 text-txt-muted hover:text-txt-primary transition-colors"
           aria-label="Menu"
         >
           <MenuIcon size={20} />
         </button>
 
-        <StatusDot status={dotStatus} pulse size="md" />
-        <span className="font-bold text-sm text-txt-primary">SignalFlow</span>
-        <span className="font-normal text-sm text-txt-muted">Agent</span>
+        {/* Brand */}
+        <div className="flex items-center gap-1.5">
+          <div className="w-6 h-6 rounded-lg bg-accent/20 border border-accent-dim flex items-center justify-center">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+          </div>
+          <span className="font-bold text-sm text-txt-primary tracking-tight">SignalFlow</span>
+          <span className="text-[10px] text-txt-dim font-medium hidden sm:inline">Agent</span>
+        </div>
+
+        <StatusDot status={dotStatus} pulse size="sm" />
       </div>
 
       {/* BTC price ticker — center */}
       {btcPrice && (
         <div className="hidden sm:flex items-center gap-1.5 font-mono text-xs">
-          <span className="text-txt-secondary">BTC</span>
-          <span className="text-txt-primary font-semibold">{btcPrice}</span>
+          <span className="text-[10px] text-txt-dim">BTC</span>
+          <span className="text-txt-primary font-semibold tabular-nums">{btcPrice}</span>
           {btcChange !== undefined && (
-            <span className={btcChange >= 0 ? "text-buy" : "text-sell"}>
+            <span className={`text-[11px] font-semibold ${btcChange >= 0 ? "text-buy" : "text-sell"}`}>
               {btcChange >= 0 ? "+" : ""}{btcChange.toFixed(2)}%
             </span>
           )}
@@ -62,7 +70,7 @@ export default function TopBar({
       )}
 
       <div className="flex items-center gap-1.5 md:gap-2">
-        <Badge variant={badgeVariant} size="md">
+        <Badge variant={badgeVariant} size="md" className="hidden md:inline-flex">
           {statusLabel}
         </Badge>
         <WalletButton />

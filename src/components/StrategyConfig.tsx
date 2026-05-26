@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSignals } from "@/lib/use-signals";
+import { useSignals } from "@/lib/hooks/useSignals";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import StatusDot from "@/components/ui/StatusDot";

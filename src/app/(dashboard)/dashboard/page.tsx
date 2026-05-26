@@ -11,8 +11,11 @@ import DataSources from "@/components/DataSources";
 export default function DashboardPage() {
   const d = useDashboard();
   return (
-    <>
+    <div className="space-y-4">
+      {/* KPI stats row */}
       <KPICards tickers={d.tickers} />
+
+      {/* Chart + Signals row */}
       <div className="flex flex-col lg:flex-row gap-4">
         <PortfolioChart
           klines={d.klines}
@@ -27,8 +30,11 @@ export default function DashboardPage() {
           onSelect={d.setSelectedSignal}
           selected={d.selectedSignal?.id ?? null}
           tickers={d.tickers}
+          liveSignals={d.liveSignals}
         />
       </div>
+
+      {/* AI Generator */}
       <AISignalGenerator
         aiConfig={d.aiConfig}
         aiProviderLabel={d.aiProviderLabel}
@@ -48,8 +54,12 @@ export default function DashboardPage() {
           if (d.aiSignal) d.handleExecuteSignal(d.aiSignal);
         }}
       />
-      <AIReasoning signal={d.displaySignal} liveDims={d.liveDims} />
+
+      {/* AI Reasoning */}
+      <AIReasoning signal={d.displaySignal} liveDims={d.liveDims} tickerMap={d.tickerMap} />
+
+      {/* Data Sources */}
       <DataSources />
-    </>
+    </div>
   );
 }

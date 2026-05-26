@@ -40,6 +40,7 @@ export interface DashboardState {
 
   // Signals
   signalsData: SignalsData | null;
+  liveSignals: Signal[];
   signalsLoading: boolean;
   signalsError: string | null;
 
@@ -181,6 +182,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       ? signalsData.dimensions[pairToCoin(displaySignal.pair)] ?? null
       : null;
 
+  // Live TA signals from the API
+  const liveSignals: Signal[] = signalsData?.signals ?? [];
+
   const sodexStatus: "connected" | "error" | "loading" =
     marketLoading ? "loading" : marketError ? "error" : tickers ? "connected" : "loading";
 
@@ -244,6 +248,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     sodexStatus,
     tickerMap,
     signalsData,
+    liveSignals,
     signalsLoading,
     signalsError,
     aiConfig,

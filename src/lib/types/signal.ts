@@ -60,7 +60,8 @@ export interface LiveSignalDimensions {
 
 export interface SignalsData {
   updated: number;
-  sources: Record<string, boolean>;
+  signals?: Signal[];
+  sources: Record<string, boolean | number>;
   dimensions: Record<string, LiveSignalDimensions>;
   overall?: Record<string, number>;
   weights?: Record<string, Record<string, number>>;
