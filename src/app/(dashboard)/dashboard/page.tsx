@@ -3,7 +3,7 @@
 import { useDashboard } from "@/lib/dashboard-context";
 import { useDashboardMetrics } from "@/lib/hooks/useDashboardMetrics";
 import KPICards from "@/components/KPICards";
-import PortfolioChart from "@/components/PortfolioChart";
+import TradingChart from "@/components/TradingChart";
 import SignalList from "@/components/SignalList";
 import AISignalGenerator from "@/components/AISignalGenerator";
 import AIReasoning from "@/components/AIReasoning";
@@ -20,7 +20,7 @@ export default function DashboardPage() {
 
       {/* Chart + Signals row */}
       <div className="flex flex-col lg:flex-row gap-4">
-        <PortfolioChart
+        <TradingChart
           klines={d.klines}
           symbol="BTC/USDC"
           currentPrice={
@@ -28,6 +28,8 @@ export default function DashboardPage() {
               ? parseFloat(d.tickerMap.get("vBTC_vUSDC")!.lastPx)
               : null
           }
+          liveSignals={d.liveSignals}
+          tickerMap={d.tickerMap}
         />
         <SignalList
           onSelect={d.setSelectedSignal}
