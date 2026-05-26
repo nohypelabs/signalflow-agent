@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchStatus } from "../api/datasources";
 
 export interface ServiceStatus {
   name: string;
@@ -10,7 +9,13 @@ export interface ServiceStatus {
   latencyMs: number;
 }
 
-export function useStatus() {
+interface StatusParams {
+  providerId?: string;
+  model?: string;
+  apiKey?: string;
+}
+
+export function useStatus(params?: StatusParams) {
   const [services, setServices] = useState<ServiceStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +24,14 @@ export function useStatus() {
     let cancelled = false;
     async function load() {
       try {
-        const json = await fetchStatus();
+        const qs = new URLSearchParams();
+        if (params?.providerId) qs.set("provider", params.providerId);
+        if (params?.model) qs.set("model", params.model);
+        if (params?.apiKey) qs.set("apiKey", params.apiKey);
+        const url = `/api/status${qs.toString() ? `?${qs}` : ""}`;
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
         if (!cancelled) {
           setServices(json.services);
           setError(null);
@@ -32,7 +44,7 @@ export function useStatus() {
     }
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [params?.providerId, params?.model, params?.apiKey]);
 
   return { services, loading, error };
 }

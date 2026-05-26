@@ -82,6 +82,13 @@ export const AI_PROVIDERS: AIProvider[] = [
     defaultModel: "llama-3.3-70b-versatile",
     models: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it"],
   },
+  {
+    id: "xai",
+    name: "xAI (Grok)",
+    baseUrl: "https://api.x.ai/v1",
+    defaultModel: "grok-3",
+    models: ["grok-3", "grok-3-mini", "grok-2"],
+  },
 ];
 
 export function getProvider(id: string): AIProvider | undefined {

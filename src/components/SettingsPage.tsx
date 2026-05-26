@@ -37,7 +37,11 @@ const statusVariant: Record<string, string> = {
 };
 
 export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChange }: Props) {
-  const { services, loading, error } = useStatus();
+  const { services, loading, error } = useStatus({
+    providerId: aiConfig.providerId,
+    model: aiConfig.model,
+    apiKey: aiConfig.apiKey,
+  });
   const selectedProvider = getProvider(aiConfig.providerId);
   const meta = PROVIDER_META[aiConfig.providerId];
   const [showKey, setShowKey] = useState(false);
