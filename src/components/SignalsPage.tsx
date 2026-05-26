@@ -1,285 +1,218 @@
 "use client";
 
-import { useState } from "react";
-import type { Signal } from "@/lib/types/signal";
-import type { SoDEXTicker } from "@/lib/sodex-types";
+import { useState, useMemo } from "react";
+import type { Signal, SignalAction } from "@/lib/types/signal";
+import type { SoDEXTicker } from "@/lib/types/trade";
+import type { LiveSignalDimensions } from "@/lib/types/signal";
 import { pairToSodexSymbol } from "@/lib/pair-map";
-import type { SignalDimensions } from "@/lib/hooks/useSignals";
-import Card from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
-import ConfidenceGauge from "@/components/ui/ConfidenceGauge";
-import ProgressBar from "@/components/ui/ProgressBar";
-import PageHeader from "@/components/ui/PageHeader";
-
-const actionMeta: Record<Signal["action"], { bg: string; border: string; text: string; accent: string; label: string }> = {
-  BUY: { bg: "bg-[#0d2a1a]", border: "border-buy-dim", text: "text-buy", accent: "var(--color-buy)", label: "Bullish — Buy" },
-  SELL: { bg: "bg-[#2a0d0d]", border: "border-sell-dim", text: "text-sell", accent: "var(--color-sell)", label: "Bearish — Sell" },
-  HOLD: { bg: "bg-[#1a1a0d]", border: "border-hold-dim", text: "text-hold", accent: "var(--color-hold)", label: "Neutral — Hold" },
-};
-
-const dimLabels = [
-  { key: "etfFlow" as const, label: "ETF Flow", color: "var(--dim-etf)", hex: "#00d4ff", icon: "📊" },
-  { key: "sentiment" as const, label: "Sentiment", color: "var(--dim-sentiment)", hex: "#8B5CF6", icon: "📰" },
-  { key: "macro" as const, label: "Macro", color: "var(--dim-macro)", hex: "#00ff88", icon: "🌐" },
-  { key: "momentum" as const, label: "Momentum", color: "var(--dim-momentum)", hex: "#ff8800", icon: "📈" },
-  { key: "treasury" as const, label: "Treasury", color: "var(--dim-treasury)", hex: "#ff4488", icon: "🏛️" },
-];
-
-function actionRationale(signal: Signal): string[] {
-  const points: string[] = [];
-  const dims = signal.dimensions;
-  const details = signal.dimensionDetails;
-
-  if (dims.etfFlow >= 80) points.push(details?.etfFlow?.detail || `ETF inflows strong at score ${dims.etfFlow}/100 — institutional capital rotating in`);
-  else if (dims.etfFlow < 50) points.push(details?.etfFlow?.detail || `ETF flows weakening at score ${dims.etfFlow}/100 — institutional demand softening`);
-
-  if (dims.sentiment >= 80) points.push(details?.sentiment?.detail || `News sentiment highly bullish at ${dims.sentiment}/100 — media & social aligned positive`);
-  else if (dims.sentiment < 50) points.push(details?.sentiment?.detail || `Sentiment bearish at ${dims.sentiment}/100 — negative headlines dominating`);
-
-  if (dims.momentum >= 80) points.push(details?.momentum?.detail || `Price momentum strong at ${dims.momentum}/100 — trend is your friend`);
-  else if (dims.momentum < 45) points.push(details?.momentum?.detail || `Momentum weakening at ${dims.momentum}/100 — price action deteriorating`);
-
-  if (dims.macro >= 75) points.push(details?.macro?.detail || `Macro backdrop supportive at ${dims.macro}/100 — risk-on environment`);
-  else if (dims.macro < 50) points.push(details?.macro?.detail || `Macro headwinds at ${dims.macro}/100 — caution warranted`);
-
-  if (dims.treasury >= 70) points.push(details?.treasury?.detail || `Institutional treasury adoption at ${dims.treasury}/100 — smart money accumulating`);
-  else if (dims.treasury < 50) points.push(details?.treasury?.detail || `Treasury data muted at ${dims.treasury}/100 — no strong institutional signal`);
-
-  return points;
-}
+import Skeleton from "@/components/ui/Skeleton";
+import EmptyState from "@/components/ui/EmptyState";
+import SignalsPageHeader from "./signals/SignalsPageHeader";
+import SignalSummaryCards from "./signals/SignalSummaryCards";
+import SignalFilters, { type SortOption, type ViewMode } from "./signals/SignalFilters";
+import TopSignalHighlight from "./signals/TopSignalHighlight";
+import SignalCard from "./signals/SignalCard";
+import SignalCompactRow from "./signals/SignalCompactRow";
 
 interface Props {
   tickers?: SoDEXTicker[] | null;
   liveSignals?: Signal[];
-  liveDims?: Record<string, SignalDimensions> | null;
+  liveDims?: Record<string, LiveSignalDimensions> | null;
   overallScores?: Record<string, number> | null;
   weights?: Record<string, Record<string, number>> | null;
   cappedDims?: Record<string, string[]> | null;
 }
 
 export default function SignalsPage({ tickers, liveSignals = [], liveDims, overallScores, weights, cappedDims }: Props) {
-  const tickerMap = new Map<string, SoDEXTicker>();
-  if (tickers) tickers.forEach((t) => tickerMap.set(t.symbol, t));
+  // Build ticker map
+  const tickerMap = useMemo(() => {
+    const map = new Map<string, SoDEXTicker>();
+    if (tickers) tickers.forEach((t) => map.set(t.symbol, t));
+    return map;
+  }, [tickers]);
 
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // Filter state
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<SignalAction | "ALL">("ALL");
+  const [confidenceFilter, setConfidenceFilter] = useState(0);
+  const [sortBy, setSortBy] = useState<SortOption>("confidence");
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
 
-  const toggle = (id: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
+  // Filtered & sorted signals
+  const filteredSignals = useMemo(() => {
+    let result = [...liveSignals];
+
+    // Search
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter((s) => s.pair.toLowerCase().includes(q));
+    }
+
+    // Type filter
+    if (typeFilter !== "ALL") {
+      result = result.filter((s) => s.action === typeFilter);
+    }
+
+    // Confidence filter
+    if (confidenceFilter > 0) {
+      result = result.filter((s) => s.confidence >= confidenceFilter);
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "confidence":
+          return b.confidence - a.confidence;
+        case "change": {
+          const aSym = pairToSodexSymbol(a.pair);
+          const bSym = pairToSodexSymbol(b.pair);
+          const aChg = aSym ? (tickerMap.get(aSym)?.changePct ?? a.change24h) : a.change24h;
+          const bChg = bSym ? (tickerMap.get(bSym)?.changePct ?? b.change24h) : b.change24h;
+          return bChg - aChg;
+        }
+        case "newest":
+          return 0; // signals don't have timestamp, preserve order
+        case "pair":
+          return a.pair.localeCompare(b.pair);
+        default:
+          return 0;
+      }
     });
+
+    return result;
+  }, [liveSignals, search, typeFilter, confidenceFilter, sortBy, tickerMap]);
+
+  // Top signal (highest confidence)
+  const topSignal = useMemo(() => {
+    if (filteredSignals.length === 0) return null;
+    return filteredSignals.reduce((best, s) => (s.confidence > best.confidence ? s : best), filteredSignals[0]);
+  }, [filteredSignals]);
+
+  // Timestamp
+  const lastUpdated = useMemo(() => {
+    if (liveSignals.length === 0) return undefined;
+    return new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  }, [liveSignals]);
+
+  // Helper to get ticker for a signal
+  const getTicker = (signal: Signal): SoDEXTicker | undefined => {
+    const sym = pairToSodexSymbol(signal.pair);
+    return sym ? tickerMap.get(sym) : undefined;
+  };
+
+  // Helper to get coin-level data
+  const getCoinData = (signal: Signal) => {
+    const coin = signal.pair.split("/")[0];
+    return {
+      liveDims: liveDims?.[coin] ?? null,
+      overallScore: overallScores?.[coin] ?? null,
+      coinWeights: weights?.[coin] ?? null,
+      coinCapped: cappedDims?.[coin] ?? null,
+    };
   };
 
   return (
-    <div className="space-y-4">
-      <PageHeader title="All Signals" badge={{ variant: "live", label: "LIVE PRICES" }} />
+    <div className="space-y-5">
+      {/* Page header */}
+      <SignalsPageHeader signalCount={liveSignals.length} timestamp={lastUpdated} />
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        {liveSignals.length === 0 && (
-          <div className="col-span-full text-center py-12">
-            <p className="text-sm text-txt-muted">Loading signals...</p>
-          </div>
-        )}
-        {liveSignals.map((s) => {
-          const meta = actionMeta[s.action];
-          const sodSym = pairToSodexSymbol(s.pair);
-          const live = sodSym ? tickerMap.get(sodSym) : undefined;
-          const price = live ? parseFloat(live.lastPx) : s.price;
-          const chg = live ? live.changePct : s.change24h;
-          const isOpen = expanded.has(s.id);
-          const coin = s.pair.split("/")[0];
-          const dimDetails = liveDims?.[coin];
-          const rationale = actionRationale(s);
+      {/* Summary cards */}
+      {liveSignals.length > 0 && <SignalSummaryCards signals={liveSignals} />}
 
-          return (
-            <div key={s.id} className={`${meta.bg} ${meta.border} border rounded-xl overflow-hidden`}>
-              {/* Header */}
-              <div className="p-5">
-                <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-bold text-txt-primary">{s.pair}</span>
-                    <Badge variant={s.action.toLowerCase()} size="md">{s.action}</Badge>
-                    {live && <Badge variant="live" size="sm">LIVE</Badge>}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <ConfidenceGauge value={s.confidence} size="sm" />
-                    <div className="text-right">
-                      <span className="text-sm text-txt-primary font-semibold font-mono">
-                        ${typeof price === "number" ? price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : price}
-                      </span>
-                      <span className={`text-xs ml-2 ${chg >= 0 ? "text-buy" : "text-sell"}`}>
-                        {chg >= 0 ? "+" : ""}{typeof chg === "number" ? chg.toFixed(1) : chg}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
+      {/* Filters */}
+      {liveSignals.length > 0 && (
+        <SignalFilters
+          search={search}
+          onSearchChange={setSearch}
+          typeFilter={typeFilter}
+          onTypeFilterChange={setTypeFilter}
+          confidenceFilter={confidenceFilter}
+          onConfidenceFilterChange={setConfidenceFilter}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+        />
+      )}
 
-                {/* Main reasoning */}
-                <p className="text-sm text-txt-secondary leading-relaxed mb-4">{s.reasoning}</p>
+      {/* Top signal highlight */}
+      {topSignal && viewMode === "cards" && (
+        <TopSignalHighlight signal={topSignal} ticker={getTicker(topSignal)} />
+      )}
 
-                {/* Dimension bars */}
-                <div className="flex flex-col gap-1.5 mb-4">
-                  {dimLabels.map((d) => {
-                    const liveScore = dimDetails?.[d.key]?.score;
-                    const liveDetail = dimDetails?.[d.key]?.detail;
-                    const score = liveScore ?? s.dimensions[d.key];
-                    const detail = liveDetail || s.dimensionDetails?.[d.key]?.detail;
-                    const coinWeights = weights?.[coin];
-                    const coinCapped = cappedDims?.[coin];
-                    const weight = coinWeights?.[d.key];
-                    const isCapped = coinCapped?.includes(d.key);
-
-                    return (
-                      <div key={d.key} className="flex items-center gap-2">
-                        <ProgressBar value={score} color={d.hex} height="sm" label={d.label} showValue />
-                        {weight != null && (
-                          <span className="text-[10px] w-8 text-right text-txt-muted tabular-nums">{weight}%</span>
-                        )}
-                        {isCapped && (
-                          <Badge variant="error" size="sm" className="text-[8px]">CAP</Badge>
-                        )}
-                        {detail && (
-                          <span className="text-[10px] text-txt-dim hidden lg:block w-48 truncate" title={detail}>
-                            {detail}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Confidence + overall + toggle */}
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] text-txt-muted">
-                      Confidence: <span className="font-bold" style={{ color: meta.accent }}>{s.confidence}%</span>
-                    </span>
-                    {overallScores?.[coin] != null && (
-                      <span className="text-[10px] text-txt-muted">
-                        Overall: <span className="font-bold text-info">{overallScores[coin]}/100</span>
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => toggle(s.id)}
-                    className="text-[10px] text-accent hover:opacity-80"
-                  >
-                    {isOpen ? "Hide Analysis" : "Show Analysis"}
-                  </button>
-                </div>
+      {/* Signal grid / compact list */}
+      {liveSignals.length === 0 ? (
+        <div className="space-y-3">
+          {/* Loading skeleton */}
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-card border border-border-default rounded-xl p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <Skeleton variant="text" className="w-24" />
+                <Skeleton variant="text-sm" className="w-16" />
               </div>
-
-              {/* Expanded analysis */}
-              {isOpen && (
-                <div className="border-t border-border-default p-5 space-y-4 bg-[#00000020] animate-fade-in">
-                  {/* Why this signal */}
-                  <div>
-                    <h4 className="text-xs font-semibold text-txt-primary mb-2" style={{ color: meta.accent }}>
-                      Why {s.action}?
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {dimLabels.map((d) => {
-                        const liveScore = dimDetails?.[d.key]?.score;
-                        const liveDetail = dimDetails?.[d.key]?.detail;
-                        const score = liveScore ?? s.dimensions[d.key];
-                        const detail = liveDetail || s.dimensionDetails?.[d.key]?.detail || `Score: ${score}/100`;
-                        const coinWeights = weights?.[coin];
-                        const coinCapped = cappedDims?.[coin];
-                        const weight = coinWeights?.[d.key];
-                        const isCapped = coinCapped?.includes(d.key);
-
-                        return (
-                          <Card key={d.key} variant="inset" padding="sm">
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <span className="text-xs">{d.icon}</span>
-                              <span className="text-[11px] font-semibold" style={{ color: d.hex }}>{d.label}</span>
-                              {weight != null && (
-                                <span className="text-[9px] text-txt-muted">wt: {weight}%</span>
-                              )}
-                              {isCapped && (
-                                <Badge variant="error" size="sm" className="text-[8px]">CAP</Badge>
-                              )}
-                              <span className="text-[10px] font-bold ml-auto" style={{ color: d.hex }}>{score}/100</span>
-                            </div>
-                            <p className="text-[10px] text-txt-tertiary leading-relaxed">{detail}</p>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Key rationales */}
-                  {rationale.length > 0 && (
-                    <div>
-                      <h4 className="text-xs font-semibold text-txt-primary mb-2">Key Factors</h4>
-                      <ul className="space-y-1">
-                        {rationale.map((r, i) => (
-                          <li key={i} className="flex items-start gap-2 text-[11px] text-txt-secondary">
-                            <span className="mt-0.5 shrink-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: meta.accent }} />
-                            {r}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Execution plan */}
-                  {s.execution.orderType !== "No action" && (
-                    <div>
-                      <h4 className="text-xs font-semibold text-txt-primary mb-2">Execution Plan</h4>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-[10px]">
-                        <Card variant="inset" padding="sm">
-                          <span className="text-txt-muted">Entry</span>
-                          <p className="text-txt-primary font-mono font-semibold">${s.execution.entry.toLocaleString()}</p>
-                        </Card>
-                        <Card variant="inset" padding="sm">
-                          <span className="text-txt-muted">Take Profit</span>
-                          <p className="text-buy font-mono font-semibold">
-                            {s.execution.takeProfit > 0 ? `$${s.execution.takeProfit.toLocaleString()}` : "—"}
-                          </p>
-                        </Card>
-                        <Card variant="inset" padding="sm">
-                          <span className="text-txt-muted">Stop Loss</span>
-                          <p className="text-sell font-mono font-semibold">
-                            {s.execution.stopLoss > 0 ? `$${s.execution.stopLoss.toLocaleString()}` : "—"}
-                          </p>
-                        </Card>
-                        <Card variant="inset" padding="sm">
-                          <span className="text-txt-muted">Position</span>
-                          <p className="text-txt-primary font-semibold">{s.execution.positionSize}</p>
-                        </Card>
-                        <Card variant="inset" padding="sm">
-                          <span className="text-txt-muted">Risk/Reward</span>
-                          <p className="text-txt-primary font-semibold">{s.execution.riskReward}</p>
-                        </Card>
-                        <Card variant="inset" padding="sm">
-                          <span className="text-txt-muted">Type</span>
-                          <p className="text-accent font-semibold">{s.execution.orderType}</p>
-                        </Card>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Sources */}
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] text-txt-dim">Data sources:</span>
-                    {s.sources.map((src) => (
-                      <Badge key={src} variant="muted" size="sm">{src}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Time */}
-              <div className="px-5 pb-3">
-                <span className="text-[10px] text-txt-dim">{s.timeAgo}</span>
+              <Skeleton variant="text" className="w-full" />
+              <Skeleton variant="text" className="w-3/4" />
+              <div className="space-y-2">
+                {Array.from({ length: 5 }).map((_, j) => (
+                  <Skeleton key={j} variant="table-row" />
+                ))}
               </div>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      ) : filteredSignals.length === 0 ? (
+        <EmptyState
+          title="No signals match your filters"
+          description="Try adjusting the search, type, or confidence filters to see more signals."
+          icon="signal"
+        />
+      ) : viewMode === "cards" ? (
+        /* Cards view */
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          {filteredSignals.map((s) => {
+            const { liveDims: coinDims, overallScore, coinWeights, coinCapped } = getCoinData(s);
+            return (
+              <SignalCard
+                key={s.id}
+                signal={s}
+                ticker={getTicker(s)}
+                liveDims={coinDims}
+                overallScore={overallScore}
+                weights={coinWeights}
+                cappedDims={coinCapped}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        /* Compact view */
+        <div className="space-y-1.5">
+          {/* Table header */}
+          <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] gap-3 items-center px-4 py-2 text-[9px] text-txt-dim uppercase tracking-wider font-semibold">
+            <span>Pair</span>
+            <span>Confidence</span>
+            <span>Price</span>
+            <span>24H</span>
+            <span>Score</span>
+            <span>Updated</span>
+            <span>Action</span>
+          </div>
+          {filteredSignals.map((s) => {
+            const { liveDims: coinDims, overallScore, coinWeights, coinCapped } = getCoinData(s);
+            return (
+              <SignalCompactRow
+                key={s.id}
+                signal={s}
+                ticker={getTicker(s)}
+                liveDims={coinDims}
+                overallScore={overallScore}
+                weights={coinWeights}
+                cappedDims={coinCapped}
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
