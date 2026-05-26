@@ -1,6 +1,7 @@
 import { getCurrencies } from "@/lib/sosovalue";
 import { getTickers } from "@/lib/sodex";
 import { chat } from "@/lib/deepseek";
+import { getProvider } from "@/lib/ai-providers";
 import { jsonNoCache } from "@/lib/api/no-cache";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,15 @@ interface ServiceStatus {
   latencyMs: number;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const providerId = url.searchParams.get("provider") || undefined;
+  const model = url.searchParams.get("model") || undefined;
+  const apiKey = url.searchParams.get("apiKey") || undefined;
+
+  const provider = providerId ? getProvider(providerId) : undefined;
+  const aiName = provider ? provider.name : "AI Model";
+
   const checks: Promise<ServiceStatus>[] = [
     // SoSoValue
     (async () => {
@@ -49,17 +58,47 @@ export async function GET() {
       }
     })(),
 
-    // Deepseek
+    // AI Model — dynamic based on selected provider
     (async () => {
-      if (!process.env.DEEPSEEK_API_KEY) {
-        return { name: "Deepseek AI", status: "no_key" as const, detail: "DEEPSEEK_API_KEY not set", latencyMs: 0 };
+      // Determine which key to check
+      const hasUserKey = !!apiKey;
+      const hasServerKey = !!process.env.DEEPSEEK_API_KEY;
+
+      if (!hasUserKey && !hasServerKey) {
+        return {
+          name: aiName,
+          status: "no_key" as const,
+          detail: provider ? `No ${provider.name} API key configured` : "No AI API key configured",
+          latencyMs: 0,
+        };
       }
+
       const start = Date.now();
       try {
-        await chat([{ role: "user", content: "ping" }], { maxTokens: 5 });
-        return { name: "Deepseek AI", status: "connected" as const, detail: "Model ready", latencyMs: Date.now() - start };
+        // Build provider config for the chat function
+        const providerConfig = provider && apiKey
+          ? { baseUrl: provider.baseUrl, apiKey, model: model || provider.defaultModel }
+          : undefined;
+
+        await chat(
+          [{ role: "user", content: "ping" }],
+          { maxTokens: 5, ...(providerConfig ? { provider: providerConfig } : {}) },
+        );
+
+        const modelLabel = model || provider?.defaultModel || "server default";
+        return {
+          name: aiName,
+          status: "connected" as const,
+          detail: `${modelLabel} ready`,
+          latencyMs: Date.now() - start,
+        };
       } catch {
-        return { name: "Deepseek AI", status: "error" as const, detail: "Connection failed", latencyMs: Date.now() - start };
+        return {
+          name: aiName,
+          status: "error" as const,
+          detail: "Connection failed",
+          latencyMs: Date.now() - start,
+        };
       }
     })(),
   ];
