@@ -10,6 +10,15 @@ export default function PerformanceRoute() {
       signalHistory={d.history}
       signalStats={d.signalStats}
       historyHydrated={d.historyHydrated}
+      calibration={d.calibration}
+      equityCurve={d.equityCurve}
+      drawdown={d.drawdown}
+      streaks={d.streaks}
+      perCoin={d.perCoin}
+      frequency={d.frequency}
+      resolutionWindow={d.resolutionWindow}
+      setResolutionWindow={d.setResolutionWindow}
+      exportCSV={d.exportCSV}
     />
   );
 }

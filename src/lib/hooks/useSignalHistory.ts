@@ -1,12 +1,21 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import type { Signal, RecordedSignal } from "../types/signal";
 
 export type { RecordedSignal };
 
 const STORAGE_KEY = "signalflow_signal_history";
-const RESOLVE_AFTER_MS = 60 * 60 * 1000;
+const MAX_HISTORY = 500;
+
+export type ResolutionWindow = "1h" | "4h" | "24h" | "7d";
+
+const RESOLUTION_MS: Record<ResolutionWindow, number> = {
+  "1h": 60 * 60 * 1000,
+  "4h": 4 * 60 * 60 * 1000,
+  "24h": 24 * 60 * 60 * 1000,
+  "7d": 7 * 24 * 60 * 60 * 1000,
+};
 
 function load(): RecordedSignal[] {
   if (typeof window === "undefined") return [];
@@ -20,15 +29,284 @@ function load(): RecordedSignal[] {
 
 function save(history: RecordedSignal[]) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(-500)));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(-MAX_HISTORY)));
   } catch {
     // storage full
   }
 }
 
+function isSignalCorrect(signal: RecordedSignal, currentPrice: number): boolean {
+  if (signal.action === "BUY") return currentPrice > signal.price;
+  if (signal.action === "SELL") return currentPrice < signal.price;
+  // HOLD — correct if price stays within 2%
+  return Math.abs(currentPrice - signal.price) / signal.price <= 0.02;
+}
+
+/* ── Confidence calibration buckets ── */
+
+export interface CalibrationBucket {
+  range: string;
+  min: number;
+  max: number;
+  total: number;
+  correct: number;
+  accuracy: number | null;
+}
+
+function buildCalibration(history: RecordedSignal[]): CalibrationBucket[] {
+  const buckets: CalibrationBucket[] = [
+    { range: "50-59%", min: 50, max: 60, total: 0, correct: 0, accuracy: null },
+    { range: "60-69%", min: 60, max: 70, total: 0, correct: 0, accuracy: null },
+    { range: "70-79%", min: 70, max: 80, total: 0, correct: 0, accuracy: null },
+    { range: "80-89%", min: 80, max: 90, total: 0, correct: 0, accuracy: null },
+    { range: "90-100%", min: 90, max: 101, total: 0, correct: 0, accuracy: null },
+  ];
+
+  const resolved = history.filter((s) => s.resolved);
+  for (const s of resolved) {
+    const bucket = buckets.find((b) => s.confidence >= b.min && s.confidence < b.max);
+    if (bucket) {
+      bucket.total++;
+      if (s.resolved?.correct) bucket.correct++;
+    }
+  }
+
+  for (const b of buckets) {
+    b.accuracy = b.total > 0 ? (b.correct / b.total) * 100 : null;
+  }
+
+  return buckets;
+}
+
+/* ── Equity curve ── */
+
+export interface EquityPoint {
+  timestamp: number;
+  value: number;
+  signalId: string;
+  action: string;
+  correct: boolean | null;
+}
+
+function buildEquityCurve(history: RecordedSignal[], startValue = 10000): EquityPoint[] {
+  const points: EquityPoint[] = [{ timestamp: Date.now() - 86400000 * 30, value: startValue, signalId: "start", action: "START", correct: null }];
+
+  // Sort by timestamp ascending
+  const sorted = [...history].sort((a, b) => a.timestamp - b.timestamp);
+  let value = startValue;
+  const POSITION_SIZE = 0.05; // 5% per trade
+
+  for (const s of sorted) {
+    if (!s.resolved) continue;
+    const pnl = s.resolved.correct ? POSITION_SIZE * 0.02 : -POSITION_SIZE * 0.01; // simplified P&L
+    value = value * (1 + pnl);
+    points.push({
+      timestamp: s.resolved.resolvedAt,
+      value: Math.round(value * 100) / 100,
+      signalId: s.id,
+      action: s.action,
+      correct: s.resolved.correct,
+    });
+  }
+
+  return points;
+}
+
+/* ── Max drawdown ── */
+
+export interface DrawdownResult {
+  maxDrawdown: number; // percentage
+  peakValue: number;
+  troughValue: number;
+  recoverySignals: number;
+}
+
+function computeMaxDrawdown(curve: EquityPoint[]): DrawdownResult {
+  if (curve.length < 2) return { maxDrawdown: 0, peakValue: 10000, troughValue: 10000, recoverySignals: 0 };
+
+  let peak = curve[0].value;
+  let maxDD = 0;
+  let peakAt = peak;
+  let troughAt = peak;
+
+  for (const p of curve) {
+    if (p.value > peak) peak = p.value;
+    const dd = (peak - p.value) / peak;
+    if (dd > maxDD) {
+      maxDD = dd;
+      peakAt = peak;
+      troughAt = p.value;
+    }
+  }
+
+  // Recovery signals: count from trough back to near-peak
+  let recovery = 0;
+  const troughIdx = curve.findIndex((p) => p.value === troughAt);
+  if (troughIdx >= 0) {
+    for (let i = troughIdx + 1; i < curve.length; i++) {
+      if (curve[i].value >= peakAt * 0.98) break;
+      recovery++;
+    }
+  }
+
+  return {
+    maxDrawdown: maxDD * 100,
+    peakValue: peakAt,
+    troughValue: troughAt,
+    recoverySignals: recovery,
+  };
+}
+
+/* ── Win/Loss streaks ── */
+
+export interface StreakInfo {
+  current: { type: "win" | "loss" | "none"; count: number };
+  bestWinStreak: number;
+  worstLossStreak: number;
+  last10: ("win" | "loss" | "pending")[];
+}
+
+function computeStreaks(history: RecordedSignal[]): StreakInfo {
+  const resolved = history.filter((s) => s.resolved).sort((a, b) => (b.resolved?.resolvedAt ?? 0) - (a.resolved?.resolvedAt ?? 0));
+
+  if (resolved.length === 0) {
+    return { current: { type: "none", count: 0 }, bestWinStreak: 0, worstLossStreak: 0, last10: [] };
+  }
+
+  // Last 10
+  const last10 = resolved.slice(0, 10).map((s) => (s.resolved?.correct ? "win" as const : "loss" as const));
+
+  // Current streak
+  let currentType: "win" | "loss" = resolved[0].resolved?.correct ? "win" : "loss";
+  let currentCount = 0;
+  for (const s of resolved) {
+    const isWin = s.resolved?.correct;
+    if ((currentType === "win" && isWin) || (currentType === "loss" && !isWin)) {
+      currentCount++;
+    } else {
+      break;
+    }
+  }
+
+  // Best/worst streaks across all history
+  let bestWin = 0;
+  let worstLoss = 0;
+  let streak = 0;
+  let lastResult: boolean | null = null;
+
+  for (const s of [...resolved].reverse()) {
+    const correct = s.resolved?.correct ?? false;
+    if (correct === lastResult) {
+      streak++;
+    } else {
+      streak = 1;
+    }
+    if (correct) bestWin = Math.max(bestWin, streak);
+    else worstLoss = Math.max(worstLoss, streak);
+    lastResult = correct;
+  }
+
+  return {
+    current: { type: currentType, count: currentCount },
+    bestWinStreak: bestWin,
+    worstLossStreak: worstLoss,
+    last10,
+  };
+}
+
+/* ── Per-coin breakdown ── */
+
+export interface CoinAccuracy {
+  coin: string;
+  total: number;
+  resolved: number;
+  correct: number;
+  accuracy: number | null;
+}
+
+function computePerCoin(history: RecordedSignal[]): CoinAccuracy[] {
+  const byCoin = new Map<string, RecordedSignal[]>();
+  for (const s of history) {
+    const list = byCoin.get(s.coin) ?? [];
+    list.push(s);
+    byCoin.set(s.coin, list);
+  }
+
+  return Array.from(byCoin.entries()).map(([coin, signals]) => {
+    const resolved = signals.filter((s) => s.resolved);
+    const correct = resolved.filter((s) => s.resolved?.correct);
+    return {
+      coin,
+      total: signals.length,
+      resolved: resolved.length,
+      correct: correct.length,
+      accuracy: resolved.length > 0 ? (correct.length / resolved.length) * 100 : null,
+    };
+  }).sort((a, b) => b.total - a.total);
+}
+
+/* ── Signal frequency ── */
+
+export interface FrequencyStats {
+  signalsPerDay: number;
+  mostActivePair: string | null;
+  last24h: number;
+  last7d: number;
+}
+
+function computeFrequency(history: RecordedSignal[]): FrequencyStats {
+  if (history.length === 0) return { signalsPerDay: 0, mostActivePair: null, last24h: 0, last7d: 0 };
+
+  const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
+  const oldest = Math.min(...history.map((s) => s.timestamp));
+  const daysSinceFirst = Math.max(1, (now - oldest) / day);
+
+  const last24h = history.filter((s) => now - s.timestamp < day).length;
+  const last7d = history.filter((s) => now - s.timestamp < 7 * day).length;
+
+  // Most active pair
+  const pairCounts = new Map<string, number>();
+  for (const s of history) {
+    pairCounts.set(s.pair, (pairCounts.get(s.pair) ?? 0) + 1);
+  }
+  let mostActive: string | null = null;
+  let maxCount = 0;
+  for (const [pair, count] of pairCounts) {
+    if (count > maxCount) {
+      mostActive = pair;
+      maxCount = count;
+    }
+  }
+
+  return {
+    signalsPerDay: Math.round((history.length / daysSinceFirst) * 10) / 10,
+    mostActivePair: mostActive,
+    last24h,
+    last7d,
+  };
+}
+
+/* ── Export CSV ── */
+
+export function exportSignalsCSV(history: RecordedSignal[]): string {
+  const header = "Time,Coin,Pair,Action,Confidence,Entry Price,Resolved,Final Price,Correct";
+  const rows = history.map((s) => {
+    const time = new Date(s.timestamp).toISOString();
+    const resolved = s.resolved ? "Yes" : "No";
+    const finalPrice = s.resolved?.finalPrice ?? "";
+    const correct = s.resolved ? (s.resolved.correct ? "Yes" : "No") : "";
+    return `${time},${s.coin},${s.pair},${s.action},${s.confidence},${s.price},${resolved},${finalPrice},${correct}`;
+  });
+  return [header, ...rows].join("\n");
+}
+
+/* ── Main hook ── */
+
 export function useSignalHistory() {
   const [history, setHistory] = useState<RecordedSignal[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [resolutionWindow, setResolutionWindow] = useState<ResolutionWindow>("24h");
 
   useEffect(() => {
     setHistory(load());
@@ -66,22 +344,17 @@ export function useSignalHistory() {
   const resolveSignals = useCallback(
     (coin: string, currentPrice: number) => {
       const now = Date.now();
+      const windowMs = RESOLUTION_MS[resolutionWindow];
       let changed = false;
 
       setHistory((prev) => {
         const next = prev.map((s) => {
-          if (s.resolved || s.coin !== coin || now - s.timestamp < RESOLVE_AFTER_MS) {
+          // Already resolved or different coin or not enough time passed
+          if (s.resolved || s.coin !== coin || now - s.timestamp < windowMs) {
             return s;
           }
           changed = true;
-          let correct = false;
-          if (s.action === "BUY") {
-            correct = currentPrice > s.price;
-          } else if (s.action === "SELL") {
-            correct = currentPrice < s.price;
-          } else {
-            correct = Math.abs(currentPrice - s.price) / s.price <= 0.02;
-          }
+          const correct = isSignalCorrect(s, currentPrice);
           return {
             ...s,
             resolved: { correct, finalPrice: currentPrice, resolvedAt: now },
@@ -91,29 +364,63 @@ export function useSignalHistory() {
         return next;
       });
     },
-    [],
+    [resolutionWindow],
   );
 
-  const totalResolved = history.filter((s) => s.resolved).length;
-  const totalCorrect = history.filter((s) => s.resolved?.correct).length;
+  // Core stats
+  const totalResolved = useMemo(() => history.filter((s) => s.resolved).length, [history]);
+  const totalCorrect = useMemo(() => history.filter((s) => s.resolved?.correct).length, [history]);
   const accuracy = totalResolved > 0 ? (totalCorrect / totalResolved) * 100 : null;
 
-  const byCoin = (coin: string) => {
-    const resolved = history.filter((s) => s.coin === coin && s.resolved);
-    const correct = resolved.filter((s) => s.resolved?.correct).length;
-    return {
-      total: resolved.length,
-      correct,
-      accuracy: resolved.length > 0 ? (correct / resolved.length) * 100 : null,
-    };
-  };
+  // Enhanced stats
+  const calibration = useMemo(() => buildCalibration(history), [history]);
+  const equityCurve = useMemo(() => buildEquityCurve(history), [history]);
+  const drawdown = useMemo(() => computeMaxDrawdown(equityCurve), [equityCurve]);
+  const streaks = useMemo(() => computeStreaks(history), [history]);
+  const perCoin = useMemo(() => computePerCoin(history), [history]);
+  const frequency = useMemo(() => computeFrequency(history), [history]);
+
+  // Per-coin helper
+  const byCoin = useCallback(
+    (coin: string) => {
+      const resolved = history.filter((s) => s.coin === coin && s.resolved);
+      const correct = resolved.filter((s) => s.resolved?.correct).length;
+      return {
+        total: resolved.length,
+        correct,
+        accuracy: resolved.length > 0 ? (correct / resolved.length) * 100 : null,
+      };
+    },
+    [history],
+  );
+
+  // CSV export
+  const exportCSV = useCallback(() => {
+    const csv = exportSignalsCSV(history);
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `signalflow-history-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [history]);
 
   return {
     history,
     hydrated,
     recordSignal,
     resolveSignals,
+    resolutionWindow,
+    setResolutionWindow,
     stats: { totalResolved, totalCorrect, accuracy },
+    calibration,
+    equityCurve,
+    drawdown,
+    streaks,
+    perCoin,
+    frequency,
     byCoin,
+    exportCSV,
   };
 }

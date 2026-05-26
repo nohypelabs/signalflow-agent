@@ -97,6 +97,15 @@ export interface DashboardState {
     correct: number;
     accuracy: number | null;
   };
+  calibration: import("./hooks/useSignalHistory").CalibrationBucket[];
+  equityCurve: import("./hooks/useSignalHistory").EquityPoint[];
+  drawdown: import("./hooks/useSignalHistory").DrawdownResult;
+  streaks: import("./hooks/useSignalHistory").StreakInfo;
+  perCoin: import("./hooks/useSignalHistory").CoinAccuracy[];
+  frequency: import("./hooks/useSignalHistory").FrequencyStats;
+  resolutionWindow: import("./hooks/useSignalHistory").ResolutionWindow;
+  setResolutionWindow: (w: import("./hooks/useSignalHistory").ResolutionWindow) => void;
+  exportCSV: () => void;
 
   // Selected signal
   selectedSignal: Signal | null;
@@ -171,6 +180,15 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     resolveSignals,
     stats: signalStats,
     byCoin: historyByCoin,
+    calibration,
+    equityCurve,
+    drawdown,
+    streaks,
+    perCoin,
+    frequency,
+    resolutionWindow,
+    setResolutionWindow,
+    exportCSV,
   } = useSignalHistory();
 
   // Orders (renamed hook)
@@ -301,6 +319,15 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     resolveSignals,
     signalStats,
     historyByCoin,
+    calibration,
+    equityCurve,
+    drawdown,
+    streaks,
+    perCoin,
+    frequency,
+    resolutionWindow,
+    setResolutionWindow,
+    exportCSV,
     selectedSignal,
     setSelectedSignal,
     displaySignal,
