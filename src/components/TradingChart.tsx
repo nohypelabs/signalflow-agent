@@ -17,6 +17,9 @@ import type { SoDEXKline, SoDEXTicker } from "@/lib/types/trade";
 import type { Signal } from "@/lib/types/signal";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import { fetchKlines } from "@/lib/api/datasources";
+import { useChartDrawings } from "@/lib/hooks/useChartDrawings";
+import ChartDrawingToolbar from "./charts/ChartDrawingToolbar";
+import ChartDrawingOverlay from "./charts/ChartDrawingOverlay";
 
 /* ── Constants ── */
 
@@ -150,6 +153,28 @@ export default function TradingChart({
   } | null>(null);
 
   const sodexSymbol = pairToSodexSymbol(pair.split("/")[0]);
+
+  // Chart drawings
+  const {
+    drawings,
+    activeTool,
+    pending,
+    hidden,
+    selectTool,
+    handleChartClick,
+    cancelPending,
+    clearAll,
+    toggleHidden,
+  } = useChartDrawings(pair, tf);
+
+  // Cancel pending drawing on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") cancelPending();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [cancelPending]);
 
   // Fetch klines for selected pair + timeframe
   const fetchTfKlines = useCallback(async () => {
@@ -497,6 +522,26 @@ export default function TradingChart({
       {/* Chart container */}
       <div className="flex-1 min-h-0 relative">
         <div ref={containerRef} className="absolute inset-0" />
+
+        {/* Drawing toolbar + overlay */}
+        <ChartDrawingToolbar
+          activeTool={activeTool}
+          onSelectTool={selectTool}
+          onClear={clearAll}
+          onToggleHidden={toggleHidden}
+          hidden={hidden}
+          drawingCount={drawings.length}
+          pendingFirstClick={pending.firstClick !== null}
+        />
+        <ChartDrawingOverlay
+          chart={chartRef.current}
+          series={candleRef.current}
+          drawings={drawings}
+          hidden={hidden}
+          pendingFirstClick={pending.firstClick}
+          activeTool={activeTool}
+          onClick={handleChartClick}
+        />
 
         {/* Empty / Error state overlay */}
         {!klines && !loading && (
