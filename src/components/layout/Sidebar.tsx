@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   HomeIcon,
@@ -13,6 +13,8 @@ import {
   SettingsIcon,
   DocsIcon,
   CloseIcon,
+  SidebarCollapseIcon,
+  SidebarExpandIcon,
 } from "@/components/ui/icons";
 
 const groups = [
@@ -50,6 +52,7 @@ interface Props {
 export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
   const pathname = usePathname();
   const router = useRouter();
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     if (mobileOpen) {
@@ -68,32 +71,43 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
   };
 
   const menuItems = (
-    <nav className="flex flex-col gap-1 px-3">
+    <nav className={`flex flex-col gap-1 ${collapsed ? "px-2" : "px-3"}`}>
       {groups.map((group, gi) => (
         <div key={group.label}>
           {gi > 0 && <div className="h-px bg-border-default my-3 mx-1" />}
-          <div className="text-[10px] text-txt-faint uppercase tracking-[0.18em] font-semibold px-2 pt-3 pb-2">
-            {group.label}
-          </div>
+          {!collapsed && (
+            <div className="text-[10px] text-txt-faint uppercase tracking-[0.18em] font-semibold px-2 pt-3 pb-2">
+              {group.label}
+            </div>
+          )}
+          {collapsed && gi > 0 && <div className="h-1" />}
           {group.items.map(({ href, label, Icon }) => {
             const isActive = pathname === href;
             return (
               <button
                 key={href}
                 onClick={() => handleNavigate(href)}
+                title={collapsed ? label : undefined}
                 className={`
-                  w-full flex items-center gap-2.5 px-2.5 py-[7px] text-[13px] rounded-md transition-all relative
+                  w-full flex items-center rounded-md transition-all relative
+                  ${collapsed
+                    ? "justify-center px-0 py-2.5"
+                    : "gap-2.5 px-2.5 py-[7px]"
+                  }
                   ${isActive
                     ? "text-txt-primary font-medium bg-[#ffffff06]"
                     : "text-txt-muted hover:text-txt-secondary hover:bg-[#ffffff04]"
                   }
                 `}
               >
-                {isActive && (
+                {isActive && !collapsed && (
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-r-full bg-accent" />
                 )}
-                <Icon size={14} className={isActive ? "text-accent" : "opacity-50"} />
-                <span>{label}</span>
+                {isActive && collapsed && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-r-full bg-accent" />
+                )}
+                <Icon size={collapsed ? 16 : 14} className={isActive ? "text-accent" : "opacity-50"} />
+                {!collapsed && <span className="text-[13px]">{label}</span>}
               </button>
             );
           })}
@@ -105,10 +119,39 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="w-48 shrink-0 bg-surface border-r border-border-default hidden md:flex flex-col">
+      <aside
+        className={`
+          shrink-0 bg-surface border-r border-border-default hidden md:flex flex-col
+          transition-all duration-200 ease-out
+          ${collapsed ? "w-16" : "w-48"}
+        `}
+      >
         <div className="flex-1 overflow-y-auto py-3">{menuItems}</div>
-        <div className="text-[9px] text-txt-faint px-5 py-3 border-t border-border-default">
-          v0.1 Beta · NoHype Labs
+
+        {/* Collapse toggle + version */}
+        <div className="border-t border-border-default">
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={`
+              w-full flex items-center gap-2 px-3 py-2.5 text-txt-muted hover:text-txt-secondary hover:bg-[#ffffff04] transition-colors
+              ${collapsed ? "justify-center" : ""}
+            `}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? (
+              <SidebarExpandIcon size={15} className="opacity-60" />
+            ) : (
+              <>
+                <SidebarCollapseIcon size={15} className="opacity-60" />
+                <span className="text-[11px]">Collapse</span>
+              </>
+            )}
+          </button>
+          {!collapsed && (
+            <div className="text-[9px] text-txt-faint px-5 pb-3">
+              v0.1 Beta · NoHype Labs
+            </div>
+          )}
         </div>
       </aside>
 

@@ -28,6 +28,8 @@ const d: Record<string, string> = {
   externalLink: "M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14",
   trendUp: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6",
   trendDown: "M13 17h8m0 0V9m0 8l-8-8-4 4-6-6",
+  sidebarCollapse: "M11 19h10M11 19V5m0 14H4a1 1 0 01-1-1V6a1 1 0 011-1h7m0 14V5m0 0h7a1 1 0 011 1v12a1 1 0 01-1 1h-7",
+  sidebarExpand: "M13 19h8M13 19V5m0 14H5a1 1 0 01-1-1V6a1 1 0 011-1h8m0 14V5m0 0h6a1 1 0 011 1v12a1 1 0 01-1 1h-6",
 };
 
 function Icon({ name, size = 20, className = "" }: { name: string; size?: number; className?: string }) {
@@ -70,3 +72,5 @@ export function ShieldIcon(p: IconProps) { return <Icon name="shield" {...p} />;
 export function ExternalLinkIcon(p: IconProps) { return <Icon name="externalLink" {...p} />; }
 export function TrendUpIcon(p: IconProps) { return <Icon name="trendUp" {...p} />; }
 export function TrendDownIcon(p: IconProps) { return <Icon name="trendDown" {...p} />; }
+export function SidebarCollapseIcon(p: IconProps) { return <Icon name="sidebarCollapse" {...p} />; }
+export function SidebarExpandIcon(p: IconProps) { return <Icon name="sidebarExpand" {...p} />; }
