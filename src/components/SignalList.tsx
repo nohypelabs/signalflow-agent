@@ -1,6 +1,5 @@
 "use client";
 
-import { signals as mockSignals } from "@/lib/mock-data";
 import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/sodex-types";
 import { pairToSodexSymbol } from "@/lib/pair-map";
@@ -25,8 +24,8 @@ export default function SignalList({ onSelect, selected, tickers, liveSignals }:
   const tickerMap = new Map<string, SoDEXTicker>();
   if (tickers) tickers.forEach((t) => tickerMap.set(t.symbol, t));
 
-  // Use live signals if available, fallback to mock
-  const displaySignals = liveSignals && liveSignals.length > 0 ? liveSignals : mockSignals;
+  // Only show live signals — no mock fallback
+  const displaySignals = liveSignals && liveSignals.length > 0 ? liveSignals : [];
   const isLive = liveSignals && liveSignals.length > 0;
 
   return (
@@ -39,6 +38,11 @@ export default function SignalList({ onSelect, selected, tickers, liveSignals }:
         </div>
       </div>
       <div className="flex flex-col divide-y divide-border-default">
+        {displaySignals.length === 0 && (
+          <div className="px-4 py-8 text-center">
+            <p className="text-xs text-txt-muted">Loading signals...</p>
+          </div>
+        )}
         {displaySignals.map((s) => {
           const sodSym = pairToSodexSymbol(s.pair);
           const live = sodSym ? tickerMap.get(sodSym) : undefined;

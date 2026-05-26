@@ -2,7 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
-import PWARegister from "@/components/PWARegister";
+import ServiceWorkerCleanup from "@/components/ServiceWorkerCleanup";
+import CacheBuster from "@/components/CacheBuster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,11 +26,8 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "SignalFlow Agent — NoHype Labs",
   description: "AI-powered signal-to-execution agent built on SoSoValue API and SoDEX",
-  manifest: "/manifest.json",
   appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "SignalFlow",
+    capable: false,
   },
   icons: {
     icon: "/icons/icon-192.png",
@@ -49,7 +47,8 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-[#05070D] text-[#F8FAFC]">
         <Providers>{children}</Providers>
-        <PWARegister />
+        <ServiceWorkerCleanup />
+        <CacheBuster />
       </body>
     </html>
   );

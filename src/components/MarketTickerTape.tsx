@@ -10,17 +10,6 @@ interface TickerItem {
   changePct: number;
 }
 
-const MOCK_TICKERS: TickerItem[] = [
-  { symbol: "BTC/USDC", base: "BTC", price: "104,285.40", changePct: 0.42 },
-  { symbol: "ETH/USDC", base: "ETH", price: "2,538.15", changePct: -0.18 },
-  { symbol: "SOL/USDC", base: "SOL", price: "172.83", changePct: 1.25 },
-  { symbol: "LINK/USDC", base: "LINK", price: "15.67", changePct: 0.67 },
-  { symbol: "DOGE/USDC", base: "DOGE", price: "0.2284", changePct: -0.91 },
-  { symbol: "AVAX/USDC", base: "AVAX", price: "22.45", changePct: 2.14 },
-  { symbol: "ADA/USDC", base: "ADA", price: "0.7612", changePct: -0.33 },
-  { symbol: "XRP/USDC", base: "XRP", price: "2.34", changePct: 0.88 },
-  { symbol: "BNB/USDC", base: "BNB", price: "658.20", changePct: -0.52 },
-];
 
 function formatPrice(px: number): string {
   if (px >= 10000) return px.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -29,7 +18,7 @@ function formatPrice(px: number): string {
 }
 
 function resolveTickers(tickerMap?: Map<string, SoDEXTicker>): TickerItem[] {
-  if (!tickerMap || tickerMap.size === 0) return MOCK_TICKERS;
+  if (!tickerMap || tickerMap.size === 0) return [];
 
   const items: TickerItem[] = [];
   for (const [symbol, t] of tickerMap) {
@@ -43,7 +32,7 @@ function resolveTickers(tickerMap?: Map<string, SoDEXTicker>): TickerItem[] {
       changePct: typeof t.changePct === "number" && !isNaN(t.changePct) ? t.changePct : 0,
     });
   }
-  return items.length > 0 ? items : MOCK_TICKERS;
+  return items;
 }
 
 function TickerItemChip({
@@ -99,6 +88,8 @@ interface Props {
 
 export default function MarketTickerTape({ tickerMap, isFavorite, onToggleFavorite }: Props) {
   const tickers = resolveTickers(tickerMap);
+
+  if (tickers.length === 0) return null;
 
   // Duplicate for seamless loop
   const doubled = [...tickers, ...tickers];

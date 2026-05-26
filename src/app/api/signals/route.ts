@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import {
   getETFSummary,
   getMacroEvents,
@@ -14,6 +13,9 @@ import { pairToSodexSymbol } from "@/lib/pair-map";
 import { generateSignals } from "@/lib/strategy/signal-engine";
 import type { BatchSignalInput } from "@/lib/strategy/signal-engine";
 import type { Signal } from "@/lib/types/signal";
+import { jsonNoCache } from "@/lib/api/no-cache";
+
+export const dynamic = "force-dynamic";
 
 // ── Dimension scoring (for hook-based live dimensions) ────
 
@@ -183,7 +185,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 
 export async function GET() {
   if (cache && Date.now() - cache.ts < CACHE_MS) {
-    return NextResponse.json(cache.data);
+    return jsonNoCache(cache.data);
   }
 
   try {
@@ -307,9 +309,9 @@ export async function GET() {
     };
 
     cache = { data: result, ts: Date.now() };
-    return NextResponse.json(result);
+    return jsonNoCache(result);
   } catch (err) {
-    return NextResponse.json(
+    return jsonNoCache(
       { error: err instanceof Error ? err.message : "Failed" },
       { status: 502 },
     );

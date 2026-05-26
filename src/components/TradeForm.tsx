@@ -44,7 +44,7 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
     setBalanceLoading(true);
     setBalanceError(null);
     try {
-      const res = await fetch(`/api/balance?address=${encodeURIComponent(walletAddress)}`);
+      const res = await fetch(`/api/balance?address=${encodeURIComponent(walletAddress)}`, { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       if (json.error) throw new Error(json.error);

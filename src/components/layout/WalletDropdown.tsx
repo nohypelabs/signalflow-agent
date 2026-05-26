@@ -42,7 +42,7 @@ export default function WalletDropdown({ onClose }: Props) {
     async function fetchBalances() {
       setBalanceLoading(true);
       try {
-        const res = await fetch(`/api/balance?address=${encodeURIComponent(address!)}`);
+        const res = await fetch(`/api/balance?address=${encodeURIComponent(address!)}`, { cache: "no-store" });
         if (cancelled) return;
         const json = await res.json();
         if (!cancelled) setBalances(json.balances || []);
@@ -78,7 +78,7 @@ export default function WalletDropdown({ onClose }: Props) {
     if (!address) return;
     setBalanceLoading(true);
     try {
-      const res = await fetch(`/api/balance?address=${encodeURIComponent(address)}`);
+      const res = await fetch(`/api/balance?address=${encodeURIComponent(address)}`, { cache: "no-store" });
       const json = await res.json();
       setBalances(json.balances || []);
     } catch {

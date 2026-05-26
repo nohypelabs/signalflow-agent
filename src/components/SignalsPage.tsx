@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signals, Signal } from "@/lib/mock-data";
+import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/sodex-types";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import type { SignalDimensions } from "@/lib/hooks/useSignals";
@@ -51,13 +51,14 @@ function actionRationale(signal: Signal): string[] {
 
 interface Props {
   tickers?: SoDEXTicker[] | null;
+  liveSignals?: Signal[];
   liveDims?: Record<string, SignalDimensions> | null;
   overallScores?: Record<string, number> | null;
   weights?: Record<string, Record<string, number>> | null;
   cappedDims?: Record<string, string[]> | null;
 }
 
-export default function SignalsPage({ tickers, liveDims, overallScores, weights, cappedDims }: Props) {
+export default function SignalsPage({ tickers, liveSignals = [], liveDims, overallScores, weights, cappedDims }: Props) {
   const tickerMap = new Map<string, SoDEXTicker>();
   if (tickers) tickers.forEach((t) => tickerMap.set(t.symbol, t));
 
@@ -76,7 +77,12 @@ export default function SignalsPage({ tickers, liveDims, overallScores, weights,
       <PageHeader title="All Signals" badge={{ variant: "live", label: "LIVE PRICES" }} />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        {signals.map((s) => {
+        {liveSignals.length === 0 && (
+          <div className="col-span-full text-center py-12">
+            <p className="text-sm text-txt-muted">Loading signals...</p>
+          </div>
+        )}
+        {liveSignals.map((s) => {
           const meta = actionMeta[s.action];
           const sodSym = pairToSodexSymbol(s.pair);
           const live = sodSym ? tickerMap.get(sodSym) : undefined;

@@ -1,22 +1,15 @@
-const CACHE = "signalflow-v1";
-const URLS = ["/", "/manifest.json"];
+// SignalFlow Agent — Service Worker disabled for real-time trading dashboard.
+// This file unregisters itself and clears all caches on load.
 
-self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(URLS)));
+self.addEventListener("install", () => {
+  self.skipWaiting();
 });
 
-self.addEventListener("fetch", (e) => {
-  if (e.request.method !== "GET") return;
-  e.respondWith(
-    caches.match(e.request).then((cached) => {
-      const fetched = fetch(e.request).then((res) => {
-        if (res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE).then((c) => c.put(e.request, clone));
-        }
-        return res;
-      });
-      return cached || fetched;
-    }),
-  );
+self.addEventListener("activate", () => {
+  caches.keys().then((names) => {
+    for (const name of names) {
+      caches.delete(name);
+    }
+  });
+  self.registration.unregister();
 });

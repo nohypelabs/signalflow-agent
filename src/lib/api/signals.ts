@@ -1,7 +1,7 @@
 import type { SignalsData } from "../types/signal";
 
 export async function fetchSignals(): Promise<SignalsData> {
-  const res = await fetch("/api/signals");
+  const res = await fetch("/api/signals", { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }

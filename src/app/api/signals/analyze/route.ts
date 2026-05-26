@@ -1,5 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { chat } from "@/lib/deepseek";
+import { jsonNoCache } from "@/lib/api/no-cache";
+
+export const dynamic = "force-dynamic";
 import {
   getETFSummary,
   getMacroEvents,
@@ -118,7 +121,7 @@ export async function POST(req: NextRequest) {
     const coin = (body.coin || body.pair || "BTC").replace(/\/.*$/, "").toUpperCase();
 
     if (!["BTC", "ETH", "SOL"].includes(coin)) {
-      return NextResponse.json(
+      return jsonNoCache(
         { error: `Unsupported coin: ${coin}. Supported: BTC, ETH, SOL.` },
         { status: 400 },
       );
@@ -149,7 +152,7 @@ export async function POST(req: NextRequest) {
       throw new Error("AI response missing required fields");
     }
 
-    return NextResponse.json({
+    return jsonNoCache({
       ...parsed,
       coin,
       pair: `${coin}/USDC`,
@@ -167,6 +170,6 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Signal analysis failed";
     console.error("/api/signals/analyze error:", msg);
-    return NextResponse.json({ error: msg }, { status: 502 });
+    return jsonNoCache({ error: msg }, { status: 502 });
   }
 }

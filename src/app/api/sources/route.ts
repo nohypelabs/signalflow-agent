@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import {
   getCurrencies,
   getETFSummary,
@@ -10,6 +9,9 @@ import {
   getIndexSnapshot,
 } from "@/lib/sosovalue";
 import { getTickers, getSymbols } from "@/lib/sodex";
+import { jsonNoCache } from "@/lib/api/no-cache";
+
+export const dynamic = "force-dynamic";
 
 interface ModuleStatus {
   name: string;
@@ -36,7 +38,7 @@ const CACHE_MS = 120_000;
 
 export async function GET() {
   if (cache && Date.now() - cache.ts < CACHE_MS) {
-    return NextResponse.json({ modules: cache.data, updated: cache.ts });
+    return jsonNoCache({ modules: cache.data, updated: cache.ts });
   }
 
   const checks: Promise<ModuleStatus>[] = [
@@ -190,5 +192,5 @@ export async function GET() {
   const modules = await Promise.all(checks);
   cache = { data: modules, ts: Date.now() };
 
-  return NextResponse.json({ modules, updated: cache.ts });
+  return jsonNoCache({ modules, updated: cache.ts });
 }

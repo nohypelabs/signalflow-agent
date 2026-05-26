@@ -8,6 +8,7 @@ export default function SignalsRoute() {
   return (
     <SignalsPage
       tickers={d.tickers}
+      liveSignals={d.liveSignals}
       liveDims={d.signalsData?.dimensions}
       overallScores={d.signalsData?.overall}
       weights={d.signalsData?.weights}

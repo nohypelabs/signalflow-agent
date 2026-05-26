@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signals, type Signal } from "@/lib/mock-data";
+import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker, SoDEXOrder } from "@/lib/sodex-types";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import Card from "@/components/ui/Card";
@@ -16,6 +16,7 @@ interface Props {
   ordersLoading: boolean;
   ordersError: string | null;
   tickers?: SoDEXTicker[] | null;
+  liveSignals?: Signal[];
   onExecuteSignal: (signal: Signal) => void;
   onCancelOrder: (orderId: number) => Promise<void>;
 }
@@ -38,6 +39,7 @@ export default function TradeHistory({
   ordersLoading,
   ordersError,
   tickers,
+  liveSignals = [],
   onExecuteSignal,
   onCancelOrder,
 }: Props) {
@@ -82,7 +84,7 @@ export default function TradeHistory({
         </Card>
         <Card padding="sm" accent="var(--accent-primary)">
           <p className="text-[10px] text-txt-muted uppercase tracking-wider">Signals</p>
-          <p className="text-xl font-bold font-mono text-accent">{signals.length}</p>
+          <p className="text-xl font-bold font-mono text-accent">{liveSignals.length}</p>
         </Card>
       </div>
 
@@ -98,7 +100,7 @@ export default function TradeHistory({
                 : "text-txt-muted hover:text-txt-secondary"
             }`}
           >
-            {t === "open" ? `Open (${openOrders.length})` : t === "filled" ? `History (${historyOrders.length})` : `Signals (${signals.length})`}
+            {t === "open" ? `Open (${openOrders.length})` : t === "filled" ? `History (${historyOrders.length})` : `Signals (${liveSignals.length})`}
           </button>
         ))}
       </div>
@@ -209,7 +211,12 @@ export default function TradeHistory({
         )}
 
         {/* Signals */}
-        {tab === "signals" && (
+        {tab === "signals" && liveSignals.length === 0 && (
+          <div className="px-4 py-10 text-center">
+            <p className="text-sm text-txt-muted">No signals yet</p>
+          </div>
+        )}
+        {tab === "signals" && liveSignals.length > 0 && (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border-default text-txt-muted text-xs">
@@ -221,7 +228,7 @@ export default function TradeHistory({
               </tr>
             </thead>
             <tbody>
-              {signals.map((s, i) => (
+              {liveSignals.map((s, i) => (
                 <tr key={i} className="border-b border-border-default hover:bg-elevated">
                   <td className="p-3 font-semibold text-txt-primary">{s.pair}</td>
                   <td className="p-3">

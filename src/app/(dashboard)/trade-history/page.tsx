@@ -11,6 +11,7 @@ export default function TradeHistoryPage() {
       ordersLoading={d.ordersLoading}
       ordersError={d.ordersError}
       tickers={d.tickers}
+      liveSignals={d.liveSignals}
       onExecuteSignal={d.handleExecuteSignal}
       onCancelOrder={d.cancelOrder}
     />

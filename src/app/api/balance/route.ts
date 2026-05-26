@@ -1,17 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getAccountBalances } from "@/lib/sodex";
+import { jsonNoCache } from "@/lib/api/no-cache";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const address = req.nextUrl.searchParams.get("address");
   if (!address) {
-    return NextResponse.json({ error: "Missing address" }, { status: 400 });
+    return jsonNoCache({ error: "Missing address" }, { status: 400 });
   }
 
   try {
     const balances = await getAccountBalances(address);
-    return NextResponse.json({ balances });
+    return jsonNoCache({ balances });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Balance fetch failed";
-    return NextResponse.json({ error: msg }, { status: 502 });
+    return jsonNoCache({ error: msg }, { status: 502 });
   }
 }

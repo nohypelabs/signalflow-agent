@@ -1,7 +1,7 @@
 import type { SoDEXOrder, SoDEXNewOrderRequest } from "../types/trade";
 
 export async function fetchOrders(): Promise<SoDEXOrder[]> {
-  const res = await fetch("/api/orders");
+  const res = await fetch("/api/orders", { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }

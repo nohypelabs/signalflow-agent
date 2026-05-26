@@ -2,7 +2,6 @@
 
 import { useDashboard } from "@/lib/dashboard-context";
 import OpenOrders from "@/components/OpenOrders";
-import { signals } from "@/lib/mock-data";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 
 export default function TradingPage() {
@@ -37,7 +36,10 @@ export default function TradingPage() {
           </p>
         )}
         <div className="flex flex-col gap-2">
-          {signals.map((s, i) => {
+          {d.liveSignals.length === 0 && (
+            <p className="text-xs text-txt-muted text-center py-4">Loading signals...</p>
+          )}
+          {d.liveSignals.map((s, i) => {
             const sodSym = pairToSodexSymbol(s.pair);
             const live = d.tickerMap.get(sodSym);
             const livePrice = live ? parseFloat(live.lastPx) : s.price;

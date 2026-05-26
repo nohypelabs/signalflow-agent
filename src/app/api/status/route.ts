@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server";
 import { getCurrencies } from "@/lib/sosovalue";
 import { getTickers } from "@/lib/sodex";
 import { chat } from "@/lib/deepseek";
+import { jsonNoCache } from "@/lib/api/no-cache";
+
+export const dynamic = "force-dynamic";
 
 interface ServiceStatus {
   name: string;
@@ -63,5 +65,5 @@ export async function GET() {
   ];
 
   const services = await Promise.all(checks);
-  return NextResponse.json({ services, checked: Date.now() });
+  return jsonNoCache({ services, checked: Date.now() });
 }

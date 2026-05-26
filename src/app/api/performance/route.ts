@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server";
 import { getCurrencies, getKlines, getMarketSnapshot } from "@/lib/sosovalue";
 import { getTickers } from "@/lib/sodex";
 import type { KlineItem } from "@/lib/sosovalue";
+import { jsonNoCache } from "@/lib/api/no-cache";
+
+export const dynamic = "force-dynamic";
 
 interface CoinPerf {
   symbol: string;
@@ -42,7 +44,7 @@ const CACHE_MS = 300_000;
 
 export async function GET() {
   if (cache && Date.now() - cache.ts < CACHE_MS) {
-    return NextResponse.json({ coins: cache.data, updated: cache.ts });
+    return jsonNoCache({ coins: cache.data, updated: cache.ts });
   }
 
   try {
@@ -82,9 +84,9 @@ export async function GET() {
     }
 
     cache = { data: coins, ts: Date.now() };
-    return NextResponse.json({ coins, updated: cache.ts });
+    return jsonNoCache({ coins, updated: cache.ts });
   } catch (err) {
-    return NextResponse.json(
+    return jsonNoCache(
       { error: err instanceof Error ? err.message : "Failed" },
       { status: 502 },
     );

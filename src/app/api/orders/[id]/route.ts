@@ -1,5 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { cancelOrder } from "@/lib/sodex";
+import { jsonNoCache } from "@/lib/api/no-cache";
+
+export const dynamic = "force-dynamic";
 
 export async function DELETE(
   req: NextRequest,
@@ -8,9 +11,9 @@ export async function DELETE(
   const { id } = await params;
   try {
     await cancelOrder(Number(id));
-    return NextResponse.json({ success: true });
+    return jsonNoCache({ success: true });
   } catch (err) {
-    return NextResponse.json(
+    return jsonNoCache(
       { error: err instanceof Error ? err.message : "Cancel failed" },
       { status: 502 },
     );
