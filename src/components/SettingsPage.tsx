@@ -20,6 +20,7 @@ const PROVIDER_META: Record<string, { color: string; tagline: string }> = {
   qwen: { color: "#7C3AED", tagline: "Alibaba Qwen series" },
   mistral: { color: "#F97316", tagline: "European open models" },
   groq: { color: "#F55036", tagline: "Ultra-fast inference" },
+  xai: { color: "#1DA1F2", tagline: "Grok — real-time reasoning" },
 };
 
 /* ── Props ── */

@@ -1,7 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useDataSources } from "@/lib/hooks/useDataSources";
 import { useStatus } from "@/lib/hooks/useStatus";
+import { getProvider } from "@/lib/ai-providers";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Skeleton from "@/components/ui/Skeleton";
 
 /* ── Status config ── */
 
@@ -28,21 +33,14 @@ const GROUPS: SourceGroup[] = [
     icon: "📊",
     color: "#00d4ff",
     modules: ["Currency & Pairs", "ETF Data", "News Feeds", "Macro Events", "BTC Treasuries", "Crypto Stocks", "SoSoValue Index"],
-    description: "ETF flows, news, macro, treasuries",
+    description: "ETF flows, news, macro events, BTC treasuries, market snapshots",
   },
   {
     name: "SoDEX",
     icon: "⚡",
     color: "#00E5A8",
     modules: ["SoDEX Market", "SoDEX Symbols"],
-    description: "Live trading pairs & orderbook",
-  },
-  {
-    name: "AI Provider",
-    icon: "🧠",
-    color: "#8B5CF6",
-    modules: [],
-    description: "Deepseek signal generation",
+    description: "Live trading pairs, klines, orderbook, order execution",
   },
 ];
 
@@ -51,117 +49,197 @@ const GROUPS: SourceGroup[] = [
 export default function DataSources() {
   const { modules, loading, error } = useDataSources();
   const { services } = useStatus();
+  const [aiProviderId, setAiProviderId] = useState<string>("deepseek");
+
+  // Read current AI provider from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("signalflow-ai-config");
+      if (raw) {
+        const config = JSON.parse(raw);
+        if (config.providerId) setAiProviderId(config.providerId);
+      }
+    } catch {}
+  }, []);
+
+  const aiProvider = getProvider(aiProviderId);
+  const aiService = services.find((s) => s.name !== "SoSoValue API" && s.name !== "SoDEX");
 
   // Group modules
   const groupStatuses = GROUPS.map((g) => {
-    if (g.name === "AI Provider") {
-      // Use status check for AI provider
-      const aiService = services.find((s) => s.name === "Deepseek AI");
-      if (!aiService) return { ...g, status: "loading" as const, healthy: 0, total: 1, detail: "Verifying connection..." };
-      return {
-        ...g,
-        status: aiService.status === "connected" ? "live" as const : aiService.status === "no_key" ? "degraded" as const : "offline" as const,
-        healthy: aiService.status === "connected" ? 1 : 0,
-        total: 1,
-        detail: aiService.detail,
-        latencyMs: aiService.latencyMs,
-      };
-    }
-
     const groupModules = modules.filter((m) => g.modules.includes(m.name));
     const healthy = groupModules.filter((m) => m.status === "active").length;
     const total = groupModules.length;
 
-    if (loading) return { ...g, status: "loading" as const, healthy: 0, total: 0, detail: "Verifying live data sources" };
-    if (total === 0) return { ...g, status: "offline" as const, healthy: 0, total: 0, detail: "No data" };
+    if (loading) return { ...g, status: "loading" as const, healthy: 0, total: 0, detail: "Verifying live data sources", latencyMs: 0 };
+    if (total === 0) return { ...g, status: "offline" as const, healthy: 0, total: 0, detail: "No data", latencyMs: 0 };
 
     const status = healthy === total ? "live" as const : healthy > 0 ? "degraded" as const : "offline" as const;
-    const detail = healthy === total
-      ? `${total} modules active`
-      : `${healthy}/${total} modules active`;
+    const detail = healthy === total ? `${total} modules active` : `${healthy}/${total} modules active`;
 
-    return { ...g, status, healthy, total, detail };
+    // Get latency from service status
+    const serviceName = g.name === "SoSoValue" ? "SoSoValue API" : "SoDEX";
+    const svc = services.find((s) => s.name === serviceName);
+
+    return { ...g, status, healthy, total, detail, latencyMs: svc?.latencyMs ?? 0 };
   });
 
-  // Also include SoDEX service status
-  const sodexService = services.find((s) => s.name === "SoDEX");
-  const sosovalueService = services.find((s) => s.name === "SoSoValue API");
+  // AI Provider status
+  const aiStatus = (() => {
+    if (!aiService) return { status: "loading" as const, detail: "Verifying connection...", latencyMs: 0 };
+    return {
+      status: aiService.status === "connected" ? "live" as const : aiService.status === "no_key" ? "degraded" as const : "offline" as const,
+      detail: aiService.detail,
+      latencyMs: aiService.latencyMs,
+    };
+  })();
+
+  const allGroups = [
+    ...groupStatuses,
+    {
+      name: aiProvider?.name ?? "AI Model",
+      icon: "🧠",
+      color: "#A78BFA",
+      modules: [],
+      description: `Signal analysis via ${aiProvider?.name ?? "AI"} (${aiProvider?.defaultModel ?? "default model"})`,
+      ...aiStatus,
+    },
+  ];
 
   // Overall health
-  const allLive = groupStatuses.every((g) => g.status === "live");
-  const anyOffline = groupStatuses.some((g) => g.status === "offline");
+  const allLive = allGroups.every((g) => g.status === "live");
+  const anyOffline = allGroups.some((g) => g.status === "offline");
+  const totalSources = modules.filter((m) => m.status === "active").length + (aiService?.status === "connected" ? 1 : 0);
 
   return (
-    <div className="bg-card border border-border-default rounded-lg overflow-hidden">
+    <div className="space-y-5">
       {/* Header */}
-      <div className="px-4 py-2.5 border-b border-border-default flex items-center justify-between">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-txt-primary tracking-tight">Data Sources</h2>
+          <p className="text-xs text-txt-muted mt-0.5">Live connections to market data, trading, and AI providers.</p>
+        </div>
         <div className="flex items-center gap-2">
-          <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider">Data Sources</h3>
-          <span className={`flex items-center gap-1 text-[8px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${
+          <span className={`flex items-center gap-1.5 text-[9px] uppercase tracking-wider font-bold px-2 py-1 rounded-lg ${
             allLive ? "bg-buy-muted text-buy" : anyOffline ? "bg-sell-muted text-sell" : "bg-hold-muted text-hold"
           }`}>
-            <span className={`w-1 h-1 rounded-full ${allLive ? "bg-buy animate-pulse" : anyOffline ? "bg-sell" : "bg-hold"}`} />
-            {allLive ? "ALL LIVE" : anyOffline ? "DEGRADED" : "PARTIAL"}
+            <span className={`w-1.5 h-1.5 rounded-full ${allLive ? "bg-buy animate-pulse" : anyOffline ? "bg-sell" : "bg-hold"}`} />
+            {allLive ? "ALL SYSTEMS LIVE" : anyOffline ? "DEGRADED" : "PARTIAL"}
           </span>
+          <span className="text-[10px] text-txt-dim font-mono">{totalSources} sources active</span>
         </div>
-        <span className="text-[9px] text-txt-faint font-mono">
-          {modules.filter((m) => m.status === "active").length + (services.find((s) => s.name === "Deepseek AI")?.status === "connected" ? 1 : 0)} sources
-        </span>
       </div>
 
       {/* Source cards */}
-      <div className="p-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
-        {groupStatuses.map((g) => {
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {allGroups.map((g) => {
           const cfg = statusConfig[g.status];
           return (
-            <div
-              key={g.name}
-              className="bg-elevated/30 rounded-lg p-3 border border-border-default hover:border-border-muted transition-colors"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm">{g.icon}</span>
-                  <span className="text-xs font-semibold text-txt-primary">{g.name}</span>
+            <Card key={g.name} padding="none" className="overflow-hidden hover:border-border-muted transition-colors">
+              {/* Accent stripe */}
+              <div className="h-[2px]" style={{ background: `linear-gradient(90deg, ${g.color}60, transparent)` }} />
+
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{g.icon}</span>
+                    <span className="text-sm font-semibold text-txt-primary">{g.name}</span>
+                  </div>
+                  <Badge variant={g.status === "live" ? "live" : g.status === "degraded" ? "warning" : g.status === "offline" ? "error" : "muted"} size="sm">
+                    {cfg.label}
+                  </Badge>
                 </div>
-                <span className={`flex items-center gap-1 text-[8px] uppercase tracking-wider font-bold ${cfg.color}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} ${g.status === "live" ? "animate-pulse" : ""}`} />
-                  {cfg.label}
-                </span>
-              </div>
 
-              <p className="text-[10px] text-txt-dim mb-1.5">{g.description}</p>
+                <p className="text-[10px] text-txt-dim mb-3">{g.description}</p>
 
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-txt-muted">{g.detail}</span>
-                {"latencyMs" in g && g.latencyMs !== undefined && g.latencyMs > 0 && (
-                  <span className="text-[9px] text-txt-faint font-mono">{g.latencyMs}ms</span>
-                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-txt-muted">{g.detail}</span>
+                  {g.latencyMs > 0 && (
+                    <span className="text-[9px] text-txt-faint font-mono">{g.latencyMs}ms</span>
+                  )}
+                </div>
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>
 
-      {/* Service endpoints */}
-      <div className="px-4 py-2 border-t border-border-default bg-inset/20">
-        <div className="flex items-center justify-between text-[9px] text-txt-faint font-mono">
-          <div className="flex items-center gap-3">
-            {sosovalueService && (
-              <span className="flex items-center gap-1">
-                <span className={`w-1 h-1 rounded-full ${sosovalueService.status === "connected" ? "bg-buy" : "bg-sell"}`} />
-                SoSoValue {sosovalueService.latencyMs > 0 && `${sosovalueService.latencyMs}ms`}
-              </span>
-            )}
-            {sodexService && (
-              <span className="flex items-center gap-1">
-                <span className={`w-1 h-1 rounded-full ${sodexService.status === "connected" ? "bg-buy" : "bg-sell"}`} />
-                SoDEX {sodexService.latencyMs > 0 && `${sodexService.latencyMs}ms`}
-              </span>
-            )}
-          </div>
-          <span>Refresh: 2min</span>
+      {/* Module detail table */}
+      <Card padding="none" className="overflow-hidden">
+        <div className="px-4 py-3 border-b border-border-default">
+          <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider">Module Status</h3>
         </div>
-      </div>
+        {loading ? (
+          <div className="p-4 space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} variant="table-row" />
+            ))}
+          </div>
+        ) : error ? (
+          <div className="p-4">
+            <p className="text-xs text-sell">Failed to load module status: {error}</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border-default">
+            {modules.map((m) => (
+              <div key={m.name} className="flex items-center justify-between px-4 py-2.5 hover:bg-elevated/30 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full ${m.status === "active" ? "bg-buy" : "bg-sell"}`} />
+                  <span className="text-xs text-txt-primary">{m.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] text-txt-dim">{m.detail}</span>
+                  <Badge variant={m.status === "active" ? "live" : "error"} size="sm">
+                    {m.status === "active" ? "Active" : "Error"}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+
+            {/* AI Provider row */}
+            <div className="flex items-center justify-between px-4 py-2.5 hover:bg-elevated/30 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className={`w-2 h-2 rounded-full ${aiService?.status === "connected" ? "bg-buy" : aiService?.status === "no_key" ? "bg-hold" : "bg-sell"}`} />
+                <span className="text-xs text-txt-primary">{aiProvider?.name ?? "AI Model"}</span>
+                <span className="text-[9px] text-txt-dim font-mono">{aiProvider?.defaultModel}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] text-txt-dim">{aiService?.detail ?? "Not checked"}</span>
+                {aiService?.latencyMs ? (
+                  <span className="text-[9px] text-txt-faint font-mono">{aiService.latencyMs}ms</span>
+                ) : null}
+                <Badge variant={aiService?.status === "connected" ? "live" : aiService?.status === "no_key" ? "warning" : "error"} size="sm">
+                  {aiService?.status === "connected" ? "Connected" : aiService?.status === "no_key" ? "No Key" : "Error"}
+                </Badge>
+              </div>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* API endpoints */}
+      <Card padding="sm" className="bg-inset/30">
+        <div className="flex items-center justify-between text-[9px] text-txt-faint font-mono">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5">
+              <span className={`w-1 h-1 rounded-full ${services.find(s => s.name === "SoSoValue API")?.status === "connected" ? "bg-buy" : "bg-sell"}`} />
+              SoSoValue API
+              {services.find(s => s.name === "SoSoValue API")?.latencyMs ? ` · ${services.find(s => s.name === "SoSoValue API")?.latencyMs}ms` : ""}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className={`w-1 h-1 rounded-full ${services.find(s => s.name === "SoDEX")?.status === "connected" ? "bg-buy" : "bg-sell"}`} />
+              SoDEX
+              {services.find(s => s.name === "SoDEX")?.latencyMs ? ` · ${services.find(s => s.name === "SoDEX")?.latencyMs}ms` : ""}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className={`w-1 h-1 rounded-full ${aiService?.status === "connected" ? "bg-buy" : "bg-hold"}`} />
+              {aiProvider?.name ?? "AI"}
+              {aiService?.latencyMs ? ` · ${aiService.latencyMs}ms` : ""}
+            </span>
+          </div>
+          <span>Auto-refresh: 2min</span>
+        </div>
+      </Card>
     </div>
   );
 }

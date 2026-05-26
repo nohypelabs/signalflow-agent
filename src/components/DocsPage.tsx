@@ -112,7 +112,7 @@ function Overview() {
         />
         <PrincipleCard
           title="Not just one AI — your choice"
-          desc="Use Deepseek, OpenAI, or OpenRouter with your own API key. Your keys, your models, your control."
+          desc="Use DeepSeek, OpenAI, Claude, Gemini, Grok, MiMo, Qwen, GLM, Mistral, Groq, or OpenRouter with your own API key. 11 providers, your control."
         />
         <PrincipleCard
           title="Not just desktop — everywhere"
@@ -185,7 +185,7 @@ cp .env.example .env.local`}</CodeBlock>
 SODEX_NETWORK=mainnet
 SODEX_API_KEY_NAME=SignalFlowAgent
 
-# Deepseek (fallback AI provider)
+# DeepSeek (fallback AI provider)
 DEEPSEEK_API_KEY=sk-your-deepseek-key
 
 # SoSoValue — Market intelligence API
@@ -213,7 +213,7 @@ pnpm lint      # ESLint check`}</CodeBlock>
         <tbody>
           {[
             ["SOSOVALUE_API_KEY", "Recommended", "SoSoValue OpenAPI key for ETF, news, macro, treasury data"],
-            ["DEEPSEEK_API_KEY", "Recommended", "Deepseek API key — server-side fallback for AI signals"],
+            ["DEEPSEEK_API_KEY", "Recommended", "DeepSeek API key — server-side fallback for AI signals"],
             ["SODEX_NETWORK", "Optional", '"mainnet" (default) or "testnet"'],
             ["SODEX_API_KEY_NAME", "Optional", "x-api-key header value for authenticated SoDEX endpoints"],
             ["NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID", "Optional", "Enables WalletConnect v2 for mobile trading"],
@@ -269,9 +269,9 @@ function Architecture() {
 
 ┌──────────────┐    ┌──────────────────┐    ┌──────────────┐
 │ AI Provider  │───▶│ /api/signals/    │───▶│ useAISignal()│──▶ AIReasoning
-│ (Deepseek/   │    │   analyze        │    │              │    SignalList
-│  OpenAI/     │    │ (POST with coin) │    │              │
-│  OpenRouter) │    └──────────────────┘    └──────────────┘
+│ (11 providers│    │   analyze        │    │              │    SignalList
+│  DeepSeek,   │    │ (POST with coin) │    │              │
+│  OpenAI, etc)│    └──────────────────┘    └──────────────┘
 └──────────────┘`}</pre>
       </div>
 
@@ -316,21 +316,33 @@ function Architecture() {
 │       ├── sodex.ts            # SoDEX API client (server)
 │       ├── sodex-types.ts      # SoDEX TypeScript types
 │       ├── deepseek.ts         # AI chat completions client
-│       ├── ai-providers.ts     # Provider registry (3 providers)
+│       ├── ai-providers.ts     # Provider registry (11 providers)
 │       ├── eip712.ts           # EIP-712 typed data domain
 │       ├── wallet-config.ts    # ValueChain + wagmi config
 │       ├── pair-map.ts         # Display pair ↔ SoDEX symbol
-│       ├── mock-data.ts        # Static fallback data
-│       ├── use-signals.ts      # Hook: heuristic scoring
-│       ├── use-ai-signal.ts    # Hook: AI signal generation
-│       ├── use-market.ts       # Hook: SoDEX market data
-│       ├── use-orders.ts       # Hook: order CRUD
-│       ├── use-wallet.ts       # Hook: wallet state
-│       ├── use-performance.ts  # Hook: performance data
-│       ├── use-sources.ts      # Hook: source health
-│       ├── use-status.ts       # Hook: connection health
-│       ├── use-ai-config.ts    # Hook: AI provider config
-│       └── use-signal-history.ts # Hook: signal accuracy tracking
+│       ├── chart-drawings/     # Drawing tool types, storage, math
+│       ├── hooks/
+│       │   ├── useSignals.ts       # Hook: heuristic scoring
+│       │   ├── useSignalGeneration.ts # Hook: AI signal generation
+│       │   ├── useMarket.ts        # Hook: SoDEX market data
+│       │   ├── useTradeExecution.ts # Hook: order CRUD
+│       │   ├── useWallet.ts        # Hook: wallet state
+│       │   ├── usePerformance.ts   # Hook: performance data
+│       │   ├── useDataSources.ts   # Hook: source health
+│       │   ├── useStatus.ts        # Hook: connection health
+│       │   ├── useAIConfig.ts      # Hook: AI provider config
+│       │   ├── useSignalHistory.ts # Hook: signal accuracy tracking
+│       │   └── useChartDrawings.ts # Hook: chart drawing tools
+│       ├── types/
+│       │   ├── signal.ts           # Signal, dimensions, execution types
+│       │   ├── trade.ts            # SoDEX types (ticker, kline, order)
+│       │   └── datasource.ts       # AI provider, config types
+│       └── api/
+│           ├── signals.ts          # Client-side signal fetchers
+│           ├── dashboard-metrics.ts # Dashboard KPI computations
+│           ├── datasources.ts      # Data source fetchers
+│           ├── trades.ts           # Trade API helpers
+│           └── no-cache.ts         # JSON response helper
 └── public/
     ├── icons/                  # PWA app icons (192px, 512px)
     ├── manifest.json           # PWA manifest
@@ -510,9 +522,17 @@ function AIAgents() {
         </thead>
         <tbody>
           {[
-            ["Deepseek", "https://api.deepseek.com/v1", "deepseek-chat", "deepseek-chat, deepseek-reasoner"],
-            ["OpenAI", "https://api.openai.com/v1", "gpt-4o", "gpt-4o, gpt-4o-mini, o3-mini, o1"],
-            ["OpenRouter", "https://openrouter.ai/api/v1", "openai/gpt-4o", "gpt-4o, claude-sonnet-4, claude-opus-4, gemini-2.5-pro, deepseek-chat"],
+            ["DeepSeek", "api.deepseek.com/v1", "deepseek-chat", "deepseek-chat, deepseek-reasoner"],
+            ["OpenAI", "api.openai.com/v1", "gpt-4o", "gpt-4o, gpt-4.1, o3-mini, o1"],
+            ["Anthropic (Claude)", "api.anthropic.com/v1", "claude-sonnet-4", "opus-4, sonnet-4, 3.5-haiku"],
+            ["Google (Gemini)", "generativelanguage.googleapis.com", "gemini-2.5-pro", "gemini-2.5-pro, 2.5-flash, 2.0-flash"],
+            ["xAI (Grok)", "api.x.ai/v1", "grok-3", "grok-3, grok-3-mini, grok-2"],
+            ["Xiaomi (MiMo)", "api.xiaomi.com/v1", "mimo-v2.5-pro", "mimo-v2.5-pro, mimo-v2.5-flash"],
+            ["Zhipu AI (GLM)", "open.bigmodel.cn/api/paas/v4", "glm-4-plus", "glm-4-plus, glm-4-flash, glm-4-long"],
+            ["Alibaba (Qwen)", "dashscope.aliyuncs.com", "qwen-max", "qwen-max, qwen-plus, qwen-turbo"],
+            ["Mistral AI", "api.mistral.ai/v1", "mistral-large", "mistral-large, codestral, mistral-small"],
+            ["Groq", "api.groq.com/openai/v1", "llama-3.3-70b", "llama-3.3, mixtral, gemma2"],
+            ["OpenRouter", "openrouter.ai/api/v1", "openai/gpt-4o", "All providers via gateway"],
           ].map(([p, u, d, m]) => (
             <tr key={p} className="border-b border-[#1E293B20]">
               <td className="py-2 pr-4 text-white font-semibold">{p}</td>
@@ -577,8 +597,8 @@ Server gathers 5 data sources in parallel:
 Build structured prompt with raw data (NOT heuristic scores)
         │
         ▼
-Call AI provider (user's config or server Deepseek fallback)
-  ├─ Deepseek: response_format = json_object
+Call AI provider (user's config or server DeepSeek fallback)
+  ├─ OpenAI-compatible: response_format = json_object (for supported providers)
   └─ OpenAI/OpenRouter: standard chat completion
         │
         ▼
@@ -784,7 +804,7 @@ function DataPipeline() {
       <ul className="text-[#aaaacc] space-y-1 ml-4">
         <li>Temperature: 0.3 (low, for consistent structured output)</li>
         <li>Max tokens: 1500</li>
-        <li>Deepseek: uses <code className="text-accent bg-[#1E293B] px-1 rounded">response_format: json_object</code> for guaranteed JSON</li>
+        <li>DeepSeek: uses <code className="text-accent bg-[#1E293B] px-1 rounded">response_format: json_object</code> for guaranteed JSON. Other providers use standard chat completion format.</li>
         <li>OpenAI/OpenRouter: standard chat completion without JSON mode enforcement</li>
         <li>Server fallback: <code className="text-accent bg-[#1E293B] px-1 rounded">DEEPSEEK_API_KEY</code> env var</li>
         <li>User override: provider, model, and apiKey passed in request body</li>
@@ -1213,7 +1233,7 @@ function Roadmap() {
           "SoSoValue API integration (ETF, sentiment, macro, treasury, indices)",
           "SoDEX live market data (tickers, klines, orderbooks)",
           "Heuristic 5-dimension signal scoring engine",
-          "AI signal generation via Deepseek with structured prompts",
+          "AI signal generation via DeepSeek with structured prompts",
           "Full sidebar navigation with 8 pages",
         ].map((item) => (
           <li key={item} className="flex items-center gap-2">
@@ -1227,7 +1247,7 @@ function Roadmap() {
         {[
           "Wallet connection — MetaMask (desktop) + WalletConnect v2 (mobile)",
           "EIP-712 trade execution on SoDEX via typed data signing",
-          "Multi-AI provider — Deepseek, OpenAI, OpenRouter with user API keys",
+          "Multi-AI provider — 11 providers (DeepSeek, OpenAI, Claude, Gemini, Grok, MiMo, Qwen, GLM, Mistral, Groq, OpenRouter) with user API keys",
           "Explainable signals — per-dimension reasoning, key factors, execution plans",
           "Live balance display with 25/50/75/100% quick-fill",
           "PWA support — installable, offline-capable, custom app icons",
