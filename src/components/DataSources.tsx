@@ -1,104 +1,167 @@
 "use client";
 
-import { useDataSources as useSources } from "@/lib/hooks/useDataSources";
-import Card from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
-import StatusDot from "@/components/ui/StatusDot";
-import Skeleton from "@/components/ui/Skeleton";
+import { useDataSources } from "@/lib/hooks/useDataSources";
+import { useStatus } from "@/lib/hooks/useStatus";
+
+/* ── Status config ── */
+
+const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
+  live: { label: "LIVE", color: "text-buy", dot: "bg-buy" },
+  degraded: { label: "DEGRADED", color: "text-hold", dot: "bg-hold" },
+  offline: { label: "OFFLINE", color: "text-sell", dot: "bg-sell" },
+  loading: { label: "...", color: "text-txt-faint", dot: "bg-txt-faint" },
+};
+
+/* ── Group definitions ── */
+
+interface SourceGroup {
+  name: string;
+  icon: string;
+  color: string;
+  modules: string[];
+  description: string;
+}
+
+const GROUPS: SourceGroup[] = [
+  {
+    name: "SoSoValue",
+    icon: "📊",
+    color: "#00d4ff",
+    modules: ["Currency & Pairs", "ETF Data", "News Feeds", "Macro Events", "BTC Treasuries", "Crypto Stocks", "SoSoValue Index"],
+    description: "ETF flows, news, macro, treasuries",
+  },
+  {
+    name: "SoDEX",
+    icon: "⚡",
+    color: "#00E5A8",
+    modules: ["SoDEX Market", "SoDEX Symbols"],
+    description: "Live trading pairs & orderbook",
+  },
+  {
+    name: "AI Provider",
+    icon: "🧠",
+    color: "#8B5CF6",
+    modules: [],
+    description: "Deepseek signal generation",
+  },
+];
+
+/* ── Component ── */
 
 export default function DataSources() {
-  const { modules, loading, error } = useSources();
-  const activeCount = modules.filter((m) => m.status === "active").length;
-  const totalCount = modules.length;
-  const totalCalls = modules.reduce((sum, m) => sum + m.count, 0);
+  const { modules, loading, error } = useDataSources();
+  const { services } = useStatus();
 
-  if (loading) {
-    return (
-      <Card padding="none" className="overflow-hidden">
-        <div className="px-5 py-3 border-b border-border-default">
-          <Skeleton variant="text" className="w-32" />
-        </div>
-        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} variant="card-sm" />
-          ))}
-        </div>
-      </Card>
-    );
-  }
+  // Group modules
+  const groupStatuses = GROUPS.map((g) => {
+    if (g.name === "AI Provider") {
+      // Use status check for AI provider
+      const aiService = services.find((s) => s.name === "Deepseek AI");
+      if (!aiService) return { ...g, status: "loading" as const, healthy: 0, total: 1, detail: "Checking..." };
+      return {
+        ...g,
+        status: aiService.status === "connected" ? "live" as const : aiService.status === "no_key" ? "degraded" as const : "offline" as const,
+        healthy: aiService.status === "connected" ? 1 : 0,
+        total: 1,
+        detail: aiService.detail,
+        latencyMs: aiService.latencyMs,
+      };
+    }
 
-  if (error) {
-    return (
-      <Card padding="md" className="border-l-2 border-l-sell">
-        <div className="flex items-center gap-2 mb-2">
-          <StatusDot status="error" size="md" />
-          <span className="text-sm font-semibold text-error">Connection Error</span>
-        </div>
-        <p className="text-xs text-txt-muted">{error}</p>
-      </Card>
-    );
-  }
+    const groupModules = modules.filter((m) => g.modules.includes(m.name));
+    const healthy = groupModules.filter((m) => m.status === "active").length;
+    const total = groupModules.length;
+
+    if (loading) return { ...g, status: "loading" as const, healthy: 0, total: 0, detail: "Checking..." };
+    if (total === 0) return { ...g, status: "offline" as const, healthy: 0, total: 0, detail: "No data" };
+
+    const status = healthy === total ? "live" as const : healthy > 0 ? "degraded" as const : "offline" as const;
+    const detail = healthy === total
+      ? `${total} modules active`
+      : `${healthy}/${total} modules active`;
+
+    return { ...g, status, healthy, total, detail };
+  });
+
+  // Also include SoDEX service status
+  const sodexService = services.find((s) => s.name === "SoDEX");
+  const sosovalueService = services.find((s) => s.name === "SoSoValue API");
+
+  // Overall health
+  const allLive = groupStatuses.every((g) => g.status === "live");
+  const anyOffline = groupStatuses.some((g) => g.status === "offline");
 
   return (
-    <Card padding="none" className="overflow-hidden">
+    <div className="bg-card border border-border-default rounded-lg overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-3 border-b border-border-default flex items-center justify-between">
+      <div className="px-4 py-2.5 border-b border-border-default flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="text-xs font-semibold text-txt-muted uppercase tracking-wider">API Modules</h3>
-          <Badge variant={activeCount === totalCount ? "live" : "warning"} size="sm">
-            {activeCount}/{totalCount}
-          </Badge>
+          <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider">Data Sources</h3>
+          <span className={`flex items-center gap-1 text-[8px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${
+            allLive ? "bg-buy-muted text-buy" : anyOffline ? "bg-sell-muted text-sell" : "bg-hold-muted text-hold"
+          }`}>
+            <span className={`w-1 h-1 rounded-full ${allLive ? "bg-buy animate-pulse" : anyOffline ? "bg-sell" : "bg-hold"}`} />
+            {allLive ? "ALL LIVE" : anyOffline ? "DEGRADED" : "PARTIAL"}
+          </span>
         </div>
-        <span className="text-[10px] text-txt-dim font-mono">{totalCalls.toLocaleString()} total calls</span>
+        <span className="text-[9px] text-txt-faint font-mono">
+          {modules.filter((m) => m.status === "active").length + (services.find((s) => s.name === "Deepseek AI")?.status === "connected" ? 1 : 0)} sources
+        </span>
       </div>
 
-      {/* Module grid */}
-      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-        {modules.map((m) => {
-          const isActive = m.status === "active";
+      {/* Source cards */}
+      <div className="p-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {groupStatuses.map((g) => {
+          const cfg = statusConfig[g.status];
           return (
             <div
-              key={m.name}
-              className={`
-                rounded-xl p-3 border transition-all
-                ${isActive
-                  ? "bg-card border-border-default hover:border-border-muted"
-                  : "bg-card/50 border-border-default opacity-50"
-                }
-              `}
+              key={g.name}
+              className="bg-elevated/30 rounded-lg p-3 border border-border-default hover:border-border-muted transition-colors"
             >
-              <div className="flex items-start gap-2.5">
-                {/* Color indicator */}
-                <div
-                  className="w-1 h-8 rounded-full shrink-0 mt-0.5"
-                  style={{ backgroundColor: isActive ? m.color : "#333" }}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-semibold text-txt-primary truncate">{m.name}</p>
-                    <StatusDot status={isActive ? "live" : "offline"} size="sm" pulse={isActive} />
-                  </div>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-[10px] text-txt-dim truncate">{m.detail}</p>
-                    {isActive && (
-                      <span className="text-[10px] text-txt-muted font-mono shrink-0 ml-2">
-                        {m.count.toLocaleString()}
-                      </span>
-                    )}
-                  </div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">{g.icon}</span>
+                  <span className="text-xs font-semibold text-txt-primary">{g.name}</span>
                 </div>
+                <span className={`flex items-center gap-1 text-[8px] uppercase tracking-wider font-bold ${cfg.color}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} ${g.status === "live" ? "animate-pulse" : ""}`} />
+                  {cfg.label}
+                </span>
+              </div>
+
+              <p className="text-[10px] text-txt-dim mb-1.5">{g.description}</p>
+
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-txt-muted">{g.detail}</span>
+                {"latencyMs" in g && g.latencyMs !== undefined && g.latencyMs > 0 && (
+                  <span className="text-[9px] text-txt-faint font-mono">{g.latencyMs}ms</span>
+                )}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Footer */}
-      <div className="px-5 py-2.5 border-t border-border-default bg-inset/30">
-        <p className="text-[10px] text-txt-dim font-mono">
-          SoSoValue: openapi.sosovalue.com · SoDEX: sodex.dev · {activeCount}/{totalCount} modules healthy
-        </p>
+      {/* Service endpoints */}
+      <div className="px-4 py-2 border-t border-border-default bg-inset/20">
+        <div className="flex items-center justify-between text-[9px] text-txt-faint font-mono">
+          <div className="flex items-center gap-3">
+            {sosovalueService && (
+              <span className="flex items-center gap-1">
+                <span className={`w-1 h-1 rounded-full ${sosovalueService.status === "connected" ? "bg-buy" : "bg-sell"}`} />
+                SoSoValue {sosovalueService.latencyMs > 0 && `${sosovalueService.latencyMs}ms`}
+              </span>
+            )}
+            {sodexService && (
+              <span className="flex items-center gap-1">
+                <span className={`w-1 h-1 rounded-full ${sodexService.status === "connected" ? "bg-buy" : "bg-sell"}`} />
+                SoDEX {sodexService.latencyMs > 0 && `${sodexService.latencyMs}ms`}
+              </span>
+            )}
+          </div>
+          <span>Refresh: 2min</span>
+        </div>
       </div>
-    </Card>
+    </div>
   );
 }
