@@ -58,6 +58,31 @@ function fmtPrice(p: number): string {
   return `$${p.toFixed(5)}`;
 }
 
+function isValidCandle(k: SoDEXKline): boolean {
+  const o = parseFloat(k.o);
+  const h = parseFloat(k.h);
+  const l = parseFloat(k.l);
+  const c = parseFloat(k.c);
+  const v = parseFloat(k.v);
+  if (isNaN(o) || isNaN(h) || isNaN(l) || isNaN(c) || isNaN(v)) return false;
+  if (o <= 0 || h <= 0 || l <= 0 || c <= 0) return false;
+  if (h < l) return false;
+  if (v < 0) return false;
+  return true;
+}
+
+function normalizeKlines(raw: SoDEXKline[]): SoDEXKline[] {
+  // Sort ascending by timestamp
+  const sorted = [...raw].sort((a, b) => a.t - b.t);
+  // Remove duplicates (keep last occurrence per timestamp)
+  const seen = new Map<number, SoDEXKline>();
+  for (const k of sorted) {
+    seen.set(k.t, k);
+  }
+  // Filter invalid candles
+  return Array.from(seen.values()).filter(isValidCandle);
+}
+
 function klineToCandle(k: SoDEXKline): CandlestickData<Time> {
   return {
     time: (k.t / 1000) as Time,
@@ -119,6 +144,7 @@ export default function TradingChart({
   const [pair, setPair] = useState(initialSymbol);
   const [klines, setKlines] = useState<SoDEXKline[] | null>(initialKlines ?? null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [hoverData, setHoverData] = useState<{
     time: number; open: number; high: number; low: number; close: number; volume: number;
   } | null>(null);
@@ -130,12 +156,20 @@ export default function TradingChart({
     if (!sodexSymbol) return;
     const config = TF_CONFIG[tf];
     setLoading(true);
+    setError(null);
     try {
-      const data = await fetchKlines(sodexSymbol, config.interval, config.limit);
-      if (data) data.sort((a, b) => a.t - b.t);
-      setKlines(data);
-    } catch {
+      const raw = await fetchKlines(sodexSymbol, config.interval, config.limit);
+      if (raw && raw.length > 0) {
+        const normalized = normalizeKlines(raw);
+        setKlines(normalized.length > 0 ? normalized : null);
+        if (normalized.length === 0) setError("All candles were invalid or duplicate");
+      } else {
+        setKlines(null);
+        if (raw && raw.length === 0) setError("No data available for this timeframe");
+      }
+    } catch (err) {
       setKlines(null);
+      setError(err instanceof Error ? err.message : "Failed to fetch chart data");
     } finally {
       setLoading(false);
     }
@@ -270,14 +304,14 @@ export default function TradingChart({
     markerLinesRef.current = [];
 
     // Add signal markers (BUY/SELL/HOLD) on chart
+    const latestKlineTime = klines[klines.length - 1].t / 1000;
     const markers = pairSignals
       .filter((s) => s.execution?.entry)
       .map((s) => {
-        // Find closest kline to signal time
-        const signalTime = Date.now() / 1000; // signals don't have exact timestamp, use latest
+        // Find closest kline to signal time (use latest kline as proxy since signals don't have exact timestamps)
         const closestKline = klines.reduce((best, k) => {
-          const diff = Math.abs(k.t / 1000 - signalTime);
-          return diff < Math.abs(best.t / 1000 - signalTime) ? k : best;
+          const diff = Math.abs(k.t / 1000 - latestKlineTime);
+          return diff < Math.abs(best.t / 1000 - latestKlineTime) ? k : best;
         });
 
         return {
@@ -463,6 +497,31 @@ export default function TradingChart({
       {/* Chart container */}
       <div className="flex-1 min-h-0 relative">
         <div ref={containerRef} className="absolute inset-0" />
+
+        {/* Empty / Error state overlay */}
+        {!klines && !loading && (
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <div className="flex flex-col items-center gap-3 text-center px-4">
+              <div className="w-10 h-10 rounded-xl bg-inset border border-border-default flex items-center justify-center">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-txt-dim">
+                  {error ? (
+                    <><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></>
+                  ) : (
+                    <><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></>
+                  )}
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm text-txt-muted font-medium">
+                  {error ? "Chart Error" : "No Data Available"}
+                </p>
+                <p className="text-xs text-txt-dim mt-1 max-w-xs">
+                  {error || `SoDEX has no ${tf} klines for ${pair}. Try a different timeframe or pair.`}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* OHLCV tooltip overlay */}
         {hoverData && (
