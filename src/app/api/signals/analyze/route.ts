@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { chat } from "@/lib/deepseek";
 import { jsonNoCache } from "@/lib/api/no-cache";
+import { mapAIError } from "@/lib/ai/providerErrors";
 
 export const dynamic = "force-dynamic";
 import {
@@ -12,7 +13,9 @@ import {
   getCurrencies,
 } from "@/lib/sosovalue";
 import type { ETFSummaryItem, MarketSnapshot, NewsItem, MacroEvent } from "@/lib/sosovalue";
-import { getTickers } from "@/lib/sodex";
+import { getTickers, getKlines } from "@/lib/sodex";
+import { generateSignal } from "@/lib/strategy/signal-engine";
+import { pairToSodexSymbol } from "@/lib/pair-map";
 
 // ── Data fetching (reuse heuristic scoring as AI reference) ──
 
@@ -31,9 +34,12 @@ async function gatherMarketData(coin: string) {
     : null;
   const newsList = "list" in hotNews ? hotNews.list : [];
 
-  // SoDEX ticker for live price
-  const sodexSymbol = `v${coin.toUpperCase()}_vUSDC`;
-  const tickers = await getTickers().catch(() => []);
+  // SoDEX ticker for live price + klines for TA engine
+  const sodexSymbol = pairToSodexSymbol(`${coin}/USDC`) || `v${coin.toUpperCase()}_vUSDC`;
+  const [tickers, klines] = await Promise.all([
+    getTickers().catch(() => []),
+    getKlines(sodexSymbol, "1h", 100).catch(() => []),
+  ]);
   const ticker = tickers.find((t) => t.symbol === sodexSymbol);
 
   return {
@@ -46,6 +52,7 @@ async function gatherMarketData(coin: string) {
     macroEvents,
     btcTreasuries,
     snap,
+    klines,
   };
 }
 
@@ -127,46 +134,104 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const includeAI = body.includeAI !== false; // default true for backward compat
     const marketData = await gatherMarketData(coin);
-    const prompt = buildPrompt(marketData);
 
-    // User-provided AI config takes precedence over server defaults
-    const userProvider = body.provider && body.apiKey
-      ? { baseUrl: body.provider, apiKey: body.apiKey, model: body.model || "deepseek-chat" }
-      : undefined;
+    // ── Base signal from TA engine (always generated) ──
+    const baseSignal = generateSignal({
+      pair: `${coin}/USDC`,
+      klines: marketData.klines,
+      news: marketData.news,
+      etfSummary: marketData.etfSummary,
+      macroEvents: marketData.macroEvents,
+      btcTreasuries: marketData.btcTreasuries,
+      snapshot: marketData.snap ?? undefined,
+    });
 
-    const raw = await chat(
-      [
-        { role: "system", content: "You are SignalFlow, a crypto trading signal agent. You output only valid JSON. No markdown, no code fences." },
-        { role: "user", content: prompt },
-      ],
-      userProvider ? { provider: userProvider } : undefined,
-    );
-
-    // Deepseek may wrap JSON in ``` fences — strip if present
-    const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-    const parsed = JSON.parse(cleaned);
-
-    // Validate shape
-    if (!parsed.action || !parsed.confidence || !parsed.dimensions || !parsed.execution) {
-      throw new Error("AI response missing required fields");
+    if (!baseSignal) {
+      return jsonNoCache(
+        { error: "Insufficient market data for signal generation. SoDEX klines may be unavailable." },
+        { status: 422 },
+      );
     }
 
-    return jsonNoCache({
-      ...parsed,
-      coin,
-      pair: `${coin}/USDC`,
-      price: marketData.price,
-      change24h: marketData.change24h,
-      generated: Date.now(),
-      sources: [
-        "ETF Module (SoSoValue)",
-        "News Feeds (SoSoValue)",
-        "Macro Events (SoSoValue)",
-        "BTC Treasuries (SoSoValue)",
-        `Price Data (SoDEX)`,
-      ],
-    });
+    const baseSources = [
+      "ETF Module (SoSoValue)",
+      "News Feeds (SoSoValue)",
+      "Macro Events (SoSoValue)",
+      "BTC Treasuries (SoSoValue)",
+      "Price Data (SoDEX)",
+      "Technical Analysis",
+    ];
+
+    // ── No AI requested — return base signal only ──
+    if (!includeAI) {
+      return jsonNoCache({
+        baseSignal,
+        aiThesis: null,
+        aiError: null,
+        sources: baseSources,
+        generated: Date.now(),
+      });
+    }
+
+    // ── AI enrichment requested ──
+    try {
+      const prompt = buildPrompt(marketData);
+
+      // User-provided AI config takes precedence over server defaults
+      const userProvider = body.provider && body.apiKey
+        ? { baseUrl: body.provider, apiKey: body.apiKey, model: body.model || "deepseek-chat" }
+        : undefined;
+
+      const raw = await chat(
+        [
+          { role: "system", content: "You are SignalFlow, a crypto trading signal agent. You output only valid JSON. No markdown, no code fences." },
+          { role: "user", content: prompt },
+        ],
+        userProvider ? { provider: userProvider } : undefined,
+      );
+
+      // Deepseek may wrap JSON in ``` fences — strip if present
+      const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+      const parsed = JSON.parse(cleaned);
+
+      // Validate shape
+      if (!parsed.action || !parsed.confidence || !parsed.dimensions || !parsed.execution) {
+        throw new Error("AI response missing required fields");
+      }
+
+      const aiThesis = {
+        reasoning: parsed.reasoning as string,
+        dimensionDetails: {
+          etfFlow: { score: parsed.dimensions.etfFlow.score, detail: parsed.dimensions.etfFlow.detail },
+          sentiment: { score: parsed.dimensions.sentiment.score, detail: parsed.dimensions.sentiment.detail },
+          macro: { score: parsed.dimensions.macro.score, detail: parsed.dimensions.macro.detail },
+          momentum: { score: parsed.dimensions.momentum.score, detail: parsed.dimensions.momentum.detail },
+          treasury: { score: parsed.dimensions.treasury.score, detail: parsed.dimensions.treasury.detail },
+        },
+        execution: parsed.execution,
+      };
+
+      return jsonNoCache({
+        baseSignal,
+        aiThesis,
+        aiError: null,
+        sources: [...baseSources, "AI Thesis"],
+        generated: Date.now(),
+      });
+    } catch (aiErr) {
+      // AI failed but base signal is still valid
+      const mapped = mapAIError(aiErr);
+      console.error("/api/signals/analyze AI error:", mapped.code, mapped.message);
+      return jsonNoCache({
+        baseSignal,
+        aiThesis: null,
+        aiError: mapped,
+        sources: baseSources,
+        generated: Date.now(),
+      });
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Signal analysis failed";
     console.error("/api/signals/analyze error:", msg);

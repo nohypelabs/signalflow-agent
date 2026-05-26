@@ -46,17 +46,21 @@ export default function DashboardPage() {
         aiCoin={d.aiCoin}
         onCoinChange={d.setAiCoin}
         analyzing={d.analyzing}
-        aiSignal={d.aiSignal}
+        phase={d.signalPhase}
+        baseSignal={d.baseSignal}
+        aiThesis={d.aiThesis}
         aiError={d.aiError}
+        includeAI={d.includeAI}
+        onIncludeAIChange={d.setIncludeAI}
         onGenerate={async () => {
           const signal = await d.generate(d.aiCoin);
           if (signal) d.recordSignal(signal);
         }}
         onPinSignal={() => {
-          if (d.aiSignal) d.setSelectedSignal(d.aiSignal);
+          if (d.baseSignal) d.setSelectedSignal(d.baseSignal);
         }}
         onExecuteSignal={() => {
-          if (d.aiSignal) d.handleExecuteSignal(d.aiSignal);
+          if (d.baseSignal) d.handleExecuteSignal(d.baseSignal);
         }}
       />
 

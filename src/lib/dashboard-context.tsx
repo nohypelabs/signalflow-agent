@@ -15,7 +15,7 @@ import type { SignalsData } from "./hooks/useSignals";
 import type { RecordedSignal } from "./hooks/useSignalHistory";
 import { useMarket } from "./hooks/useMarket";
 import { useSignals } from "./hooks/useSignals";
-import { useAISignal } from "./hooks/useAISignal";
+import { useSignalGeneration, type SignalPhase, type AIThesis } from "./hooks/useSignalGeneration";
 import { useWallet } from "./hooks/useWallet";
 import { useTradeExecution } from "./hooks/useTradeExecution";
 import { useAIConfig } from "./hooks/useAIConfig";
@@ -51,8 +51,13 @@ export interface DashboardState {
 
   // AI signal generation
   aiSignal: Signal | null;
+  baseSignal: Signal | null;
+  aiThesis: AIThesis | null;
+  aiError: import("./ai/providerErrors").AIError | null;
+  signalPhase: SignalPhase;
   analyzing: boolean;
-  aiError: string | null;
+  includeAI: boolean;
+  setIncludeAI: (v: boolean) => void;
   generate: (coin: string) => Promise<Signal | null>;
   clearAISignal: () => void;
   aiCoin: string;
@@ -139,13 +144,24 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   // AI signal generation
   const {
-    aiSignal,
+    phase: signalPhase,
+    baseSignal,
+    aiThesis,
+    aiError,
     analyzing,
-    error: aiError,
-    generate,
+    generate: generateRaw,
     clear: clearAISignal,
-  } = useAISignal(aiConfig);
+  } = useSignalGeneration(aiConfig);
   const [aiCoin, setAiCoin] = useState("BTC");
+  const [includeAI, setIncludeAI] = useState(true);
+
+  // aiSignal = baseSignal (always available when generation succeeds)
+  const aiSignal = baseSignal;
+
+  // Wrapped generate that passes includeAI
+  const generate = useCallback(async (coin: string) => {
+    return generateRaw(coin, includeAI);
+  }, [generateRaw, includeAI]);
 
   // Signal history
   const {
@@ -255,8 +271,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     updateAIConfig,
     aiProviderLabel,
     aiSignal,
-    analyzing,
+    baseSignal,
+    aiThesis,
     aiError,
+    signalPhase,
+    analyzing,
+    includeAI,
+    setIncludeAI,
     generate,
     clearAISignal,
     aiCoin,

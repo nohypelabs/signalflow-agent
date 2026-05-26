@@ -1,4 +1,4 @@
-import type { SignalsData } from "../types/signal";
+import type { SignalsData, SignalGenerationResult } from "../types/signal";
 
 export async function fetchSignals(): Promise<SignalsData> {
   const res = await fetch("/api/signals", { cache: "no-store" });
@@ -8,9 +8,12 @@ export async function fetchSignals(): Promise<SignalsData> {
 
 export async function fetchAISignal(
   coin: string,
-  opts?: { provider?: string; model?: string; apiKey?: string },
-): Promise<Record<string, unknown>> {
-  const body: Record<string, string> = { coin };
+  opts?: { provider?: string; model?: string; apiKey?: string; includeAI?: boolean },
+): Promise<SignalGenerationResult> {
+  const body: Record<string, unknown> = { coin };
+  if (opts?.includeAI !== undefined) {
+    body.includeAI = opts.includeAI;
+  }
   if (opts?.apiKey) {
     body.provider = opts.provider ?? "";
     body.model = opts.model ?? "";

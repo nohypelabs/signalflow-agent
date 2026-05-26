@@ -27,43 +27,22 @@ export function useAISignal(aiConfig?: AIConfig) {
         }
       }
 
-      const json = await fetchAISignal(coin, opts);
-      const dims = json.dimensions as Record<string, { score: number; detail: string }>;
-      const exec = json.execution as Record<string, unknown>;
+      const result = await fetchAISignal(coin, { ...opts, includeAI: true });
 
+      // Use baseSignal from the new API response
       const signal: Signal = {
+        ...result.baseSignal,
         id: `ai-${Date.now()}`,
-        pair: (json.pair as string) || `${coin}/USDC`,
-        action: json.action as Signal["action"],
-        confidence: json.confidence as number,
-        price: (json.price as number) ?? 0,
-        change24h: (json.change24h as number) ?? 0,
-        reasoning: json.reasoning as string,
-        dimensions: {
-          etfFlow: dims.etfFlow.score,
-          sentiment: dims.sentiment.score,
-          macro: dims.macro.score,
-          momentum: dims.momentum.score,
-          treasury: dims.treasury.score,
-        },
-        dimensionDetails: {
-          etfFlow: { score: dims.etfFlow.score, detail: dims.etfFlow.detail },
-          sentiment: { score: dims.sentiment.score, detail: dims.sentiment.detail },
-          macro: { score: dims.macro.score, detail: dims.macro.detail },
-          momentum: { score: dims.momentum.score, detail: dims.momentum.detail },
-          treasury: { score: dims.treasury.score, detail: dims.treasury.detail },
-        },
-        execution: {
-          orderType: exec.orderType as string,
-          entry: (exec.entry as number) ?? 0,
-          takeProfit: (exec.takeProfit as number) ?? 0,
-          stopLoss: (exec.stopLoss as number) ?? 0,
-          positionSize: (exec.positionSize as string) ?? "",
-          riskReward: (exec.riskReward as string) ?? "",
-        },
-        sources: (json.sources as string[]) ?? [],
         timeAgo: "just now",
       };
+
+      // If AI thesis is available, enrich the signal
+      if (result.aiThesis) {
+        signal.reasoning = result.aiThesis.reasoning;
+        signal.dimensionDetails = result.aiThesis.dimensionDetails;
+        signal.execution = result.aiThesis.execution;
+      }
+
       setAiSignal(signal);
       return signal;
     } catch (err) {

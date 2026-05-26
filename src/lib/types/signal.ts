@@ -88,3 +88,19 @@ export type PortfolioPoint = {
   day: number;
   value: number;
 };
+
+export interface SignalGenerationResult {
+  baseSignal: Signal;
+  aiThesis?: {
+    reasoning: string;
+    dimensionDetails: SignalDimensionDetails;
+    execution: SignalExecution;
+  };
+  aiError?: {
+    code: string;
+    message: string;
+    retryable: boolean;
+  };
+  sources: string[];
+  generated: number;
+}
