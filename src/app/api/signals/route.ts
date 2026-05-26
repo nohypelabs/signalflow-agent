@@ -230,7 +230,10 @@ export async function GET() {
           5_000,
           [] as SoDEXKline[],
         );
-        if (klines.length > 0) klinesMap.set(base, klines);
+        if (klines.length > 0) {
+          klines.sort((a, b) => a.t - b.t);
+          klinesMap.set(base, klines);
+        }
       }),
     );
 

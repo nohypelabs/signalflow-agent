@@ -15,6 +15,7 @@ interface AppShellProps {
   tickerCount?: number;
   btcPrice?: string;
   btcChange?: number;
+  tickerMap?: Map<string, SoDEXTicker>;
   // Trade form
   tradeForm?: {
     signal: Signal | null;
@@ -32,6 +33,7 @@ export default function AppShell({
   tickerCount,
   btcPrice,
   btcChange,
+  tickerMap,
   tradeForm,
 }: AppShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -43,6 +45,7 @@ export default function AppShell({
         tickerCount={tickerCount}
         btcPrice={btcPrice}
         btcChange={btcChange}
+        tickerMap={tickerMap}
         onMenuToggle={() => setMobileMenuOpen(true)}
       />
       <div className="flex flex-1 overflow-hidden">

@@ -22,9 +22,9 @@ interface ModuleStatus {
 const MODULE_COLORS: Record<string, string> = {
   "Currency & Pairs": "#00d4ff",
   "ETF Data": "#00ff88",
-  "News Feeds": "#7b2fff",
+  "News Feeds": "#F59E0B",
   "Macro Events": "#00ffcc",
-  "SoSoValue Index": "#5a1fff",
+  "SoSoValue Index": "#22D3EE",
   "BTC Treasuries": "#ff4488",
   "Crypto Stocks": "#ff8800",
   "SoDEX Market": "#00ff88",

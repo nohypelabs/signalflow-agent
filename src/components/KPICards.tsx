@@ -69,7 +69,7 @@ export default function KPICards({ tickers }: Props) {
           <span className="text-sell">{stats.sellSignals}S</span>
         </>
       ),
-      color: "#7b2fff",
+      color: "#00E5A8",
       icon: "signals" as const,
     },
     {

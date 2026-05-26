@@ -42,3 +42,6 @@ yarn-error.log*
 next-env.d.ts
 /.docdex/
 /.docdex-state/
+
+# planning docs
+REMAKE-DASHBOARD-PERPHASE.md

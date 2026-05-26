@@ -9,6 +9,7 @@ function ShellWithProps({ children }: { children: React.ReactNode }) {
     <AppShell
       sodexStatus={d.sodexStatus}
       tickerCount={d.tickers?.length}
+      tickerMap={d.tickerMap}
       btcPrice={(() => {
         const t = d.tickerMap.get("vBTC_vUSDC");
         return t

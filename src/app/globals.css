@@ -2,21 +2,21 @@
 
 :root {
   /* Surface layers — darkest to lightest */
-  --bg-base: #0a0a14;
-  --bg-surface: #0c0c18;
-  --bg-card: #12122a;
-  --bg-elevated: #1a1a3a;
-  --bg-inset: #0d0d1a;
+  --bg-base: #05070D;
+  --bg-surface: #070A12;
+  --bg-card: #0B1020;
+  --bg-elevated: #111827;
+  --bg-inset: #080B14;
 
   /* Borders */
-  --border-default: #1a1a2e;
-  --border-muted: #252540;
-  --border-strong: #333355;
+  --border-default: #1E293B;
+  --border-muted: #283548;
+  --border-strong: #334155;
 
   /* Accent */
-  --accent-primary: #7b2fff;
-  --accent-primary-dim: #7b2fff60;
-  --accent-primary-muted: #7b2fff20;
+  --accent-primary: #00E5A8;
+  --accent-primary-dim: #00E5A860;
+  --accent-primary-muted: #00E5A820;
 
   /* Semantic action colors */
   --color-buy: #00ff88;
@@ -37,18 +37,18 @@
 
   /* Dimension colors */
   --dim-etf: #00d4ff;
-  --dim-sentiment: #7b2fff;
+  --dim-sentiment: #8B5CF6;
   --dim-macro: #00ff88;
   --dim-momentum: #ff8800;
   --dim-treasury: #ff4488;
 
   /* Text hierarchy */
-  --text-primary: #ffffff;
-  --text-secondary: #ccccdd;
-  --text-tertiary: #888899;
-  --text-muted: #666677;
-  --text-dim: #444455;
-  --text-faint: #333344;
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-tertiary: #94A3B8;
+  --text-muted: #64748B;
+  --text-dim: #475569;
+  --text-faint: #334155;
 }
 
 @theme inline {
@@ -244,3 +244,16 @@ main::-webkit-scrollbar-thumb {
 .page-enter > *:nth-child(5) { animation-delay: 160ms; }
 .page-enter > *:nth-child(6) { animation-delay: 200ms; }
 .page-enter > *:nth-child(n+7) { animation-delay: 220ms; }
+
+/* ── Market Ticker Tape ── */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-tape-scroll {
+  animation: ticker-scroll 40s linear infinite;
+  will-change: transform;
+}
+.ticker-tape-scroll:hover {
+  animation-play-state: paused;
+}

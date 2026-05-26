@@ -18,7 +18,7 @@ const COIN_COLORS: Record<string, string> = {
 const COIN_HEX: Record<string, string> = {
   BTC: "#ff8800",
   ETH: "#00d4ff",
-  SOL: "#7b2fff",
+  SOL: "#22D3EE",
 };
 
 interface Props {

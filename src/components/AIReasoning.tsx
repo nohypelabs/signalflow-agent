@@ -12,7 +12,7 @@ import EmptyState from "@/components/ui/EmptyState";
 
 const dimLabels: { key: keyof Signal["dimensions"]; label: string; color: string }[] = [
   { key: "etfFlow", label: "ETF Flow", color: "#00d4ff" },
-  { key: "sentiment", label: "Sentiment", color: "#7b2fff" },
+  { key: "sentiment", label: "Sentiment", color: "#8B5CF6" },
   { key: "macro", label: "Macro", color: "#00ff88" },
   { key: "momentum", label: "Momentum", color: "#ff8800" },
   { key: "treasury", label: "Treasury", color: "#ff4488" },
@@ -48,7 +48,7 @@ export default function AIReasoning({ signal, liveDims, tickerMap }: Props) {
   }
 
   const hasLive = liveDims !== undefined && liveDims !== null;
-  const accent = actionAccent[signal.action.toLowerCase()] ?? "#7b2fff";
+  const accent = actionAccent[signal.action.toLowerCase()] ?? "#00E5A8";
 
   // Resolve live price from ticker
   const sodSym = pairToSodexSymbol(signal.pair);

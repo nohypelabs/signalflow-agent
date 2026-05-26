@@ -20,7 +20,7 @@ const actionMeta: Record<Signal["action"], { bg: string; border: string; text: s
 
 const dimLabels = [
   { key: "etfFlow" as const, label: "ETF Flow", color: "var(--dim-etf)", hex: "#00d4ff", icon: "📊" },
-  { key: "sentiment" as const, label: "Sentiment", color: "var(--dim-sentiment)", hex: "#7b2fff", icon: "📰" },
+  { key: "sentiment" as const, label: "Sentiment", color: "var(--dim-sentiment)", hex: "#8B5CF6", icon: "📰" },
   { key: "macro" as const, label: "Macro", color: "var(--dim-macro)", hex: "#00ff88", icon: "🌐" },
   { key: "momentum" as const, label: "Momentum", color: "var(--dim-momentum)", hex: "#ff8800", icon: "📈" },
   { key: "treasury" as const, label: "Treasury", color: "var(--dim-treasury)", hex: "#ff4488", icon: "🏛️" },

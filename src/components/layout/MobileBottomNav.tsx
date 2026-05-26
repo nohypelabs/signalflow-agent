@@ -23,7 +23,7 @@ export default function MobileBottomNav() {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 backdrop-blur-xl bg-surface/90 border-t border-border-default z-40 safe-bottom">
-      <div className="flex items-center justify-around h-16">
+      <div className="flex items-center justify-around h-14">
         {tabs.map(({ href, label, Icon }) => {
           const isActive = pathname === href;
           return (
@@ -31,18 +31,15 @@ export default function MobileBottomNav() {
               key={href}
               onClick={() => router.push(href)}
               className={`
-                flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors
+                flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors relative
                 ${isActive ? "text-accent" : "text-txt-dim"}
               `}
             >
-              {/* Active indicator dot */}
-              <span
-                className={`w-1 h-1 rounded-full transition-opacity ${
-                  isActive ? "bg-accent opacity-100" : "opacity-0"
-                }`}
-              />
-              <Icon size={20} />
-              <span className="text-[10px] font-medium">{label}</span>
+              {isActive && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-5 h-[2px] rounded-b-full bg-accent" />
+              )}
+              <Icon size={18} />
+              <span className="text-[9px] font-medium">{label}</span>
             </button>
           );
         })}

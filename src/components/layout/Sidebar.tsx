@@ -17,7 +17,7 @@ import {
 
 const groups = [
   {
-    label: "OVERVIEW",
+    label: "Overview",
     items: [
       { href: "/dashboard", label: "Dashboard", Icon: HomeIcon },
       { href: "/signals", label: "Signals", Icon: SignalIcon },
@@ -25,7 +25,7 @@ const groups = [
     ],
   },
   {
-    label: "TRADING",
+    label: "Trading",
     items: [
       { href: "/trading", label: "Trading", Icon: TradeIcon },
       { href: "/trade-history", label: "Trade History", Icon: HistoryIcon },
@@ -33,7 +33,7 @@ const groups = [
     ],
   },
   {
-    label: "SYSTEM",
+    label: "System",
     items: [
       { href: "/data-sources", label: "Data Sources", Icon: DataSourceIcon },
       { href: "/settings", label: "Settings", Icon: SettingsIcon },
@@ -68,11 +68,11 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
   };
 
   const menuItems = (
-    <nav className="flex flex-col gap-0.5 px-2">
+    <nav className="flex flex-col gap-1 px-3">
       {groups.map((group, gi) => (
         <div key={group.label}>
-          {gi > 0 && <div className="h-px bg-border-default my-2 mx-3" />}
-          <div className="text-[9px] text-txt-faint uppercase tracking-[0.15em] font-semibold px-3 pt-2 pb-1.5">
+          {gi > 0 && <div className="h-px bg-border-default my-3 mx-1" />}
+          <div className="text-[10px] text-txt-faint uppercase tracking-[0.18em] font-semibold px-2 pt-3 pb-2">
             {group.label}
           </div>
           {group.items.map(({ href, label, Icon }) => {
@@ -82,16 +82,18 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
                 key={href}
                 onClick={() => handleNavigate(href)}
                 className={`
-                  w-full flex items-center gap-2.5 px-3 py-2 text-[13px] rounded-lg transition-all
+                  w-full flex items-center gap-2.5 px-2.5 py-[7px] text-[13px] rounded-md transition-all relative
                   ${isActive
-                    ? "bg-accent/10 text-accent font-semibold"
-                    : "text-txt-muted hover:text-txt-secondary hover:bg-elevated/50"
+                    ? "text-txt-primary font-medium bg-[#ffffff06]"
+                    : "text-txt-muted hover:text-txt-secondary hover:bg-[#ffffff04]"
                   }
                 `}
               >
-                <Icon size={15} className={isActive ? "text-accent" : "opacity-60"} />
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-r-full bg-accent" />
+                )}
+                <Icon size={14} className={isActive ? "text-accent" : "opacity-50"} />
                 <span>{label}</span>
-                {isActive && <div className="ml-auto w-1 h-1 rounded-full bg-accent" />}
               </button>
             );
           })}
@@ -103,9 +105,9 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="w-52 shrink-0 bg-surface border-r border-border-default py-2 hidden md:flex flex-col">
-        <div className="flex-1 overflow-y-auto">{menuItems}</div>
-        <div className="text-[9px] text-txt-faint px-5 mt-3 pt-3 border-t border-border-default">
+      <aside className="w-48 shrink-0 bg-surface border-r border-border-default hidden md:flex flex-col">
+        <div className="flex-1 overflow-y-auto py-3">{menuItems}</div>
+        <div className="text-[9px] text-txt-faint px-5 py-3 border-t border-border-default">
           v0.1 Beta · NoHype Labs
         </div>
       </aside>
@@ -117,7 +119,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
           <aside className="absolute left-0 top-0 bottom-0 w-64 bg-surface border-r border-border-default animate-slide-in-left flex flex-col">
             <div className="flex items-center justify-between px-5 py-3 border-b border-border-default">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-accent/20 border border-accent-dim flex items-center justify-center">
+                <div className="w-6 h-6 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                   </svg>
@@ -131,7 +133,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
                 <CloseIcon size={18} />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto pt-2">{menuItems}</div>
+            <div className="flex-1 overflow-y-auto pt-3">{menuItems}</div>
             <div className="text-[9px] text-txt-faint px-5 py-3 border-t border-border-default">
               v0.1 Beta · NoHype Labs
             </div>

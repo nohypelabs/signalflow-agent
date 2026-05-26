@@ -23,7 +23,7 @@ export default function DocsPage() {
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-full">
       {/* Sidebar nav */}
-      <nav className="lg:w-48 shrink-0 bg-[#0c0c18] border border-border-default rounded-xl p-3 lg:max-h-[calc(100vh-120px)] overflow-y-auto">
+      <nav className="lg:w-48 shrink-0 bg-[#070A12] border border-border-default rounded-xl p-3 lg:max-h-[calc(100vh-120px)] overflow-y-auto">
         <h3 className="text-xs font-bold text-txt-muted uppercase tracking-wider mb-3 px-2">
           Documentation
         </h3>
@@ -33,7 +33,7 @@ export default function DocsPage() {
             onClick={() => setActive(s)}
             className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors mb-0.5 ${
               active === s
-                ? "text-white font-semibold bg-accent-muted border-l-[3px] border-[#7b2fff]"
+                ? "text-white font-semibold bg-accent-muted border-l-[3px] border-[#00E5A8]"
                 : "text-txt-muted hover:text-white hover:bg-[#ffffff05]"
             }`}
           >
@@ -133,7 +133,7 @@ function Overview() {
           </tr>
         </thead>
         <tbody>
-          <tr className="border-b border-[#1a1a2e10]">
+          <tr className="border-b border-[#1E293B20]">
             <td className="py-2 pr-4 text-white">ValueChain Mainnet</td>
             <td className="py-2 pr-4 font-mono text-[#aaaacc]">286623</td>
             <td className="py-2 pr-4 text-white">SOSO</td>
@@ -150,7 +150,7 @@ function Overview() {
       <h3 className="text-lg font-bold text-white mt-8">Stack</h3>
       <div className="flex flex-wrap gap-2 mt-2">
         {["Next.js 16", "React 19", "Tailwind CSS v4", "TypeScript 5", "wagmi v3", "viem", "WalletConnect v2", "@tanstack/react-query", "Vercel"].map((t) => (
-          <span key={t} className="text-xs px-2 py-1 rounded bg-[#1a1a2e] text-[#aaaacc] border border-border-default">
+          <span key={t} className="text-xs px-2 py-1 rounded bg-[#1E293B] text-[#aaaacc] border border-border-default">
             {t}
           </span>
         ))}
@@ -166,8 +166,8 @@ function GettingStarted() {
 
       <h3 className="text-lg font-bold text-white">Prerequisites</h3>
       <ul className="text-[#aaaacc] space-y-1">
-        <li><strong className="text-white">Node.js 18+</strong> — <code className="text-accent bg-[#1a1a2e] px-1 rounded">node --version</code></li>
-        <li><strong className="text-white">pnpm</strong> — <code className="text-accent bg-[#1a1a2e] px-1 rounded">npm install -g pnpm</code></li>
+        <li><strong className="text-white">Node.js 18+</strong> — <code className="text-accent bg-[#1E293B] px-1 rounded">node --version</code></li>
+        <li><strong className="text-white">pnpm</strong> — <code className="text-accent bg-[#1E293B] px-1 rounded">npm install -g pnpm</code></li>
         <li>A wallet with <strong className="text-white">SOSO on ValueChain mainnet</strong> for trading</li>
       </ul>
 
@@ -179,7 +179,7 @@ cp .env.example .env.local`}</CodeBlock>
 
       <h3 className="text-lg font-bold text-white mt-6">Environment Variables</h3>
       <p className="text-[#aaaacc]">
-        Create <code className="text-accent bg-[#1a1a2e] px-1 rounded">.env.local</code> in the dashboard root:
+        Create <code className="text-accent bg-[#1E293B] px-1 rounded">.env.local</code> in the dashboard root:
       </p>
       <CodeBlock>{`# SoDEX — Sosovalue DEX
 SODEX_NETWORK=mainnet
@@ -218,7 +218,7 @@ pnpm lint      # ESLint check`}</CodeBlock>
             ["SODEX_API_KEY_NAME", "Optional", "x-api-key header value for authenticated SoDEX endpoints"],
             ["NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID", "Optional", "Enables WalletConnect v2 for mobile trading"],
           ].map(([k, r, d]) => (
-            <tr key={k} className="border-b border-[#1a1a2e10]">
+            <tr key={k} className="border-b border-[#1E293B20]">
               <td className="py-2 pr-4 font-mono text-accent text-xs">{k}</td>
               <td className="py-2 pr-4 text-[#aaaacc]">{r}</td>
               <td className="py-2 text-[#aaaacc]">{d}</td>
@@ -227,7 +227,7 @@ pnpm lint      # ESLint check`}</CodeBlock>
         </tbody>
       </table>
 
-      <div className="bg-[#7b2fff10] border border-accent-dim rounded-lg p-4 mt-6">
+      <div className="bg-[#00E5A810] border border-accent-dim rounded-lg p-4 mt-6">
         <p className="text-sm text-[#aaaacc] m-0">
           <strong className="text-white">Graceful degradation:</strong> The app works without API keys —
           it falls back to mock data. Live data appears automatically when keys are configured.
@@ -244,9 +244,9 @@ function Architecture() {
 
       <p className="text-[#aaaacc]">
         SignalFlow Agent follows a <strong className="text-white">client-rendered SPA</strong> architecture
-        on Next.js 16 App Router. All components use <code className="text-accent bg-[#1a1a2e] px-1 rounded">&quot;use client&quot;</code> —
-        routing is handled by <code className="text-accent bg-[#1a1a2e] px-1 rounded">useState</code> in{" "}
-        <code className="text-accent bg-[#1a1a2e] px-1 rounded">page.tsx</code>, not Next.js file-based routing.
+        on Next.js 16 App Router. All components use <code className="text-accent bg-[#1E293B] px-1 rounded">&quot;use client&quot;</code> —
+        routing is handled by <code className="text-accent bg-[#1E293B] px-1 rounded">useState</code> in{" "}
+        <code className="text-accent bg-[#1E293B] px-1 rounded">page.tsx</code>, not Next.js file-based routing.
       </p>
 
       <h3 className="text-lg font-bold text-white mt-6">Data Flow</h3>
@@ -353,8 +353,8 @@ function Architecture() {
           blind-signing attacks.
         </li>
         <li>
-          <strong className="text-white">Dual connector wallet.</strong> <code className="text-accent bg-[#1a1a2e] px-1 rounded">injected()</code> for
-          desktop MetaMask and <code className="text-accent bg-[#1a1a2e] px-1 rounded">walletConnect()</code> for mobile —
+          <strong className="text-white">Dual connector wallet.</strong> <code className="text-accent bg-[#1E293B] px-1 rounded">injected()</code> for
+          desktop MetaMask and <code className="text-accent bg-[#1E293B] px-1 rounded">walletConnect()</code> for mobile —
           auto-detected based on environment.
         </li>
         <li>
@@ -395,7 +395,7 @@ function SignalEngine() {
             ["Momentum", "SoDEX /markets/*", "20%", "Price action via klines, 24h change %, volume analysis, market cap rank"],
             ["Treasury", "SoSoValue /btc-treasuries", "20%", "Public company BTC holdings, institutional adoption signals, purchase activity"],
           ].map(([d, s, w, desc]) => (
-            <tr key={d} className="border-b border-[#1a1a2e10]">
+            <tr key={d} className="border-b border-[#1E293B20]">
               <td className="py-2 pr-4 text-white font-semibold">{d}</td>
               <td className="py-2 pr-4 font-mono text-accent text-xs">{s}</td>
               <td className="py-2 pr-4 text-[#aaaacc]">{w}</td>
@@ -514,7 +514,7 @@ function AIAgents() {
             ["OpenAI", "https://api.openai.com/v1", "gpt-4o", "gpt-4o, gpt-4o-mini, o3-mini, o1"],
             ["OpenRouter", "https://openrouter.ai/api/v1", "openai/gpt-4o", "gpt-4o, claude-sonnet-4, claude-opus-4, gemini-2.5-pro, deepseek-chat"],
           ].map(([p, u, d, m]) => (
-            <tr key={p} className="border-b border-[#1a1a2e10]">
+            <tr key={p} className="border-b border-[#1E293B20]">
               <td className="py-2 pr-4 text-white font-semibold">{p}</td>
               <td className="py-2 pr-4 font-mono text-accent text-xs">{u}</td>
               <td className="py-2 pr-4 font-mono text-[#aaaacc]">{d}</td>
@@ -590,7 +590,7 @@ Return enriched signal: { ...parsed, pair, price, sources[], generated }`}</pre>
 
       <h3 className="text-lg font-bold text-white mt-8">Response Processing</h3>
       <ul className="text-[#aaaacc] space-y-2">
-        <li>Markdown code fences (<code className="text-accent bg-[#1a1a2e] px-1 rounded">```json</code>) are stripped before parsing</li>
+        <li>Markdown code fences (<code className="text-accent bg-[#1E293B] px-1 rounded">```json</code>) are stripped before parsing</li>
         <li>Required fields (action, confidence, dimensions, execution) are validated</li>
         <li>Missing fields throw a 502 error with descriptive message</li>
         <li>AI-generated signal is tagged with the source data and generation timestamp</li>
@@ -647,7 +647,7 @@ function RiskEngine() {
             ["60s cache TTL", "In-memory server cache on /api/signals", "Prevents rate limiting and ensures data consistency"],
             ["Signal history resolution", "1-hour delay before signals are evaluated for accuracy", "Ensures sufficient price movement for meaningful accuracy assessment"],
           ].map(([c, m, p]) => (
-            <tr key={c} className="border-b border-[#1a1a2e10]">
+            <tr key={c} className="border-b border-[#1E293B20]">
               <td className="py-2 pr-4 text-white font-semibold">{c}</td>
               <td className="py-2 pr-4 text-[#aaaacc] text-xs">{m}</td>
               <td className="py-2 text-[#aaaacc]">{p}</td>
@@ -704,7 +704,7 @@ function DataPipeline() {
       <h4 className="text-md font-bold text-white mt-6">1. SoSoValue API</h4>
       <p className="text-[#aaaacc]">
         Primary market intelligence source. Server-side client at{" "}
-        <code className="text-accent bg-[#1a1a2e] px-1 rounded">src/lib/sosovalue.ts</code>.
+        <code className="text-accent bg-[#1E293B] px-1 rounded">src/lib/sosovalue.ts</code>.
       </p>
       <table className="w-full text-sm mt-3 border-collapse">
         <thead>
@@ -727,7 +727,7 @@ function DataPipeline() {
             ["Hot News", "GET /news/hot", "Paginated news with currency tags and sentiment signals"],
             ["Index Snapshot", "GET /indices/:ticker/market-snapshot", "SoSoValue sector index performance"],
           ].map(([m, e, d]) => (
-            <tr key={m} className="border-b border-[#1a1a2e10]">
+            <tr key={m} className="border-b border-[#1E293B20]">
               <td className="py-2 pr-4 text-white font-semibold">{m}</td>
               <td className="py-2 pr-4 font-mono text-accent text-xs">{e}</td>
               <td className="py-2 text-[#aaaacc] text-xs">{d}</td>
@@ -739,8 +739,8 @@ function DataPipeline() {
       <h4 className="text-md font-bold text-white mt-8">2. SoDEX API</h4>
       <p className="text-[#aaaacc]">
         Spot trading and market data. Server-side client at{" "}
-        <code className="text-accent bg-[#1a1a2e] px-1 rounded">src/lib/sodex.ts</code>.
-        Types at <code className="text-accent bg-[#1a1a2e] px-1 rounded">src/lib/sodex-types.ts</code>{" "}
+        <code className="text-accent bg-[#1E293B] px-1 rounded">src/lib/sodex.ts</code>.
+        Types at <code className="text-accent bg-[#1E293B] px-1 rounded">src/lib/sodex-types.ts</code>{" "}
         (separated so client components can import types without server env refs).
       </p>
       <table className="w-full text-sm mt-3 border-collapse">
@@ -762,7 +762,7 @@ function DataPipeline() {
             ["DELETE /orders/:id", "x-api-key", "Cancel an open order by ID"],
             ["GET /accounts/:address/state", "x-api-key", "Account state including balances array"],
           ].map(([e, a, d]) => (
-            <tr key={e} className="border-b border-[#1a1a2e10]">
+            <tr key={e} className="border-b border-[#1E293B20]">
               <td className="py-2 pr-4 font-mono text-accent text-xs">{e}</td>
               <td className="py-2 pr-4">
                 <span className={`text-[10px] px-1.5 py-0.5 rounded ${a === "Public" ? "bg-[#00ff8815] text-buy" : "bg-[#ff880015] text-hold"}`}>
@@ -778,22 +778,22 @@ function DataPipeline() {
       <h4 className="text-md font-bold text-white mt-8">3. AI Providers</h4>
       <p className="text-[#aaaacc]">
         Chat completions client at{" "}
-        <code className="text-accent bg-[#1a1a2e] px-1 rounded">src/lib/deepseek.ts</code>.
+        <code className="text-accent bg-[#1E293B] px-1 rounded">src/lib/deepseek.ts</code>.
         Despite the filename, it supports any OpenAI-compatible chat completions endpoint.
       </p>
       <ul className="text-[#aaaacc] space-y-1 ml-4">
         <li>Temperature: 0.3 (low, for consistent structured output)</li>
         <li>Max tokens: 1500</li>
-        <li>Deepseek: uses <code className="text-accent bg-[#1a1a2e] px-1 rounded">response_format: json_object</code> for guaranteed JSON</li>
+        <li>Deepseek: uses <code className="text-accent bg-[#1E293B] px-1 rounded">response_format: json_object</code> for guaranteed JSON</li>
         <li>OpenAI/OpenRouter: standard chat completion without JSON mode enforcement</li>
-        <li>Server fallback: <code className="text-accent bg-[#1a1a2e] px-1 rounded">DEEPSEEK_API_KEY</code> env var</li>
+        <li>Server fallback: <code className="text-accent bg-[#1E293B] px-1 rounded">DEEPSEEK_API_KEY</code> env var</li>
         <li>User override: provider, model, and apiKey passed in request body</li>
       </ul>
 
       <h3 className="text-lg font-bold text-white mt-8">Pair Mapping</h3>
       <p className="text-[#aaaacc]">
         The app translates between display pairs (BTC/USDC) and SoDEX symbols (vBTC_vUSDC) via{" "}
-        <code className="text-accent bg-[#1a1a2e] px-1 rounded">src/lib/pair-map.ts</code>.
+        <code className="text-accent bg-[#1E293B] px-1 rounded">src/lib/pair-map.ts</code>.
         Currently supports 9 assets: BTC, ETH, SOL, AVAX, LINK, DOGE, ADA, XRP, BNB.
       </p>
 
@@ -872,7 +872,7 @@ TradeForm modal opens:
       <h3 className="text-lg font-bold text-white mt-8">EIP-712 Typed Data</h3>
       <p className="text-[#aaaacc]">
         Orders use EIP-712 typed data signing (not raw transaction signing). Defined in{" "}
-        <code className="text-accent bg-[#1a1a2e] px-1 rounded">src/lib/eip712.ts</code>:
+        <code className="text-accent bg-[#1E293B] px-1 rounded">src/lib/eip712.ts</code>:
       </p>
       <CodeBlock>{`// Domain
 { name: "spot", version: "1", chainId: 286623,
@@ -926,17 +926,17 @@ function WalletInfrastructure() {
       <h3 className="text-lg font-bold text-white mt-4">Connection Architecture</h3>
       <p className="text-[#aaaacc]">
         Dual-connector setup via wagmi v3. Config at{" "}
-        <code className="text-accent bg-[#1a1a2e] px-1 rounded">src/lib/wallet-config.ts</code>:
+        <code className="text-accent bg-[#1E293B] px-1 rounded">src/lib/wallet-config.ts</code>:
       </p>
       <ul className="text-[#aaaacc] space-y-3 ml-4">
         <li>
-          <strong className="text-white">Injected connector</strong> — detects <code className="text-accent bg-[#1a1a2e] px-1 rounded">window.ethereum</code>{" "}
+          <strong className="text-white">Injected connector</strong> — detects <code className="text-accent bg-[#1E293B] px-1 rounded">window.ethereum</code>{" "}
           for MetaMask, Rabby, and other browser wallets. Always available.
         </li>
         <li>
           <strong className="text-white">WalletConnect v2 connector</strong> — QR code modal for mobile wallets
           (MetaMask Mobile, Trust Wallet, etc.). Enabled when{" "}
-          <code className="text-accent bg-[#1a1a2e] px-1 rounded">NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID</code> is set.
+          <code className="text-accent bg-[#1E293B] px-1 rounded">NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID</code> is set.
         </li>
       </ul>
 
@@ -969,7 +969,7 @@ function WalletInfrastructure() {
             ["Quick-fill", "TradeForm: 25/50/75/100% of balance as quantity presets"],
             ["Persistence", "wagmi cookie storage for SSR-safe reconnection on page reload"],
           ].map(([f, i]) => (
-            <tr key={f} className="border-b border-[#1a1a2e10]">
+            <tr key={f} className="border-b border-[#1E293B20]">
               <td className="py-2 pr-4 text-white font-semibold">{f}</td>
               <td className="py-2 text-[#aaaacc] text-sm">{i}</td>
             </tr>
@@ -987,7 +987,7 @@ function WalletInfrastructure() {
         <li><strong className="text-hold">Wrong network:</strong> Shows &quot;Wrong Network&quot; with Switch Network and Disconnect options</li>
       </ul>
 
-      <div className="bg-[#7b2fff10] border border-accent-dim rounded-lg p-4 mt-6">
+      <div className="bg-[#00E5A810] border border-accent-dim rounded-lg p-4 mt-6">
         <p className="text-sm text-[#aaaacc] m-0">
           <strong className="text-white">Security note:</strong> Private keys never leave the wallet.
           The app only requests EIP-712 signatures for order data. No raw transactions, no token approvals,
@@ -1004,7 +1004,7 @@ function APIReference() {
       <h2 className="text-2xl font-bold text-white">API Reference</h2>
       <p className="text-[#aaaacc]">
         All external APIs are proxied through Next.js API routes in{" "}
-        <code className="text-accent bg-[#1a1a2e] px-1 rounded">src/app/api/</code>.
+        <code className="text-accent bg-[#1E293B] px-1 rounded">src/app/api/</code>.
         This keeps API keys server-side and enables rate limiting, caching, and error normalization.
       </p>
 
@@ -1094,7 +1094,7 @@ function APIReference() {
             ["klines", "symbol, interval? (1h), limit?", "SoDEXKline[] — OHLCV candles"],
             ["symbols", "symbol?", "SoDEXSymbol[] — available pairs"],
           ].map(([t, q, r]) => (
-            <tr key={t} className="border-b border-[#1a1a2e10]">
+            <tr key={t} className="border-b border-[#1E293B20]">
               <td className="py-2 pr-4 font-mono text-accent">{t}</td>
               <td className="py-2 pr-4 text-[#aaaacc] text-xs">{q}</td>
               <td className="py-2 text-[#aaaacc] text-xs">{r}</td>
@@ -1114,7 +1114,7 @@ function APIReference() {
 
       <h3 className="text-lg font-bold text-white mt-8">GET /api/balance</h3>
       <p className="text-[#aaaacc]">
-        Fetches account balances for a wallet address. Query: <code className="text-accent bg-[#1a1a2e] px-1 rounded">?address=0x...</code>
+        Fetches account balances for a wallet address. Query: <code className="text-accent bg-[#1E293B] px-1 rounded">?address=0x...</code>
       </p>
 
       <h3 className="text-lg font-bold text-white mt-6">GET /api/performance</h3>
@@ -1134,7 +1134,7 @@ function APIReference() {
         <li><strong className="text-white">502</strong> — upstream API failure (SoSoValue, SoDEX, or AI provider)</li>
       </ul>
       <p className="text-[#aaaacc] text-xs mt-2">
-        Error responses include <code className="text-accent bg-[#1a1a2e] px-1 rounded">{`{ "error": "human-readable message" }`}</code>.
+        Error responses include <code className="text-accent bg-[#1E293B] px-1 rounded">{`{ "error": "human-readable message" }`}</code>.
         Upstream errors are caught per-source (individual Promise failures don&apos;t crash the route).
       </p>
     </div>
@@ -1149,7 +1149,7 @@ function Deployment() {
       <h3 className="text-lg font-bold text-white mt-4">Vercel</h3>
       <p className="text-[#aaaacc]">
         SignalFlow Agent is deployed on <strong className="text-white">Vercel</strong> with automatic CI/CD
-        from the <code className="text-accent bg-[#1a1a2e] px-1 rounded">main</code> branch.
+        from the <code className="text-accent bg-[#1E293B] px-1 rounded">main</code> branch.
         Every push triggers a production build.
       </p>
       <ul className="text-[#aaaacc] space-y-1 ml-4">
@@ -1294,7 +1294,7 @@ function Roadmap() {
             ["SignalFlow Agent", "1 AI agent (multi-provider)", "SoSoValue + SoDEX", "Your keys, your models. Non-custodial EIP-712 execution."],
             ["SoSoMind", "5 specialist agents", "SoSoValue + SoDEX + 6 AI providers", "Agent specialization: Research, Risk, Execution, Macro, Sector Rotation"],
           ].map(([p, a, i, d]) => (
-            <tr key={p} className="border-b border-[#1a1a2e10]">
+            <tr key={p} className="border-b border-[#1E293B20]">
               <td className="py-2 pr-4 text-white font-semibold">{p}</td>
               <td className="py-2 pr-4 text-[#aaaacc]">{a}</td>
               <td className="py-2 pr-4 text-[#aaaacc] text-xs">{i}</td>

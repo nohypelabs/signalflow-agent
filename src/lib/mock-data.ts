@@ -137,9 +137,9 @@ export const stats = {
 export const apiModules = [
   { name: "Currency & Pairs", calls: 847, status: "active" as const, color: "#00d4ff" },
   { name: "ETF Data", calls: 423, status: "active" as const, color: "#00ff88" },
-  { name: "News Feeds", calls: 1205, status: "active" as const, color: "#7b2fff" },
+  { name: "News Feeds", calls: 1205, status: "active" as const, color: "#F59E0B" },
   { name: "Macro Events", calls: 312, status: "active" as const, color: "#00ffcc" },
-  { name: "SoSoValue Index", calls: 198, status: "active" as const, color: "#5a1fff" },
+  { name: "SoSoValue Index", calls: 198, status: "active" as const, color: "#22D3EE" },
   { name: "BTC Treasuries", calls: 156, status: "active" as const, color: "#ff4488" },
   { name: "Crypto Stocks", calls: 89, status: "active" as const, color: "#ff8800" },
   { name: "Fundraising", calls: 67, status: "active" as const, color: "#ff6644" },

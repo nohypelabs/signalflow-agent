@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#7b2fff",
+  themeColor: "#00E5A8",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -47,7 +47,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#0a0a14] text-white">
+      <body className="min-h-full flex flex-col bg-[#05070D] text-[#F8FAFC]">
         <Providers>{children}</Providers>
         <PWARegister />
       </body>

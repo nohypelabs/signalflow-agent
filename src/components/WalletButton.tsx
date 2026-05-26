@@ -160,7 +160,7 @@ export default function WalletButton() {
               <span className="text-xs text-txt-primary font-mono flex-1 break-all">{address}</span>
               <button
                 onClick={copyAddress}
-                className="shrink-0 text-[10px] text-accent hover:text-[#9b4fff]"
+                className="shrink-0 text-[10px] text-accent hover:text-accent/80"
               >
                 Copy
               </button>

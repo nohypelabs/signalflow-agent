@@ -37,7 +37,7 @@ export default function AISignalGenerator({
   onPinSignal,
   onExecuteSignal,
 }: Props) {
-  const accentColor = aiSignal ? (actionColors[aiSignal.action.toLowerCase()] ?? "#7b2fff") : "#7b2fff";
+  const accentColor = aiSignal ? (actionColors[aiSignal.action.toLowerCase()] ?? "#00E5A8") : "#00E5A8";
 
   return (
     <Card padding="none" className="overflow-hidden" style={{ borderLeft: `3px solid ${accentColor}` }}>
