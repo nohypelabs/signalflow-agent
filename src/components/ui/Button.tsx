@@ -3,7 +3,7 @@
 import { type ReactNode, type ButtonHTMLAttributes } from "react";
 
 const variants: Record<string, string> = {
-  primary: "bg-accent text-white hover:bg-[#6a1fee] disabled:opacity-50",
+  primary: "bg-accent text-[#05070D] font-bold hover:bg-accent/90 disabled:opacity-50",
   secondary: "bg-transparent text-accent border border-accent-dim hover:bg-accent-muted",
   danger: "bg-transparent text-error border border-sell-dim hover:bg-sell-muted",
   success: "bg-transparent text-buy border border-buy-dim hover:bg-buy-muted",
