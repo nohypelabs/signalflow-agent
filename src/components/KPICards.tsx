@@ -24,12 +24,50 @@ const icons = {
       <path d="M2 20h.01M7 20v-4M12 20v-8M17 20V8M22 4v16" />
     </svg>
   ),
-  mover: (
+  gainer: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
     </svg>
   ),
+  loser: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" /><polyline points="17 18 23 18 23 12" />
+    </svg>
+  ),
 };
+
+/** Parse changePct — already a number on SoDEXTicker, but guard against NaN */
+function parseChange(t: SoDEXTicker): number | null {
+  const v = t.changePct;
+  if (typeof v !== "number" || !Number.isFinite(v)) return null;
+  return v;
+}
+
+/** Return the top positive mover, or null if none */
+function getTopGainer(tickers: SoDEXTicker[]): SoDEXTicker | null {
+  const valid = tickers
+    .map((t) => ({ t, change: parseChange(t) }))
+    .filter((x) => x.change !== null && x.change > 0 && parseFloat(x.t.lastPx) > 0);
+
+  if (valid.length === 0) return null;
+  valid.sort((a, b) => (b.change as number) - (a.change as number));
+  return valid[0].t;
+}
+
+/** Return the worst negative mover, or null if none */
+function getWorstPerformer(tickers: SoDEXTicker[]): SoDEXTicker | null {
+  const valid = tickers
+    .map((t) => ({ t, change: parseChange(t) }))
+    .filter((x) => x.change !== null && x.change < 0 && parseFloat(x.t.lastPx) > 0);
+
+  if (valid.length === 0) return null;
+  valid.sort((a, b) => (a.change as number) - (b.change as number));
+  return valid[0].t;
+}
+
+function symbolFromTicker(t: SoDEXTicker): string {
+  return t.symbol.replace(/^v/, "").replace(/_vUSDC$/, "");
+}
 
 export default function KPICards({ tickers }: Props) {
   const hasLive = tickers && tickers.length > 0;
@@ -37,10 +75,10 @@ export default function KPICards({ tickers }: Props) {
   const totalVol = hasLive
     ? tickers.reduce((sum, t) => sum + parseFloat(t.quoteVolume || "0"), 0)
     : 0;
-  const topMover = hasLive
-    ? tickers.reduce((best, t) => (Math.abs(t.changePct) > Math.abs(best.changePct) ? t : best), tickers[0])
-    : null;
   const activePairs = hasLive ? tickers.filter((t) => parseFloat(t.lastPx) > 0).length : stats.activeSignals;
+
+  const topGainer = hasLive ? getTopGainer(tickers) : null;
+  const worstPerformer = hasLive ? getWorstPerformer(tickers) : null;
 
   const cards = [
     {
@@ -73,15 +111,19 @@ export default function KPICards({ tickers }: Props) {
       icon: "signals" as const,
     },
     {
-      label: hasLive && topMover ? "TOP MOVER" : "AVG CONFIDENCE",
-      value: hasLive && topMover
-        ? topMover.symbol.replace(/^v/, "").replace(/_vUSDC$/, "")
+      label: hasLive ? "TOP 24H GAINER" : "AVG CONFIDENCE",
+      value: hasLive
+        ? topGainer
+          ? symbolFromTicker(topGainer)
+          : "—"
         : `${stats.avgConfidence}%`,
-      sub: hasLive && topMover
-        ? `${topMover.changePct >= 0 ? "+" : ""}${topMover.changePct.toFixed(1)}%`
+      sub: hasLive
+        ? topGainer
+          ? `+${(parseChange(topGainer) as number).toFixed(2)}%`
+          : "No positive movers"
         : "High conviction mode",
-      color: hasLive && topMover ? (topMover.changePct >= 0 ? "#00ff88" : "#ff4444") : "#ff8800",
-      icon: "mover" as const,
+      color: hasLive ? (topGainer ? "#00ff88" : "#F59E0B") : "#ff8800",
+      icon: "gainer" as const,
     },
   ];
 
