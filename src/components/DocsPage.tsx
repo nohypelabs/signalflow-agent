@@ -650,33 +650,53 @@ function RiskEngine() {
       <h2 className="text-2xl font-bold text-white">Risk Engine</h2>
       <p className="text-[#aaaacc]">
         Risk management is enforced at multiple layers — from signal generation constraints
-        to order execution guardrails.
+        to order execution guardrails to post-trade accuracy tracking.
       </p>
 
-      <h3 className="text-lg font-bold text-white mt-6">AI-Level Risk Guardrails</h3>
+      <h3 className="text-lg font-bold text-white mt-6">Signal Generation Safeguards</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+        <RiskCard
+          title="ATR-Based TP/SL"
+          desc="Take-profit and stop-loss are calculated from Average True Range, not fixed percentages. BUY: TP = price × (1 + 2×ATR%), SL = price × (1 - ATR%). This adapts to current volatility."
+        />
+        <RiskCard
+          title="Multi-Gate Action Decision"
+          desc="BUY requires composite > 60 AND momentum > 55 AND trend > 50 AND sentiment > 45. All four gates must pass — a single strong dimension cannot force a trade."
+        />
+        <RiskCard
+          title="Dynamic Outlier Capping"
+          desc="Dimensions deviating >1.5σ from the mean are capped at 8% weight. Freed weight redistributes to non-capped dimensions. Prevents one anomalous data point from dominating."
+        />
+        <RiskCard
+          title="Confidence Calibration"
+          desc="Confidence = 50 + |composite - 50| × 1.5, capped at 98. Signals near neutral (composite ≈ 50) get low confidence, preventing false conviction."
+        />
+      </div>
+
+      <h3 className="text-lg font-bold text-white mt-8">AI-Level Risk Guardrails</h3>
       <p className="text-[#aaaacc]">
-        The AI prompt enforces risk rules structurally:
+        When AI thesis is enabled, the prompt enforces additional structural constraints:
       </p>
-      <ul className="text-[#aaaacc] space-y-3 ml-4">
+      <ul className="text-[#aaaacc] space-y-2 ml-4">
         <li>
-          <strong className="text-white">Take-profit and stop-loss are mandatory.</strong> Every BUY/SELL signal
-          must include concrete TP and SL levels. The AI cannot output null for these fields.
+          <strong className="text-white">TP/SL are mandatory.</strong> Every BUY/SELL signal
+          must include concrete levels — the AI cannot output null.
         </li>
         <li>
-          <strong className="text-white">Directional consistency check.</strong> For BUY: TP &gt; entry &gt; SL.
-          For SELL: SL &gt; entry &gt; TP. The AI prompt explicitly validates this.
+          <strong className="text-white">Directional consistency.</strong> For BUY: TP &gt; entry &gt; SL.
+          For SELL: SL &gt; entry &gt; TP. Validated in the prompt.
         </li>
         <li>
-          <strong className="text-white">HOLD signals have zeroed execution.</strong> When the AI determines
+          <strong className="text-white">HOLD = no execution.</strong> When the AI determines
           no trade, TP/SL are set to 0 and position size is &quot;—&quot;.
         </li>
         <li>
-          <strong className="text-white">Default 5% TP/SL spread.</strong> The prompt instructs the AI to use
-          price × 1.05 for take-profit and price × 0.95 for stop-loss as sensible defaults.
+          <strong className="text-white">Graceful AI failure.</strong> If the AI provider fails,
+          the base TA signal is still returned. AI errors never block signal generation.
         </li>
       </ul>
 
-      <h3 className="text-lg font-bold text-white mt-8">Heuristic Risk Controls</h3>
+      <h3 className="text-lg font-bold text-white mt-8">Heuristic Controls</h3>
       <table className="w-full text-sm mt-3 border-collapse">
         <thead>
           <tr className="border-b border-border-default text-txt-muted text-left">
@@ -687,54 +707,93 @@ function RiskEngine() {
         </thead>
         <tbody>
           {[
-            ["Dynamic outlier capping", "Dimensions >1.5σ from mean capped at 8% weight", "Prevents single anomalous data point from dominating signal"],
-            ["Score clamping", "All dimension scores clamped to [0, 100]", "Prevents extreme values from breaking the weighted average"],
-            ["5 min cache TTL", "In-memory server cache on /api/signals", "Prevents rate limiting and ensures data consistency"],
-            ["Signal history resolution", "1-hour delay before signals are evaluated for accuracy", "Ensures sufficient price movement for meaningful accuracy assessment"],
+            ["Score clamping", "All dimension scores clamped to [0, 100]", "Prevents extreme values from breaking weighted averages"],
+            ["OHLCV validation", "Klines with NaN, high < low, or negative prices are filtered", "Prevents garbage data from corrupting TA signals"],
+            ["Kline dedup", "Duplicate timestamps removed, ascending sort enforced", "Prevents lightweight-charts assertion errors from SoDEX data"],
+            ["5 min cache TTL", "In-memory server cache on /api/signals", "Prevents API rate limiting and ensures consistent data within a window"],
+            ["Fetch timeouts", "5s per-request timeout with fallback", "Prevents slow API calls from blocking signal generation"],
           ].map(([c, m, p]) => (
             <tr key={c} className="border-b border-[#1E293B20]">
               <td className="py-2 pr-4 text-white font-semibold">{c}</td>
               <td className="py-2 pr-4 text-[#aaaacc] text-xs">{m}</td>
-              <td className="py-2 text-[#aaaacc]">{p}</td>
+              <td className="py-2 text-[#aaaacc] text-xs">{p}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
       <h3 className="text-lg font-bold text-white mt-8">Execution-Level Safety</h3>
-      <ul className="text-[#aaaacc] space-y-2 ml-4">
-        <li>
-          <strong className="text-white">One active order per pair.</strong> The Execute button is disabled
-          when an open order exists for the same SoDEX symbol, preventing duplicate entries.
-        </li>
-        <li>
-          <strong className="text-white">Wallet connection required.</strong> Trading UI shows &quot;Connect Wallet&quot;
-          until a wallet is connected, preventing accidental execution attempts.
-        </li>
-        <li>
-          <strong className="text-white">EIP-712 human-readable signing.</strong> Users see the exact order
-          parameters (symbol, side, type, quantity, timestamp) before signing — no blind transaction signing.
-        </li>
-        <li>
-          <strong className="text-white">Network detection.</strong> The UI detects wrong networks and
-          offers chain switching or wallet disconnection.
-        </li>
-      </ul>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+        <RiskCard
+          title="EIP-712 Typed Signing"
+          desc="Users see exact order parameters (symbol, side, type, quantity, timestamp) before signing. No blind transaction signing. Human-readable confirmation on wallet."
+        />
+        <RiskCard
+          title="Wallet Gating"
+          desc="Trading UI shows 'Connect Wallet' until connected. Execute button disabled when open order exists for the same pair. Wrong network detection with chain switch prompt."
+        />
+        <RiskCard
+          title="One Order Per Pair"
+          desc="Duplicate entry prevention — the Execute button is disabled when an open order exists for the same SoDEX symbol."
+        />
+        <RiskCard
+          title="Non-Custodial"
+          desc="All trades execute through the user's wallet via SoDEX. The platform never holds user funds. API keys are stored in localStorage, never on server."
+        />
+      </div>
 
       <h3 className="text-lg font-bold text-white mt-8">Signal Accuracy Tracking</h3>
       <p className="text-[#aaaacc]">
-        Every AI-generated signal is recorded to localStorage with its dimensions, price, and timestamp.
-        After 1 hour, signals are resolved against live ticker prices:
+        Every signal is recorded to localStorage with dimensions, price, and timestamp.
+        Signals are resolved against live ticker prices after a configurable window:
       </p>
-      <ul className="text-[#aaaacc] space-y-1 ml-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
+        {["1 hour", "4 hours", "24 hours", "7 days"].map((w) => (
+          <div key={w} className="bg-inset border border-border-default rounded-lg p-2 text-center">
+            <span className="text-xs font-mono text-accent">{w}</span>
+          </div>
+        ))}
+      </div>
+      <ul className="text-[#aaaacc] space-y-1 ml-4 mt-3">
         <li><strong className="text-white">BUY correct</strong> if current price &gt; signal price</li>
         <li><strong className="text-white">SELL correct</strong> if current price &lt; signal price</li>
         <li><strong className="text-white">HOLD correct</strong> if price moved &lt; 2%</li>
       </ul>
-      <p className="text-[#aaaacc] mt-2">
-        Accuracy stats (total resolved, correct, percentage) are displayed on the Performance page,
-        with per-coin breakdowns.
+
+      <h4 className="text-sm font-bold text-white mt-6">Performance Analytics</h4>
+      <p className="text-[#aaaacc]">
+        The Performance page provides comprehensive signal validation tools:
       </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+        <RiskCard
+          title="Confidence Calibration"
+          desc="Bar chart showing confidence bucket vs actual accuracy. Validates whether 80% confidence signals actually hit 80% — the key metric for scoring engine reliability."
+        />
+        <RiskCard
+          title="Simulated Equity Curve"
+          desc="SVG chart simulating P&L from following all signals (5% position per trade). Shows if the system is actually profitable over time."
+        />
+        <RiskCard
+          title="Win/Loss Streaks"
+          desc="Current streak, best win streak, worst loss streak, and last 10 results as color-coded dots. Affects trader sizing decisions."
+        />
+        <RiskCard
+          title="Max Drawdown"
+          desc="Peak-to-trough decline percentage, recovery signal count. Critical for understanding worst-case scenarios."
+        />
+      </div>
+      <p className="text-[#aaaacc] mt-3">
+        Additional metrics: per-coin accuracy breakdown, signal frequency stats, and CSV export for external analysis.
+      </p>
+    </div>
+  );
+}
+
+function RiskCard({ title, desc }: { title: string; desc: string }) {
+  return (
+    <div className="bg-inset border border-border-default rounded-lg p-3">
+      <h4 className="text-xs font-bold text-white m-0 mb-1">{title}</h4>
+      <p className="text-[10px] text-[#aaaacc] m-0 leading-relaxed">{desc}</p>
     </div>
   );
 }

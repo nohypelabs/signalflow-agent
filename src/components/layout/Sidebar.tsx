@@ -133,8 +133,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
           <button
             onClick={() => setCollapsed(!collapsed)}
             className={`
-              w-full flex items-center gap-2 px-3 py-2.5 text-txt-muted hover:text-txt-secondary hover:bg-[#ffffff04] transition-colors
-              ${collapsed ? "justify-center" : ""}
+              w-full flex items-center justify-center gap-2 px-3 py-2.5 text-txt-muted hover:text-txt-secondary hover:bg-[#ffffff04] transition-colors
             `}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
@@ -148,7 +147,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
             )}
           </button>
           {!collapsed && (
-            <div className="text-[9px] text-txt-faint px-5 pb-3">
+            <div className="text-[9px] text-txt-faint text-center pb-3">
               v0.1 Beta · NoHype Labs
             </div>
           )}
