@@ -3,6 +3,8 @@
 import WalletButton from "./WalletButton";
 import StatusDot from "@/components/ui/StatusDot";
 import MarketTickerTape from "./MarketTickerTape";
+import FavoriteTickerBar from "@/components/layout/FavoriteTickerBar";
+import { useFavoriteTickers } from "@/lib/hooks/useFavoriteTickers";
 import { MenuIcon } from "@/components/ui/icons";
 import type { SoDEXTicker } from "@/lib/sodex-types";
 
@@ -23,6 +25,12 @@ export default function TopBar({
   btcChange,
   tickerMap,
 }: Props) {
+  const {
+    favoriteTickers,
+    isFavorite,
+    toggleFavorite,
+  } = useFavoriteTickers(tickerMap);
+
   const dotStatus =
     sodexStatus === "connected" ? "live" : sodexStatus === "loading" ? "warning" : "error";
 
@@ -44,8 +52,15 @@ export default function TopBar({
 
   return (
     <div className="shrink-0">
-      {/* Ticker tape */}
-      <MarketTickerTape tickerMap={tickerMap} />
+      {/* Scrolling market tape */}
+      <MarketTickerTape
+        tickerMap={tickerMap}
+        isFavorite={isFavorite}
+        onToggleFavorite={toggleFavorite}
+      />
+
+      {/* Favorite watchlist bar */}
+      <FavoriteTickerBar tickers={favoriteTickers} />
 
       {/* Main header bar */}
       <header className="flex items-center justify-between px-3 md:px-4 h-11 bg-surface border-b border-border-default">
