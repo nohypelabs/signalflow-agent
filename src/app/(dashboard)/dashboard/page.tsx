@@ -1,6 +1,7 @@
 "use client";
 
 import { useDashboard } from "@/lib/dashboard-context";
+import { useDashboardMetrics } from "@/lib/hooks/useDashboardMetrics";
 import KPICards from "@/components/KPICards";
 import PortfolioChart from "@/components/PortfolioChart";
 import SignalList from "@/components/SignalList";
@@ -10,10 +11,12 @@ import DataSources from "@/components/DataSources";
 
 export default function DashboardPage() {
   const d = useDashboard();
+  const metrics = useDashboardMetrics(d.tickers, d.liveSignals, d.marketError, d.signalsError);
+
   return (
     <div className="space-y-4">
       {/* KPI stats row */}
-      <KPICards tickers={d.tickers} />
+      <KPICards metrics={metrics} />
 
       {/* Chart + Signals row */}
       <div className="flex flex-col lg:flex-row gap-4">
