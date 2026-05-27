@@ -9,7 +9,7 @@ import PageHeader from "@/components/ui/PageHeader";
 interface SignalRecord {
   id: string;
   pair: string;
-  action: "BUY" | "SELL" | "HOLD";
+  action: "LONG" | "SHORT" | "HOLD";
   confidence: number;
   price: number;
   change24h: number;
@@ -82,7 +82,7 @@ function BacktestPanel({ stats }: { stats: BacktestStats }) {
 }
 
 function SignalRow({ signal }: { signal: SignalRecord }) {
-  const actionColor = signal.action === "BUY" ? "#00ff88" : signal.action === "SELL" ? "#ff4444" : "#ff8800";
+  const actionColor = signal.action === "LONG" ? "#00ff88" : signal.action === "SHORT" ? "#ff4444" : "#ff8800";
   const outcomeColor = signal.outcome === "win" ? "#00ff88" : signal.outcome === "loss" ? "#ff4444" : "#64748b";
 
   return (
@@ -169,7 +169,7 @@ export default function SignalHistoryPage() {
         // Generate synthetic historical signals for backtest demo
         const historicalSignals: SignalRecord[] = [];
         const pairs = ["BTC/USDC", "ETH/USDC", "SOL/USDC"];
-        const actions = ["BUY", "SELL", "HOLD"] as const;
+        const actions = ["LONG", "SHORT", "HOLD"] as const;
         const outcomes = ["win", "loss"] as const;
 
         for (let i = 0; i < 50; i++) {

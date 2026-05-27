@@ -7,11 +7,15 @@ interface Props {
   stats: PaperStats;
   balance: PaperBalance;
   trades: PaperTrade[];
+  currentPrices?: Map<string, number>;
+  onClose?: (tradeId: string, currentPrice: number) => void;
   onReset: () => void;
 }
 
 function fmtUSD(n: number): string {
-  return n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const abs = Math.abs(n);
+  if (abs >= 1000) return `${n < 0 ? "-" : ""}$${abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `${n < 0 ? "-" : ""}$${abs.toFixed(2)}`;
 }
 
 function fmtTime(ms: number): string {
@@ -22,8 +26,102 @@ function fmtTime(ms: number): string {
   return `${Math.floor(hours / 24)}d ${hours % 24}h`;
 }
 
-export default function PaperTradingStats({ stats, balance, trades, onReset }: Props) {
-  const pnlColor = stats.totalPnl >= 0 ? "#00ff88" : "#ff4444";
+function fmtPrice(p: number): string {
+  if (p >= 10000) return p.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  if (p >= 100) return p.toFixed(2);
+  if (p >= 1) return p.toFixed(3);
+  return p.toFixed(5);
+}
+
+function PositionRow({ trade, currentPrice, onClose }: { trade: PaperTrade; currentPrice?: number; onClose?: (id: string, price: number) => void }) {
+  const price = currentPrice ?? trade.entryPrice;
+  const priceChange = trade.side === "LONG"
+    ? price - trade.entryPrice
+    : trade.entryPrice - price;
+  const pnl = priceChange * trade.quantity;
+  const pnlPct = (pnl / trade.margin) * 100;
+  const isProfit = pnl >= 0;
+
+  // Distance to liquidation
+  const liqDist = trade.side === "LONG"
+    ? ((price - trade.liquidationPrice) / price) * 100
+    : ((trade.liquidationPrice - price) / price) * 100;
+
+  // Distance to TP/SL
+  const tpDist = trade.takeProfit > 0
+    ? trade.side === "LONG"
+      ? ((trade.takeProfit - price) / price) * 100
+      : ((price - trade.takeProfit) / price) * 100
+    : null;
+
+  const slDist = trade.stopLoss > 0
+    ? trade.side === "LONG"
+      ? ((price - trade.stopLoss) / price) * 100
+      : ((trade.stopLoss - price) / price) * 100
+    : null;
+
+  return (
+    <div className="px-4 py-2.5 border-b border-border-default hover:bg-elevated/20 transition-colors">
+      {/* Row 1: Side + Pair + Leverage + PnL */}
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-2">
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+            trade.side === "LONG"
+              ? "bg-[#00ff88]/15 text-[#00ff88]"
+              : "bg-[#ff4444]/15 text-[#ff4444]"
+          }`}>
+            {trade.side}
+          </span>
+          <span className="text-xs font-bold text-txt-primary">{trade.pair}</span>
+          <span className="text-[9px] text-accent font-mono">{trade.leverage}x</span>
+        </div>
+        <div className="text-right">
+          <span className={`text-xs font-bold font-mono ${isProfit ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
+            {isProfit ? "+" : ""}{fmtUSD(pnl)}
+          </span>
+          <span className={`text-[9px] font-mono ml-1 ${isProfit ? "text-[#00ff88]/70" : "text-[#ff4444]/70"}`}>
+            ({pnlPct >= 0 ? "+" : ""}{pnlPct.toFixed(1)}%)
+          </span>
+        </div>
+      </div>
+
+      {/* Row 2: Entry + Current + Liq */}
+      <div className="flex items-center gap-3 text-[9px] font-mono text-txt-faint mb-1.5">
+        <span>Entry <span className="text-txt-secondary">${fmtPrice(trade.entryPrice)}</span></span>
+        <span>Size <span className="text-txt-secondary">{trade.quantity.toFixed(4)}</span></span>
+        <span>Margin <span className="text-txt-secondary">${trade.margin.toFixed(0)}</span></span>
+        <span>Notional <span className="text-txt-secondary">${(trade.notional).toFixed(0)}</span></span>
+      </div>
+
+      {/* Row 3: TP/SL/Liq bars */}
+      <div className="flex items-center gap-2 text-[8px]">
+        {slDist !== null && (
+          <span className={`px-1.5 py-0.5 rounded ${slDist < 5 ? "bg-[#ff4444]/20 text-[#ff4444]" : "text-txt-faint"}`}>
+            SL {slDist.toFixed(1)}% → ${fmtPrice(trade.stopLoss)}
+          </span>
+        )}
+        <span className={`px-1.5 py-0.5 rounded ${liqDist < 10 ? "bg-[#ff4444]/30 text-[#ff4444] font-bold" : "text-txt-faint"}`}>
+          LIQ {liqDist.toFixed(1)}% → ${fmtPrice(trade.liquidationPrice)}
+        </span>
+        {tpDist !== null && (
+          <span className="px-1.5 py-0.5 rounded text-txt-faint">
+            TP {tpDist.toFixed(1)}% → ${fmtPrice(trade.takeProfit)}
+          </span>
+        )}
+        {onClose && currentPrice && (
+          <button
+            onClick={() => onClose(trade.id, currentPrice)}
+            className="ml-auto text-[9px] text-sell hover:text-sell/80 font-semibold cursor-pointer"
+          >
+            Close
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function PaperTradingStats({ stats, balance, trades, currentPrices, onClose, onReset }: Props) {
   const openTrades = trades.filter((t) => t.status === "OPEN");
 
   return (
@@ -33,13 +131,10 @@ export default function PaperTradingStats({ stats, balance, trades, onReset }: P
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-base">📝</span>
-            <h3 className="text-sm font-semibold text-txt-primary">Paper Trading</h3>
+            <h3 className="text-sm font-semibold text-txt-primary">Paper Futures</h3>
             <span className="text-[8px] px-1.5 py-0.5 rounded bg-accent/15 text-accent font-bold">DEMO</span>
           </div>
-          <button
-            onClick={onReset}
-            className="text-[9px] text-txt-faint hover:text-sell transition-colors cursor-pointer"
-          >
+          <button onClick={onReset} className="text-[9px] text-txt-faint hover:text-sell transition-colors cursor-pointer">
             Reset
           </button>
         </div>
@@ -47,34 +142,35 @@ export default function PaperTradingStats({ stats, balance, trades, onReset }: P
 
       {/* Balance */}
       <div className="px-4 py-3 bg-elevated/20 border-b border-border-default">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-2">
           <div>
             <p className="text-[8px] text-txt-faint uppercase tracking-wider">Balance</p>
-            <p className="text-base font-bold font-mono text-txt-primary">{fmtUSD(balance.total)}</p>
+            <p className="text-sm font-bold font-mono text-txt-primary">{fmtUSD(balance.total)}</p>
           </div>
           <div>
             <p className="text-[8px] text-txt-faint uppercase tracking-wider">Available</p>
-            <p className="text-sm font-mono text-txt-secondary">{fmtUSD(balance.available)}</p>
+            <p className="text-xs font-mono text-txt-secondary">{fmtUSD(balance.available)}</p>
+          </div>
+          <div>
+            <p className="text-[8px] text-txt-faint uppercase tracking-wider">Margin</p>
+            <p className="text-xs font-mono text-[#ff8800]">{fmtUSD(balance.marginUsed)}</p>
           </div>
           <div>
             <p className="text-[8px] text-txt-faint uppercase tracking-wider">Total P&L</p>
             <p className={`text-sm font-bold font-mono ${stats.totalPnl >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
               {stats.totalPnl >= 0 ? "+" : ""}{fmtUSD(stats.totalPnl)}
-              <span className="text-[9px] ml-1 opacity-70">
-                ({stats.totalPnlPercent >= 0 ? "+" : ""}{stats.totalPnlPercent.toFixed(2)}%)
-              </span>
             </p>
           </div>
         </div>
       </div>
 
-      {/* Stats grid */}
+      {/* Stats */}
       <div className="px-4 py-3 grid grid-cols-4 gap-2 border-b border-border-default">
         {[
           { label: "Win Rate", value: `${stats.winRate.toFixed(1)}%`, color: stats.winRate > 55 ? "#00ff88" : stats.winRate > 45 ? "#ff8800" : "#ff4444" },
           { label: "Trades", value: `${stats.closedTrades}`, color: "var(--text-secondary)" },
-          { label: "W / L", value: `${stats.winCount}/${stats.lossCount}`, color: "var(--text-secondary)" },
-          { label: "Profit Factor", value: stats.profitFactor === Infinity ? "∞" : stats.profitFactor.toFixed(2), color: stats.profitFactor > 1.5 ? "#00ff88" : stats.profitFactor > 1 ? "#ff8800" : "#ff4444" },
+          { label: "L/S", value: `${stats.longCount}/${stats.shortCount}`, color: "var(--text-secondary)" },
+          { label: "Avg Lev", value: `${stats.avgLeverage.toFixed(1)}x`, color: "var(--text-secondary)" },
         ].map((item) => (
           <div key={item.label} className="text-center">
             <p className="text-[8px] text-txt-faint uppercase tracking-wider">{item.label}</p>
@@ -83,8 +179,20 @@ export default function PaperTradingStats({ stats, balance, trades, onReset }: P
         ))}
       </div>
 
-      {/* Additional stats */}
+      {/* More stats */}
       <div className="px-4 py-2 grid grid-cols-2 gap-2 border-b border-border-default">
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] text-txt-faint">Profit Factor</span>
+          <span className={`text-[10px] font-mono ${stats.profitFactor > 1.5 ? "text-[#00ff88]" : stats.profitFactor > 1 ? "text-[#ff8800]" : "text-[#ff4444]"}`}>
+            {stats.profitFactor === Infinity ? "∞" : stats.profitFactor.toFixed(2)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] text-txt-faint">Liquidations</span>
+          <span className={`text-[10px] font-mono ${stats.liqCount > 0 ? "text-[#ff4444]" : "text-txt-secondary"}`}>
+            {stats.liqCount}
+          </span>
+        </div>
         <div className="flex items-center justify-between">
           <span className="text-[9px] text-txt-faint">Best Trade</span>
           <span className="text-[10px] font-mono text-[#00ff88]">+{fmtUSD(stats.bestTrade)}</span>
@@ -93,38 +201,21 @@ export default function PaperTradingStats({ stats, balance, trades, onReset }: P
           <span className="text-[9px] text-txt-faint">Worst Trade</span>
           <span className="text-[10px] font-mono text-[#ff4444]">{fmtUSD(stats.worstTrade)}</span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-[9px] text-txt-faint">Avg P&L</span>
-          <span className={`text-[10px] font-mono ${stats.avgPnl >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
-            {fmtUSD(stats.avgPnl)}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-[9px] text-txt-faint">Avg Hold</span>
-          <span className="text-[10px] font-mono text-txt-secondary">{fmtTime(stats.avgHoldTime)}</span>
-        </div>
       </div>
 
       {/* Open positions */}
       {openTrades.length > 0 && (
-        <div className="px-4 py-3">
-          <p className="text-[9px] text-txt-faint uppercase tracking-wider mb-2">Open Positions ({openTrades.length})</p>
-          <div className="space-y-1.5">
-            {openTrades.slice(0, 5).map((t) => (
-              <div key={t.id} className="flex items-center gap-2 text-[10px] font-mono">
-                <span className={`font-bold ${t.side === "BUY" ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
-                  {t.side}
-                </span>
-                <span className="text-txt-primary">{t.pair}</span>
-                <span className="text-txt-faint">@</span>
-                <span className="text-txt-secondary">${t.entryPrice.toLocaleString()}</span>
-                <span className="text-txt-faint">x{t.quantity}</span>
-                {t.confidence > 0 && (
-                  <span className="text-[8px] text-accent ml-auto">{t.confidence}%</span>
-                )}
-              </div>
-            ))}
+        <div>
+          <div className="px-4 py-2 border-b border-border-default">
+            <p className="text-[9px] text-txt-faint uppercase tracking-wider">
+              Open Positions ({openTrades.length}) · Margin: {fmtUSD(balance.marginUsed)}
+            </p>
           </div>
+          {openTrades.map((t) => {
+            const base = t.pair.split("/")[0];
+            const price = currentPrices?.get(base) ?? currentPrices?.get(t.pair);
+            return <PositionRow key={t.id} trade={t} currentPrice={price} onClose={onClose} />;
+          })}
         </div>
       )}
 
@@ -132,7 +223,7 @@ export default function PaperTradingStats({ stats, balance, trades, onReset }: P
       {stats.totalTrades === 0 && (
         <div className="px-4 py-6 text-center">
           <p className="text-xs text-txt-muted">No paper trades yet</p>
-          <p className="text-[10px] text-txt-faint mt-1">Execute a trade to start paper trading</p>
+          <p className="text-[10px] text-txt-faint mt-1">Open a LONG or SHORT position to start</p>
         </div>
       )}
     </Card>

@@ -10,14 +10,14 @@ interface Props {
   currentPrice: number | null;
   signal?: Signal | null;
   isConnected: boolean;
-  balance?: { free: string; locked: string } | null;
   paperBalance?: number;
   mode?: "paper" | "live";
   onModeChange?: (mode: "paper" | "live") => void;
   onExecute: (order: {
-    side: "BUY" | "SELL";
-    quantity: string;
-    price: string;
+    side: "LONG" | "SHORT";
+    leverage: number;
+    margin: number;
+    quantity: number;
     takeProfit: string;
     stopLoss: string;
   }) => void;
@@ -30,77 +30,102 @@ function fmtPrice(p: number, coin: string): string {
   return p.toFixed(5);
 }
 
-export default function OrderForm({ pair, coin, currentPrice, signal, isConnected, balance, paperBalance, mode = "paper", onModeChange, onExecute }: Props) {
-  const [side, setSide] = useState<"BUY" | "SELL">("BUY");
-  const [quantity, setQuantity] = useState("");
-  const [price, setPrice] = useState("");
+const LEVERAGE_PRESETS = [1, 2, 3, 5, 10];
+const MARGIN_PRESETS = [100, 250, 500, 1000];
+
+export default function OrderForm({ pair, coin, currentPrice, signal, isConnected, paperBalance, mode = "paper", onModeChange, onExecute }: Props) {
+  const [side, setSide] = useState<"LONG" | "SHORT">("LONG");
+  const [leverage, setLeverage] = useState(3);
+  const [margin, setMargin] = useState("");
   const [takeProfit, setTakeProfit] = useState("");
   const [stopLoss, setStopLoss] = useState("");
-  const [orderType, setOrderType] = useState<"MARKET" | "LIMIT">("MARKET");
+  const [tpPercent, setTpPercent] = useState("");
+  const [slPercent, setSlPercent] = useState("");
 
   // Pre-fill from signal
   useEffect(() => {
     if (signal) {
-      setSide(signal.action === "SELL" ? "SELL" : "BUY");
-      if (signal.execution.entry > 0) setPrice(signal.execution.entry.toFixed(2));
+      const isLong = signal.action === "LONG" || signal.actionV2 === "STRONG_LONG" || signal.actionV2 === "LONG" || signal.actionV2 === "WEAK_LONG";
+      setSide(isLong ? "LONG" : "SHORT");
       if (signal.execution.takeProfit > 0) setTakeProfit(signal.execution.takeProfit.toFixed(2));
       if (signal.execution.stopLoss > 0) setStopLoss(signal.execution.stopLoss.toFixed(2));
+      // Calculate TP/SL percentages
+      if (signal.execution.entry > 0 && signal.execution.takeProfit > 0) {
+        const tpPct = Math.abs((signal.execution.takeProfit - signal.execution.entry) / signal.execution.entry * 100);
+        setTpPercent(tpPct.toFixed(1));
+      }
+      if (signal.execution.entry > 0 && signal.execution.stopLoss > 0) {
+        const slPct = Math.abs((signal.execution.stopLoss - signal.execution.entry) / signal.execution.entry * 100);
+        setSlPercent(slPct.toFixed(1));
+      }
     }
   }, [signal]);
 
-  // Update price when currentPrice changes (market mode)
+  // Auto-calculate TP/SL from percentage
   useEffect(() => {
-    if (orderType === "MARKET" && currentPrice) {
-      setPrice(currentPrice.toFixed(2));
+    if (currentPrice && tpPercent) {
+      const pct = parseFloat(tpPercent) / 100;
+      const tp = side === "LONG"
+        ? currentPrice * (1 + pct)
+        : currentPrice * (1 - pct);
+      setTakeProfit(tp.toFixed(2));
     }
-  }, [currentPrice, orderType]);
+  }, [currentPrice, tpPercent, side]);
 
-  // Calculate totals
-  const total = useMemo(() => {
-    const q = parseFloat(quantity) || 0;
-    const p = parseFloat(price) || 0;
-    return q * p;
-  }, [quantity, price]);
+  useEffect(() => {
+    if (currentPrice && slPercent) {
+      const pct = parseFloat(slPercent) / 100;
+      const sl = side === "LONG"
+        ? currentPrice * (1 - pct)
+        : currentPrice * (1 + pct);
+      setStopLoss(sl.toFixed(2));
+    }
+  }, [currentPrice, slPercent, side]);
 
-  const freeBalance = balance ? parseFloat(balance.free) : 0;
+  // Calculated values
+  const marginNum = parseFloat(margin) || 0;
+  const notional = marginNum * leverage;
+  const quantity = currentPrice ? notional / currentPrice : 0;
+  const liqPrice = useMemo(() => {
+    if (!currentPrice || marginNum === 0) return 0;
+    const mm = 0.005; // maintenance margin
+    if (side === "LONG") return currentPrice * (1 - (1 / leverage) + mm);
+    return currentPrice * (1 + (1 / leverage) - mm);
+  }, [currentPrice, side, leverage, marginNum]);
 
-  // Quick amount buttons
-  const quickAmounts = [0.25, 0.5, 0.75, 1.0];
-
-  // R:R calculation
+  // R:R
   const riskReward = useMemo(() => {
-    const entry = parseFloat(price) || 0;
+    const entry = currentPrice || 0;
     const tp = parseFloat(takeProfit) || 0;
     const sl = parseFloat(stopLoss) || 0;
     if (!entry || !tp || !sl) return null;
-
     const risk = Math.abs(entry - sl);
     const reward = Math.abs(tp - entry);
     if (risk === 0) return null;
     return (reward / risk).toFixed(2);
-  }, [price, takeProfit, stopLoss]);
+  }, [currentPrice, takeProfit, stopLoss]);
 
   const handleSubmit = () => {
-    if (!quantity || !price) return;
+    if (!marginNum || !currentPrice) return;
     onExecute({
       side,
+      leverage,
+      margin: marginNum,
       quantity,
-      price: orderType === "MARKET" ? "0" : price,
       takeProfit,
       stopLoss,
     });
   };
 
-  const accentColor = side === "BUY" ? "#00ff88" : "#ff4444";
+  const accentColor = side === "LONG" ? "#00ff88" : "#ff4444";
 
   return (
     <Card padding="none" className="overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-border-default">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-txt-primary">Place Order</h3>
+          <h3 className="text-sm font-semibold text-txt-primary">Open Position</h3>
           <div className="flex items-center gap-2">
-            {/* Paper/Live toggle */}
             <div className="flex items-center gap-0.5 bg-inset rounded-lg p-0.5">
               <button
                 onClick={() => onModeChange?.("paper")}
@@ -124,7 +149,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
         </div>
         {mode === "paper" && paperBalance != null && (
           <div className="mt-1.5 flex items-center gap-2">
-            <span className="text-[8px] text-txt-faint">Paper Balance:</span>
+            <span className="text-[8px] text-txt-faint">Available:</span>
             <span className="text-[10px] font-mono text-accent font-semibold">
               ${paperBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
@@ -133,132 +158,161 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
       </div>
 
       <div className="p-4 space-y-4">
-        {/* BUY / SELL toggle */}
+        {/* LONG / SHORT toggle */}
         <div className="grid grid-cols-2 gap-2">
           <button
-            onClick={() => setSide("BUY")}
-            className={`py-2 text-sm font-bold rounded-lg transition-all cursor-pointer ${
-              side === "BUY"
+            onClick={() => setSide("LONG")}
+            className={`py-2.5 text-sm font-bold rounded-lg transition-all cursor-pointer ${
+              side === "LONG"
                 ? "bg-[#00ff88] text-[#0B1020] shadow-[0_0_20px_rgba(0,255,136,0.2)]"
                 : "bg-elevated text-txt-muted border border-border-default hover:border-[#00ff88]/30"
             }`}
           >
-            BUY
+            ▲ LONG
           </button>
           <button
-            onClick={() => setSide("SELL")}
-            className={`py-2 text-sm font-bold rounded-lg transition-all cursor-pointer ${
-              side === "SELL"
+            onClick={() => setSide("SHORT")}
+            className={`py-2.5 text-sm font-bold rounded-lg transition-all cursor-pointer ${
+              side === "SHORT"
                 ? "bg-[#ff4444] text-white shadow-[0_0_20px_rgba(255,68,68,0.2)]"
                 : "bg-elevated text-txt-muted border border-border-default hover:border-[#ff4444]/30"
             }`}
           >
-            SELL
+            ▼ SHORT
           </button>
         </div>
 
-        {/* Order type */}
-        <div className="flex gap-1 bg-inset rounded-lg p-0.5">
-          {(["MARKET", "LIMIT"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setOrderType(t)}
-              className={`flex-1 text-[10px] py-1.5 rounded transition-colors cursor-pointer ${
-                orderType === t ? "bg-elevated text-accent" : "text-txt-dim hover:text-txt-secondary"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-
-        {/* Price input */}
+        {/* Leverage */}
         <div>
-          <label className="text-[9px] text-txt-faint uppercase tracking-wider mb-1 block">
-            {orderType === "MARKET" ? "Market Price" : "Limit Price"}
-          </label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-txt-faint">$</span>
-            <input
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              disabled={orderType === "MARKET"}
-              placeholder="0.00"
-              className={`w-full bg-inset border border-border-default rounded-lg pl-6 pr-3 py-2 text-sm font-mono text-txt-primary outline-none focus:border-accent/50 transition-colors ${
-                orderType === "MARKET" ? "opacity-60 cursor-not-allowed" : ""
-              }`}
-            />
-          </div>
-        </div>
-
-        {/* Quantity input */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-[9px] text-txt-faint uppercase tracking-wider">Amount ({coin})</label>
-            {freeBalance > 0 && (
-              <span className="text-[9px] text-txt-faint">
-                Available: <span className="text-txt-secondary font-mono">{freeBalance.toFixed(4)}</span>
-              </span>
-            )}
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-[9px] text-txt-faint uppercase tracking-wider">Leverage</label>
+            <span className="text-sm font-bold font-mono text-accent">{leverage}x</span>
           </div>
           <input
-            type="number"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            placeholder="0.00"
-            className="w-full bg-inset border border-border-default rounded-lg px-3 py-2 text-sm font-mono text-txt-primary outline-none focus:border-accent/50 transition-colors"
+            type="range"
+            min={1}
+            max={100}
+            value={leverage}
+            onChange={(e) => setLeverage(Number(e.target.value))}
+            className="w-full h-1.5 bg-elevated rounded-full appearance-none cursor-pointer accent-accent"
           />
-          {/* Quick amount buttons */}
           <div className="flex gap-1.5 mt-2">
-            {quickAmounts.map((pct) => (
+            {LEVERAGE_PRESETS.map((lev) => (
               <button
-                key={pct}
-                onClick={() => {
-                  if (freeBalance > 0 && currentPrice) {
-                    const maxQty = side === "BUY" ? freeBalance / currentPrice : freeBalance;
-                    setQuantity((maxQty * pct).toFixed(6));
-                  }
-                }}
-                className="flex-1 text-[9px] py-1 rounded bg-inset border border-border-default text-txt-muted hover:text-txt-secondary hover:border-border-muted transition-colors cursor-pointer"
+                key={lev}
+                onClick={() => setLeverage(lev)}
+                className={`flex-1 text-[9px] py-1 rounded transition-colors cursor-pointer ${
+                  leverage === lev
+                    ? "bg-accent/15 text-accent border border-accent/30"
+                    : "bg-inset text-txt-muted border border-border-default hover:border-border-muted"
+                }`}
               >
-                {pct * 100}%
+                {lev}x
               </button>
             ))}
           </div>
         </div>
 
+        {/* Margin */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-[9px] text-txt-faint uppercase tracking-wider">Margin (USDC)</label>
+            {paperBalance && paperBalance > 0 && (
+              <button
+                onClick={() => setMargin(paperBalance.toFixed(2))}
+                className="text-[9px] text-accent hover:underline cursor-pointer"
+              >
+                Max: ${paperBalance.toFixed(0)}
+              </button>
+            )}
+          </div>
+          <input
+            type="number"
+            value={margin}
+            onChange={(e) => setMargin(e.target.value)}
+            placeholder="0.00"
+            className="w-full bg-inset border border-border-default rounded-lg px-3 py-2 text-sm font-mono text-txt-primary outline-none focus:border-accent/50 transition-colors"
+          />
+          <div className="flex gap-1.5 mt-2">
+            {MARGIN_PRESETS.filter((m) => !paperBalance || m <= paperBalance).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMargin(m.toString())}
+                className="flex-1 text-[9px] py-1 rounded bg-inset border border-border-default text-txt-muted hover:text-txt-secondary hover:border-border-muted transition-colors cursor-pointer"
+              >
+                ${m}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Position summary */}
+        {marginNum > 0 && currentPrice && (
+          <div className="grid grid-cols-3 gap-2 bg-elevated/20 rounded-lg p-2.5">
+            <div className="text-center">
+              <p className="text-[8px] text-txt-faint uppercase">Notional</p>
+              <p className="text-xs font-bold font-mono text-txt-primary">${notional.toFixed(0)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[8px] text-txt-faint uppercase">Size</p>
+              <p className="text-xs font-mono text-txt-secondary">{quantity.toFixed(6)} {coin}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[8px] text-txt-faint uppercase">Liq. Price</p>
+              <p className={`text-xs font-mono font-bold ${liqPrice > 0 ? "text-[#ff4444]" : "text-txt-faint"}`}>
+                ${fmtPrice(liqPrice, coin)}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* TP / SL */}
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-[9px] text-txt-faint uppercase tracking-wider mb-1 block">Take Profit</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-txt-faint">$</span>
+            <label className="text-[9px] text-txt-faint uppercase tracking-wider mb-1 block">
+              Take Profit {tpPercent && <span className="text-[#00ff88]">({tpPercent}%)</span>}
+            </label>
+            <div className="flex gap-1">
               <input
                 type="number"
                 value={takeProfit}
-                onChange={(e) => setTakeProfit(e.target.value)}
-                placeholder="—"
-                className="w-full bg-inset border border-border-default rounded-lg pl-6 pr-3 py-2 text-xs font-mono text-txt-primary outline-none focus:border-[#00ff88]/50 transition-colors"
+                onChange={(e) => { setTakeProfit(e.target.value); setTpPercent(""); }}
+                placeholder="Price"
+                className="flex-1 bg-inset border border-border-default rounded-lg px-2 py-1.5 text-xs font-mono text-txt-primary outline-none focus:border-[#00ff88]/50"
+              />
+              <input
+                type="number"
+                value={tpPercent}
+                onChange={(e) => setTpPercent(e.target.value)}
+                placeholder="%"
+                className="w-14 bg-inset border border-border-default rounded-lg px-2 py-1.5 text-xs font-mono text-txt-primary outline-none focus:border-[#00ff88]/50"
               />
             </div>
           </div>
           <div>
-            <label className="text-[9px] text-txt-faint uppercase tracking-wider mb-1 block">Stop Loss</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-txt-faint">$</span>
+            <label className="text-[9px] text-txt-faint uppercase tracking-wider mb-1 block">
+              Stop Loss {slPercent && <span className="text-[#ff4444]">({slPercent}%)</span>}
+            </label>
+            <div className="flex gap-1">
               <input
                 type="number"
                 value={stopLoss}
-                onChange={(e) => setStopLoss(e.target.value)}
-                placeholder="—"
-                className="w-full bg-inset border border-border-default rounded-lg pl-6 pr-3 py-2 text-xs font-mono text-txt-primary outline-none focus:border-[#ff4444]/50 transition-colors"
+                onChange={(e) => { setStopLoss(e.target.value); setSlPercent(""); }}
+                placeholder="Price"
+                className="flex-1 bg-inset border border-border-default rounded-lg px-2 py-1.5 text-xs font-mono text-txt-primary outline-none focus:border-[#ff4444]/50"
+              />
+              <input
+                type="number"
+                value={slPercent}
+                onChange={(e) => setSlPercent(e.target.value)}
+                placeholder="%"
+                className="w-14 bg-inset border border-border-default rounded-lg px-2 py-1.5 text-xs font-mono text-txt-primary outline-none focus:border-[#ff4444]/50"
               />
             </div>
           </div>
         </div>
 
-        {/* R:R display */}
+        {/* R:R */}
         {riskReward && (
           <div className="flex items-center justify-between px-3 py-2 bg-elevated/30 rounded-lg">
             <span className="text-[9px] text-txt-faint uppercase tracking-wider">Risk/Reward</span>
@@ -270,52 +324,45 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
           </div>
         )}
 
-        {/* Total */}
-        <div className="flex items-center justify-between px-3 py-2 bg-inset rounded-lg">
-          <span className="text-[9px] text-txt-faint uppercase tracking-wider">Total</span>
-          <span className="text-sm font-bold font-mono text-txt-primary">
-            ${total > 0 ? total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}
-          </span>
-        </div>
-
         {/* Signal context */}
         {signal && (
           <div className="px-3 py-2 rounded-lg border border-accent/20 bg-accent/5">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[8px] text-accent uppercase tracking-wider font-bold">Signal Context</span>
+              <span className="text-[8px] text-accent uppercase tracking-wider font-bold">Signal</span>
               <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${
-                signal.action === "BUY" ? "bg-[#00ff88]/15 text-[#00ff88]" : "bg-[#ff4444]/15 text-[#ff4444]"
+                side === "LONG" ? "bg-[#00ff88]/15 text-[#00ff88]" : "bg-[#ff4444]/15 text-[#ff4444]"
               }`}>
-                {signal.action} {signal.confidence}%
+                {signal.actionV2 ?? signal.action} {signal.confidence}%
               </span>
+              {signal.regime && (
+                <span className="text-[8px] text-txt-faint font-mono">{signal.regime.replace("_", " ")}</span>
+              )}
             </div>
-            <p className="text-[9px] text-txt-faint leading-relaxed line-clamp-2">
-              {signal.reasoning}
-            </p>
+            <p className="text-[9px] text-txt-faint leading-relaxed line-clamp-2">{signal.reasoning}</p>
           </div>
         )}
 
-        {/* Submit button */}
+        {/* Submit */}
         <button
           onClick={handleSubmit}
-          disabled={(mode === "live" && !isConnected) || !quantity || !price}
+          disabled={(mode === "live" && !isConnected) || !marginNum || !currentPrice}
           className={`w-full py-3 text-sm font-bold rounded-lg transition-all cursor-pointer ${
             (mode === "live" && !isConnected)
               ? "bg-inset text-txt-dim cursor-not-allowed"
-              : !quantity || !price
+              : !marginNum || !currentPrice
                 ? "bg-inset text-txt-dim cursor-not-allowed"
-                : side === "BUY"
+                : side === "LONG"
                   ? "bg-[#00ff88] text-[#0B1020] hover:shadow-[0_0_30px_rgba(0,255,136,0.3)] active:scale-[0.98]"
                   : "bg-[#ff4444] text-white hover:shadow-[0_0_30px_rgba(255,68,68,0.3)] active:scale-[0.98]"
           }`}
         >
           {(mode === "live" && !isConnected)
             ? "Connect Wallet"
-            : !quantity || !price
-              ? "Enter Amount"
+            : !marginNum || !currentPrice
+              ? "Enter Margin"
               : mode === "paper"
-                ? `📝 Paper ${side} ${coin}`
-                : `${side} ${coin}`
+                ? `📝 Paper ${side} ${leverage}x · $${marginNum}`
+                : `${side} ${leverage}x`
           }
         </button>
       </div>

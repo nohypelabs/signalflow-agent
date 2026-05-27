@@ -145,10 +145,10 @@ export async function GET() {
     // Convert V2 signals to Signal type (backward compat)
     const signals: Signal[] = v2Signals.map((s) => ({
       ...s,
-      action: s.action === "STRONG_BUY" || s.action === "BUY" || s.action === "WEAK_BUY"
-        ? "BUY" as const
-        : s.action === "STRONG_SELL" || s.action === "SELL" || s.action === "WEAK_SELL"
-          ? "SELL" as const
+      action: s.action === "STRONG_LONG" || s.action === "LONG" || s.action === "WEAK_LONG"
+        ? "LONG" as const
+        : s.action === "STRONG_SHORT" || s.action === "SHORT" || s.action === "WEAK_SHORT"
+          ? "SHORT" as const
           : "HOLD" as const,
       actionV2: s.action,
       regime: s.regime,

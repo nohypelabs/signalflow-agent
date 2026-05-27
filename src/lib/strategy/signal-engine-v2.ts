@@ -233,13 +233,13 @@ export function findSupportResistance(
 export type MarketRegime = "TRENDING_UP" | "TRENDING_DOWN" | "RANGING" | "VOLATILE" | "BREAKOUT";
 
 export type SignalActionV2 =
-  | "STRONG_BUY"
-  | "BUY"
-  | "WEAK_BUY"
+  | "STRONG_LONG"
+  | "LONG"
+  | "WEAK_LONG"
   | "HOLD"
-  | "WEAK_SELL"
-  | "SELL"
-  | "STRONG_SELL";
+  | "WEAK_SHORT"
+  | "SHORT"
+  | "STRONG_SHORT";
 
 export interface ConfluenceFactor {
   name: "TREND" | "MOMENTUM" | "VOLATILITY" | "VOLUME" | "STRUCTURE";
@@ -788,22 +788,22 @@ function classifySignal(confluence: ConfluenceResult, regime: MarketRegime): Sig
   const { score, bullishCount, bearishCount } = confluence;
 
   // STRONG_BUY: confluence > 75 AND 3+ factors bullish (score > 60)
-  if (score > 75 && bullishCount >= 3) return "STRONG_BUY";
+  if (score > 75 && bullishCount >= 3) return "STRONG_LONG";
 
   // BUY: confluence > 60 AND 2+ factors bullish
-  if (score > 60 && bullishCount >= 2) return "BUY";
+  if (score > 60 && bullishCount >= 2) return "LONG";
 
   // STRONG_SELL: confluence < 25 AND 3+ factors bearish (score < 40)
-  if (score < 25 && bearishCount >= 3) return "STRONG_SELL";
+  if (score < 25 && bearishCount >= 3) return "STRONG_SHORT";
 
   // SELL: confluence < 40 AND 2+ factors bearish (score < 40)
-  if (score < 40 && bearishCount >= 2) return "SELL";
+  if (score < 40 && bearishCount >= 2) return "SHORT";
 
   // WEAK_BUY: confluence > 55 but conflicting factors
-  if (score > 55) return "WEAK_BUY";
+  if (score > 55) return "WEAK_LONG";
 
   // WEAK_SELL: confluence < 45 but conflicting factors
-  if (score < 45) return "WEAK_SELL";
+  if (score < 45) return "WEAK_SHORT";
 
   // HOLD: confluence 40-55 OR regime = RANGING
   return "HOLD";
@@ -845,8 +845,8 @@ function calculateTPSL(
   };
 
   const m = multipliers[regime];
-  const isBuy = action === "STRONG_BUY" || action === "BUY" || action === "WEAK_BUY";
-  const isSell = action === "STRONG_SELL" || action === "SELL" || action === "WEAK_SELL";
+  const isBuy = action === "STRONG_LONG" || action === "LONG" || action === "WEAK_LONG";
+  const isSell = action === "STRONG_SHORT" || action === "SHORT" || action === "WEAK_SHORT";
 
   let takeProfit: number;
   let stopLoss: number;
@@ -856,11 +856,11 @@ function calculateTPSL(
     takeProfit = price * (1 + (m.tpLong * atrPct) / 100);
     stopLoss = price * (1 - (m.slLong * atrPct) / 100);
     // Position sizing based on action strength
-    posSize = action === "STRONG_BUY" ? "3-5%" : action === "BUY" ? "2-4%" : "1-2%";
+    posSize = action === "STRONG_LONG" ? "3-5%" : action === "LONG" ? "2-4%" : "1-2%";
   } else if (isSell) {
     takeProfit = price * (1 - (m.tpShort * atrPct) / 100);
     stopLoss = price * (1 + (m.slShort * atrPct) / 100);
-    posSize = action === "STRONG_SELL" ? "3-5%" : action === "SELL" ? "2-4%" : "1-2%";
+    posSize = action === "STRONG_SHORT" ? "3-5%" : action === "SHORT" ? "2-4%" : "1-2%";
   } else {
     // HOLD — show a neutral range
     takeProfit = price * (1 + (1.0 * atrPct) / 100);
@@ -893,11 +893,11 @@ function passesFilter(confluence: ConfluenceResult, action: SignalActionV2): boo
   }
 
   // For BUY signals: require at least 2 factors with score > 60
-  const isBuy = action === "STRONG_BUY" || action === "BUY" || action === "WEAK_BUY";
+  const isBuy = action === "STRONG_LONG" || action === "LONG" || action === "WEAK_LONG";
   if (isBuy && confluence.bullishCount < 2) return false;
 
   // For SELL signals: require at least 2 factors with score < 40
-  const isSell = action === "STRONG_SELL" || action === "SELL" || action === "WEAK_SELL";
+  const isSell = action === "STRONG_SHORT" || action === "SHORT" || action === "WEAK_SHORT";
   if (isSell && confluence.bearishCount < 2) return false;
 
   return true;

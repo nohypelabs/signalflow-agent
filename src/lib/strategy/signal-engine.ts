@@ -323,9 +323,9 @@ export function generateSignal(input: SignalInput): Signal | null {
 
   let action: SignalAction = "HOLD";
   if (composite > 60 && ta.momentum > 55 && ta.trend > 50 && sentiment.score > 45) {
-    action = "BUY";
+    action = "LONG";
   } else if (composite < 40 && ta.momentum < 45 && ta.trend < 50 && sentiment.score < 55) {
-    action = "SELL";
+    action = "SHORT";
   }
 
   // Confidence = distance from 50 (neutral), scaled 50-98
@@ -337,10 +337,10 @@ export function generateSignal(input: SignalInput): Signal | null {
   let takeProfit: number;
   let stopLoss: number;
 
-  if (action === "BUY") {
+  if (action === "LONG") {
     takeProfit = currentPrice * (1 + 2 * atrPct / 100);
     stopLoss = currentPrice * (1 - atrPct / 100);
-  } else if (action === "SELL") {
+  } else if (action === "SHORT") {
     takeProfit = currentPrice * (1 - 2 * atrPct / 100);
     stopLoss = currentPrice * (1 + atrPct / 100);
   } else {
@@ -360,7 +360,7 @@ export function generateSignal(input: SignalInput): Signal | null {
   const bbLabel = ta.bbPercentB < 0 ? "below lower band" : ta.bbPercentB > 1 ? "above upper band" : "within bands";
   const trendLabel = ta.emaShort > ta.emaLong ? "uptrend (EMA9 > EMA21)" : "downtrend (EMA9 < EMA21)";
 
-  const reasoning = `${action === "BUY" ? "Bullish" : action === "SELL" ? "Bearish" : "Neutral"} setup on ${pair}. RSI ${ta.rsiValue.toFixed(0)} (${rsiLabel}), MACD histogram ${macdLabel} (${ta.macdHistogram.toFixed(2)}), price ${bbLabel}. ${trendLabel}. ATR ${atrPct.toFixed(1)}% suggests ${atrPct > 3 ? "high" : atrPct > 1.5 ? "moderate" : "low"} volatility. ${sentiment.detail}`;
+  const reasoning = `${action === "LONG" ? "Bullish" : action === "SHORT" ? "Bearish" : "Neutral"} setup on ${pair}. RSI ${ta.rsiValue.toFixed(0)} (${rsiLabel}), MACD histogram ${macdLabel} (${ta.macdHistogram.toFixed(2)}), price ${bbLabel}. ${trendLabel}. ATR ${atrPct.toFixed(1)}% suggests ${atrPct > 3 ? "high" : atrPct > 1.5 ? "moderate" : "low"} volatility. ${sentiment.detail}`;
 
   // ── Dimension scores ────────────────────────────────────
   const dimensions: SignalDimensions = {

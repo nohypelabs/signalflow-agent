@@ -36,8 +36,8 @@ function save(history: RecordedSignal[]) {
 }
 
 function isSignalCorrect(signal: RecordedSignal, currentPrice: number): boolean {
-  if (signal.action === "BUY") return currentPrice > signal.price;
-  if (signal.action === "SELL") return currentPrice < signal.price;
+  if (signal.action === "LONG") return currentPrice > signal.price;
+  if (signal.action === "SHORT") return currentPrice < signal.price;
   // HOLD — correct if price stays within 2%
   return Math.abs(currentPrice - signal.price) / signal.price <= 0.02;
 }

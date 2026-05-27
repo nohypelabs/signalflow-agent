@@ -52,7 +52,7 @@ export default function TopSignalHighlight({ signal, ticker }: Props) {
             <button
               onClick={() => router.push(`/trading?signal=${signal.id}`)}
               className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                signal.action === "BUY"
+                signal.action === "SHORT"
                   ? "bg-[#00ff88]/15 text-[#00ff88] border border-[#00ff88]/20 hover:bg-[#00ff88]/25"
                   : "bg-[#ff4444]/15 text-[#ff4444] border border-[#ff4444]/20 hover:bg-[#ff4444]/25"
               }`}

@@ -58,9 +58,8 @@ export default function TradingPageContent() {
 
   const pairs = ["BTC/USDC", "ETH/USDC", "SOL/USDC", "AVAX/USDC", "LINK/USDC"];
 
-  const handleExecute = (order: { side: "BUY" | "SELL"; quantity: string; price: string; takeProfit: string; stopLoss: string }) => {
-    const entryPrice = parseFloat(order.price) || currentPrice || 0;
-    const qty = parseFloat(order.quantity) || 0;
+  const handleExecute = (order: { side: "LONG" | "SHORT"; leverage: number; margin: number; quantity: number; takeProfit: string; stopLoss: string }) => {
+    const entryPrice = currentPrice || 0;
     const tp = parseFloat(order.takeProfit) || 0;
     const sl = parseFloat(order.stopLoss) || 0;
 
@@ -68,8 +67,9 @@ export default function TradingPageContent() {
       const trade = paper.openTrade({
         pair,
         side: order.side,
+        leverage: order.leverage,
+        margin: order.margin,
         entryPrice,
-        quantity: qty,
         takeProfit: tp,
         stopLoss: sl,
         signalId: signalContext?.id,
@@ -101,7 +101,7 @@ export default function TradingPageContent() {
           entry: entryPrice,
           takeProfit: tp,
           stopLoss: sl,
-          positionSize: order.quantity,
+          positionSize: order.quantity.toString(),
           riskReward: "",
         },
         sources: ["Manual"],
@@ -223,7 +223,6 @@ export default function TradingPageContent() {
               currentPrice={currentPrice}
               signal={signalContext}
               isConnected={d.isConnected}
-              balance={null}
               paperBalance={paper.balance.available}
               mode={tradeMode}
               onModeChange={setTradeMode}

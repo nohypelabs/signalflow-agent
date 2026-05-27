@@ -136,9 +136,9 @@ export function computeSignalBreakdown(signals: Signal[] | null | undefined): KP
     (s) => s.action && typeof s.confidence === "number" && Number.isFinite(s.confidence),
   );
 
-  const buy = active.filter((s) => s.action === "BUY").length;
+  const buy = active.filter((s) => s.action === "LONG").length;
   const hold = active.filter((s) => s.action === "HOLD").length;
-  const sell = active.filter((s) => s.action === "SELL").length;
+  const sell = active.filter((s) => s.action === "SHORT").length;
   const highConfidence = active.filter((s) => s.confidence >= 70).length;
   const avgConfidence =
     active.length > 0

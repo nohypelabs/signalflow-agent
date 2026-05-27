@@ -391,8 +391,8 @@ export default function TradingChart({
           return {
             time: (closestKline.t / 1000) as Time,
             position: "belowBar" as const,
-            color: s.action === "BUY" ? CHART_COLORS.buyLine : s.action === "SELL" ? CHART_COLORS.sellLine : CHART_COLORS.holdLine,
-            shape: s.action === "BUY" ? "arrowUp" as const : s.action === "SELL" ? "arrowDown" as const : "circle" as const,
+            color: s.action === "LONG" ? CHART_COLORS.buyLine : s.action === "SHORT" ? CHART_COLORS.sellLine : CHART_COLORS.holdLine,
+            shape: s.action === "LONG" ? "arrowUp" as const : s.action === "SHORT" ? "arrowDown" as const : "circle" as const,
             text: s.action,
           };
         })
@@ -512,9 +512,9 @@ export default function TradingChart({
           <div className="flex items-center gap-3">
             {latestSignal && (
               <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${
-                latestSignal.action === "BUY"
+                latestSignal.action === "LONG"
                   ? "bg-buy-muted text-buy"
-                  : latestSignal.action === "SELL"
+                  : latestSignal.action === "SHORT"
                     ? "bg-sell-muted text-sell"
                     : "bg-hold-muted text-hold"
               }`}>
@@ -543,8 +543,8 @@ export default function TradingChart({
           {latestSignal && (
             <span>
               Latest Signal: <span className={
-                latestSignal.action === "BUY" ? "text-buy" :
-                latestSignal.action === "SELL" ? "text-sell" : "text-hold"
+                latestSignal.action === "LONG" ? "text-buy" :
+                latestSignal.action === "SHORT" ? "text-sell" : "text-hold"
               }>{latestSignal.action}</span>{" "}
               <span className="text-txt-muted">{latestSignal.confidence}% confidence</span>
             </span>

@@ -8,9 +8,9 @@ interface Props {
 
 export default function SignalSummaryCards({ signals }: Props) {
   const total = signals.length;
-  const buyCount = signals.filter((s) => s.action === "BUY").length;
+  const buyCount = signals.filter((s) => s.action === "LONG").length;
   const holdCount = signals.filter((s) => s.action === "HOLD").length;
-  const sellCount = signals.filter((s) => s.action === "SELL").length;
+  const sellCount = signals.filter((s) => s.action === "SHORT").length;
 
   const avgConfidence = total > 0
     ? Math.round(signals.reduce((sum, s) => sum + s.confidence, 0) / total)

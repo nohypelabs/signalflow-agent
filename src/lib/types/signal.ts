@@ -3,16 +3,18 @@ export interface DimensionScore {
   detail?: string;
 }
 
-export type SignalAction = "BUY" | "SELL" | "HOLD";
+// Legacy action type (backward compat)
+export type SignalAction = "LONG" | "SHORT" | "HOLD";
 
+// V2 action types
 export type SignalActionV2 =
-  | "STRONG_BUY"
-  | "BUY"
-  | "WEAK_BUY"
+  | "STRONG_LONG"
+  | "LONG"
+  | "WEAK_LONG"
   | "HOLD"
-  | "WEAK_SELL"
-  | "SELL"
-  | "STRONG_SELL";
+  | "WEAK_SHORT"
+  | "SHORT"
+  | "STRONG_SHORT";
 
 export type MarketRegime =
   | "TRENDING_UP"
@@ -42,7 +44,7 @@ export type Signal = {
   execution: SignalExecution;
   sources: string[];
   timeAgo: string;
-  // V2 extensions (optional for backward compat)
+  // V2 extensions
   actionV2?: SignalActionV2;
   regime?: MarketRegime;
   factors?: ConfluenceFactor[];

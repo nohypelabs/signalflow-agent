@@ -20,9 +20,9 @@ interface Props {
 
 const typeOptions: { label: string; value: SignalAction | "ALL" }[] = [
   { label: "All", value: "ALL" },
-  { label: "BUY", value: "BUY" },
+  { label: "LONG", value: "LONG" },
   { label: "HOLD", value: "HOLD" },
-  { label: "SELL", value: "SELL" },
+  { label: "SHORT", value: "SHORT" },
 ];
 
 const confidenceOptions: { label: string; value: number }[] = [
@@ -80,8 +80,8 @@ export default function SignalFilters({
         {typeOptions.map((opt) => {
           const isActive = typeFilter === opt.value;
           let activeColor = "text-accent";
-          if (opt.value === "BUY") activeColor = "text-buy";
-          else if (opt.value === "SELL") activeColor = "text-sell";
+          if (opt.value === "LONG") activeColor = "text-buy";
+          else if (opt.value === "SHORT") activeColor = "text-sell";
           else if (opt.value === "HOLD") activeColor = "text-hold";
 
           return (

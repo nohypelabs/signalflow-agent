@@ -73,7 +73,7 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
   const sodSymbol = pairToSodexSymbol(signal.pair) || signal.pair;
   const notional = quantity ? parseFloat(quantity) * price : 0;
   const fee = notional * 0.001;
-  const side = signal.action === "SELL" ? "SELL" : "BUY";
+  const side = signal.action === "SHORT" ? "SELL" : "BUY";
 
   const balanceAsset = side === "BUY" ? quoteCoin : baseCoin;
   const balance = balances.find(
