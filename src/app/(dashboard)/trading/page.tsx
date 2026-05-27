@@ -179,7 +179,7 @@ export default function TradingPage() {
                                 : "bg-hold/15 text-hold border border-hold/20 hover:bg-hold/25"
                         }`}
                       >
-                        {!d.isConnected ? "Connect" : hasOpenOrder ? "Order Open" : s.action === "HOLD" ? "N/A" : `${s.action}`}
+                        {!d.isConnected ? "Connect" : hasOpenOrder ? "Order Open" : s.action}
                       </button>
                     </div>
 
