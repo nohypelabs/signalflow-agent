@@ -99,19 +99,21 @@ export default function TradingPage() {
         <div className="xl:col-span-2 space-y-3">
           {/* Trading Chart */}
           <ErrorBoundary name="Trading Chart">
-            <TradingChart
-              klines={d.klines}
-              symbol={selectedSignal ? selectedSignal.pair : "BTC/USDC"}
-              currentPrice={
-                selectedTicker
-                  ? parseFloat(selectedTicker.lastPx)
-                  : d.tickerMap.get("vBTC_vUSDC")
-                    ? parseFloat(d.tickerMap.get("vBTC_vUSDC")!.lastPx)
-                    : null
-              }
-              liveSignals={d.liveSignals}
-              tickerMap={d.tickerMap}
-            />
+            <div className="h-[400px]">
+              <TradingChart
+                klines={d.klines}
+                symbol={selectedSignal ? selectedSignal.pair : "BTC/USDC"}
+                currentPrice={
+                  selectedTicker
+                    ? parseFloat(selectedTicker.lastPx)
+                    : d.tickerMap.get("vBTC_vUSDC")
+                      ? parseFloat(d.tickerMap.get("vBTC_vUSDC")!.lastPx)
+                      : null
+                }
+                liveSignals={d.liveSignals}
+                tickerMap={d.tickerMap}
+              />
+            </div>
           </ErrorBoundary>
 
           {/* Pair filter */}
