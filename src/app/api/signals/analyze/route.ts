@@ -126,6 +126,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const coin = (body.coin || body.pair || "BTC").replace(/\/.*$/, "").toUpperCase();
+    console.log(`[/api/signals/analyze] coin=${coin} provider=${body.provider || "none"} model=${body.model || "none"} hasKey=${!!body.apiKey} includeAI=${body.includeAI}`);
 
     if (!["BTC", "ETH", "SOL"].includes(coin)) {
       return jsonNoCache(

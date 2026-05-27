@@ -32,7 +32,7 @@ export function mapAIError(err: unknown): AIError {
     const status = parseInt(statusMatch[1], 10);
     switch (status) {
       case 401:
-        return { code: "invalid_key", message: ERROR_MESSAGES.invalid_key, retryable: false };
+        return { code: "invalid_key", message: `Invalid API key. Check your Settings. (${msg.slice(0, 100)})`, retryable: false };
       case 402:
         return { code: "insufficient_balance", message: ERROR_MESSAGES.insufficient_balance, retryable: false };
       case 429:
@@ -44,6 +44,11 @@ export function mapAIError(err: unknown): AIError {
     }
   }
 
+  // No AI key configured
+  if (msg.includes("No AI API key")) {
+    return { code: "not_configured", message: ERROR_MESSAGES.not_configured, retryable: false };
+  }
+
   // Network errors
   const lowerMsg = msg.toLowerCase();
   if (
@@ -53,8 +58,9 @@ export function mapAIError(err: unknown): AIError {
     lowerMsg.includes("enotfound") ||
     lowerMsg.includes("etimedout")
   ) {
-    return { code: "failed_to_reach", message: ERROR_MESSAGES.failed_to_reach, retryable: true };
+    return { code: "failed_to_reach", message: `Could not reach AI provider: ${msg.slice(0, 120)}`, retryable: true };
   }
 
-  return { code: "unknown", message: ERROR_MESSAGES.unknown, retryable: true };
+  // Generic — show the actual error
+  return { code: "unknown", message: msg.slice(0, 200), retryable: true };
 }

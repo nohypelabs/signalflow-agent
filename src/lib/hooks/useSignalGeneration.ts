@@ -48,7 +48,10 @@ export function useSignalGeneration(aiConfig?: AIConfig) {
             apiKey: aiConfig.apiKey,
             includeAI,
           };
+          console.log(`[SignalGen] Using user provider: ${provider.name} (${provider.baseUrl}) model=${opts.model}`);
         }
+      } else {
+        console.log(`[SignalGen] No user API key, using server default. includeAI=${includeAI} hasKey=${!!aiConfig?.apiKey}`);
       }
 
       setPhase(includeAI ? "generating_ai_thesis" : "computing_signal");
