@@ -133,6 +133,35 @@ export async function GET(request: Request) {
       }),
     );
 
+    // ── Multi-Timeframe Confluence: fetch 4H and 1D klines ──
+    const MULTI_TF = [
+      { interval: "4h", limit: 120, label: "4H" },
+      { interval: "1d", limit: 60, label: "1D" },
+    ];
+
+    const klinesMap4H = new Map<string, SoDEXKline[]>();
+    const klinesMap1D = new Map<string, SoDEXKline[]>();
+
+    await Promise.all(
+      SIGNAL_PAIRS.flatMap((pair) => {
+        const base = pair.split("/")[0];
+        const symbol = pairToSodexSymbol(pair);
+        if (!symbol) return [];
+        return MULTI_TF.map(async (tf) => {
+          const klines = await withTimeout(
+            getSodexKlines(symbol, tf.interval, tf.limit).catch(() => []),
+            8_000,
+            [] as SoDEXKline[],
+          );
+          if (klines.length > 0) {
+            klines.sort((a, b) => a.t - b.t);
+            if (tf.interval === "4h") klinesMap4H.set(base, klines);
+            if (tf.interval === "1d") klinesMap1D.set(base, klines);
+          }
+        });
+      }),
+    );
+
     // Build snapshots map
     const snapshotMap = new Map<string, MarketSnapshot>();
     if (btc && snapshots[btc.currency_id]) snapshotMap.set("BTC", snapshots[btc.currency_id]);
@@ -152,6 +181,91 @@ export async function GET(request: Request) {
       tradingType: tradingType ?? undefined,
     });
 
+    // ── Multi-Timeframe Confluence ───────────────────────
+    // Generate signals on 4H and 1D, then compute alignment score
+    const v2Signals4H = generateSignalsV2({
+      pairs: SIGNAL_PAIRS,
+      klinesMap: klinesMap4H,
+      news: newsList as NewsItem[],
+      etfSummary: etfSummary as ETFSummaryItem[],
+      macroEvents: macroEvents as MacroEvent[],
+      btcTreasuries: btcTreasuries as { ticker: string; name: string }[],
+      purchaseHistory,
+      snapshots: snapshotMap,
+      tradingType: tradingType ?? undefined,
+    });
+
+    const v2Signals1D = generateSignalsV2({
+      pairs: SIGNAL_PAIRS,
+      klinesMap: klinesMap1D,
+      news: newsList as NewsItem[],
+      etfSummary: etfSummary as ETFSummaryItem[],
+      macroEvents: macroEvents as MacroEvent[],
+      btcTreasuries: btcTreasuries as { ticker: string; name: string }[],
+      purchaseHistory,
+      snapshots: snapshotMap,
+      tradingType: tradingType ?? undefined,
+    });
+
+    // Build maps for quick lookup
+    const signal4HMap = new Map(v2Signals4H.map((s) => [s.pair.split("/")[0], s]));
+    const signal1DMap = new Map(v2Signals1D.map((s) => [s.pair.split("/")[0], s]));
+
+    // Compute multi-TF confluence per pair
+    function getDirection(action: string): "bullish" | "bearish" | "neutral" {
+      if (action === "STRONG_LONG" || action === "LONG" || action === "WEAK_LONG") return "bullish";
+      if (action === "STRONG_SHORT" || action === "SHORT" || action === "WEAK_SHORT") return "bearish";
+      return "neutral";
+    }
+
+    function computeMultiTFConfluence(
+      base: string,
+      primary: typeof v2Signals[0],
+    ): { score: number; details: { tf: string; action: string; direction: string; confidence: number }[] } {
+      const s4H = signal4HMap.get(base);
+      const s1D = signal1DMap.get(base);
+
+      const primaryDir = getDirection(primary.action);
+      const dir4H = s4H ? getDirection(s4H.action) : "neutral";
+      const dir1D = s1D ? getDirection(s1D.action) : "neutral";
+
+      const details = [
+        { tf: "1H", action: primary.action, direction: primaryDir, confidence: primary.confidence },
+        ...(s4H ? [{ tf: "4H", action: s4H.action, direction: dir4H, confidence: s4H.confidence }] : []),
+        ...(s1D ? [{ tf: "1D", action: s1D.action, direction: dir1D, confidence: s1D.confidence }] : []),
+      ];
+
+      const directions = [primaryDir, dir4H, dir1D].filter((d) => d !== "neutral");
+      if (directions.length === 0) return { score: 30, details };
+
+      const bullish = directions.filter((d) => d === "bullish").length;
+      const bearish = directions.filter((d) => d === "bearish").length;
+      const total = directions.length;
+
+      let score: number;
+      if (total === 3) {
+        if (bullish === 3 || bearish === 3) score = 95; // All agree
+        else if (bullish === 2 || bearish === 2) score = 70; // 2/3 agree
+        else score = 30; // Mixed
+      } else if (total === 2) {
+        if (bullish === 2 || bearish === 2) score = 80; // Both agree
+        else score = 40; // Mixed
+      } else {
+        score = 50; // Only one TF has signal
+      }
+
+      // Bonus: if primary TF confidence is high and aligned
+      if (primary.confidence >= 80 && score >= 70) score = Math.min(100, score + 5);
+
+      return { score, details };
+    }
+
+    const multiTFResults = new Map<string, { score: number; details: { tf: string; action: string; direction: string; confidence: number }[] }>();
+    for (const signal of v2Signals) {
+      const base = signal.pair.split("/")[0];
+      multiTFResults.set(base, computeMultiTFConfluence(base, signal));
+    }
+
     // Convert V2 signals to Signal type (backward compat)
     const signals: Signal[] = v2Signals.map((s) => ({
       ...s,
@@ -165,6 +279,7 @@ export async function GET(request: Request) {
       factors: s.factors,
       confluence: s.confluence,
       tradingType: s.tradingType,
+      multiTF: multiTFResults.get(s.pair.split("/")[0]),
     }));
 
     // ── Build dimension data (backward compat) ──────────

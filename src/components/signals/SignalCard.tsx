@@ -73,6 +73,22 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
                 {typeConfig.icon} {typeConfig.label}
               </span>
             )}
+            {/* Multi-TF confluence badge */}
+            {signal.multiTF && (
+              <span
+                className="text-[8px] px-1.5 py-0.5 rounded font-semibold flex items-center gap-1"
+                style={{
+                  backgroundColor: signal.multiTF.score >= 80 ? "#00E5A815" : signal.multiTF.score >= 60 ? "#F59E0B15" : "#EF444415",
+                  color: signal.multiTF.score >= 80 ? "#00E5A8" : signal.multiTF.score >= 60 ? "#F59E0B" : "#EF4444",
+                  border: `1px solid ${signal.multiTF.score >= 80 ? "#00E5A830" : signal.multiTF.score >= 60 ? "#F59E0B30" : "#EF444430"}`,
+                }}
+              >
+                <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                </svg>
+                MTF {signal.multiTF.score}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {signal.confluence != null && (
@@ -137,6 +153,25 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
                 R:R {typeConfig.riskRewardTarget}
               </span>
             </div>
+          </div>
+        )}
+
+        {/* Multi-TF confluence details */}
+        {signal.multiTF && signal.multiTF.details.length > 1 && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-[9px] text-txt-dim">MTF:</span>
+            {signal.multiTF.details.map((tf) => (
+              <span
+                key={tf.tf}
+                className="text-[8px] px-1.5 py-0.5 rounded font-mono"
+                style={{
+                  backgroundColor: tf.direction === "bullish" ? "#00E5A812" : tf.direction === "bearish" ? "#EF444412" : "#6B728012",
+                  color: tf.direction === "bullish" ? "#00E5A8" : tf.direction === "bearish" ? "#EF4444" : "#6B7280",
+                }}
+              >
+                {tf.tf}: {tf.action} ({tf.confidence}%)
+              </span>
+            ))}
           </div>
         )}
       </div>

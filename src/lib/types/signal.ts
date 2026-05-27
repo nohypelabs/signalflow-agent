@@ -52,6 +52,10 @@ export type Signal = {
   factors?: ConfluenceFactor[];
   confluence?: number;
   tradingType?: TradingType;
+  multiTF?: {
+    score: number;
+    details: { tf: string; action: string; direction: string; confidence: number }[];
+  };
 };
 
 export interface SignalDimensions {
