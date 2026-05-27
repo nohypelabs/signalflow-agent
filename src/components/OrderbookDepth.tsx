@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Card from "@/components/ui/Card";
 import Skeleton from "@/components/ui/Skeleton";
 
@@ -44,7 +44,6 @@ function DepthRow({
 
   return (
     <div className="relative flex items-center gap-2 px-3 py-[3px] font-mono text-[10px] group hover:bg-elevated/20">
-      {/* Depth bar */}
       <div
         className="absolute top-0 bottom-0 opacity-10"
         style={{
@@ -71,29 +70,38 @@ export default function OrderbookDepth({ symbol = "vBTC_vUSDC", coin = "BTC" }: 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [depth, setDepth] = useState(15);
+  const fetchingRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
-    const fetchData = () => {
-      fetch(`/api/market/orderbook?symbol=${symbol}&limit=${depth}`)
-        .then((r) => r.json())
-        .then((json) => {
-          if (!cancelled) {
-            if (json.error) setError(json.error);
-            else setData(json);
-            setLoading(false);
+
+    const fetchData = async () => {
+      if (fetchingRef.current) return; // prevent concurrent fetches
+      fetchingRef.current = true;
+
+      try {
+        const res = await fetch(`/api/orderbook?symbol=${symbol}&limit=${depth}`);
+        const json = await res.json();
+        if (!cancelled) {
+          if (json.error) setError(json.error);
+          else {
+            setData(json);
+            setError(null);
           }
-        })
-        .catch((e) => {
-          if (!cancelled) {
-            setError(String(e));
-            setLoading(false);
-          }
-        });
+          setLoading(false);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError(String(e));
+          setLoading(false);
+        }
+      } finally {
+        fetchingRef.current = false;
+      }
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 5000); // Refresh every 5s
+    const interval = setInterval(fetchData, 3000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [symbol, depth]);
 
@@ -125,7 +133,8 @@ export default function OrderbookDepth({ symbol = "vBTC_vUSDC", coin = "BTC" }: 
   const maxAskTotal = asks.length > 0 ? asks[asks.length - 1].total : 0;
   const maxTotal = Math.max(maxBidTotal, maxAskTotal);
 
-  if (loading) {
+  // Only show skeleton on initial load
+  if (loading && !data) {
     return (
       <Card padding="none" className="overflow-hidden">
         <div className="px-4 py-3 border-b border-border-default">
@@ -140,7 +149,7 @@ export default function OrderbookDepth({ symbol = "vBTC_vUSDC", coin = "BTC" }: 
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <Card padding="sm">
         <p className="text-xs text-sell">Orderbook error: {error}</p>
@@ -168,7 +177,7 @@ export default function OrderbookDepth({ symbol = "vBTC_vUSDC", coin = "BTC" }: 
                 <option key={d} value={d}>{d} levels</option>
               ))}
             </select>
-            <span className="w-1.5 h-1.5 rounded-full bg-buy animate-pulse" />
+            <span className={`w-1.5 h-1.5 rounded-full ${error ? "bg-hold" : "bg-buy"} animate-pulse`} />
           </div>
         </div>
       </div>
@@ -191,13 +200,7 @@ export default function OrderbookDepth({ symbol = "vBTC_vUSDC", coin = "BTC" }: 
       {/* Asks (reversed so lowest ask is at bottom) */}
       <div className="max-h-48 overflow-y-auto">
         {[...asks].reverse().map((entry, i) => (
-          <DepthRow
-            key={`ask-${i}`}
-            entry={entry}
-            maxTotal={maxTotal}
-            side="ask"
-            coin={coin}
-          />
+          <DepthRow key={`ask-${i}`} entry={entry} maxTotal={maxTotal} side="ask" coin={coin} />
         ))}
       </div>
 
@@ -211,13 +214,7 @@ export default function OrderbookDepth({ symbol = "vBTC_vUSDC", coin = "BTC" }: 
       {/* Bids */}
       <div className="max-h-48 overflow-y-auto">
         {bids.map((entry, i) => (
-          <DepthRow
-            key={`bid-${i}`}
-            entry={entry}
-            maxTotal={maxTotal}
-            side="bid"
-            coin={coin}
-          />
+          <DepthRow key={`bid-${i}`} entry={entry} maxTotal={maxTotal} side="bid" coin={coin} />
         ))}
       </div>
     </Card>
