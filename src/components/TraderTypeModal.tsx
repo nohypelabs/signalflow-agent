@@ -41,12 +41,12 @@ export default function TraderTypeModal({ onSelect, onSkip }: Props) {
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex items-center justify-center transition-all duration-500 ${
+      className={`fixed inset-0 z-[9999] flex items-start justify-center pt-[8vh] transition-all duration-500 ${
         isVisible ? "opacity-100" : "opacity-0"
       }`}
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-bg-primary/95 backdrop-blur-xl" />
+      {/* Backdrop — solid dark, no transparency */}
+      <div className="absolute inset-0 bg-[#070b14]" />
 
       {/* Content */}
       <div
