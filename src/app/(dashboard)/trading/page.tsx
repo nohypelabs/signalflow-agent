@@ -99,7 +99,7 @@ export default function TradingPage() {
         <div className="xl:col-span-2 space-y-3">
           {/* Trading Chart */}
           <ErrorBoundary name="Trading Chart">
-            <div className="h-[400px]">
+            <div className="h-[400px] flex flex-col">
               <TradingChart
                 klines={d.klines}
                 symbol={selectedSignal ? selectedSignal.pair : "BTC/USDC"}
