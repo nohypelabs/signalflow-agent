@@ -10,6 +10,7 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
 import ProgressBar from "@/components/ui/ProgressBar";
+import BacktestPanel from "@/components/BacktestPanel";
 
 /* ── Helpers ── */
 
@@ -572,6 +573,9 @@ export default function PerformancePage({
           </Card>
         </div>
       )}
+
+      {/* Backtest Panel */}
+      <BacktestPanel />
     </div>
   );
 }
