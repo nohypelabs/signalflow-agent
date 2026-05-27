@@ -32,15 +32,15 @@ const GROUPS: SourceGroup[] = [
     name: "SoSoValue",
     icon: "📊",
     color: "#00d4ff",
-    modules: ["Currency & Pairs", "ETF Data", "News Feeds", "Macro Events", "BTC Treasuries", "Crypto Stocks", "SoSoValue Index"],
-    description: "ETF flows, news, macro events, BTC treasuries, market snapshots",
+    modules: ["Currency & Pairs", "ETF Data", "ETF Flow Analytics", "News Feeds", "News Sentiment", "Macro Events", "Macro Calendar", "Macro Event History", "BTC Treasuries", "Treasury Activity", "Crypto Stocks", "SoSoValue Index", "Index Snapshots"],
+    description: "ETF flows, news sentiment, macro calendar, BTC treasuries, index tracking, market snapshots",
   },
   {
     name: "SoDEX",
     icon: "⚡",
     color: "#00E5A8",
-    modules: ["SoDEX Market", "SoDEX Symbols"],
-    description: "Live trading pairs, klines, orderbook, order execution",
+    modules: ["SoDEX Market", "SoDEX Symbols", "Orderbook Depth", "Signal History"],
+    description: "Live trading pairs, klines, orderbook depth, order execution, signal backtest",
   },
 ];
 

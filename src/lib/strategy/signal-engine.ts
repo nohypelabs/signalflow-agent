@@ -1,9 +1,9 @@
 import { sma, ema, rsi, macd, bollingerBands, atr, last } from "./indicators";
 import type { Signal, SignalAction, SignalDimensions, SignalDimensionDetails, SignalExecution } from "../types/signal";
-import type { NewsItem, ETFSummaryItem, MacroEvent, MarketSnapshot } from "../sosovalue";
+import type { NewsItem, ETFSummaryItem, MacroEvent, MarketSnapshot, BTCPurchaseHistory } from "../sosovalue";
 import type { SoDEXKline } from "../sodex-types";
 
-// ── News sentiment scoring (reused from API route) ────────
+// ── Dimension scoring (enhanced for route + engine) ──────
 
 export function scoreSentiment(news: NewsItem[]): { score: number; detail: string } {
   if (!news.length) return { score: 50, detail: "No news data" };
@@ -25,7 +25,7 @@ export function scoreSentiment(news: NewsItem[]): { score: number; detail: strin
   const score = Math.round(30 + ratio * 50 + Math.min(20, news.length * 2));
   return {
     score: Math.min(100, score),
-    detail: `${news.length} hot articles. ${bullish} bullish / ${bearish} bearish signals.`,
+    detail: `${news.length} hot articles. ${bullish} bullish / ${bearish} bearish signals detected from headlines.`,
   };
 }
 
@@ -36,7 +36,7 @@ export function scoreETF(summary: ETFSummaryItem[]): { score: number; detail: st
   const dir = latest.total_net_inflow > 0 ? "inflow" : "outflow";
   return {
     score: Math.round(score),
-    detail: `ETF ${dir} $${(Math.abs(latest.total_net_inflow) / 1e6).toFixed(0)}M in 24h.`,
+    detail: `ETF ${dir} $${(Math.abs(latest.total_net_inflow) / 1e6).toFixed(0)}M in 24h. Cum: $${(latest.cum_net_inflow / 1e9).toFixed(1)}B. AUM: $${(latest.total_net_assets / 1e9).toFixed(1)}B.`,
   };
 }
 
@@ -48,18 +48,121 @@ export function scoreMacro(events: MacroEvent[]): { score: number; detail: strin
   return {
     score,
     detail: count > 0
-      ? `${count} macro events today.`
-      : "No major macro events today.",
+      ? `${count} macro events today: ${todayEvents.flatMap((e) => e.events).slice(0, 3).join(", ")}${count > 3 ? "..." : ""}`
+      : "No major macro events today. Fed stance remains data-dependent.",
   };
 }
 
-export function scoreTreasury(companies: { ticker: string; name: string }[]): { score: number; detail: string } {
-  if (!companies.length) return { score: 50, detail: "No BTC treasury data" };
-  const score = Math.min(100, 50 + companies.length * 3);
+export function scoreMomentum(snap: MarketSnapshot): { score: number; detail: string } {
+  const chg = snap.change_pct_24h;
+  const score = Math.round(50 + Math.max(-40, Math.min(40, chg * 8)));
   return {
-    score,
-    detail: `${companies.length} public companies hold BTC.`,
+    score: Math.min(100, Math.max(0, score)),
+    detail: `$${snap.price.toLocaleString()} (${chg > 0 ? "+" : ""}${chg.toFixed(1)}% 24h). Rank #${snap.marketcap_rank}. Vol $${(snap.turnover_24h / 1e9).toFixed(1)}B.`,
   };
+}
+
+export function scoreTreasury(
+  companies: { ticker: string; name: string }[],
+  purchaseHistory?: BTCPurchaseHistory[],
+): { score: number; detail: string } {
+  if (!companies.length) return { score: 50, detail: "No BTC treasury data" };
+
+  let baseScore = Math.min(100, 50 + companies.length * 3);
+  let recentActivity = "";
+
+  if (purchaseHistory && purchaseHistory.length > 0) {
+    // Analyze recent purchases (last 30 days)
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const recentPurchases = purchaseHistory.filter(
+      (p) => new Date(p.date).getTime() > thirtyDaysAgo && p.btc_acq > 0,
+    );
+
+    if (recentPurchases.length > 0) {
+      const totalAcquired = recentPurchases.reduce((s, p) => s + p.btc_acq, 0);
+      const totalCost = recentPurchases.reduce((s, p) => s + p.acq_cost, 0);
+      // Boost score based on recent accumulation
+      baseScore = Math.min(100, baseScore + Math.min(20, recentPurchases.length * 4));
+      recentActivity = ` Recent: ${recentPurchases.length} purchases (${totalAcquired.toFixed(0)} BTC, $${(totalCost / 1e6).toFixed(0)}M).`;
+    }
+  }
+
+  return {
+    score: baseScore,
+    detail: `${companies.length} public companies hold BTC. Top: ${companies.slice(0, 3).map((c) => c.ticker).join(", ")}.${recentActivity}`,
+  };
+}
+
+// ── Dynamic weight engine ────────────────────────────────
+
+const BASE_WEIGHTS = {
+  etfFlow: 20,
+  sentiment: 20,
+  macro: 20,
+  momentum: 20,
+  treasury: 20,
+};
+
+export interface DimScore {
+  score: number;
+  detail: string;
+}
+
+export interface WeightedDims {
+  etfFlow: DimScore;
+  sentiment: DimScore;
+  macro: DimScore;
+  momentum: DimScore;
+  treasury: DimScore;
+}
+
+export function dynamicWeightScore(dims: WeightedDims): {
+  overall: number;
+  weights: Record<string, number>;
+  capped: string[];
+} {
+  const scores = [
+    { key: "etfFlow", score: dims.etfFlow.score },
+    { key: "sentiment", score: dims.sentiment.score },
+    { key: "macro", score: dims.macro.score },
+    { key: "momentum", score: dims.momentum.score },
+    { key: "treasury", score: dims.treasury.score },
+  ];
+
+  const mean = scores.reduce((s, d) => s + d.score, 0) / scores.length;
+  const variance = scores.reduce((s, d) => s + (d.score - mean) ** 2, 0) / scores.length;
+  const stdDev = Math.sqrt(variance);
+
+  const capped: string[] = [];
+  const weights: Record<string, number> = {};
+  let totalWeight = 100;
+
+  for (const d of scores) {
+    if (stdDev > 8 && Math.abs(d.score - mean) > 1.5 * stdDev) {
+      weights[d.key] = 8;
+      capped.push(d.key);
+      totalWeight -= 8;
+    } else {
+      weights[d.key] = BASE_WEIGHTS[d.key as keyof typeof BASE_WEIGHTS];
+      totalWeight -= BASE_WEIGHTS[d.key as keyof typeof BASE_WEIGHTS];
+    }
+  }
+
+  if (capped.length > 0 && totalWeight > 0) {
+    const uncapped = scores.filter((d) => !capped.includes(d.key));
+    const uncappedTotal = uncapped.reduce((s, d) => s + d.score, 0);
+    for (const d of uncapped) {
+      if (uncappedTotal > 0) {
+        weights[d.key] += Math.round((d.score / uncappedTotal) * totalWeight);
+      }
+    }
+  }
+
+  const overall = Math.round(
+    scores.reduce((s, d) => s + d.score * (weights[d.key] / 100), 0),
+  );
+
+  return { overall, weights, capped };
 }
 
 // ── TA-based scoring ──────────────────────────────────────
@@ -173,6 +276,7 @@ interface SignalInput {
   etfSummary?: ETFSummaryItem[];
   macroEvents?: MacroEvent[];
   btcTreasuries?: { ticker: string; name: string }[];
+  purchaseHistory?: BTCPurchaseHistory[];
   snapshot?: MarketSnapshot;
 }
 
@@ -200,7 +304,7 @@ export function generateSignal(input: SignalInput): Signal | null {
   // ETF, macro, treasury (with fallbacks)
   const etf = input.etfSummary ? scoreETF(input.etfSummary) : { score: 50, detail: "No ETF data" };
   const macro = input.macroEvents ? scoreMacro(input.macroEvents) : { score: 50, detail: "No macro data" };
-  const treasury = input.btcTreasuries ? scoreTreasury(input.btcTreasuries) : { score: 50, detail: "No treasury data" };
+  const treasury = input.btcTreasuries ? scoreTreasury(input.btcTreasuries, input.purchaseHistory) : { score: 50, detail: "No treasury data" };
 
   // Combine TA momentum + snapshot momentum
   let momentumScore = ta.momentum;
@@ -313,6 +417,7 @@ export interface BatchSignalInput {
   etfSummary?: ETFSummaryItem[];
   macroEvents?: MacroEvent[];
   btcTreasuries?: { ticker: string; name: string }[];
+  purchaseHistory?: BTCPurchaseHistory[];
   snapshots?: Map<string, MarketSnapshot>;
 }
 
@@ -331,6 +436,7 @@ export function generateSignals(input: BatchSignalInput): Signal[] {
       etfSummary: input.etfSummary,
       macroEvents: input.macroEvents,
       btcTreasuries: input.btcTreasuries,
+      purchaseHistory: input.purchaseHistory,
       snapshot: input.snapshots?.get(base),
     });
 

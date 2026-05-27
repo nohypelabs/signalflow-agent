@@ -8,6 +8,9 @@ import SignalList from "@/components/SignalList";
 import AISignalGenerator from "@/components/AISignalGenerator";
 import AIReasoning from "@/components/AIReasoning";
 import DataSources from "@/components/DataSources";
+import ETFFlowChart from "@/components/ETFFlowChart";
+import MacroCalendar from "@/components/MacroCalendar";
+import NewsSentimentDashboard from "@/components/NewsSentimentDashboard";
 
 export default function DashboardPage() {
   const d = useDashboard();
@@ -69,6 +72,13 @@ export default function DashboardPage() {
 
       {/* Data Sources */}
       <DataSources />
+
+      {/* Deep API Integration Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <ETFFlowChart symbol="BTC" />
+        <MacroCalendar />
+        <NewsSentimentDashboard />
+      </div>
     </div>
   );
 }

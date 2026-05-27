@@ -149,6 +149,12 @@ export function getMacroEvents() {
   return sosoFetch<MacroEvent[]>("/macro/events");
 }
 
+export function getMacroEventHistory(eventName: string, limit = 30) {
+  return sosoFetch<MacroEventHistory[]>(
+    `/macro/events/${encodeURIComponent(eventName)}/history?limit=${limit}`,
+  );
+}
+
 // ── BTC Treasuries ─────────────────────────────────────
 
 export function getBTCTreasuries() {
