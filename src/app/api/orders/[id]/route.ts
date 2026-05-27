@@ -8,6 +8,13 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  if (!process.env.SODEX_API_KEY_NAME) {
+    return jsonNoCache(
+      { error: "SoDEX API key not configured" },
+      { status: 503 },
+    );
+  }
+
   const { id } = await params;
   try {
     await cancelOrder(Number(id));

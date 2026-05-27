@@ -5,6 +5,13 @@ import { jsonNoCache } from "@/lib/api/no-cache";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  if (!process.env.SODEX_API_KEY_NAME) {
+    return jsonNoCache(
+      { error: "SoDEX API key not configured. Set SODEX_API_KEY_NAME in .env.local" },
+      { status: 503 },
+    );
+  }
+
   try {
     const body = await req.json();
     const result = await placeOrder({
@@ -16,21 +23,24 @@ export async function POST(req: NextRequest) {
     });
     return jsonNoCache(result);
   } catch (err) {
-    return jsonNoCache(
-      { error: err instanceof Error ? err.message : "Order placement failed" },
-      { status: 502 },
-    );
+    const msg = err instanceof Error ? err.message : "Order placement failed";
+    console.error("[/api/orders POST]", msg);
+    return jsonNoCache({ error: msg }, { status: 502 });
   }
 }
 
 export async function GET() {
+  if (!process.env.SODEX_API_KEY_NAME) {
+    return jsonNoCache([]);
+  }
+
   try {
     const orders = await getOpenOrders();
     return jsonNoCache(orders);
   } catch (err) {
-    return jsonNoCache(
-      { error: err instanceof Error ? err.message : "Failed to fetch orders" },
-      { status: 502 },
-    );
+    const msg = err instanceof Error ? err.message : "Failed to fetch orders";
+    console.error("[/api/orders GET] SoDEX error:", msg);
+    // Return empty array so UI doesn't break
+    return jsonNoCache([]);
   }
 }

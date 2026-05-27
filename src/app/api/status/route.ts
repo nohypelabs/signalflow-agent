@@ -62,7 +62,7 @@ export async function GET(req: Request) {
     (async () => {
       // Determine which key to check
       const hasUserKey = !!apiKey;
-      const hasServerKey = !!process.env.DEEPSEEK_API_KEY;
+      const hasServerKey = !!(process.env.MIMO_API_KEY || process.env.DEEPSEEK_API_KEY);
 
       if (!hasUserKey && !hasServerKey) {
         return {

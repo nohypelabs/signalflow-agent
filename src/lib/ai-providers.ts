@@ -50,7 +50,7 @@ export const AI_PROVIDERS: AIProvider[] = [
   {
     id: "xiaomi",
     name: "Xiaomi (MiMo)",
-    baseUrl: "https://api.xiaomi.com/v1",
+    baseUrl: "https://token-plan-sgp.xiaomimimo.com/v1",
     defaultModel: "mimo-v2.5-pro",
     models: ["mimo-v2.5-pro", "mimo-v2.5-flash"],
   },

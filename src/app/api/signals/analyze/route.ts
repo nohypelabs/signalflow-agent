@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
 
       // User-provided AI config takes precedence over server defaults
       const userProvider = body.provider && body.apiKey
-        ? { baseUrl: body.provider, apiKey: body.apiKey, model: body.model || "deepseek-chat" }
+        ? { baseUrl: body.provider, apiKey: body.apiKey, model: body.model || "mimo-v2.5-pro" }
         : undefined;
 
       const raw = await chat(
