@@ -82,6 +82,7 @@ export default function TradingPageContent() {
         stopLoss: sl,
         signalId: signalContext?.id,
         confidence: signalContext?.confidence,
+        tradingType: tradingType ?? undefined,
       });
       if (!trade) {
         alert("Insufficient paper balance");

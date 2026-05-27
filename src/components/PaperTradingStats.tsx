@@ -74,6 +74,11 @@ function PositionRow({ trade, currentPrice, onClose }: { trade: PaperTrade; curr
           </span>
           <span className="text-xs font-bold text-txt-primary">{trade.pair}</span>
           <span className="text-[9px] text-accent font-mono">{trade.leverage}x</span>
+          {trade.tradingType && (
+            <span className="text-[8px] px-1 py-0.5 rounded bg-elevated text-txt-dim capitalize">
+              {trade.tradingType}
+            </span>
+          )}
         </div>
         <div className="text-right">
           <span className={`text-xs font-bold font-mono ${isProfit ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
@@ -202,6 +207,38 @@ export default function PaperTradingStats({ stats, balance, trades, currentPrice
           <span className="text-[10px] font-mono text-[#ff4444]">{fmtUSD(stats.worstTrade)}</span>
         </div>
       </div>
+
+      {/* Per-Type Breakdown */}
+      {stats.perType && Object.keys(stats.perType).length > 0 && (
+        <div className="px-4 py-3 border-b border-border-default">
+          <p className="text-[9px] text-txt-faint uppercase tracking-wider mb-2">By Trading Type</p>
+          <div className="grid grid-cols-2 gap-2">
+            {Object.entries(stats.perType).map(([type, typeStats]) => {
+              const icons: Record<string, string> = { scalping: "⚡", intraday: "📊", swing: "📈", position: "🏦" };
+              const colors: Record<string, string> = { scalping: "#F59E0B", intraday: "#3B82F6", swing: "#10B981", position: "#8B5CF6" };
+              return (
+                <div key={type} className="flex items-center gap-2 p-2 rounded-lg bg-elevated/20">
+                  <span className="text-sm">{icons[type] ?? "📊"}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-semibold capitalize" style={{ color: colors[type] }}>{type}</span>
+                      <span className="text-[8px] text-txt-faint">{typeStats.trades} trades</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[9px] font-mono" style={{ color: typeStats.winRate >= 55 ? "#00ff88" : typeStats.winRate >= 45 ? "#ff8800" : "#ff4444" }}>
+                        {typeStats.winRate}% WR
+                      </span>
+                      <span className={`text-[9px] font-mono ${typeStats.totalPnl >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
+                        {typeStats.totalPnl >= 0 ? "+" : ""}{fmtUSD(typeStats.totalPnl)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Open positions */}
       {openTrades.length > 0 && (

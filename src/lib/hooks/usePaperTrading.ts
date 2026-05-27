@@ -25,6 +25,7 @@ export interface PaperTrade {
   closedAt: number | null;
   signalId: string | null;
   confidence: number;
+  tradingType?: string;     // scalping | intraday | swing | position
   maxPnl: number;             // peak P&L (for trailing)
   minPnl: number;             // trough P&L
 }
@@ -56,6 +57,15 @@ export interface PaperStats {
   avgHoldTime: number;
   profitFactor: number;
   maxDrawdown: number;
+  // Per-type breakdown
+  perType?: Record<string, {
+    trades: number;
+    wins: number;
+    losses: number;
+    winRate: number;
+    totalPnl: number;
+    avgLeverage: number;
+  }>;
 }
 
 const STORAGE_KEY = "signalflow-paper-futures";
@@ -128,6 +138,7 @@ export function usePaperTrading() {
     stopLoss: number;
     signalId?: string;
     confidence?: number;
+    tradingType?: string;
   }): PaperTrade | null => {
     const lev = Math.max(1, Math.min(100, params.leverage));
     const margin = params.margin;
@@ -165,6 +176,7 @@ export function usePaperTrading() {
       closedAt: null,
       signalId: params.signalId ?? null,
       confidence: params.confidence ?? 0,
+      tradingType: params.tradingType,
       maxPnl: 0,
       minPnl: 0,
     };
@@ -311,6 +323,28 @@ export function usePaperTrading() {
       : 0,
     profitFactor: grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0,
     maxDrawdown: trades.length > 0 ? Math.min(...trades.map((t) => t.minPnl)) : 0,
+    // Per-type breakdown
+    perType: (() => {
+      const types = ["scalping", "intraday", "swing", "position"];
+      const result: Record<string, { trades: number; wins: number; losses: number; winRate: number; totalPnl: number; avgLeverage: number }> = {};
+      for (const type of types) {
+        const typeTrades = trades.filter((t) => t.tradingType === type);
+        const typeClosed = typeTrades.filter((t) => t.status !== "OPEN");
+        const typeWins = typeClosed.filter((t) => (t.pnl ?? 0) > 0);
+        const typeLosses = typeClosed.filter((t) => (t.pnl ?? 0) <= 0);
+        if (typeTrades.length > 0) {
+          result[type] = {
+            trades: typeTrades.length,
+            wins: typeWins.length,
+            losses: typeLosses.length,
+            winRate: typeClosed.length > 0 ? parseFloat(((typeWins.length / typeClosed.length) * 100).toFixed(1)) : 0,
+            totalPnl: parseFloat(typeClosed.reduce((s, t) => s + (t.pnl ?? 0), 0).toFixed(2)),
+            avgLeverage: typeTrades.length > 0 ? parseFloat((typeTrades.reduce((s, t) => s + t.leverage, 0) / typeTrades.length).toFixed(1)) : 0,
+          };
+        }
+      }
+      return Object.keys(result).length > 0 ? result : undefined;
+    })(),
   };
 
   const reset = useCallback(() => {
