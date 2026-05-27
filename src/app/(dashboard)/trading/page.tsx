@@ -9,6 +9,7 @@ import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import OpenOrders from "@/components/OpenOrders";
+import TradingChart from "@/components/TradingChart";
 import SignalTypeBadge from "@/components/signals/SignalTypeBadge";
 import ConfidenceBadge from "@/components/signals/ConfidenceBadge";
 import SignalScoreBreakdown from "@/components/signals/SignalScoreBreakdown";
@@ -92,10 +93,27 @@ export default function TradingPage() {
         </Card>
       )}
 
-      {/* Main layout: signals + execution panel */}
+      {/* Main layout: chart + signals + execution panel */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        {/* Left: Signal list */}
+        {/* Left: Chart + Signal list */}
         <div className="xl:col-span-2 space-y-3">
+          {/* Trading Chart */}
+          <ErrorBoundary name="Trading Chart">
+            <TradingChart
+              klines={d.klines}
+              symbol={selectedSignal ? selectedSignal.pair : "BTC/USDC"}
+              currentPrice={
+                selectedTicker
+                  ? parseFloat(selectedTicker.lastPx)
+                  : d.tickerMap.get("vBTC_vUSDC")
+                    ? parseFloat(d.tickerMap.get("vBTC_vUSDC")!.lastPx)
+                    : null
+              }
+              liveSignals={d.liveSignals}
+              tickerMap={d.tickerMap}
+            />
+          </ErrorBoundary>
+
           {/* Pair filter */}
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-txt-dim uppercase tracking-wider">Pair:</span>
