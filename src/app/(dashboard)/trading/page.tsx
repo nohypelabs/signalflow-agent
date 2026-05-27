@@ -13,6 +13,8 @@ import SignalTypeBadge from "@/components/signals/SignalTypeBadge";
 import ConfidenceBadge from "@/components/signals/ConfidenceBadge";
 import SignalScoreBreakdown from "@/components/signals/SignalScoreBreakdown";
 import { formatPrice, formatPercent } from "@/components/signals/signal-utils";
+import OrderbookDepth from "@/components/OrderbookDepth";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 
 /* ── Helpers ── */
 
@@ -308,6 +310,14 @@ export default function TradingPage() {
               />
             </Card>
           )}
+
+          {/* Orderbook */}
+          <ErrorBoundary name="Orderbook">
+            <OrderbookDepth
+              symbol={selectedSodSym || "vBTC_vUSDC"}
+              coin={selectedCoin || "BTC"}
+            />
+          </ErrorBoundary>
 
           {/* Open orders */}
           <OpenOrders

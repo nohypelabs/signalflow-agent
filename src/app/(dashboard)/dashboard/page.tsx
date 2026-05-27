@@ -10,7 +10,9 @@ import AIReasoning from "@/components/AIReasoning";
 import DataSources from "@/components/DataSources";
 import ETFFlowChart from "@/components/ETFFlowChart";
 import MacroCalendar from "@/components/MacroCalendar";
+import MacroEventHistory from "@/components/MacroEventHistory";
 import NewsSentimentDashboard from "@/components/NewsSentimentDashboard";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 
 export default function DashboardPage() {
   const d = useDashboard();
@@ -75,10 +77,21 @@ export default function DashboardPage() {
 
       {/* Deep API Integration Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <ETFFlowChart symbol="BTC" />
-        <MacroCalendar />
-        <NewsSentimentDashboard />
+        <ErrorBoundary name="ETF Flow">
+          <ETFFlowChart symbol="BTC" />
+        </ErrorBoundary>
+        <ErrorBoundary name="Macro Calendar">
+          <MacroCalendar />
+        </ErrorBoundary>
+        <ErrorBoundary name="News Sentiment">
+          <NewsSentimentDashboard />
+        </ErrorBoundary>
       </div>
+
+      {/* Macro Event History */}
+      <ErrorBoundary name="Macro History">
+        <MacroEventHistory />
+      </ErrorBoundary>
     </div>
   );
 }
