@@ -6,7 +6,7 @@
 
 **[signalflowagent.vercel.app](https://signalflowagent.vercel.app)**
 
-SignalFlow Agent transforms multi-dimensional market data into explainable, executable trade signals. Real-time data from SoSoValue API and SoDEX, AI-powered BUY/HOLD/SELL signals with per-dimension reasoning, and spot trade execution on ValueChain via EIP-712 wallet signing — all in one dashboard.
+SignalFlow Agent transforms multi-dimensional market data into explainable, executable trade signals. Features a multi-factor confluence signal engine V2 with trading type differentiation, multi-timeframe analysis, paper futures trading, and historical backtesting — all in one professional dashboard.
 
 ---
 
@@ -14,10 +14,10 @@ SignalFlow Agent transforms multi-dimensional market data into explainable, exec
 
 > Most AI trading agents give you a score. SignalFlow gives you a **plan**.
 
-- **Not just data — decisions.** Every signal includes entry price, stop-loss, and take-profit targets.
-- **Not just a dashboard — execution.** Trade directly on SoDEX with EIP-712 signing, no third-party middleman.
-- **Not just one AI — your choice.** Use Deepseek, OpenAI, or OpenRouter with your own API key. Your keys, your control.
-- **Not just desktop — everywhere.** PWA installable on iOS/Android, responsive layout, WalletConnect for mobile trading.
+- **Not just signals — styles.** Choose your trading style (Scalper, Intraday, Swing, Position) and the engine adapts weights, TP/SL, and confidence thresholds to match.
+- **Not just one timeframe — confluence.** Signals analyzed across 1H, 4H, and 1D timeframes with alignment scoring for higher conviction.
+- **Not just a dashboard — execution.** Paper futures trading with leverage 1-100x, liquidation, and per-type performance tracking.
+- **Not just guesses — validation.** Built-in backtest engine that replays historical signals and measures accuracy by regime and trading type.
 
 ---
 
@@ -37,26 +37,83 @@ SignalFlow Agent transforms multi-dimensional market data into explainable, exec
 ├───────────┤            ├─────────────────┤           │  /OpenRouter)     │
 │ ETF Flow  │            │ Tickers/Klines   │           └────────┬─────────┘
 │ Sentiment │            │ Orderbook        │                    │
-│ Macro     │            │ Spot Trading     │                    │
+│ Macro     │            │ Paper Trading    │                    │
 │ Treasury  │            │ Account Balance  │                    │
 │ Indices   │            └────────┬────────┘                    │
 └─────┬─────┘                     │                              │
       │                           │                              │
       ▼                           ▼                              ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        Signal Engine                                 │
-│  5-dimension heuristic scoring (0-100) → AI synthesis → BUY/HOLD/SELL│
+│                  Signal Engine V2 (5-Layer)                         │
+│  L1: Market Regime Detection (5 regimes)                           │
+│  L2: 5-Factor Confluence (Trend/Momentum/Volatility/Volume/Struct) │
+│  L3: 7-Tier Classification (STRONG_LONG → HOLD → STRONG_SHORT)     │
+│  L4: Volatility-Adjusted TP/SL (ATR multipliers × type × regime)  │
+│  L5: Filtering (min confluence gates per trading type)             │
 └─────────────────────────────────┬───────────────────────────────────┘
                                   │
-                                  ▼
-                    ┌─────────────────────────┐
-                    │   EIP-712 Trade Execution│
-                    │   MetaMask · WalletConnect│
-                    │   ValueChain Mainnet      │
-                    └─────────────────────────┘
+                    ┌─────────────┼─────────────┐
+                    ▼             ▼             ▼
+            ┌────────────┐ ┌──────────┐ ┌──────────────┐
+            │ Multi-TF   │ │ Paper    │ │ Backtest     │
+            │ Confluence │ │ Futures  │ │ Engine       │
+            │ (1H/4H/1D) │ │ Trading  │ │ (walk-fwd)   │
+            └────────────┘ └──────────┘ └──────────────┘
 ```
 
-**Stack**: Next.js 16 (App Router), React 19, Tailwind CSS v4, TypeScript, wagmi v3, viem
+**Stack**: Next.js 16 (App Router), React 19, Tailwind CSS v4, TypeScript 5, pnpm
+
+---
+
+## Trading Type System
+
+SignalFlow adapts to your trading style. Each type uses different factor weights, TP/SL multipliers, and confidence thresholds:
+
+| Type | Timeframe | Hold | Max Lev | Min Conf | Key Factors |
+|------|-----------|------|---------|----------|-------------|
+| ⚡ Scalper | 1m–15m | < 1 hour | 20x | 60% | Momentum 40%, Volatility 25% |
+| 📊 Intraday | 1h–4h | 1–6 hours | 10x | 65% | Momentum 30%, Trend 25% |
+| 📈 Swing | 1D–7D | 2–14 days | 5x | 70% | Trend 35%, Structure 25% |
+| 🏦 Position | 1W+ | 2–8 weeks | 3x | 75% | Trend 45%, Structure 30% |
+
+**How it works:**
+1. Onboarding modal asks "What's your trading style?" on first visit to /signals
+2. Signals filtered by type-specific confidence threshold
+3. Factor weights adapt: scalping prioritizes momentum, position prioritizes trend
+4. TP/SL multipliers blend type range with market regime (tighter in ranging, wider in trending)
+5. OrderForm caps leverage per type and pre-fills from signal
+
+---
+
+## Multi-Timeframe Confluence
+
+Each signal is analyzed across three timeframes independently:
+
+- **1H** — Primary signal (250 bars of data)
+- **4H** — Medium-term trend (120 bars)
+- **1D** — Macro direction (60 bars)
+
+**Confluence scoring:**
+- 95: All 3 timeframes agree on direction (highest conviction)
+- 80: 2/2 timeframes agree
+- 70: 2/3 timeframes agree
+- 30-50: Mixed signals (lower conviction)
+
+Displayed as color-coded badges on signal cards: green (80+), amber (60+), red (<60).
+
+---
+
+## Signal Backtest Engine
+
+Walk-forward backtesting that replays historical klines through the V2 engine:
+
+- **Method:** Sliding window — generate signal using N bars, evaluate outcome M bars ahead
+- **Metrics:** Win rate, profit factor, avg win/loss, total PnL, max drawdown
+- **Breakdown:** Per-regime accuracy, long vs short win rates, win/loss streaks
+- **Per-type:** Test any trading type's weight profile against historical data
+- **Equity curve:** Visual P&L progression with 5% position sizing
+
+Access via `/performance` page → Backtest panel.
 
 ---
 
@@ -68,53 +125,31 @@ SignalFlow Agent transforms multi-dimensional market data into explainable, exec
 
 ---
 
-## Core Logic
-
-A **multi-dimensional signal engine** that aggregates five data dimensions into a unified confidence score:
-
-| Dimension | Source | What It Measures |
-|-----------|--------|------------------|
-| ETF Flow | SoSoValue | Institutional capital rotation (BTC/ETH ETFs) |
-| Sentiment | SoSoValue | News & social media sentiment scoring |
-| Macro | SoSoValue | Interest rates, inflation, global liquidity |
-| Momentum | SoDEX | Price action, kline patterns, volume |
-| Treasury | SoSoValue | BTC corporate treasury activity |
-
-Each dimension generates a 0–100 score. The AI agent synthesizes these into a single signal with **per-dimension reasoning**, key risk factors, and a concrete execution plan — entry price, stop-loss, take-profit.
-
-### Data Sources & APIs
-
-| API | Purpose | Auth |
-|-----|---------|------|
-| SoSoValue | ETF flows, news, macro, treasuries, indices | API key |
-| SoDEX | Live tickers, klines, orderbooks, spot trading | API key + EIP-712 wallet signing |
-| Deepseek / OpenAI / OpenRouter | AI signal generation & reasoning | User-provided API key |
-
----
-
 ## Features
 
-### AI Signal Generation
-- Multi-provider support — Deepseek, OpenAI, or OpenRouter with user's own API key, stored locally in browser
-- Explainable reasoning — every signal includes per-dimension "why" explanations, key risk factors, and execution plan
-- Confidence scoring — 0–100% with visual indicators, color-coded BUY/HOLD/SELL badges
+### Signal Engine V2
+- **5-factor confluence:** Trend (EMA/ADX), Momentum (RSI/MACD/ROC), Volatility (BB/ATR), Volume (OBV), Structure (S/R + Fibonacci)
+- **Market regime detection:** TRENDING_UP, TRENDING_DOWN, RANGING, VOLATILE, BREAKOUT
+- **7-tier classification:** STRONG_LONG → LONG → WEAK_LONG → HOLD → WEAK_SHORT → SHORT → STRONG_SHORT
+- **Trading type adaptation:** Per-type weights, TP/SL multipliers, confidence thresholds
 
-### Wallet & Trading
-- MetaMask (desktop) + WalletConnect v2 (mobile) — smart connector auto-detects window.ethereum
-- EIP-712 typed data signing for SoDEX spot orders — domain name="spot", chainId=286623
-- Live wallet balance display with 25/50/75/100% quick-fill trade execution buttons
-- Order management — place market orders, view open/filled/canceled status, cancel pending orders
-- Wrong network detection — switch chain or disconnect to different wallet
-
-### Mobile & PWA
-- Installable PWA with offline service worker, custom app icons, standalone display mode
-- Responsive layout — slide-in sidebar drawer, bottom tab navigation (Home/Signals/Trade/Settings)
-- Apple Web App meta tags with black-translucent status bar
+### Paper Futures Trading
+- Virtual USDC balance with leverage 1x–100x
+- Auto-calculation: notional, liquidation price, position size
+- TP/SL/Liquidation auto-close on price ticks
+- Per-type performance stats (win rate, PnL, avg leverage by type)
 
 ### Market Intelligence
-- Real-time SoDEX tickers, klines, and orderbooks for vBTC_vUSDC pair
-- SoSoValue integration across 5 modules — ETF Flow, News Sentiment, Macro, Treasury, Indices
-- 60-second auto-refresh on signal data
+- SoSoValue API: ETF flows, news sentiment, macro events, BTC treasuries, index snapshots
+- SoDEX API: live tickers, multi-timeframe klines, orderbooks
+- 5 trading pairs: BTC, ETH, SOL, AVAX, LINK
+
+### Dashboard & UX
+- Onboarding modal for trading style selection
+- TypeSwitcher dropdown for quick style switching
+- Regime-based type recommendation
+- Per-type weight profiles on Strategy Config page
+- Dark theme with professional trading UI
 
 ---
 
@@ -129,36 +164,51 @@ Each dimension generates a 0–100 score. The AI agent synthesizes these into a 
 - Full sidebar navigation with 8 pages
 
 ### Wave 2 (Current)
+**Core Platform:**
 - Wallet connection — MetaMask (desktop) + WalletConnect v2 (mobile)
 - EIP-712 trade execution on SoDEX via typed data signing
 - Multi-AI provider — Deepseek, OpenAI, OpenRouter with user API keys
-- Explainable signals — per-dimension "why", key factors, execution plans
-- Live balance display with 25/50/75/100% quick-fill
 - PWA support — installable, offline-capable, custom app icons
 - Mobile responsive — bottom tab nav, slide-in drawer, compact header
-- Order management — place, view, cancel SoDEX orders
-- Wrong network handling — switch chain or disconnect option
-- Wallet panel — address copy, balance view, clear disconnect button
 
----
+**Signal Engine V2:**
+- Multi-factor confluence system (5 factors, 7 layers)
+- Market regime detection (5 regimes)
+- 7-tier signal classification (STRONG_LONG → STRONG_SHORT)
+- Volatility-adjusted TP/SL with ATR multipliers
 
-## Roadmap
+**Trading Type System:**
+- 4 trading types: Scalping, Intraday, Swing, Position
+- Per-type factor weights (engine adapts dynamically)
+- Per-type TP/SL multipliers (blended with regime)
+- Per-type confidence thresholds (60%–75%)
+- Per-type leverage caps (3x–20x)
+- Onboarding modal + TypeSwitcher UI
 
-### Wave 3 — Production Features & Public Launch
-- [ ] Backtesting engine — validate signal accuracy against historical SoSoValue data
-- [ ] Multi-asset support — expand beyond vBTC_vUSDC to additional trading pairs
-- [ ] Portfolio management — multi-asset position tracking, automated rebalancing, risk-adjusted sizing
-- [ ] Strategy marketplace — create, share, and subscribe to custom signal strategies
-- [ ] Notification system — Telegram and email alerts for high-confidence signals and trade executions
-- [ ] Performance optimization — Redis caching, rate limiting, WebSocket streaming
-- [ ] Public launch — documentation, onboarding wizard, community channels
+**Multi-Timeframe Confluence:**
+- Signal generation on 1H, 4H, and 1D timeframes
+- Alignment scoring (95 = all agree, 30 = conflicting)
+- Color-coded MTF badges on signal cards
 
-### Wave 4 — Ecosystem & Scale
-- [ ] Multi-chain expansion — cross-chain signal aggregation, unified portfolio view
-- [ ] Advanced order types — trailing stop-loss, OCO bracket orders, TWAP execution
-- [ ] Copy-trading and signal leaderboards with verified on-chain track records
-- [ ] Institutional dashboard — multi-wallet management, team roles, approval workflows
-- [ ] Public REST API, WebSocket feeds, and trading bot SDK (TypeScript/Python)
+**Paper Futures Trading:**
+- Virtual USDC balance with leverage 1x–100x
+- Auto TP/SL/Liquidation
+- Per-type performance breakdown
+- Position tracking with real-time P&L
+
+**Backtest Engine:**
+- Walk-forward historical replay
+- Per-regime accuracy breakdown
+- Win rate, profit factor, max drawdown metrics
+- Equity curve visualization
+- Per-type backtesting
+
+**Enhanced Pages:**
+- /signals — Onboarding modal, type filtering, MTF badges, regime recommendation
+- /trading — Type-aware OrderForm, leverage caps, type pre-fill
+- /performance — Backtest panel, per-type stats
+- /strategy-config — Per-type weight profiles visualization
+- /docs — Updated documentation
 
 ---
 
@@ -175,7 +225,7 @@ Each dimension generates a 0–100 score. The AI agent synthesizes these into a 
 ```bash
 # 1. Clone the repo
 git clone https://github.com/nohypelabs/signalflow-agent.git
-cd signalflow-agent
+cd signalflow-agent/dashboard
 
 # 2. Install dependencies
 pnpm install
@@ -194,7 +244,7 @@ SODEX_NETWORK=mainnet
 SODEX_API_KEY_NAME=SignalFlowAgent
 
 # Deepseek (fallback AI)
-DEEPSEEK_API_KEY=sk-your-deepseek-key
+DEEPSEEK_API_KEY=sk-you...-key
 
 # SoSoValue
 SOSOVALUE_API_KEY=SOSO-your-sosovalue-key
@@ -218,65 +268,49 @@ pnpm start        # Production server — http://localhost:3000
 ```
 src/
 ├── app/
-│   ├── layout.tsx           # Root layout + PWA metadata
-│   ├── page.tsx             # Main SPA orchestrator (client-side routing)
-│   ├── providers.tsx        # WagmiProvider + QueryClientProvider
-│   ├── globals.css          # Tailwind v4 + custom animations
+│   ├── layout.tsx               # Root layout + PWA metadata
+│   ├── page.tsx                 # Main SPA orchestrator
 │   └── api/
-│       ├── market/[type]    # GET — SoDEX tickers, klines, symbols
-│       ├── signals/         # GET — heuristic 5-dimension scoring
-│       ├── signals/analyze  # POST — AI signal generation
-│       ├── balance/         # GET — SoDEX wallet balance
-│       ├── orders/          # GET (list) + POST (place)
-│       ├── orders/[id]      # DELETE — cancel order
-│       ├── sources/         # GET — SoSoValue module status
-│       ├── performance/     # GET — portfolio performance data
-│       └── status/          # GET — SoDEX connection health
+│       ├── signals/             # GET — V2 engine + multi-TF confluence
+│       ├── signals/analyze      # POST — AI signal generation
+│       ├── backtest/            # GET — Historical backtest
+│       ├── market/[type]        # GET — SoDEX tickers, klines
+│       ├── orders/              # GET + POST — SoDEX orders
+│       ├── balance/             # GET — Wallet balance
+│       ├── performance/         # GET — Portfolio performance
+│       └── status/              # GET — SoDEX health
 ├── components/
-│   ├── TopBar.tsx           # Header with status indicator + hamburger
-│   ├── Sidebar.tsx          # Desktop vertical nav + mobile slide-in drawer
-│   ├── MobileBottomNav.tsx  # Fixed bottom tab bar (Home/Signals/Trade/Settings)
-│   ├── WalletButton.tsx     # Connect/disconnect + balance dropdown panel
-│   ├── TradeForm.tsx        # Trade execution modal with EIP-712 signing
-│   ├── SignalsPage.tsx      # AI signal analysis with per-dimension reasoning
-│   ├── SignalList.tsx       # Signal table with confidence scores
-│   ├── TradeHistory.tsx     # Orders, positions, and executable signals table
-│   ├── OpenOrders.tsx       # Active SoDEX orders with cancel action
-│   ├── SettingsPage.tsx     # AI provider + model + API key configuration
-│   ├── KPICards.tsx         # Dashboard stat cards (P&L, win rate, etc.)
-│   ├── PortfolioChart.tsx   # Price chart from kline data
-│   ├── AIReasoning.tsx      # AI-generated signal rationale panel
-│   ├── DataSources.tsx      # SoSoValue API module status grid
-│   ├── PerformancePage.tsx  # Performance metrics dashboard
-│   ├── StrategyConfig.tsx   # Signal strategy configuration
-│   └── PWARegister.tsx      # Service worker registration (client-only)
-└── lib/
-    ├── wallet-config.ts     # ValueChain chain def + wagmi config
-    ├── use-wallet.ts        # Wallet connect/disconnect/status hook
-    ├── use-market.ts        # SoDEX tickers + klines hook
-    ├── use-signals.ts       # Signal scoring hook (60s auto-refresh)
-    ├── use-ai-signal.ts     # AI signal generation hook
-    ├── use-ai-config.ts     # localStorage AI provider persistence
-    ├── use-orders.ts        # SoDEX order fetch/place/cancel hook
-    ├── use-performance.ts   # Portfolio performance hook
-    ├── use-sources.ts       # SoSoValue module status hook
-    ├── use-status.ts        # SoDEX health check hook
-    ├── ai-providers.ts      # Deepseek/OpenAI/OpenRouter registry
-    ├── sosovalue.ts         # SoSoValue API client (server-side)
-    ├── sodex.ts             # SoDEX API client (server-side)
-    ├── deepseek.ts          # AI chat completions client
-    ├── eip712.ts            # EIP-712 typed data domain + types
-    ├── sodex-types.ts       # SoDEX TypeScript type definitions
-    ├── pair-map.ts          # Display pair ↔ SoDEX symbol mapping
-    └── mock-data.ts         # Static fallback data for all components
+│   ├── SignalsPage.tsx          # Signals with onboarding + type filtering
+│   ├── TraderTypeModal.tsx      # Trading style onboarding modal
+│   ├── TypeSwitcher.tsx         # Type dropdown switcher
+│   ├── SignalCard.tsx           # Signal card with type + MTF badges
+│   ├── OrderForm.tsx            # Type-aware order form
+│   ├── BacktestPanel.tsx        # Historical backtest UI
+│   ├── PaperTradingStats.tsx    # Per-type paper trading stats
+│   ├── StrategyConfig.tsx       # Per-type weight profiles
+│   ├── PerformancePage.tsx      # Performance + backtest
+│   └── ...
+├── lib/
+│   ├── strategy/
+│   │   ├── signal-engine-v2.ts  # 5-layer signal engine with type adaptation
+│   │   ├── signal-engine.ts     # Legacy 5-dimension scoring
+│   │   ├── indicators.ts        # Technical indicators (SMA, EMA, RSI, MACD, BB, ATR)
+│   │   └── backtest.ts          # Walk-forward backtest engine
+│   ├── types/
+│   │   ├── signal.ts            # Signal, SignalV2 types
+│   │   ├── trading-type.ts      # TradingType config registry
+│   │   └── trade.ts             # SoDEX trade types
+│   ├── api/
+│   │   └── signals.ts           # Client-side signal fetcher
+│   ├── hooks/
+│   │   ├── useSignals.ts        # Signal data hook
+│   │   ├── usePaperTrading.ts   # Paper futures engine
+│   │   └── ...
+│   ├── sosovalue.ts             # SoSoValue API client
+│   ├── sodex.ts                 # SoDEX API client
+│   └── dashboard-context.tsx    # Global dashboard state
+└── ...
 ```
-
----
-
-## Known Issues (Wave 2)
-
-- WalletButton may show a brief hydration mismatch warning on first render — cosmetic only, caused by wagmi SSR state difference. No functional impact.
-- Signal accuracy resolution runs client-side (localStorage) and requires 1 hour before signals resolve. Full on-chain/backend verification planned for Wave 3 backtesting engine.
 
 ---
 
