@@ -5,6 +5,7 @@ import { useSignals } from "@/lib/hooks/useSignals";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import ProgressBar from "@/components/ui/ProgressBar";
+import { TRADING_TYPE_LIST } from "@/lib/types/trading-type";
 
 const STORAGE_KEY = "signalflow-strategy-config";
 
@@ -335,6 +336,55 @@ export default function StrategyConfig() {
           <span>BUY: composite &gt; 60 AND momentum &gt; 55 AND trend &gt; 50 AND sentiment &gt; 45</span>
           <span>·</span>
           <span>Confidence = 50 + |composite - 50| × 1.5, cap 98</span>
+        </div>
+      </Card>
+
+      {/* Per-Type Weight Profiles */}
+      <Card padding="lg">
+        <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider mb-3">
+          Trading Type Weight Profiles
+        </h3>
+        <p className="text-[10px] text-txt-dim mb-4">
+          Each trading style uses different factor weights. The signal engine adapts automatically when a type is selected.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {TRADING_TYPE_LIST.map((type) => (
+            <div
+              key={type.id}
+              className="p-3 rounded-xl border bg-inset/20"
+              style={{ borderColor: `${type.color}25` }}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">{type.icon}</span>
+                <div>
+                  <p className="text-xs font-bold" style={{ color: type.color }}>{type.label}</p>
+                  <p className="text-[9px] text-txt-faint font-mono">{type.timeframe}</p>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                {Object.entries(type.weights).map(([key, value]) => (
+                  <div key={key} className="flex items-center gap-2">
+                    <span className="text-[9px] text-txt-dim w-16 capitalize">{key}</span>
+                    <div className="flex-1 h-1.5 bg-elevated rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${value}%`,
+                          backgroundColor: type.color,
+                          opacity: 0.7,
+                        }}
+                      />
+                    </div>
+                    <span className="text-[9px] font-mono text-txt-faint w-6 text-right">{value}%</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2 pt-2 border-t border-border-default flex items-center justify-between">
+                <span className="text-[8px] text-txt-faint">Min conf: {type.minConfidence}%</span>
+                <span className="text-[8px] text-txt-faint">Max lev: {type.maxLeverage}x</span>
+              </div>
+            </div>
+          ))}
         </div>
       </Card>
     </div>

@@ -9,6 +9,8 @@
 
 import { sma, ema, rsi, macd, bollingerBands, atr, last } from "./indicators";
 import type { SignalDimensions, SignalDimensionDetails, SignalExecution } from "../types/signal";
+import type { TradingType } from "../types/trading-type";
+import { TRADING_TYPES } from "../types/trading-type";
 import type { NewsItem, ETFSummaryItem, MacroEvent, MarketSnapshot, BTCPurchaseHistory } from "../sosovalue";
 import type { SoDEXKline } from "../sodex-types";
 
@@ -267,6 +269,7 @@ export interface SignalV2 {
   regime: MarketRegime;
   factors: ConfluenceFactor[];
   confluence: number;          // Overall confluence score
+  tradingType?: TradingType;   // Which type profile was used
   // Backward-compatible dimension structure
   dimensions: SignalDimensions;
   dimensionDetails: SignalDimensionDetails;
@@ -827,16 +830,13 @@ function calculateTPSL(
   atrVal: number,
   action: SignalActionV2,
   regime: MarketRegime,
+  tradingType?: TradingType,
 ): TPSLResult {
   const isHold = action === "HOLD";
   const atrPct = price > 0 ? (atrVal / price) * 100 : 2;
 
-  // ATR multipliers per regime
-  // TRENDING: wider TP, tighter SL (let winners run)
-  // VOLATILE: wider both (more room)
-  // RANGING: tighter both (mean reversion)
-  // BREAKOUT: wide TP, moderate SL
-  const multipliers: Record<MarketRegime, { tpLong: number; slLong: number; tpShort: number; slShort: number }> = {
+  // ATR multipliers per regime (defaults)
+  const regimeMultipliers: Record<MarketRegime, { tpLong: number; slLong: number; tpShort: number; slShort: number }> = {
     TRENDING_UP:   { tpLong: 3.0, slLong: 1.2, tpShort: 2.0, slShort: 1.0 },
     TRENDING_DOWN: { tpLong: 2.0, slLong: 1.0, tpShort: 3.0, slShort: 1.2 },
     RANGING:       { tpLong: 1.5, slLong: 0.8, tpShort: 1.5, slShort: 0.8 },
@@ -844,7 +844,31 @@ function calculateTPSL(
     BREAKOUT:      { tpLong: 3.5, slLong: 1.3, tpShort: 3.0, slShort: 1.3 },
   };
 
-  const m = multipliers[regime];
+  // If tradingType is specified, blend type multipliers with regime
+  let m = regimeMultipliers[regime];
+  if (tradingType) {
+    const typeConfig = TRADING_TYPES[tradingType];
+    const tpMid = (typeConfig.tpMultiplier.min + typeConfig.tpMultiplier.max) / 2;
+    const slMid = (typeConfig.slMultiplier.min + typeConfig.slMultiplier.max) / 2;
+
+    // Regime factor: trending/breakout → use max of type range; ranging → use min
+    const regimeFactor = regime === "TRENDING_UP" || regime === "TRENDING_DOWN" || regime === "BREAKOUT"
+      ? 1.0   // use max of type range (wider TP)
+      : regime === "RANGING"
+        ? 0.0   // use min of type range (tighter TP)
+        : 0.5;  // volatile → use mid
+
+    const tpMult = typeConfig.tpMultiplier.min + (typeConfig.tpMultiplier.max - typeConfig.tpMultiplier.min) * regimeFactor;
+    const slMult = typeConfig.slMultiplier.min + (typeConfig.slMultiplier.max - typeConfig.slMultiplier.min) * regimeFactor;
+
+    m = {
+      tpLong: tpMult,
+      slLong: slMult,
+      tpShort: tpMult,
+      slShort: slMult,
+    };
+  }
+
   const isBuy = action === "STRONG_LONG" || action === "LONG" || action === "WEAK_LONG";
   const isSell = action === "STRONG_SHORT" || action === "SHORT" || action === "WEAK_SHORT";
 
@@ -1038,10 +1062,12 @@ export function generateSignalV2(input: {
   macroEvents?: MacroEvent[];
   btcTreasuries?: { ticker: string; name: string }[];
   purchaseHistory?: BTCPurchaseHistory[];
+  tradingType?: TradingType;
 }): SignalV2 | null {
   const { pair, klines, snapshot } = input;
   const news = input.news ?? [];
   const base = pair.split("/")[0];
+  const tradingType = input.tradingType;
 
   // Need minimum bars for indicators
   if (klines.length < 60) return null;
@@ -1106,6 +1132,23 @@ export function generateSignalV2(input: {
     structureFactor,
   ];
 
+  // ── Override weights if tradingType is specified ────────
+  if (tradingType) {
+    const typeWeights = TRADING_TYPES[tradingType].weights;
+    const weightMap: Record<string, number> = {
+      TREND: typeWeights.trend / 100,
+      MOMENTUM: typeWeights.momentum / 100,
+      VOLATILITY: typeWeights.volatility / 100,
+      VOLUME: typeWeights.volume / 100,
+      STRUCTURE: typeWeights.structure / 100,
+    };
+    for (const f of factors) {
+      if (f.name in weightMap) {
+        f.weight = weightMap[f.name];
+      }
+    }
+  }
+
   // ── LAYER 2 (cont.): Confluence calculation ────────────
   const confluence = calculateConfluence(factors);
 
@@ -1122,7 +1165,7 @@ export function generateSignalV2(input: {
   const confidence = Math.min(98, Math.max(20, Math.round(50 + distance * 0.96)));
 
   // ── LAYER 4: TP/SL ─────────────────────────────────────
-  const execution = calculateTPSL(price, isNaN(atrVal) ? price * 0.02 : atrVal, action, regime);
+  const execution = calculateTPSL(price, isNaN(atrVal) ? price * 0.02 : atrVal, action, regime, tradingType);
 
   // ── Backward-compatible dimensions ─────────────────────
   const { dimensions, details: dimensionDetails } = buildDimensions(
@@ -1177,6 +1220,7 @@ export function generateSignalV2(input: {
     regime,
     factors,
     confluence: confluence.score,
+    tradingType,
     dimensions,
     dimensionDetails,
     execution,
@@ -1198,6 +1242,7 @@ export function generateSignalsV2(input: {
   btcTreasuries?: { ticker: string; name: string }[];
   purchaseHistory?: BTCPurchaseHistory[];
   snapshots?: Map<string, MarketSnapshot>;
+  tradingType?: TradingType;
 }): SignalV2[] {
   const signals: SignalV2[] = [];
 
@@ -1215,6 +1260,7 @@ export function generateSignalsV2(input: {
       btcTreasuries: input.btcTreasuries,
       purchaseHistory: input.purchaseHistory,
       snapshot: input.snapshots?.get(base),
+      tradingType: input.tradingType,
     });
 
     if (signal) signals.push(signal);

@@ -1,3 +1,5 @@
+import type { TradingType } from "./trading-type";
+
 export interface DimensionScore {
   score: number;
   detail?: string;
@@ -49,6 +51,7 @@ export type Signal = {
   regime?: MarketRegime;
   factors?: ConfluenceFactor[];
   confluence?: number;
+  tradingType?: TradingType;
 };
 
 export interface SignalDimensions {

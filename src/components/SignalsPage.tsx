@@ -5,7 +5,7 @@ import type { Signal, SignalAction } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/types/trade";
 import type { LiveSignalDimensions } from "@/lib/types/signal";
 import type { TradingType } from "@/lib/types/trading-type";
-import { loadTradingType, saveTradingType, TRADING_TYPES } from "@/lib/types/trading-type";
+import { loadTradingType, saveTradingType, TRADING_TYPES, getRecommendedType } from "@/lib/types/trading-type";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import Skeleton from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
@@ -219,6 +219,38 @@ export default function SignalsPage({ tickers, liveSignals = [], liveDims, overa
             </span>
           </div>
         )}
+
+        {/* Regime-based recommendation when no type selected */}
+        {!tradingType && liveSignals.length > 0 && (() => {
+          const regimes = liveSignals.map((s) => s.regime).filter(Boolean);
+          const dominantRegime = regimes.length > 0
+            ? regimes.sort((a, b) =>
+                regimes.filter(r => r === a).length - regimes.filter(r => r === b).length
+              ).pop()
+            : null;
+          if (!dominantRegime) return null;
+          const recommended = getRecommendedType(dominantRegime as string);
+          const recConfig = TRADING_TYPES[recommended];
+          return (
+            <div
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl border cursor-pointer hover:opacity-80 transition-opacity"
+              style={{
+                borderColor: `${recConfig.color}25`,
+                backgroundColor: `${recConfig.color}06`,
+              }}
+              onClick={() => handleTypeSelect(recommended)}
+            >
+              <span className="text-lg">{recConfig.icon}</span>
+              <div className="flex-1">
+                <span className="text-[10px] text-txt-dim">Market regime: {dominantRegime.replace("_", " ")}</span>
+                <span className="text-xs font-semibold ml-2" style={{ color: recConfig.color }}>
+                  Recommended: {recConfig.label}
+                </span>
+              </div>
+              <span className="text-[10px] text-accent font-semibold">Apply →</span>
+            </div>
+          );
+        })()}
 
         {/* Summary cards */}
         {filteredSignals.length > 0 && <SignalSummaryCards signals={filteredSignals} />}

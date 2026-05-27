@@ -1,7 +1,11 @@
 import type { SignalsData, SignalGenerationResult } from "../types/signal";
+import type { TradingType } from "../types/trading-type";
 
-export async function fetchSignals(): Promise<SignalsData> {
-  const res = await fetch("/api/signals", { cache: "no-store" });
+export async function fetchSignals(tradingType?: TradingType | null): Promise<SignalsData> {
+  const url = tradingType
+    ? `/api/signals?type=${tradingType}`
+    : "/api/signals";
+  const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }

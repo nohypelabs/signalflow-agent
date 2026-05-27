@@ -23,6 +23,7 @@ import {
 } from "@/lib/strategy/signal-engine";
 import type { Signal } from "@/lib/types/signal";
 import { jsonNoCache } from "@/lib/api/no-cache";
+import type { TradingType } from "@/lib/types/trading-type";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,15 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 
 // ── Route handler ─────────────────────────────────────────
 
-export async function GET() {
+export async function GET(request: Request) {
+  // Parse trading type from query params
+  const url = new URL(request.url);
+  const typeParam = url.searchParams.get("type");
+  const tradingType: TradingType | null =
+    typeParam && ["scalping", "intraday", "swing", "position"].includes(typeParam)
+      ? typeParam as TradingType
+      : null;
+
   if (cache && Date.now() - cache.ts < CACHE_MS) {
     return jsonNoCache(cache.data);
   }
@@ -140,6 +149,7 @@ export async function GET() {
       btcTreasuries: btcTreasuries as { ticker: string; name: string }[],
       purchaseHistory,
       snapshots: snapshotMap,
+      tradingType: tradingType ?? undefined,
     });
 
     // Convert V2 signals to Signal type (backward compat)
@@ -154,6 +164,7 @@ export async function GET() {
       regime: s.regime,
       factors: s.factors,
       confluence: s.confluence,
+      tradingType: s.tradingType,
     }));
 
     // ── Build dimension data (backward compat) ──────────
