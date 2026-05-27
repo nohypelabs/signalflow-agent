@@ -23,9 +23,12 @@ import ChartDrawingOverlay from "./charts/ChartDrawingOverlay";
 
 /* ── Constants ── */
 
-type Timeframe = "15m" | "1h" | "4h" | "1D" | "1W";
+type Timeframe = "1m" | "3m" | "5m" | "15m" | "1h" | "4h" | "1D" | "1W";
 
 const TF_CONFIG: Record<Timeframe, { interval: string; limit: number }> = {
+  "1m":  { interval: "1m", limit: 120 },
+  "3m":  { interval: "3m", limit: 120 },
+  "5m":  { interval: "5m", limit: 120 },
   "15m": { interval: "15m", limit: 96 },
   "1h":  { interval: "1h", limit: 168 },
   "4h":  { interval: "4h", limit: 180 },
@@ -108,7 +111,7 @@ function klineToVolume(k: SoDEXKline): HistogramData<Time> {
 
 function formatTooltipTime(ts: number, tf: Timeframe): string {
   const d = new Date(ts * 1000);
-  if (tf === "15m" || tf === "1h") {
+  if (tf === "1m" || tf === "3m" || tf === "5m" || tf === "15m" || tf === "1h") {
     return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
   }
   if (tf === "4h") {
