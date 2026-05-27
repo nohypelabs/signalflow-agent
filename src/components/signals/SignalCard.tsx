@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/types/trade";
 import type { LiveSignalDimensions } from "@/lib/types/signal";
@@ -23,6 +24,7 @@ interface Props {
 
 export default function SignalCard({ signal, ticker, liveDims, overallScore, weights, cappedDims }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const router = useRouter();
 
   const price = ticker ? parseFloat(ticker.lastPx) : signal.price;
   const change = ticker ? ticker.changePct : signal.change24h;
@@ -81,12 +83,26 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
             <span className="text-[9px] text-txt-dim">+{signal.sources.length - 4}</span>
           )}
         </div>
-        <button
-          onClick={() => setDrawerOpen(!drawerOpen)}
-          className="text-[10px] text-accent font-semibold hover:opacity-80 shrink-0 ml-2"
-        >
-          {drawerOpen ? "Hide Analysis" : "View Analysis"}
-        </button>
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          <button
+            onClick={() => setDrawerOpen(!drawerOpen)}
+            className="text-[10px] text-accent font-semibold hover:opacity-80"
+          >
+            {drawerOpen ? "Hide Analysis" : "View Analysis"}
+          </button>
+          {signal.action !== "HOLD" && (
+            <button
+              onClick={() => router.push(`/trading?signal=${signal.id}`)}
+              className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                signal.action === "BUY"
+                  ? "bg-[#00ff88]/15 text-[#00ff88] border border-[#00ff88]/20 hover:bg-[#00ff88]/25"
+                  : "bg-[#ff4444]/15 text-[#ff4444] border border-[#ff4444]/20 hover:bg-[#ff4444]/25"
+              }`}
+            >
+              Execute {signal.action}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Drawer */}
