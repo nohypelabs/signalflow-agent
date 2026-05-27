@@ -12,28 +12,28 @@ import OrderForm from "@/components/OrderForm";
 import OrderbookDepth from "@/components/OrderbookDepth";
 import OpenOrders from "@/components/OpenOrders";
 import RecentTrades from "@/components/RecentTrades";
+import PaperTradingStats from "@/components/PaperTradingStats";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
+import { usePaperTrading } from "@/lib/hooks/usePaperTrading";
 
 export default function TradingPageContent() {
   const d = useDashboard();
   const searchParams = useSearchParams();
   const [pair, setPair] = useState("BTC/USDC");
+  const [tradeMode, setTradeMode] = useState<"paper" | "live">("paper");
+  const paper = usePaperTrading();
 
-  // Pre-fill from signal context (URL params from /signals page)
+  // Pre-fill from signal context
   const signalContext = useMemo(() => {
     const signalId = searchParams.get("signal");
     if (!signalId) return null;
     return d.liveSignals.find((s) => s.id === signalId) ?? null;
   }, [searchParams, d.liveSignals]);
 
-  // Pre-fill pair from signal or URL
   useEffect(() => {
     const urlPair = searchParams.get("pair");
-    if (signalContext) {
-      setPair(signalContext.pair);
-    } else if (urlPair) {
-      setPair(urlPair);
-    }
+    if (signalContext) setPair(signalContext.pair);
+    else if (urlPair) setPair(urlPair);
   }, [searchParams, signalContext]);
 
   const coin = pair.split("/")[0];
@@ -41,7 +41,74 @@ export default function TradingPageContent() {
   const ticker = sodexSymbol ? d.tickerMap.get(sodexSymbol) : undefined;
   const currentPrice = ticker ? parseFloat(ticker.lastPx) : null;
 
+  // Check TP/SL for paper trades every tick
+  useEffect(() => {
+    if (!currentPrice) return;
+    const base = pair.split("/")[0];
+    const prices = new Map<string, number>();
+    prices.set(base, currentPrice);
+    prices.set(pair, currentPrice);
+    // Also add other pairs from tickers
+    for (const t of d.tickers ?? []) {
+      const sym = t.symbol.replace("v", "").replace("_", "/");
+      prices.set(sym.split("/")[0], parseFloat(t.lastPx));
+    }
+    paper.checkTpSl(prices);
+  }, [currentPrice, d.tickers]);
+
   const pairs = ["BTC/USDC", "ETH/USDC", "SOL/USDC", "AVAX/USDC", "LINK/USDC"];
+
+  const handleExecute = (order: { side: "BUY" | "SELL"; quantity: string; price: string; takeProfit: string; stopLoss: string }) => {
+    const entryPrice = parseFloat(order.price) || currentPrice || 0;
+    const qty = parseFloat(order.quantity) || 0;
+    const tp = parseFloat(order.takeProfit) || 0;
+    const sl = parseFloat(order.stopLoss) || 0;
+
+    if (tradeMode === "paper") {
+      const trade = paper.openTrade({
+        pair,
+        side: order.side,
+        entryPrice,
+        quantity: qty,
+        takeProfit: tp,
+        stopLoss: sl,
+        signalId: signalContext?.id,
+        confidence: signalContext?.confidence,
+      });
+      if (!trade) {
+        alert("Insufficient paper balance");
+      }
+    } else {
+      // Live trade via SoDEX
+      d.handleExecuteSignal({
+        id: `manual-${Date.now()}`,
+        pair,
+        action: order.side,
+        confidence: 0,
+        price: entryPrice,
+        change24h: ticker?.changePct ?? 0,
+        reasoning: "Manual trade",
+        dimensions: { etfFlow: 0, sentiment: 0, macro: 0, momentum: 0, treasury: 0 },
+        dimensionDetails: {
+          etfFlow: { score: 0, detail: "" },
+          sentiment: { score: 0, detail: "" },
+          macro: { score: 0, detail: "" },
+          momentum: { score: 0, detail: "" },
+          treasury: { score: 0, detail: "" },
+        },
+        execution: {
+          orderType: "Market",
+          entry: entryPrice,
+          takeProfit: tp,
+          stopLoss: sl,
+          positionSize: order.quantity,
+          riskReward: "",
+        },
+        sources: ["Manual"],
+        timeAgo: "just now",
+      } as Signal);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -50,6 +117,9 @@ export default function TradingPageContent() {
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-bold text-txt-primary tracking-tight">Trading</h2>
           <Badge variant="live" size="sm">LIVE</Badge>
+          {tradeMode === "paper" && (
+            <span className="text-[9px] px-2 py-0.5 rounded bg-accent/15 text-accent font-bold">📝 PAPER MODE</span>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {d.isConnected ? (
@@ -58,12 +128,12 @@ export default function TradingPageContent() {
               <span className="text-txt-muted font-mono">{d.shortAddress}</span>
             </div>
           ) : (
-            <span className="text-[10px] text-hold">Connect wallet to trade</span>
+            <span className="text-[10px] text-hold">Connect wallet for live trading</span>
           )}
         </div>
       </div>
 
-      {/* Wallet balance bar */}
+      {/* Wallet bar */}
       {d.isConnected && (
         <Card padding="sm" className="bg-inset/30">
           <div className="flex items-center justify-between">
@@ -144,7 +214,7 @@ export default function TradingPageContent() {
           </div>
         </div>
 
-        {/* Right: Order Form + Orderbook */}
+        {/* Right: Order Form + Paper Stats + Orderbook */}
         <div className="space-y-4">
           <ErrorBoundary name="Order Form">
             <OrderForm
@@ -154,37 +224,23 @@ export default function TradingPageContent() {
               signal={signalContext}
               isConnected={d.isConnected}
               balance={null}
-              onExecute={(order) => {
-                d.handleExecuteSignal({
-                  id: `manual-${Date.now()}`,
-                  pair,
-                  action: order.side,
-                  confidence: 0,
-                  price: parseFloat(order.price) || currentPrice || 0,
-                  change24h: ticker?.changePct ?? 0,
-                  reasoning: "Manual trade",
-                  dimensions: { etfFlow: 0, sentiment: 0, macro: 0, momentum: 0, treasury: 0 },
-                  dimensionDetails: {
-                    etfFlow: { score: 0, detail: "" },
-                    sentiment: { score: 0, detail: "" },
-                    macro: { score: 0, detail: "" },
-                    momentum: { score: 0, detail: "" },
-                    treasury: { score: 0, detail: "" },
-                  },
-                  execution: {
-                    orderType: "Market",
-                    entry: parseFloat(order.price) || currentPrice || 0,
-                    takeProfit: parseFloat(order.takeProfit) || 0,
-                    stopLoss: parseFloat(order.stopLoss) || 0,
-                    positionSize: order.quantity,
-                    riskReward: "",
-                  },
-                  sources: ["Manual"],
-                  timeAgo: "just now",
-                } as Signal);
-              }}
+              paperBalance={paper.balance.available}
+              mode={tradeMode}
+              onModeChange={setTradeMode}
+              onExecute={handleExecute}
             />
           </ErrorBoundary>
+
+          {tradeMode === "paper" && paper.loaded && (
+            <ErrorBoundary name="Paper Trading">
+              <PaperTradingStats
+                stats={paper.stats}
+                balance={paper.balance}
+                trades={paper.trades}
+                onReset={paper.reset}
+              />
+            </ErrorBoundary>
+          )}
 
           <ErrorBoundary name="Orderbook">
             <OrderbookDepth

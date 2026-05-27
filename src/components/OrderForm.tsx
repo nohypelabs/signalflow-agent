@@ -11,6 +11,9 @@ interface Props {
   signal?: Signal | null;
   isConnected: boolean;
   balance?: { free: string; locked: string } | null;
+  paperBalance?: number;
+  mode?: "paper" | "live";
+  onModeChange?: (mode: "paper" | "live") => void;
   onExecute: (order: {
     side: "BUY" | "SELL";
     quantity: string;
@@ -27,7 +30,7 @@ function fmtPrice(p: number, coin: string): string {
   return p.toFixed(5);
 }
 
-export default function OrderForm({ pair, coin, currentPrice, signal, isConnected, balance, onExecute }: Props) {
+export default function OrderForm({ pair, coin, currentPrice, signal, isConnected, balance, paperBalance, mode = "paper", onModeChange, onExecute }: Props) {
   const [side, setSide] = useState<"BUY" | "SELL">("BUY");
   const [quantity, setQuantity] = useState("");
   const [price, setPrice] = useState("");
@@ -96,8 +99,37 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
       <div className="px-4 py-3 border-b border-border-default">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-txt-primary">Place Order</h3>
-          <span className="text-[9px] text-txt-faint font-mono">{pair}</span>
+          <div className="flex items-center gap-2">
+            {/* Paper/Live toggle */}
+            <div className="flex items-center gap-0.5 bg-inset rounded-lg p-0.5">
+              <button
+                onClick={() => onModeChange?.("paper")}
+                className={`text-[9px] px-2 py-0.5 rounded transition-colors cursor-pointer ${
+                  mode === "paper" ? "bg-accent/15 text-accent" : "text-txt-faint hover:text-txt-muted"
+                }`}
+              >
+                📝 Paper
+              </button>
+              <button
+                onClick={() => onModeChange?.("live")}
+                className={`text-[9px] px-2 py-0.5 rounded transition-colors cursor-pointer ${
+                  mode === "live" ? "bg-sell/15 text-sell" : "text-txt-faint hover:text-txt-muted"
+                }`}
+              >
+                🔴 Live
+              </button>
+            </div>
+            <span className="text-[9px] text-txt-faint font-mono">{pair}</span>
+          </div>
         </div>
+        {mode === "paper" && paperBalance != null && (
+          <div className="mt-1.5 flex items-center gap-2">
+            <span className="text-[8px] text-txt-faint">Paper Balance:</span>
+            <span className="text-[10px] font-mono text-accent font-semibold">
+              ${paperBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="p-4 space-y-4">
@@ -266,9 +298,9 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
         {/* Submit button */}
         <button
           onClick={handleSubmit}
-          disabled={!isConnected || !quantity || !price}
+          disabled={(mode === "live" && !isConnected) || !quantity || !price}
           className={`w-full py-3 text-sm font-bold rounded-lg transition-all cursor-pointer ${
-            !isConnected
+            (mode === "live" && !isConnected)
               ? "bg-inset text-txt-dim cursor-not-allowed"
               : !quantity || !price
                 ? "bg-inset text-txt-dim cursor-not-allowed"
@@ -277,11 +309,13 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
                   : "bg-[#ff4444] text-white hover:shadow-[0_0_30px_rgba(255,68,68,0.3)] active:scale-[0.98]"
           }`}
         >
-          {!isConnected
+          {(mode === "live" && !isConnected)
             ? "Connect Wallet"
             : !quantity || !price
               ? "Enter Amount"
-              : `${side} ${coin}`
+              : mode === "paper"
+                ? `📝 Paper ${side} ${coin}`
+                : `${side} ${coin}`
           }
         </button>
       </div>
