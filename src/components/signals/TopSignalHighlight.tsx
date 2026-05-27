@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/types/trade";
 import SignalTypeBadge from "./SignalTypeBadge";
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function TopSignalHighlight({ signal, ticker }: Props) {
+  const router = useRouter();
   const price = ticker ? parseFloat(ticker.lastPx) : signal.price;
   const change = ticker ? ticker.changePct : signal.change24h;
   const coin = signal.pair.split("/")[0];
@@ -46,6 +48,18 @@ export default function TopSignalHighlight({ signal, ticker }: Props) {
           <p className="text-xs text-txt-muted max-w-xs truncate hidden md:block">
             {signal.reasoning}
           </p>
+          {signal.action !== "HOLD" && (
+            <button
+              onClick={() => router.push(`/trading?signal=${signal.id}`)}
+              className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                signal.action === "BUY"
+                  ? "bg-[#00ff88]/15 text-[#00ff88] border border-[#00ff88]/20 hover:bg-[#00ff88]/25"
+                  : "bg-[#ff4444]/15 text-[#ff4444] border border-[#ff4444]/20 hover:bg-[#ff4444]/25"
+              }`}
+            >
+              Execute {signal.action}
+            </button>
+          )}
         </div>
       </div>
     </div>

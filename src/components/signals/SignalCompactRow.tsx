@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/types/trade";
 import type { LiveSignalDimensions } from "@/lib/types/signal";
@@ -20,6 +21,7 @@ interface Props {
 
 export default function SignalCompactRow({ signal, ticker, liveDims, overallScore, weights, cappedDims }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const router = useRouter();
 
   const price = ticker ? parseFloat(ticker.lastPx) : signal.price;
   const change = ticker ? ticker.changePct : signal.change24h;
@@ -67,15 +69,32 @@ export default function SignalCompactRow({ signal, ticker, liveDims, overallScor
         <span className="text-[10px] text-txt-dim whitespace-nowrap">{signal.timeAgo}</span>
 
         {/* Action */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setDrawerOpen(!drawerOpen);
-          }}
-          className="text-[10px] text-accent font-semibold hover:opacity-80 whitespace-nowrap"
-        >
-          {drawerOpen ? "Hide" : "Details"}
-        </button>
+        <div className="flex items-center gap-1">
+          {signal.action !== "HOLD" && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/trading?signal=${signal.id}`);
+              }}
+              className={`text-[9px] font-bold px-2 py-1 rounded transition-all cursor-pointer ${
+                signal.action === "BUY"
+                  ? "bg-[#00ff88]/15 text-[#00ff88] hover:bg-[#00ff88]/25"
+                  : "bg-[#ff4444]/15 text-[#ff4444] hover:bg-[#ff4444]/25"
+              }`}
+            >
+              {signal.action}
+            </button>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setDrawerOpen(!drawerOpen);
+            }}
+            className="text-[10px] text-accent font-semibold hover:opacity-80 whitespace-nowrap"
+          >
+            {drawerOpen ? "Hide" : "Details"}
+          </button>
+        </div>
       </div>
 
       {drawerOpen && (
