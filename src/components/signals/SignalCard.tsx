@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/types/trade";
 import type { LiveSignalDimensions } from "@/lib/types/signal";
+import type { TradingType } from "@/lib/types/trading-type";
+import { TRADING_TYPES } from "@/lib/types/trading-type";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import SignalTypeBadge from "./SignalTypeBadge";
@@ -20,15 +22,29 @@ interface Props {
   overallScore?: number | null;
   weights?: Record<string, number> | null;
   cappedDims?: string[] | null;
+  tradingType?: TradingType | null;
 }
 
-export default function SignalCard({ signal, ticker, liveDims, overallScore, weights, cappedDims }: Props) {
+export default function SignalCard({ signal, ticker, liveDims, overallScore, weights, cappedDims, tradingType }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const router = useRouter();
 
   const price = ticker ? parseFloat(ticker.lastPx) : signal.price;
   const change = ticker ? ticker.changePct : signal.change24h;
   const coin = signal.pair.split("/")[0];
+  const typeConfig = tradingType ? TRADING_TYPES[tradingType] : null;
+
+  // Calculate type-specific TP/SL if trading type is selected
+  const typeTP = typeConfig && signal.execution.entry > 0
+    ? signal.action === "LONG"
+      ? signal.execution.entry * (1 + (typeConfig.tpMultiplier.max * 0.02))
+      : signal.execution.entry * (1 - (typeConfig.tpMultiplier.max * 0.02))
+    : null;
+  const typeSL = typeConfig && signal.execution.entry > 0
+    ? signal.action === "LONG"
+      ? signal.execution.entry * (1 - (typeConfig.slMultiplier.max * 0.02))
+      : signal.execution.entry * (1 + (typeConfig.slMultiplier.max * 0.02))
+    : null;
 
   return (
     <div className="bg-card border border-border-default rounded-xl overflow-hidden transition-colors hover:border-border-muted">
@@ -42,6 +58,19 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
             {signal.regime && (
               <span className="text-[8px] px-1.5 py-0.5 rounded bg-elevated text-txt-faint font-mono uppercase tracking-wider">
                 {signal.regime.replace("_", " ")}
+              </span>
+            )}
+            {/* Trading type badge */}
+            {typeConfig && (
+              <span
+                className="text-[8px] px-1.5 py-0.5 rounded font-semibold flex items-center gap-1"
+                style={{
+                  backgroundColor: `${typeConfig.color}15`,
+                  color: typeConfig.color,
+                  border: `1px solid ${typeConfig.color}30`,
+                }}
+              >
+                {typeConfig.icon} {typeConfig.label}
               </span>
             )}
           </div>
@@ -82,6 +111,34 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
           dimDetails={signal.dimensionDetails}
           liveDims={liveDims}
         />
+
+        {/* Type-specific TP/SL preview */}
+        {typeConfig && typeTP && typeSL && (
+          <div
+            className="mt-3 p-2.5 rounded-lg border flex items-center gap-4"
+            style={{
+              borderColor: `${typeConfig.color}20`,
+              backgroundColor: `${typeConfig.color}06`,
+            }}
+          >
+            <span className="text-[9px] text-txt-dim uppercase tracking-wider shrink-0">
+              {typeConfig.label} Targets
+            </span>
+            <div className="flex items-center gap-3 text-[10px] font-mono">
+              <span className="text-buy">
+                TP: ${formatPrice(typeTP, coin)}
+              </span>
+              <span className="text-txt-faint">|</span>
+              <span className="text-sell">
+                SL: ${formatPrice(typeSL, coin)}
+              </span>
+              <span className="text-txt-faint">|</span>
+              <span style={{ color: typeConfig.color }}>
+                R:R {typeConfig.riskRewardTarget}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer */}
@@ -104,7 +161,11 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
           </button>
           {signal.action !== "HOLD" && (
             <button
-              onClick={() => router.push(`/trading?signal=${signal.id}`)}
+              onClick={() => {
+                const params = new URLSearchParams({ signal: signal.id });
+                if (tradingType) params.set("type", tradingType);
+                router.push(`/trading?${params.toString()}`);
+              }}
               className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                 signal.action === "SHORT"
                   ? "bg-[#00ff88]/15 text-[#00ff88] border border-[#00ff88]/20 hover:bg-[#00ff88]/25"

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useDashboard } from "@/lib/dashboard-context";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import type { Signal } from "@/lib/types/signal";
+import type { TradingType } from "@/lib/types/trading-type";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import TradingChart from "@/components/TradingChart";
@@ -22,6 +23,13 @@ export default function TradingPageContent() {
   const [pair, setPair] = useState("BTC/USDC");
   const [tradeMode, setTradeMode] = useState<"paper" | "live">("paper");
   const paper = usePaperTrading();
+
+  // Read trading type from URL
+  const tradingTypeParam = searchParams.get("type");
+  const tradingType: TradingType | null =
+    tradingTypeParam && ["scalping", "intraday", "swing", "position"].includes(tradingTypeParam)
+      ? tradingTypeParam as TradingType
+      : null;
 
   // Pre-fill from signal context
   const signalContext = useMemo(() => {
@@ -225,6 +233,7 @@ export default function TradingPageContent() {
               isConnected={d.isConnected}
               paperBalance={paper.balance.available}
               mode={tradeMode}
+              tradingType={tradingType}
               onModeChange={setTradeMode}
               onExecute={handleExecute}
             />

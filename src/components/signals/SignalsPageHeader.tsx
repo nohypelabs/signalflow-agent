@@ -2,13 +2,17 @@
 
 import Badge from "@/components/ui/Badge";
 import StatusDot from "@/components/ui/StatusDot";
+import TypeSwitcher from "@/components/TypeSwitcher";
+import type { TradingType } from "@/lib/types/trading-type";
 
 interface Props {
   signalCount: number;
   timestamp?: string;
+  currentType: TradingType | null;
+  onTypeChange: (type: TradingType | null) => void;
 }
 
-export default function SignalsPageHeader({ signalCount, timestamp }: Props) {
+export default function SignalsPageHeader({ signalCount, timestamp, currentType, onTypeChange }: Props) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-border-default mb-5">
       <div className="flex items-center gap-3">
@@ -19,6 +23,7 @@ export default function SignalsPageHeader({ signalCount, timestamp }: Props) {
         </div>
       </div>
       <div className="flex items-center gap-3">
+        <TypeSwitcher currentType={currentType} onTypeChange={onTypeChange} />
         <Badge variant="accent" size="md">
           {signalCount} {signalCount === 1 ? "signal" : "signals"}
         </Badge>

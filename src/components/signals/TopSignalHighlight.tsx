@@ -10,9 +10,10 @@ import { formatPrice, formatPercent } from "./signal-utils";
 interface Props {
   signal: Signal;
   ticker?: SoDEXTicker;
+  tradingType?: string | null;
 }
 
-export default function TopSignalHighlight({ signal, ticker }: Props) {
+export default function TopSignalHighlight({ signal, ticker, tradingType }: Props) {
   const router = useRouter();
   const price = ticker ? parseFloat(ticker.lastPx) : signal.price;
   const change = ticker ? ticker.changePct : signal.change24h;
@@ -50,7 +51,11 @@ export default function TopSignalHighlight({ signal, ticker }: Props) {
           </p>
           {signal.action !== "HOLD" && (
             <button
-              onClick={() => router.push(`/trading?signal=${signal.id}`)}
+              onClick={() => {
+                const params = new URLSearchParams({ signal: signal.id });
+                if (tradingType) params.set("type", tradingType);
+                router.push(`/trading?${params.toString()}`);
+              }}
               className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                 signal.action === "SHORT"
                   ? "bg-[#00ff88]/15 text-[#00ff88] border border-[#00ff88]/20 hover:bg-[#00ff88]/25"

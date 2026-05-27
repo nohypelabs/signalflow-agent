@@ -3,6 +3,8 @@
 import { useState, useMemo, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import type { Signal } from "@/lib/types/signal";
+import type { TradingType } from "@/lib/types/trading-type";
+import { TRADING_TYPES } from "@/lib/types/trading-type";
 
 interface Props {
   pair: string;
@@ -12,6 +14,7 @@ interface Props {
   isConnected: boolean;
   paperBalance?: number;
   mode?: "paper" | "live";
+  tradingType?: TradingType | null;
   onModeChange?: (mode: "paper" | "live") => void;
   onExecute: (order: {
     side: "LONG" | "SHORT";
@@ -33,7 +36,7 @@ function fmtPrice(p: number, coin: string): string {
 const LEVERAGE_PRESETS = [1, 2, 3, 5, 10];
 const MARGIN_PRESETS = [100, 250, 500, 1000];
 
-export default function OrderForm({ pair, coin, currentPrice, signal, isConnected, paperBalance, mode = "paper", onModeChange, onExecute }: Props) {
+export default function OrderForm({ pair, coin, currentPrice, signal, isConnected, paperBalance, mode = "paper", tradingType, onModeChange, onExecute }: Props) {
   const [side, setSide] = useState<"LONG" | "SHORT">("LONG");
   const [leverage, setLeverage] = useState(3);
   const [margin, setMargin] = useState("");
@@ -41,6 +44,22 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
   const [stopLoss, setStopLoss] = useState("");
   const [tpPercent, setTpPercent] = useState("");
   const [slPercent, setSlPercent] = useState("");
+
+  // Type-aware leverage limits
+  const typeConfig = tradingType ? TRADING_TYPES[tradingType] : null;
+  const maxLeverage = typeConfig ? typeConfig.maxLeverage : 100;
+  const leveragePresets = useMemo(() => {
+    if (!typeConfig) return LEVERAGE_PRESETS;
+    const max = typeConfig.maxLeverage;
+    return LEVERAGE_PRESETS.filter((l) => l <= max);
+  }, [typeConfig]);
+
+  // Cap leverage when type changes
+  useEffect(() => {
+    if (typeConfig && leverage > typeConfig.maxLeverage) {
+      setLeverage(typeConfig.defaultLeverage);
+    }
+  }, [typeConfig]);
 
   // Pre-fill from signal
   useEffect(() => {
@@ -126,6 +145,18 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-txt-primary">Open Position</h3>
           <div className="flex items-center gap-2">
+            {typeConfig && (
+              <span
+                className="text-[8px] px-1.5 py-0.5 rounded font-semibold flex items-center gap-1"
+                style={{
+                  backgroundColor: `${typeConfig.color}15`,
+                  color: typeConfig.color,
+                  border: `1px solid ${typeConfig.color}30`,
+                }}
+              >
+                {typeConfig.icon} {typeConfig.label}
+              </span>
+            )}
             <div className="flex items-center gap-0.5 bg-inset rounded-lg p-0.5">
               <button
                 onClick={() => onModeChange?.("paper")}
@@ -191,13 +222,13 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
           <input
             type="range"
             min={1}
-            max={100}
+            max={maxLeverage}
             value={leverage}
             onChange={(e) => setLeverage(Number(e.target.value))}
             className="w-full h-1.5 bg-elevated rounded-full appearance-none cursor-pointer accent-accent"
           />
           <div className="flex gap-1.5 mt-2">
-            {LEVERAGE_PRESETS.map((lev) => (
+            {leveragePresets.map((lev) => (
               <button
                 key={lev}
                 onClick={() => setLeverage(lev)}
