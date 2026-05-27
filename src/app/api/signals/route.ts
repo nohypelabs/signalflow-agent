@@ -12,8 +12,8 @@ import type { ETFSummaryItem, MarketSnapshot, NewsItem, MacroEvent, BTCPurchaseH
 import { getKlines as getSodexKlines } from "@/lib/sodex";
 import type { SoDEXKline } from "@/lib/sodex-types";
 import { pairToSodexSymbol } from "@/lib/pair-map";
+import { generateSignalsV2 } from "@/lib/strategy/signal-engine-v2";
 import {
-  generateSignals,
   scoreETF,
   scoreSentiment,
   scoreMacro,
@@ -21,7 +21,6 @@ import {
   scoreTreasury,
   dynamicWeightScore,
 } from "@/lib/strategy/signal-engine";
-import type { BatchSignalInput } from "@/lib/strategy/signal-engine";
 import type { Signal } from "@/lib/types/signal";
 import { jsonNoCache } from "@/lib/api/no-cache";
 
@@ -40,7 +39,7 @@ const SIGNAL_PAIRS = [
 // ── In-memory cache ──────────────────────────────────────
 
 let cache: { data: unknown; ts: number } | null = null;
-const CACHE_MS = 5 * 60_000; // 5 min — klines & fundamentals don't change fast
+const CACHE_MS = 5 * 60_000;
 
 // ── Fetch with timeout ───────────────────────────────────
 
@@ -74,7 +73,7 @@ export async function GET() {
 
     const newsList = "list" in hotNews ? hotNews.list : [];
 
-    // Fetch BTC purchase history for top treasuries + index snapshots (parallel)
+    // Fetch BTC purchase history + index snapshots (parallel)
     const topTickers = (btcTreasuries as { ticker: string; name: string }[]).slice(0, 5);
     const [purchaseHistory, btcIndex, ethIndex] = await Promise.all([
       Promise.all(
@@ -90,7 +89,7 @@ export async function GET() {
       withTimeout(getIndexSnapshot("ETH").catch(() => null), 5_000, null),
     ]);
 
-    // Fetch market snapshots in parallel with timeout
+    // Fetch market snapshots
     const snapshotCoins = [btc, eth, sol].filter(Boolean);
     const snapshotResults = await Promise.all(
       snapshotCoins.map((c) =>
@@ -106,7 +105,7 @@ export async function GET() {
       if (r) snapshots[r.id] = r.s;
     }
 
-    // ── Fetch SoDEX klines for TA signals (parallel, 5s timeout per pair) ──
+    // ── Fetch SoDEX klines (250 for v2 engine — needs EMA200 data) ──
     const klinesMap = new Map<string, SoDEXKline[]>();
     await Promise.all(
       SIGNAL_PAIRS.map(async (pair) => {
@@ -114,8 +113,8 @@ export async function GET() {
         const symbol = pairToSodexSymbol(pair);
         if (!symbol) return;
         const klines = await withTimeout(
-          getSodexKlines(symbol, "1h", 100).catch(() => []),
-          5_000,
+          getSodexKlines(symbol, "1h", 250).catch(() => []),
+          8_000,
           [] as SoDEXKline[],
         );
         if (klines.length > 0) {
@@ -125,14 +124,14 @@ export async function GET() {
       }),
     );
 
-    // Build snapshots map for signal engine
+    // Build snapshots map
     const snapshotMap = new Map<string, MarketSnapshot>();
     if (btc && snapshots[btc.currency_id]) snapshotMap.set("BTC", snapshots[btc.currency_id]);
     if (eth && snapshots[eth.currency_id]) snapshotMap.set("ETH", snapshots[eth.currency_id]);
     if (sol && snapshots[sol.currency_id]) snapshotMap.set("SOL", snapshots[sol.currency_id]);
 
-    // ── Generate TA-based signals ────────────────────────
-    const taSignals = generateSignals({
+    // ── Generate signals with V2 engine (batch) ─────────
+    const v2Signals = generateSignalsV2({
       pairs: SIGNAL_PAIRS,
       klinesMap,
       news: newsList as NewsItem[],
@@ -143,7 +142,21 @@ export async function GET() {
       snapshots: snapshotMap,
     });
 
-    // ── Build dimension data (for live dimensions in UI) ──
+    // Convert V2 signals to Signal type (backward compat)
+    const signals: Signal[] = v2Signals.map((s) => ({
+      ...s,
+      action: s.action === "STRONG_BUY" || s.action === "BUY" || s.action === "WEAK_BUY"
+        ? "BUY" as const
+        : s.action === "STRONG_SELL" || s.action === "SELL" || s.action === "WEAK_SELL"
+          ? "SELL" as const
+          : "HOLD" as const,
+      actionV2: s.action,
+      regime: s.regime,
+      factors: s.factors,
+      confluence: s.confluence,
+    }));
+
+    // ── Build dimension data (backward compat) ──────────
     function buildDimensions(_currencyId: string | undefined, snap: MarketSnapshot | undefined) {
       return {
         etfFlow: scoreETF(etfSummary as ETFSummaryItem[]),
@@ -164,7 +177,8 @@ export async function GET() {
 
     const result = {
       updated: Date.now(),
-      signals: taSignals,
+      engine: "v2",
+      signals,
       sources: {
         etf: (etfSummary as ETFSummaryItem[]).length > 0,
         macro: (macroEvents as MacroEvent[]).length > 0,

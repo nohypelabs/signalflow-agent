@@ -5,6 +5,30 @@ export interface DimensionScore {
 
 export type SignalAction = "BUY" | "SELL" | "HOLD";
 
+export type SignalActionV2 =
+  | "STRONG_BUY"
+  | "BUY"
+  | "WEAK_BUY"
+  | "HOLD"
+  | "WEAK_SELL"
+  | "SELL"
+  | "STRONG_SELL";
+
+export type MarketRegime =
+  | "TRENDING_UP"
+  | "TRENDING_DOWN"
+  | "RANGING"
+  | "VOLATILE"
+  | "BREAKOUT";
+
+export interface ConfluenceFactor {
+  name: string;
+  score: number;
+  weight: number;
+  detail: string;
+  bullish: boolean;
+}
+
 export type Signal = {
   id: string;
   pair: string;
@@ -18,6 +42,11 @@ export type Signal = {
   execution: SignalExecution;
   sources: string[];
   timeAgo: string;
+  // V2 extensions (optional for backward compat)
+  actionV2?: SignalActionV2;
+  regime?: MarketRegime;
+  factors?: ConfluenceFactor[];
+  confluence?: number;
 };
 
 export interface SignalDimensions {

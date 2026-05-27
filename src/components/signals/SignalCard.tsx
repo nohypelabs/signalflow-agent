@@ -37,10 +37,22 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <span className="text-base font-bold text-txt-primary">{signal.pair}</span>
-            <SignalTypeBadge action={signal.action} size="md" />
+            <SignalTypeBadge action={signal.actionV2 ?? signal.action} size="md" />
             {ticker && <Badge variant="live" size="sm">LIVE</Badge>}
+            {signal.regime && (
+              <span className="text-[8px] px-1.5 py-0.5 rounded bg-elevated text-txt-faint font-mono uppercase tracking-wider">
+                {signal.regime.replace("_", " ")}
+              </span>
+            )}
           </div>
-          <ConfidenceBadge value={signal.confidence} size="md" />
+          <div className="flex items-center gap-2">
+            {signal.confluence != null && (
+              <span className="text-[9px] text-txt-muted">
+                Confluence: <span className="text-accent font-bold">{signal.confluence}</span>
+              </span>
+            )}
+            <ConfidenceBadge value={signal.confidence} size="md" />
+          </div>
         </div>
 
         <div className="flex items-center justify-between mb-3">
