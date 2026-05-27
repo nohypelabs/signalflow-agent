@@ -9,25 +9,16 @@ export async function GET(req: Request) {
   const country = url.searchParams.get("country") || "US";
   const limit = parseInt(url.searchParams.get("limit") || "30", 10);
 
-  try {
-    const [summary, etfList] = await Promise.all([
-      getETFSummary(symbol, country, limit),
-      getETFList(symbol, country).catch(() => []),
-    ]);
+  const summary = await getETFSummary(symbol, country, limit).catch(() => []);
+  const etfList = await getETFList(symbol, country).catch(() => []);
 
-    return jsonNoCache({
-      symbol,
-      country,
-      data: summary,
-      etfs: etfList,
-      totalInflow: summary.reduce((s, d) => s + d.total_net_inflow, 0),
-      cumInflow: summary.length > 0 ? summary[0].cum_net_inflow : 0,
-      latestAUM: summary.length > 0 ? summary[0].total_net_assets : 0,
-    });
-  } catch (err) {
-    return jsonNoCache(
-      { error: err instanceof Error ? err.message : "Failed" },
-      { status: 502 },
-    );
-  }
+  return jsonNoCache({
+    symbol,
+    country,
+    data: summary,
+    etfs: etfList,
+    totalInflow: summary.reduce((s: number, d: any) => s + (d.total_net_inflow ?? 0), 0),
+    cumInflow: summary.length > 0 ? summary[0].cum_net_inflow : 0,
+    latestAUM: summary.length > 0 ? summary[0].total_net_assets : 0,
+  });
 }

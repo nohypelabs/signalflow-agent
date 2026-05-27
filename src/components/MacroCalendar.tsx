@@ -102,6 +102,23 @@ export default function MacroCalendar() {
     );
   }
 
+  if (!data.events || data.events.length === 0) {
+    return (
+      <Card padding="none" className="overflow-hidden">
+        <div className="px-4 py-3 border-b border-border-default">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🌐</span>
+            <h3 className="text-sm font-semibold text-txt-primary">Macro Calendar</h3>
+          </div>
+        </div>
+        <div className="px-4 py-8 text-center">
+          <p className="text-xs text-txt-muted">No macro events available</p>
+          <p className="text-[10px] text-txt-faint mt-1">Data will appear when SoSoValue API is connected</p>
+        </div>
+      </Card>
+    );
+  }
+
   const displayDays = showAll ? data.events : data.events.filter((d) => !isPast(d.date)).slice(0, 8);
 
   return (
