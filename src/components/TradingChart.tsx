@@ -15,7 +15,6 @@ import type {
 } from "lightweight-charts";
 import type { SoDEXKline, SoDEXTicker } from "@/lib/types/trade";
 import type { Signal } from "@/lib/types/signal";
-import { pairToSodexSymbol } from "@/lib/pair-map";
 import { fetchKlines } from "@/lib/api/datasources";
 import { useChartDrawings } from "@/lib/hooks/useChartDrawings";
 import ChartDrawingToolbar from "./charts/ChartDrawingToolbar";
@@ -179,7 +178,8 @@ export default function TradingChart({
   const [showTradePlan, setShowTradePlan] = useState(true);
   const [showVolume, setShowVolume] = useState(true);
 
-  const sodexSymbol = pairToSodexSymbol(pair.split("/")[0]);
+  // Derive SoDEX symbol dynamically: vBTC_vUSDC, vXLM_vUSDC, etc.
+  const sodexSymbol = pair ? `v${pair.split("/")[0]}_vUSDC` : "";
 
   // Chart drawings
   const {

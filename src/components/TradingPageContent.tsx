@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useDashboard } from "@/lib/dashboard-context";
-import { pairToSodexSymbol } from "@/lib/pair-map";
 import type { Signal } from "@/lib/types/signal";
 import type { TradingType } from "@/lib/types/trading-type";
 import TradingChart from "@/components/TradingChart";
@@ -223,7 +222,7 @@ export default function TradingPageContent() {
   useEffect(() => { const p = searchParams.get("pair"); if (signalContext) setPair(signalContext.pair); else if (p) setPair(p); }, [searchParams, signalContext]);
 
   const coin = pair.split("/")[0];
-  const sodexSymbol = pairToSodexSymbol(pair);
+  const sodexSymbol = `v${coin}_vUSDC`;
   const ticker = sodexSymbol ? d.tickerMap.get(sodexSymbol) : undefined;
   const currentPrice = ticker ? parseFloat(ticker.lastPx) : null;
 
