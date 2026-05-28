@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   HomeIcon,
   SignalIcon,
@@ -74,14 +75,18 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
   };
 
   const menuItems = (
-    <nav className={`flex flex-col gap-1 ${collapsed ? "px-2" : "px-3"}`}>
+    <nav className={`flex flex-col gap-0.5 ${collapsed ? "px-2" : "px-3"}`}>
       {groups.map((group, gi) => (
         <div key={group.label}>
           {gi > 0 && <div className="h-px bg-border-default my-3 mx-1" />}
           {!collapsed && (
-            <div className="text-[10px] text-txt-faint uppercase tracking-[0.18em] font-semibold px-2 pt-3 pb-2">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-[10px] text-txt-faint uppercase tracking-[0.18em] font-semibold px-2 pt-3 pb-2"
+            >
               {group.label}
-            </div>
+            </motion.div>
           )}
           {collapsed && gi > 0 && <div className="h-1" />}
           {group.items.map(({ href, label, Icon }) => {
@@ -92,25 +97,43 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
                 onClick={() => handleNavigate(href)}
                 title={collapsed ? label : undefined}
                 className={`
-                  w-full flex items-center rounded-md transition-all relative
+                  w-full flex items-center rounded-lg relative overflow-hidden
                   ${collapsed
                     ? "justify-center px-0 py-2.5"
                     : "gap-2.5 px-2.5 py-[7px]"
                   }
                   ${isActive
-                    ? "text-txt-primary font-medium bg-[#ffffff06]"
-                    : "text-txt-muted hover:text-txt-secondary hover:bg-[#ffffff04]"
+                    ? "text-txt-primary font-medium"
+                    : "text-txt-muted hover:text-txt-secondary"
                   }
+                  transition-colors duration-150
                 `}
               >
-                {isActive && !collapsed && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-r-full bg-accent" />
+                {/* Active background indicator — animated */}
+                {isActive && (
+                  <motion.div
+                    layoutId="sidebar-active-bg"
+                    className="absolute inset-0 bg-[#ffffff06] rounded-lg"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
                 )}
-                {isActive && collapsed && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-r-full bg-accent" />
+
+                {/* Active left bar — animated */}
+                {isActive && (
+                  <motion.div
+                    layoutId="sidebar-active-bar"
+                    className={`absolute ${collapsed ? "left-0" : "left-0"} top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-r-full bg-accent`}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
                 )}
-                <Icon size={collapsed ? 16 : 14} className={isActive ? "text-accent" : "opacity-50"} />
-                {!collapsed && <span className="text-[13px]">{label}</span>}
+
+                {/* Hover glow background */}
+                {!isActive && (
+                  <div className="absolute inset-0 rounded-lg bg-[#ffffff03] opacity-0 hover:opacity-100 transition-opacity duration-150" />
+                )}
+
+                <Icon size={collapsed ? 16 : 14} className={`relative z-10 ${isActive ? "text-accent" : "opacity-50"}`} />
+                {!collapsed && <span className="text-[13px] relative z-10">{label}</span>}
               </button>
             );
           })}
@@ -122,12 +145,10 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside
-        className={`
-          shrink-0 bg-surface border-r border-border-default hidden md:flex flex-col
-          transition-all duration-200 ease-out
-          ${collapsed ? "w-16" : "w-48"}
-        `}
+      <motion.aside
+        animate={{ width: collapsed ? 64 : 192 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        className="shrink-0 bg-surface border-r border-border-default hidden md:flex flex-col overflow-hidden"
       >
         <div className="flex-1 overflow-y-auto py-3">{menuItems}</div>
 
@@ -135,9 +156,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
         <div className="border-t border-border-default">
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className={`
-              w-full flex items-center justify-center gap-2 px-3 py-2.5 text-txt-muted hover:text-txt-secondary hover:bg-[#ffffff04] transition-colors
-            `}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-txt-muted hover:text-txt-secondary hover:bg-[#ffffff04] transition-colors"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? (
@@ -149,42 +168,70 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
               </>
             )}
           </button>
-          {!collapsed && (
-            <div className="text-[9px] text-txt-faint text-center pb-3">
-              v0.1 Beta · NoHype Labs
-            </div>
-          )}
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.15 }}
+                className="text-[9px] text-txt-faint text-center pb-3 overflow-hidden"
+              >
+                v0.1 Beta · NoHype Labs
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Mobile drawer */}
-      {mobileOpen && (
-        <div className="md:hidden fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onMobileClose} />
-          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-surface border-r border-border-default animate-slide-in-left flex flex-col">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-border-default">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                  </svg>
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden fixed inset-0 z-50"
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={onMobileClose}
+            />
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="absolute left-0 top-0 bottom-0 w-64 bg-surface border-r border-border-default flex flex-col"
+            >
+              <div className="flex items-center justify-between px-5 py-3 border-b border-border-default">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                    </svg>
+                  </div>
+                  <span className="text-sm font-bold text-txt-primary">SignalFlow</span>
                 </div>
-                <span className="text-sm font-bold text-txt-primary">SignalFlow</span>
+                <button
+                  onClick={onMobileClose}
+                  className="text-txt-muted hover:text-txt-primary transition-colors"
+                >
+                  <CloseIcon size={18} />
+                </button>
               </div>
-              <button
-                onClick={onMobileClose}
-                className="text-txt-muted hover:text-txt-primary transition-colors"
-              >
-                <CloseIcon size={18} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto pt-3">{menuItems}</div>
-            <div className="text-[9px] text-txt-faint px-5 py-3 border-t border-border-default">
-              v0.1 Beta · NoHype Labs
-            </div>
-          </aside>
-        </div>
-      )}
+              <div className="flex-1 overflow-y-auto pt-3">{menuItems}</div>
+              <div className="text-[9px] text-txt-faint px-5 py-3 border-t border-border-default">
+                v0.1 Beta · NoHype Labs
+              </div>
+            </motion.aside>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
