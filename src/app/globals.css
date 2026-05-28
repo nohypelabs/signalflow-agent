@@ -258,6 +258,35 @@ main::-webkit-scrollbar-thumb {
   animation-play-state: paused;
 }
 
+/* ── Dashboard intro gate ── */
+@keyframes intro-drift {
+  0% { transform: translateX(-2%); }
+  50% { transform: translateX(2%); }
+  100% { transform: translateX(-2%); }
+}
+
+@keyframes intro-breathe {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.03); }
+}
+
+@keyframes intro-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 199, 58, 0.18); }
+  50% { box-shadow: 0 0 0 14px rgba(255, 199, 58, 0); }
+}
+
+.intro-drift {
+  animation: intro-drift 14s ease-in-out infinite;
+}
+
+.intro-breathe {
+  animation: intro-breathe 10s ease-in-out infinite;
+}
+
+.intro-glow {
+  animation: intro-glow 2.4s ease-in-out infinite;
+}
+
 /* Hide scrollbar utility */
 .scrollbar-none {
   -ms-overflow-style: none;

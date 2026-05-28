@@ -4,6 +4,7 @@ import { useState } from "react";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import MobileBottomNav from "./MobileBottomNav";
+import DashboardIntroGate from "./DashboardIntroGate";
 import TradeForm from "@/components/TradeForm";
 import { AmbientGrid } from "@/components/ui/Polish";
 import type { Signal } from "@/lib/types/signal";
@@ -66,6 +67,7 @@ export default function AppShell({
         </main>
       </div>
       <MobileBottomNav />
+      <DashboardIntroGate />
       {tradeForm && (
         <TradeForm
           signal={tradeForm.signal}
