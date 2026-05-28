@@ -16,6 +16,14 @@ import RecentTrades from "@/components/RecentTrades";
 import PaperTradingStats from "@/components/PaperTradingStats";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { usePaperTrading } from "@/lib/hooks/usePaperTrading";
+import type { PaperTrade } from "@/lib/hooks/usePaperTrading";
+
+type TradeNotice = {
+  id: number;
+  kind: "success" | "error" | "info";
+  title: string;
+  detail: string;
+};
 
 export default function TradingPageContent() {
   const d = useDashboard();
@@ -23,6 +31,7 @@ export default function TradingPageContent() {
   const [pair, setPair] = useState("BTC/USDC");
   const [tradeMode, setTradeMode] = useState<"paper" | "live">("paper");
   const [tradeError, setTradeError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<TradeNotice | null>(null);
   const paper = usePaperTrading();
   const checkPaperTpSl = paper.checkTpSl;
 
@@ -85,7 +94,19 @@ export default function TradingPageContent() {
     setTradeError(null);
   }, [pair, tradeMode]);
 
+  useEffect(() => {
+    if (!notice) return;
+    const timeout = window.setTimeout(() => setNotice(null), 4500);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
+
   const pairs = ["BTC/USDC", "ETH/USDC", "SOL/USDC", "AVAX/USDC", "LINK/USDC"];
+  const openPaperTrades = useMemo(() => paper.trades.filter((trade) => trade.status === "OPEN"), [paper.trades]);
+
+  const getMarkPrice = (trade: PaperTrade) => {
+    const base = trade.pair.split("/")[0];
+    return currentPrices.get(base) ?? currentPrices.get(trade.pair) ?? null;
+  };
 
   const handleExecute = (order: { side: "LONG" | "SHORT"; leverage: number; margin: number; quantity: number; takeProfit: string; stopLoss: string }) => {
     const entryPrice = currentPrice || 0;
@@ -112,7 +133,21 @@ export default function TradingPageContent() {
         tradingType: tradingType ?? undefined,
       });
       if (!trade) {
-        setTradeError(paper.error ?? "Paper trade rejected.");
+        const message = paper.error ?? "Paper trade rejected.";
+        setTradeError(message);
+        setNotice({
+          id: Date.now(),
+          kind: "error",
+          title: "Trade rejected",
+          detail: message,
+        });
+      } else {
+        setNotice({
+          id: Date.now(),
+          kind: "success",
+          title: "Paper position opened",
+          detail: `${trade.side} ${trade.pair} ${trade.leverage}x opened at $${formatPrice(trade.entryPrice)} with $${trade.margin.toFixed(2)} margin.`,
+        });
       }
     } else {
       // Live trade via SoDEX
@@ -146,6 +181,24 @@ export default function TradingPageContent() {
     }
   };
 
+  const handleClosePaperTrade = (trade: PaperTrade) => {
+    const markPrice = getMarkPrice(trade);
+    if (!markPrice) {
+      const message = `No mark price available for ${trade.pair}.`;
+      setTradeError(message);
+      setNotice({ id: Date.now(), kind: "error", title: "Close rejected", detail: message });
+      return;
+    }
+
+    paper.closeTrade(trade.id, markPrice);
+    setNotice({
+      id: Date.now(),
+      kind: "info",
+      title: "Paper position closed",
+      detail: `${trade.side} ${trade.pair} closed at $${formatPrice(markPrice)}.`,
+    });
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -168,6 +221,34 @@ export default function TradingPageContent() {
           )}
         </div>
       </div>
+
+      {notice && (
+        <div
+          className={`rounded-lg border px-4 py-3 ${
+            notice.kind === "success"
+              ? "border-buy/25 bg-buy/10"
+              : notice.kind === "error"
+                ? "border-sell/25 bg-sell/10"
+                : "border-accent/25 bg-accent/10"
+          }`}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className={`text-xs font-bold ${notice.kind === "error" ? "text-sell" : notice.kind === "success" ? "text-buy" : "text-accent"}`}>
+                {notice.title}
+              </p>
+              <p className="text-[10px] text-txt-secondary mt-0.5">{notice.detail}</p>
+            </div>
+            <button
+              onClick={() => setNotice(null)}
+              className="text-[10px] text-txt-faint hover:text-txt-secondary cursor-pointer"
+              aria-label="Dismiss notification"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Wallet bar */}
       {d.isConnected && (
@@ -269,6 +350,18 @@ export default function TradingPageContent() {
           </ErrorBoundary>
 
           {tradeMode === "paper" && paper.loaded && (
+            <ErrorBoundary name="Open Paper Positions">
+              <OpenPaperPositionsPanel
+                trades={openPaperTrades}
+                currentPair={pair}
+                currentPrices={currentPrices}
+                onSelectPair={setPair}
+                onClose={handleClosePaperTrade}
+              />
+            </ErrorBoundary>
+          )}
+
+          {tradeMode === "paper" && paper.loaded && (
             <ErrorBoundary name="Paper Trading">
               <PaperTradingStats
                 stats={paper.stats}
@@ -286,6 +379,154 @@ export default function TradingPageContent() {
             />
           </ErrorBoundary>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function formatPrice(price: number): string {
+  if (price >= 10000) return price.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  if (price >= 100) return price.toFixed(2);
+  if (price >= 1) return price.toFixed(3);
+  return price.toFixed(5);
+}
+
+function formatUsd(value: number): string {
+  const abs = Math.abs(value);
+  const formatted = abs >= 1000
+    ? abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : abs.toFixed(2);
+  return `${value < 0 ? "-" : ""}$${formatted}`;
+}
+
+function OpenPaperPositionsPanel({
+  trades,
+  currentPair,
+  currentPrices,
+  onSelectPair,
+  onClose,
+}: {
+  trades: PaperTrade[];
+  currentPair: string;
+  currentPrices: Map<string, number>;
+  onSelectPair: (pair: string) => void;
+  onClose: (trade: PaperTrade) => void;
+}) {
+  return (
+    <Card padding="none" className="overflow-hidden">
+      <div className="px-4 py-3 border-b border-border-default">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-txt-primary">Open Paper Positions</h3>
+          <span className="text-[10px] font-mono text-accent">{trades.length}</span>
+        </div>
+      </div>
+
+      {trades.length === 0 ? (
+        <div className="px-4 py-5 text-center">
+          <p className="text-xs text-txt-dim">No open paper positions</p>
+          <p className="text-[10px] text-txt-faint mt-1">Executed paper trades will appear here.</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-border-default">
+          {trades.map((trade) => {
+            const base = trade.pair.split("/")[0];
+            const markPrice = currentPrices.get(base) ?? currentPrices.get(trade.pair) ?? trade.entryPrice;
+            return (
+              <OpenPaperPositionRow
+                key={trade.id}
+                trade={trade}
+                markPrice={markPrice}
+                isActivePair={trade.pair === currentPair}
+                onSelectPair={onSelectPair}
+                onClose={onClose}
+              />
+            );
+          })}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function OpenPaperPositionRow({
+  trade,
+  markPrice,
+  isActivePair,
+  onSelectPair,
+  onClose,
+}: {
+  trade: PaperTrade;
+  markPrice: number;
+  isActivePair: boolean;
+  onSelectPair: (pair: string) => void;
+  onClose: (trade: PaperTrade) => void;
+}) {
+  const priceChange = trade.side === "LONG"
+    ? markPrice - trade.entryPrice
+    : trade.entryPrice - markPrice;
+  const pnl = priceChange * trade.quantity;
+  const pnlPct = trade.margin > 0 ? (pnl / trade.margin) * 100 : 0;
+  const isProfit = pnl >= 0;
+  const liqDistance = trade.side === "LONG"
+    ? ((markPrice - trade.liquidationPrice) / markPrice) * 100
+    : ((trade.liquidationPrice - markPrice) / markPrice) * 100;
+
+  return (
+    <div className="px-4 py-3 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${trade.side === "LONG" ? "bg-buy/15 text-buy" : "bg-sell/15 text-sell"}`}>
+              {trade.side}
+            </span>
+            <button
+              onClick={() => onSelectPair(trade.pair)}
+              className={`text-sm font-bold truncate cursor-pointer ${isActivePair ? "text-accent" : "text-txt-primary hover:text-accent"}`}
+            >
+              {trade.pair}
+            </button>
+            <span className="text-[9px] text-accent font-mono">{trade.leverage}x</span>
+          </div>
+          <p className="text-[9px] text-txt-faint mt-1">
+            Margin {formatUsd(trade.margin)} · Size {trade.quantity.toFixed(5)}
+          </p>
+        </div>
+        <div className="text-right shrink-0">
+          <p className={`text-sm font-bold font-mono ${isProfit ? "text-buy" : "text-sell"}`}>
+            {isProfit ? "+" : ""}{formatUsd(pnl)}
+          </p>
+          <p className={`text-[10px] font-mono ${isProfit ? "text-buy" : "text-sell"}`}>
+            {pnlPct >= 0 ? "+" : ""}{pnlPct.toFixed(2)}%
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[9px] font-mono">
+        <span className="text-txt-dim">Entry <span className="text-txt-secondary">${formatPrice(trade.entryPrice)}</span></span>
+        <span className="text-txt-dim">Mark <span className="text-txt-secondary">${formatPrice(markPrice)}</span></span>
+        <span className="text-txt-dim">TP <span className="text-buy">{trade.takeProfit > 0 ? `$${formatPrice(trade.takeProfit)}` : "-"}</span></span>
+        <span className="text-txt-dim">SL <span className="text-sell">{trade.stopLoss > 0 ? `$${formatPrice(trade.stopLoss)}` : "-"}</span></span>
+        <span className="text-txt-dim">Liq <span className="text-sell">${formatPrice(trade.liquidationPrice)}</span></span>
+        <span className={liqDistance < 5 ? "text-sell" : liqDistance < 15 ? "text-hold" : "text-txt-dim"}>
+          Dist {liqDistance.toFixed(1)}%
+        </span>
+      </div>
+
+      <div className="flex items-center gap-2">
+        {!isActivePair && (
+          <button
+            onClick={() => onSelectPair(trade.pair)}
+            className="flex-1 text-[10px] py-1.5 rounded border border-border-default bg-inset text-txt-secondary hover:border-accent/40 hover:text-accent transition-colors cursor-pointer"
+          >
+            View Chart
+          </button>
+        )}
+        <button
+          onClick={() => onClose(trade)}
+          className="flex-1 text-[10px] py-1.5 rounded border border-sell/25 bg-sell/10 text-sell hover:bg-sell/15 transition-colors cursor-pointer font-semibold"
+        >
+          Close Position
+        </button>
       </div>
     </div>
   );
