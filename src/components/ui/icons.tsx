@@ -30,6 +30,11 @@ const d: Record<string, string> = {
   trendDown: "M13 17h8m0 0V9m0 8l-8-8-4 4-6-6",
   sidebarCollapse: "M11 19h10M11 19V5m0 14H4a1 1 0 01-1-1V6a1 1 0 011-1h7m0 14V5m0 0h7a1 1 0 011 1v12a1 1 0 01-1 1h-7",
   sidebarExpand: "M13 19h8M13 19V5m0 14H5a1 1 0 01-1-1V6a1 1 0 011-1h8m0 14V5m0 0h6a1 1 0 011 1v12a1 1 0 01-1 1h-6",
+  clipboard: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4",
+  barChart: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
+  briefcase: "M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
+  document: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+  chartBar: "M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
 };
 
 function Icon({ name, size = 20, className = "" }: { name: string; size?: number; className?: string }) {
@@ -74,3 +79,8 @@ export function TrendUpIcon(p: IconProps) { return <Icon name="trendUp" {...p} /
 export function TrendDownIcon(p: IconProps) { return <Icon name="trendDown" {...p} />; }
 export function SidebarCollapseIcon(p: IconProps) { return <Icon name="sidebarCollapse" {...p} />; }
 export function SidebarExpandIcon(p: IconProps) { return <Icon name="sidebarExpand" {...p} />; }
+export function ClipboardIcon(p: IconProps) { return <Icon name="clipboard" {...p} />; }
+export function BarChartIcon(p: IconProps) { return <Icon name="barChart" {...p} />; }
+export function BriefcaseIcon(p: IconProps) { return <Icon name="briefcase" {...p} />; }
+export function DocumentIcon(p: IconProps) { return <Icon name="document" {...p} />; }
+export function ChartBarIcon(p: IconProps) { return <Icon name="chartBar" {...p} />; }

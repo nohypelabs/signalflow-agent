@@ -1,10 +1,14 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { DashboardProvider, useDashboard } from "@/lib/dashboard-context";
 import AppShell from "@/components/layout/AppShell";
 
 function ShellWithProps({ children }: { children: React.ReactNode }) {
   const d = useDashboard();
+  const pathname = usePathname();
+  const isFullScreen = pathname === "/trading";
+
   return (
     <AppShell
       sodexStatus={d.sodexStatus}
@@ -37,6 +41,7 @@ function ShellWithProps({ children }: { children: React.ReactNode }) {
             }
           : null
       }
+      fullScreen={isFullScreen}
     >
       {children}
     </AppShell>

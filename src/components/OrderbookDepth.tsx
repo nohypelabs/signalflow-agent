@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import Card from "@/components/ui/Card";
 import Skeleton from "@/components/ui/Skeleton";
+import { ChartBarIcon } from "@/components/ui/icons";
 
 interface OrderBookEntry {
   price: number;
@@ -163,7 +164,7 @@ export default function OrderbookDepth({ symbol = "vBTC_vUSDC", coin = "BTC" }: 
       <div className="px-4 py-3 border-b border-border-default">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-base">📊</span>
+            <ChartBarIcon size={16} className="text-accent" />
             <h3 className="text-sm font-semibold text-txt-primary">Orderbook</h3>
             <span className="text-[9px] text-txt-faint font-mono">{coin}/USDC</span>
           </div>

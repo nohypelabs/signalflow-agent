@@ -6,8 +6,6 @@ import { useDashboard } from "@/lib/dashboard-context";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import type { Signal } from "@/lib/types/signal";
 import type { TradingType } from "@/lib/types/trading-type";
-import Card from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
 import TradingChart from "@/components/TradingChart";
 import OrderForm from "@/components/OrderForm";
 import OrderbookDepth from "@/components/OrderbookDepth";
@@ -15,8 +13,21 @@ import OpenOrders from "@/components/OpenOrders";
 import RecentTrades from "@/components/RecentTrades";
 import PaperTradingStats from "@/components/PaperTradingStats";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
+import {
+  ClipboardIcon,
+  BarChartIcon,
+  BriefcaseIcon,
+  DocumentIcon,
+  TrendUpIcon,
+  TrendDownIcon,
+  WalletIcon,
+  ActivityIcon,
+  ChartIcon,
+} from "@/components/ui/icons";
 import { usePaperTrading } from "@/lib/hooks/usePaperTrading";
 import type { PaperTrade } from "@/lib/hooks/usePaperTrading";
+
+/* ── Types ── */
 
 type TradeNotice = {
   id: number;
@@ -36,23 +47,37 @@ type TradeOrderInput = {
 };
 
 type PendingTradeAction =
-  | {
-      kind: "open";
-      mode: "paper" | "live";
-      pair: string;
-      order: TradeOrderInput;
-      entryPrice: number;
-      takeProfit: number;
-      stopLoss: number;
-      liquidationPrice: number;
-    }
-  | {
-      kind: "close";
-      trade: PaperTrade;
-      markPrice: number;
-      pnl: number;
-      roi: number;
-    };
+  | { kind: "open"; mode: "paper" | "live"; pair: string; order: TradeOrderInput; entryPrice: number; takeProfit: number; stopLoss: number; liquidationPrice: number }
+  | { kind: "close"; trade: PaperTrade; markPrice: number; pnl: number; roi: number };
+
+type BookTab = "book" | "trades";
+type BottomTab = "orders" | "trades" | "positions" | "stats";
+
+/* ── Helpers ── */
+
+function formatPrice(price: number): string {
+  if (price >= 10000) return price.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  if (price >= 100) return price.toFixed(2);
+  if (price >= 1) return price.toFixed(3);
+  return price.toFixed(5);
+}
+
+function formatUsd(value: number): string {
+  const abs = Math.abs(value);
+  const formatted = abs >= 1000 ? abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : abs.toFixed(2);
+  return `${value < 0 ? "-" : ""}$${formatted}`;
+}
+
+function fmtCompact(n: number): string {
+  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)}B`;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toFixed(2);
+}
+
+/* ══════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ══════════════════════════════════════════════════════ */
 
 export default function TradingPageContent() {
   const d = useDashboard();
@@ -62,17 +87,16 @@ export default function TradingPageContent() {
   const [tradeError, setTradeError] = useState<string | null>(null);
   const [notice, setNotice] = useState<TradeNotice | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingTradeAction | null>(null);
+  const [bottomTab, setBottomTab] = useState<BottomTab>("orders");
+  const [bookTab, setBookTab] = useState<BookTab>("book");
   const paper = usePaperTrading();
   const checkPaperTpSl = paper.checkTpSl;
 
-  // Read trading type from URL
   const tradingTypeParam = searchParams.get("type");
   const tradingType: TradingType | null =
     tradingTypeParam && ["scalping", "intraday", "swing", "position"].includes(tradingTypeParam)
-      ? tradingTypeParam as TradingType
-      : null;
+      ? tradingTypeParam as TradingType : null;
 
-  // Pre-fill from signal context
   const signalContext = useMemo(() => {
     const signalId = searchParams.get("signal");
     if (!signalId) return null;
@@ -93,39 +117,26 @@ export default function TradingPageContent() {
   const currentPrices = useMemo(() => {
     const base = pair.split("/")[0];
     const prices = new Map<string, number>();
-    if (currentPrice && Number.isFinite(currentPrice)) {
-      prices.set(base, currentPrice);
-      prices.set(pair, currentPrice);
-    }
-
+    if (currentPrice && Number.isFinite(currentPrice)) { prices.set(base, currentPrice); prices.set(pair, currentPrice); }
     for (const t of d.tickers ?? []) {
-      const markPrice = parseFloat(t.lastPx);
-      if (!Number.isFinite(markPrice) || markPrice <= 0) continue;
-      const [rawBase, rawQuote] = t.symbol.split("_");
-      const tickerBase = rawBase?.replace(/^v/, "");
-      const tickerQuote = rawQuote?.replace(/^v/, "");
-      if (!tickerBase) continue;
-      prices.set(tickerBase, markPrice);
-      if (tickerQuote) prices.set(`${tickerBase}/${tickerQuote}`, markPrice);
+      const mp = parseFloat(t.lastPx);
+      if (!Number.isFinite(mp) || mp <= 0) continue;
+      const [rb, rq] = t.symbol.split("_");
+      const tb = rb?.replace(/^v/, "");
+      const tq = rq?.replace(/^v/, "");
+      if (!tb) continue;
+      prices.set(tb, mp);
+      if (tq) prices.set(`${tb}/${tq}`, mp);
     }
     return prices;
   }, [currentPrice, d.tickers, pair]);
 
-  // Check TP/SL for paper trades every tick.
-  useEffect(() => {
-    if (currentPrices.size > 0) checkPaperTpSl(currentPrices);
-  }, [currentPrices, checkPaperTpSl]);
-
-  useEffect(() => {
-    if (paper.error) setTradeError(paper.error);
-  }, [paper.error]);
-
-  useEffect(() => {
-    setTradeError(null);
-  }, [pair, tradeMode]);
+  useEffect(() => { if (currentPrices.size > 0) checkPaperTpSl(currentPrices); }, [currentPrices, checkPaperTpSl]);
+  useEffect(() => { if (paper.error) setTradeError(paper.error); }, [paper.error]);
+  useEffect(() => { setTradeError(null); }, [pair, tradeMode]);
 
   const pairs = ["BTC/USDC", "ETH/USDC", "SOL/USDC", "AVAX/USDC", "LINK/USDC"];
-  const openPaperTrades = useMemo(() => paper.trades.filter((trade) => trade.status === "OPEN"), [paper.trades]);
+  const openPaperTrades = useMemo(() => paper.trades.filter((t) => t.status === "OPEN"), [paper.trades]);
 
   const getMarkPrice = (trade: PaperTrade) => {
     const base = trade.pair.split("/")[0];
@@ -133,434 +144,244 @@ export default function TradingPageContent() {
   };
 
   const calculateLiquidationPrice = (entryPrice: number, side: "LONG" | "SHORT", leverage: number) => {
-    const maintenanceMargin = 0.005;
-    return side === "LONG"
-      ? entryPrice * (1 - (1 / leverage) + maintenanceMargin)
-      : entryPrice * (1 + (1 / leverage) - maintenanceMargin);
+    const mm = 0.005;
+    return side === "LONG" ? entryPrice * (1 - 1 / leverage + mm) : entryPrice * (1 + 1 / leverage - mm);
   };
+
+  /* ── Handlers (logic unchanged) ── */
 
   const handleExecute = (order: TradeOrderInput) => {
     const entryPrice = currentPrice || 0;
     const tp = parseFloat(order.takeProfit) || 0;
     const sl = parseFloat(order.stopLoss) || 0;
     setTradeError(null);
-
-    if (!entryPrice) {
-      setTradeError("Market price is not available.");
-      return;
-    }
-
-    setPendingAction({
-      kind: "open",
-      mode: tradeMode,
-      pair,
-      order,
-      entryPrice,
-      takeProfit: tp,
-      stopLoss: sl,
-      liquidationPrice: calculateLiquidationPrice(entryPrice, order.side, order.leverage),
-    });
+    if (!entryPrice) { setTradeError("Market price is not available."); return; }
+    setPendingAction({ kind: "open", mode: tradeMode, pair, order, entryPrice, takeProfit: tp, stopLoss: sl, liquidationPrice: calculateLiquidationPrice(entryPrice, order.side, order.leverage) });
   };
 
   const executeConfirmedOpen = (action: Extract<PendingTradeAction, { kind: "open" }>) => {
     const { order, entryPrice, takeProfit: tp, stopLoss: sl } = action;
-
     if (action.mode === "paper") {
-      const trade = paper.openTrade({
-        pair: action.pair,
-        side: order.side,
-        leverage: order.leverage,
-        margin: order.margin,
-        entryPrice,
-        takeProfit: tp,
-        stopLoss: sl,
-        signalId: signalContext?.id,
-        confidence: signalContext?.confidence,
-        tradingType: tradingType ?? undefined,
-      });
+      const trade = paper.openTrade({ pair: action.pair, side: order.side, leverage: order.leverage, margin: order.margin, entryPrice, takeProfit: tp, stopLoss: sl, signalId: signalContext?.id, confidence: signalContext?.confidence, tradingType: tradingType ?? undefined });
       if (!trade) {
-        const message = paper.error ?? "Paper trade rejected.";
-        setTradeError(message);
-        setNotice({
-          id: Date.now(),
-          kind: "error",
-          title: "Trade rejected",
-          detail: message,
-        });
+        const msg = paper.error ?? "Paper trade rejected.";
+        setTradeError(msg);
+        setNotice({ id: Date.now(), kind: "error", title: "Trade rejected", detail: msg });
       } else {
-        setNotice({
-          id: Date.now(),
-          kind: "success",
-          title: "Paper position opened",
-          detail: `${trade.side} ${trade.pair} ${trade.leverage}x opened at $${formatPrice(trade.entryPrice)} with $${trade.margin.toFixed(2)} margin.`,
-          rows: [
-            { label: "Pair", value: trade.pair },
-            { label: "Side", value: trade.side, tone: trade.side === "LONG" ? "buy" : "sell" },
-            { label: "Entry", value: `$${formatPrice(trade.entryPrice)}` },
-            { label: "Margin", value: formatUsd(trade.margin) },
-            { label: "Leverage", value: `${trade.leverage}x`, tone: "accent" },
-            { label: "Liquidation", value: `$${formatPrice(trade.liquidationPrice)}`, tone: "sell" },
-          ],
-        });
+        setNotice({ id: Date.now(), kind: "success", title: "Paper position opened", detail: `${trade.side} ${trade.pair} ${trade.leverage}x at $${formatPrice(trade.entryPrice)}`, rows: [
+          { label: "Pair", value: trade.pair }, { label: "Side", value: trade.side, tone: trade.side === "LONG" ? "buy" : "sell" },
+          { label: "Entry", value: `$${formatPrice(trade.entryPrice)}` }, { label: "Margin", value: formatUsd(trade.margin) },
+          { label: "Leverage", value: `${trade.leverage}x`, tone: "accent" }, { label: "Liquidation", value: `$${formatPrice(trade.liquidationPrice)}`, tone: "sell" },
+        ]});
       }
     } else {
-      // Live trade via SoDEX
-      d.handleExecuteSignal({
-        id: `manual-${Date.now()}`,
-        pair: action.pair,
-        action: order.side,
-        confidence: 0,
-        price: entryPrice,
-        change24h: ticker?.changePct ?? 0,
-        reasoning: "Manual trade",
+      d.handleExecuteSignal({ id: `manual-${Date.now()}`, pair: action.pair, action: order.side, confidence: 0, price: entryPrice, change24h: ticker?.changePct ?? 0, reasoning: "Manual trade",
         dimensions: { etfFlow: 0, sentiment: 0, macro: 0, momentum: 0, treasury: 0 },
-        dimensionDetails: {
-          etfFlow: { score: 0, detail: "" },
-          sentiment: { score: 0, detail: "" },
-          macro: { score: 0, detail: "" },
-          momentum: { score: 0, detail: "" },
-          treasury: { score: 0, detail: "" },
-        },
-        execution: {
-          orderType: "Market",
-          entry: entryPrice,
-          takeProfit: tp,
-          stopLoss: sl,
-          positionSize: order.quantity.toString(),
-          riskReward: "",
-        },
-        sources: ["Manual"],
-        timeAgo: "just now",
+        dimensionDetails: { etfFlow: { score: 0, detail: "" }, sentiment: { score: 0, detail: "" }, macro: { score: 0, detail: "" }, momentum: { score: 0, detail: "" }, treasury: { score: 0, detail: "" } },
+        execution: { orderType: "Market", entry: entryPrice, takeProfit: tp, stopLoss: sl, positionSize: order.quantity.toString(), riskReward: "" },
+        sources: ["Manual"], timeAgo: "just now",
       } as Signal);
-      setNotice({
-        id: Date.now(),
-        kind: "info",
-        title: "Live order submitted",
-        detail: `${order.side} ${action.pair} order has been sent to the live execution flow.`,
-        rows: [
-          { label: "Pair", value: action.pair },
-          { label: "Side", value: order.side, tone: order.side === "LONG" ? "buy" : "sell" },
-          { label: "Entry", value: `$${formatPrice(entryPrice)}` },
-          { label: "Size", value: order.quantity.toFixed(5) },
-          { label: "Take Profit", value: tp > 0 ? `$${formatPrice(tp)}` : "Not set" },
-          { label: "Stop Loss", value: sl > 0 ? `$${formatPrice(sl)}` : "Not set" },
-        ],
-      });
+      setNotice({ id: Date.now(), kind: "info", title: "Live order submitted", detail: `${order.side} ${action.pair} sent to live execution.`, rows: [
+        { label: "Pair", value: action.pair }, { label: "Side", value: order.side, tone: order.side === "LONG" ? "buy" : "sell" },
+        { label: "Entry", value: `$${formatPrice(entryPrice)}` }, { label: "Size", value: order.quantity.toFixed(5) },
+        { label: "TP", value: tp > 0 ? `$${formatPrice(tp)}` : "—" }, { label: "SL", value: sl > 0 ? `$${formatPrice(sl)}` : "—" },
+      ]});
     }
   };
 
   const handleClosePaperTrade = (trade: PaperTrade) => {
     const markPrice = getMarkPrice(trade);
-    if (!markPrice) {
-      const message = `No mark price available for ${trade.pair}.`;
-      setTradeError(message);
-      setNotice({ id: Date.now(), kind: "error", title: "Close rejected", detail: message });
-      return;
-    }
-
-    const priceChange = trade.side === "LONG"
-      ? markPrice - trade.entryPrice
-      : trade.entryPrice - markPrice;
-    const pnl = priceChange * trade.quantity;
-    setPendingAction({
-      kind: "close",
-      trade,
-      markPrice,
-      pnl,
-      roi: trade.margin > 0 ? (pnl / trade.margin) * 100 : 0,
-    });
+    if (!markPrice) { setTradeError(`No mark price for ${trade.pair}.`); return; }
+    const pnl = (trade.side === "LONG" ? markPrice - trade.entryPrice : trade.entryPrice - markPrice) * trade.quantity;
+    setPendingAction({ kind: "close", trade, markPrice, pnl, roi: trade.margin > 0 ? (pnl / trade.margin) * 100 : 0 });
   };
 
   const executeConfirmedClose = (action: Extract<PendingTradeAction, { kind: "close" }>) => {
     const { trade, markPrice, pnl, roi } = action;
     paper.closeTrade(trade.id, markPrice);
-    setNotice({
-      id: Date.now(),
-      kind: "info",
-      title: "Paper position closed",
-      detail: `${trade.side} ${trade.pair} closed at $${formatPrice(markPrice)}.`,
-      rows: [
-        { label: "Pair", value: trade.pair },
-        { label: "Exit", value: `$${formatPrice(markPrice)}` },
-        { label: "PnL", value: `${pnl >= 0 ? "+" : ""}${formatUsd(pnl)}`, tone: pnl >= 0 ? "buy" : "sell" },
-        { label: "ROI", value: `${roi >= 0 ? "+" : ""}${roi.toFixed(2)}%`, tone: roi >= 0 ? "buy" : "sell" },
-      ],
-    });
+    setNotice({ id: Date.now(), kind: "info", title: "Position closed", detail: `${trade.side} ${trade.pair} at $${formatPrice(markPrice)}`, rows: [
+      { label: "Pair", value: trade.pair }, { label: "Exit", value: `$${formatPrice(markPrice)}` },
+      { label: "PnL", value: `${pnl >= 0 ? "+" : ""}${formatUsd(pnl)}`, tone: pnl >= 0 ? "buy" : "sell" },
+      { label: "ROI", value: `${roi >= 0 ? "+" : ""}${roi.toFixed(2)}%`, tone: roi >= 0 ? "buy" : "sell" },
+    ]});
   };
 
   const handleConfirmPendingAction = () => {
-    const action = pendingAction;
-    if (!action) return;
-    setPendingAction(null);
-    if (action.kind === "open") executeConfirmedOpen(action);
-    else executeConfirmedClose(action);
+    const a = pendingAction; if (!a) return; setPendingAction(null);
+    if (a.kind === "open") executeConfirmedOpen(a); else executeConfirmedClose(a);
   };
 
+  /* ── Market stats ── */
+  const changePct = ticker?.changePct ?? 0;
+  const high24h = ticker ? parseFloat(ticker.highPx ?? "0") : 0;
+  const low24h = ticker ? parseFloat(ticker.lowPx ?? "0") : 0;
+  const vol24h = ticker ? parseFloat(ticker.volume ?? "0") : 0;
+
+  /* ── Bottom tab config ── */
+  const tabCfg: { id: BottomTab; label: string; icon: React.ReactNode; count: number }[] = [
+    { id: "orders", label: "Open Orders", icon: <ClipboardIcon size={13} />, count: d.openOrders.length },
+    { id: "trades", label: "Trades", icon: <BarChartIcon size={13} />, count: 0 },
+    { id: "positions", label: "Positions", icon: <BriefcaseIcon size={13} />, count: openPaperTrades.length },
+    { id: "stats", label: "Paper Stats", icon: <DocumentIcon size={13} />, count: paper.stats.totalTrades },
+  ];
+
+  /* ═══ RENDER ═══ */
+
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg font-bold text-txt-primary tracking-tight">Trading</h2>
-          <Badge variant="live" size="sm">LIVE</Badge>
-          {tradeMode === "paper" && (
-            <span className="text-[9px] px-2 py-0.5 rounded bg-accent/15 text-accent font-bold">📝 PAPER MODE</span>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          {d.isConnected ? (
-            <div className="flex items-center gap-2 text-[10px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-buy animate-pulse" />
-              <span className="text-txt-muted font-mono">{d.shortAddress}</span>
+    <div className="h-full flex flex-col overflow-hidden bg-background">
+      {/* Modals */}
+      {notice && <TradeExecutionModal notice={notice} onClose={() => setNotice(null)} />}
+      {pendingAction && <TradeConfirmationModal action={pendingAction} onCancel={() => setPendingAction(null)} onConfirm={handleConfirmPendingAction} />}
+
+      {/* ═══ [1] MARKET HEADER — unchanged ═══ */}
+      <div className="shrink-0 border-b border-border-default bg-card/80 backdrop-blur-sm">
+        <div className="flex items-center gap-4 px-4 py-2">
+          <div className="flex items-center gap-0.5 bg-inset border border-border-default rounded-lg p-0.5">
+            {pairs.map((p) => (
+              <button key={p} onClick={() => setPair(p)} className={`text-[10px] px-2.5 py-1.5 rounded-md transition-all cursor-pointer font-semibold ${pair === p ? "bg-accent/15 text-accent shadow-[0_0_8px_rgba(0,229,168,0.1)] border border-accent/20" : "text-txt-dim hover:text-txt-secondary border border-transparent"}`}>
+                {p.replace("/USDC", "")}
+              </button>
+            ))}
+          </div>
+          <div className="w-px h-7 bg-border-default" />
+          <div className="flex items-baseline gap-2">
+            {currentPrice ? (
+              <>
+                <span className="text-lg font-bold font-mono text-txt-primary tabular-nums">${currentPrice.toLocaleString("en-US", { maximumFractionDigits: coin === "BTC" ? 0 : 2 })}</span>
+                <span className={`text-xs font-bold font-mono tabular-nums flex items-center gap-0.5 ${changePct >= 0 ? "text-buy" : "text-sell"}`}>
+                  {changePct >= 0 ? "+" : ""}{changePct.toFixed(2)}%{changePct >= 0 ? <TrendUpIcon size={11} /> : <TrendDownIcon size={11} />}
+                </span>
+              </>
+            ) : <span className="text-xs text-txt-dim font-mono">Loading…</span>}
+          </div>
+          <div className="w-px h-7 bg-border-default" />
+          <div className="flex items-center gap-4">
+            {high24h > 0 && <div className="flex flex-col"><span className="text-[8px] text-txt-faint uppercase tracking-wider leading-none mb-0.5">24h High</span><span className="text-[11px] font-mono text-buy tabular-nums">${formatPrice(high24h)}</span></div>}
+            {low24h > 0 && <div className="flex flex-col"><span className="text-[8px] text-txt-faint uppercase tracking-wider leading-none mb-0.5">24h Low</span><span className="text-[11px] font-mono text-sell tabular-nums">${formatPrice(low24h)}</span></div>}
+            {vol24h > 0 && <div className="flex flex-col"><span className="text-[8px] text-txt-faint uppercase tracking-wider leading-none mb-0.5">24h Vol</span><span className="text-[11px] font-mono text-txt-secondary tabular-nums">{fmtCompact(vol24h)}</span></div>}
+          </div>
+          <div className="flex-1" />
+          <div className="flex items-center gap-2.5">
+            {signalContext && (
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-accent/5 border border-accent/15">
+                <ActivityIcon size={11} className="text-accent" />
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${signalContext.action === "LONG" ? "bg-buy/15 text-buy" : signalContext.action === "SHORT" ? "bg-sell/15 text-sell" : "bg-hold/15 text-hold"}`}>{signalContext.actionV2 ?? signalContext.action}</span>
+                <span className="text-[9px] text-accent font-mono">{signalContext.confidence}%</span>
+              </div>
+            )}
+            <div className="flex items-center gap-0.5 bg-inset rounded-lg p-0.5 border border-border-default">
+              <button onClick={() => setTradeMode("paper")} className={`text-[9px] px-2.5 py-1 rounded-md cursor-pointer font-semibold ${tradeMode === "paper" ? "bg-accent/15 text-accent border border-accent/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Paper</button>
+              <button onClick={() => setTradeMode("live")} className={`text-[9px] px-2.5 py-1 rounded-md cursor-pointer font-semibold ${tradeMode === "live" ? "bg-sell/15 text-sell border border-sell/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Live</button>
             </div>
-          ) : (
-            <span className="text-[10px] text-hold">Connect wallet for live trading</span>
-          )}
+            {d.isConnected ? (
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-inset border border-border-default"><WalletIcon size={11} className="text-buy" /><span className="text-[10px] font-mono text-txt-secondary">{d.shortAddress}</span></div>
+            ) : (
+              <span className="text-[9px] text-hold px-2.5 py-1 rounded-lg bg-hold/5 border border-hold/15 flex items-center gap-1.5"><WalletIcon size={11} /> Connect</span>
+            )}
+          </div>
         </div>
       </div>
 
-      {notice && <TradeExecutionModal notice={notice} onClose={() => setNotice(null)} />}
-      {pendingAction && (
-        <TradeConfirmationModal
-          action={pendingAction}
-          onCancel={() => setPendingAction(null)}
-          onConfirm={handleConfirmPendingAction}
-        />
-      )}
+      {/* ═══ [2] THREE-COLUMN BODY — fills remaining height ═══ */}
+      <div className="flex-1 min-h-0 flex">
+        {/* ─── COLUMN A: Chart (~65%) ─── */}
+        <div className="flex-[13] min-w-0 flex flex-col border-r border-border-default">
+          <ErrorBoundary name="Trading Chart">
+            <TradingChart klines={d.klines} symbol={pair} currentPrice={currentPrice} liveSignals={d.liveSignals} tickerMap={d.tickerMap} />
+          </ErrorBoundary>
+        </div>
 
-      {/* Wallet bar */}
-      {d.isConnected && (
-        <Card padding="sm" className="bg-inset/30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-[10px] text-txt-dim uppercase tracking-wider">Wallet</span>
-              <span className="text-xs font-mono text-txt-primary font-semibold">{d.shortAddress}</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-[10px] text-txt-dim">
-                Network: <span className="text-txt-secondary">ValueChain Mainnet</span>
-              </span>
-              <span className="text-[10px] text-txt-dim">
-                Orders: <span className="text-txt-secondary">{d.openOrders.length}</span>
-              </span>
-            </div>
+        {/* ─── COLUMN B: Orderbook + Trades (~20%) ─── */}
+        <div className="flex-[4] min-w-0 flex flex-col border-r border-border-default bg-surface/10">
+          {/* Tab switcher */}
+          <div className="shrink-0 flex items-center border-b border-border-default bg-inset/30">
+            <button onClick={() => setBookTab("book")} className={`flex-1 text-[11px] py-2 font-medium cursor-pointer transition-colors border-b-2 ${bookTab === "book" ? "text-accent border-accent bg-accent/5" : "text-txt-dim border-transparent hover:text-txt-secondary"}`}>Order Book</button>
+            <button onClick={() => setBookTab("trades")} className={`flex-1 text-[11px] py-2 font-medium cursor-pointer transition-colors border-b-2 ${bookTab === "trades" ? "text-accent border-accent bg-accent/5" : "text-txt-dim border-transparent hover:text-txt-secondary"}`}>Trades</button>
           </div>
-        </Card>
-      )}
+          {/* Content */}
+          <div className="flex-1 min-h-0 overflow-y-auto scrollbar-none">
+            {bookTab === "book" ? (
+              <ErrorBoundary name="Orderbook">
+                <OrderbookDepth symbol={sodexSymbol || "vBTC_vUSDC"} coin={coin} />
+              </ErrorBoundary>
+            ) : (
+              <ErrorBoundary name="Recent Trades">
+                <RecentTrades orders={d.orders} loading={d.ordersLoading} paperTrades={paper.trades} />
+              </ErrorBoundary>
+            )}
+          </div>
+        </div>
 
-      {/* Pair selector */}
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] text-txt-dim uppercase tracking-wider">Pair:</span>
-        <div className="flex items-center gap-0.5 bg-inset border border-border-default rounded-lg p-0.5">
-          {pairs.map((p) => (
-            <button
-              key={p}
-              onClick={() => setPair(p)}
-              className={`text-[10px] px-2.5 py-1 rounded transition-colors cursor-pointer ${
-                pair === p ? "bg-elevated text-accent" : "text-txt-dim hover:text-txt-secondary"
-              }`}
-            >
-              {p.replace("/USDC", "")}
+        {/* ─── COLUMN C: Order Form (~15%) ─── */}
+        <div className="flex-[3] min-w-0 flex flex-col overflow-y-auto scrollbar-none">
+          <ErrorBoundary name="Order Form">
+            <OrderForm pair={pair} coin={coin} currentPrice={currentPrice} signal={signalContext} isConnected={d.isConnected} paperBalance={paper.balance.available} mode={tradeMode} tradingType={tradingType} error={tradeError} onModeChange={setTradeMode} onExecute={handleExecute} />
+          </ErrorBoundary>
+        </div>
+      </div>
+
+      {/* ═══ [3] BOTTOM PANEL ═══ */}
+      <div className="shrink-0 h-[200px] border-t border-border-default bg-card/50 flex flex-col">
+        <div className="flex items-center gap-0 px-3 border-b border-border-default bg-inset/30 shrink-0">
+          {tabCfg.map((tab) => (
+            <button key={tab.id} onClick={() => setBottomTab(tab.id)} className={`flex items-center gap-1.5 px-3 py-2 text-[11px] font-medium cursor-pointer border-b-2 transition-colors ${bottomTab === tab.id ? "text-accent border-accent bg-accent/5" : "text-txt-dim border-transparent hover:text-txt-secondary hover:bg-elevated/20"}`}>
+              {tab.icon} {tab.label}
+              {tab.count > 0 && <span className={`text-[9px] px-1.5 py-0 rounded-full font-bold ${bottomTab === tab.id ? "bg-accent/20 text-accent" : "bg-elevated text-txt-faint"}`}>{tab.count}</span>}
             </button>
           ))}
         </div>
-        {currentPrice && (
-          <div className="ml-auto flex items-center gap-2">
-            <span className="text-sm font-bold font-mono text-txt-primary">
-              ${currentPrice.toLocaleString("en-US", { maximumFractionDigits: coin === "BTC" ? 0 : 2 })}
-            </span>
-            {ticker && (
-              <span className={`text-xs font-mono font-semibold ${ticker.changePct >= 0 ? "text-buy" : "text-sell"}`}>
-                {ticker.changePct >= 0 ? "+" : ""}{ticker.changePct.toFixed(2)}%
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Main layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        {/* Left: Chart + Orders */}
-        <div className="xl:col-span-2 space-y-4">
-          <ErrorBoundary name="Trading Chart">
-            <div className="h-[450px] flex flex-col">
-              <TradingChart
-                klines={d.klines}
-                symbol={pair}
-                currentPrice={currentPrice}
-                liveSignals={d.liveSignals}
-                tickerMap={d.tickerMap}
-              />
-            </div>
-          </ErrorBoundary>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <ErrorBoundary name="Open Orders">
-              <OpenOrders
-                orders={d.orders}
-                loading={d.ordersLoading}
-                error={d.ordersError}
-                onCancel={d.cancelOrder}
-              />
-            </ErrorBoundary>
-            <ErrorBoundary name="Recent Trades">
-              <RecentTrades orders={d.orders} loading={d.ordersLoading} paperTrades={paper.trades} />
-            </ErrorBoundary>
-          </div>
-        </div>
-
-        {/* Right: Order Form + Paper Stats + Orderbook */}
-        <div className="space-y-4">
-          <ErrorBoundary name="Order Form">
-            <OrderForm
-              pair={pair}
-              coin={coin}
-              currentPrice={currentPrice}
-              signal={signalContext}
-              isConnected={d.isConnected}
-              paperBalance={paper.balance.available}
-              mode={tradeMode}
-              tradingType={tradingType}
-              error={tradeError}
-              onModeChange={setTradeMode}
-              onExecute={handleExecute}
-            />
-          </ErrorBoundary>
-
-          {tradeMode === "paper" && paper.loaded && (
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          {bottomTab === "orders" && <ErrorBoundary name="Open Orders"><OpenOrders orders={d.orders} loading={d.ordersLoading} error={d.ordersError} onCancel={d.cancelOrder} /></ErrorBoundary>}
+          {bottomTab === "trades" && <ErrorBoundary name="Recent Trades"><RecentTrades orders={d.orders} loading={d.ordersLoading} paperTrades={paper.trades} /></ErrorBoundary>}
+          {bottomTab === "positions" && (
             <ErrorBoundary name="Open Paper Positions">
-              <OpenPaperPositionsPanel
-                trades={openPaperTrades}
-                currentPair={pair}
-                currentPrices={currentPrices}
-                onSelectPair={setPair}
-                onClose={handleClosePaperTrade}
-              />
+              {tradeMode === "paper" && paper.loaded ? (
+                openPaperTrades.length > 0 ? (
+                  <div className="divide-y divide-border-default">
+                    {openPaperTrades.map((trade) => {
+                      const base = trade.pair.split("/")[0];
+                      const mp = currentPrices.get(base) ?? currentPrices.get(trade.pair) ?? trade.entryPrice;
+                      return <OpenPaperPositionRow key={trade.id} trade={trade} markPrice={mp} isActive={trade.pair === pair} onSelect={setPair} onClose={handleClosePaperTrade} />;
+                    })}
+                  </div>
+                ) : <div className="flex items-center justify-center h-full"><div className="text-center"><BriefcaseIcon size={20} className="text-txt-faint mx-auto mb-2" /><p className="text-xs text-txt-muted">No open positions</p></div></div>
+              ) : <div className="flex items-center justify-center h-full"><p className="text-xs text-txt-dim">Switch to Paper mode</p></div>}
             </ErrorBoundary>
           )}
-
-          {tradeMode === "paper" && paper.loaded && (
-            <ErrorBoundary name="Paper Trading">
-              <PaperTradingStats
-                stats={paper.stats}
-                balance={paper.balance}
-                trades={paper.trades}
-                onReset={paper.reset}
-              />
+          {bottomTab === "stats" && (
+            <ErrorBoundary name="Paper Stats">
+              {paper.loaded ? <PaperTradingStats stats={paper.stats} balance={paper.balance} trades={paper.trades} onReset={paper.reset} /> : <div className="flex items-center justify-center h-full"><p className="text-xs text-txt-dim">Loading…</p></div>}
             </ErrorBoundary>
           )}
-
-          <ErrorBoundary name="Orderbook">
-            <OrderbookDepth
-              symbol={sodexSymbol || "vBTC_vUSDC"}
-              coin={coin}
-            />
-          </ErrorBoundary>
         </div>
       </div>
     </div>
   );
 }
 
-function formatPrice(price: number): string {
-  if (price >= 10000) return price.toLocaleString("en-US", { maximumFractionDigits: 0 });
-  if (price >= 100) return price.toFixed(2);
-  if (price >= 1) return price.toFixed(3);
-  return price.toFixed(5);
-}
+/* ══════════════════════════════════════════════════════
+   MODALS & SUB-COMPONENTS
+   ══════════════════════════════════════════════════════ */
 
-function formatUsd(value: number): string {
-  const abs = Math.abs(value);
-  const formatted = abs >= 1000
-    ? abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : abs.toFixed(2);
-  return `${value < 0 ? "-" : ""}$${formatted}`;
-}
-
-function TradeConfirmationModal({
-  action,
-  onCancel,
-  onConfirm,
-}: {
-  action: PendingTradeAction;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
+function TradeConfirmationModal({ action, onCancel, onConfirm }: { action: PendingTradeAction; onCancel: () => void; onConfirm: () => void }) {
   const isOpen = action.kind === "open";
-  const title = isOpen ? "Confirm Position Entry" : "Confirm Position Exit";
-  const intent = isOpen
-    ? `Please review this ${action.mode === "paper" ? "paper" : "live"} futures order before opening the position.`
-    : "Please review this exit before closing the paper position.";
   const side = isOpen ? action.order.side : action.trade.side;
   const sideTone = side === "LONG" ? "text-buy" : "text-sell";
   const rows = isOpen
-    ? [
-        { label: "Pair", value: action.pair },
-        { label: "Side", value: side },
-        { label: "Entry", value: `$${formatPrice(action.entryPrice)}` },
-        { label: "Margin", value: formatUsd(action.order.margin) },
-        { label: "Leverage", value: `${action.order.leverage}x` },
-        { label: "Liquidation", value: `$${formatPrice(action.liquidationPrice)}` },
-        { label: "Take Profit", value: action.takeProfit > 0 ? `$${formatPrice(action.takeProfit)}` : "Not set" },
-        { label: "Stop Loss", value: action.stopLoss > 0 ? `$${formatPrice(action.stopLoss)}` : "Not set" },
-      ]
-    : [
-        { label: "Pair", value: action.trade.pair },
-        { label: "Side", value: side },
-        { label: "Entry", value: `$${formatPrice(action.trade.entryPrice)}` },
-        { label: "Exit", value: `$${formatPrice(action.markPrice)}` },
-        { label: "Margin", value: formatUsd(action.trade.margin) },
-        { label: "PnL", value: `${action.pnl >= 0 ? "+" : ""}${formatUsd(action.pnl)}` },
-        { label: "ROI", value: `${action.roi >= 0 ? "+" : ""}${action.roi.toFixed(2)}%` },
-        { label: "Status", value: "Manual close" },
-      ];
+    ? [{ l: "Pair", v: action.pair }, { l: "Side", v: side }, { l: "Entry", v: `$${formatPrice(action.entryPrice)}` }, { l: "Margin", v: formatUsd(action.order.margin) }, { l: "Leverage", v: `${action.order.leverage}x` }, { l: "Liquidation", v: `$${formatPrice(action.liquidationPrice)}` }, { l: "TP", v: action.takeProfit > 0 ? `$${formatPrice(action.takeProfit)}` : "—" }, { l: "SL", v: action.stopLoss > 0 ? `$${formatPrice(action.stopLoss)}` : "—" }]
+    : [{ l: "Pair", v: action.trade.pair }, { l: "Side", v: side }, { l: "Entry", v: `$${formatPrice(action.trade.entryPrice)}` }, { l: "Exit", v: `$${formatPrice(action.markPrice)}` }, { l: "Margin", v: formatUsd(action.trade.margin) }, { l: "PnL", v: `${action.pnl >= 0 ? "+" : ""}${formatUsd(action.pnl)}` }, { l: "ROI", v: `${action.roi >= 0 ? "+" : ""}${action.roi.toFixed(2)}%` }, { l: "Status", v: "Manual close" }];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
       <div className="w-full max-w-lg overflow-hidden rounded-xl border border-accent/30 bg-panel shadow-2xl">
         <div className="border-b border-border-default bg-accent/10 px-5 py-4">
           <p className="text-xs font-bold uppercase tracking-wider text-accent">Action Required</p>
-          <h3 className="mt-1 text-lg font-bold text-txt-primary">{title}</h3>
-          <p className="mt-1 text-xs text-txt-secondary leading-relaxed">{intent}</p>
+          <h3 className="mt-1 text-lg font-bold text-txt-primary">{isOpen ? "Confirm Entry" : "Confirm Exit"}</h3>
         </div>
-
-        <div className="p-5">
-          <div className="mb-4 rounded-lg border border-border-default bg-inset/50 px-3 py-2">
-            <p className="text-[9px] uppercase tracking-wider text-txt-faint">Confirmation</p>
-            <p className="mt-1 text-sm text-txt-secondary">
-              {isOpen
-                ? "Are you sure you want to open this position?"
-                : "Are you sure you want to close this position at the current mark price?"}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            {rows.map((row) => (
-              <div key={row.label} className="rounded-lg border border-border-default bg-inset/40 px-3 py-2">
-                <p className="text-[9px] uppercase tracking-wider text-txt-faint">{row.label}</p>
-                <p className={`mt-0.5 text-sm font-bold font-mono ${row.label === "Side" ? sideTone : row.label === "PnL" || row.label === "ROI" ? action.kind === "close" && action.pnl < 0 ? "text-sell" : "text-buy" : "text-txt-primary"}`}>
-                  {row.value}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
+        <div className="p-5"><div className="grid grid-cols-2 gap-2">{rows.map((r) => (<div key={r.l} className="rounded-lg border border-border-default bg-inset/40 px-3 py-2"><p className="text-[9px] uppercase tracking-wider text-txt-faint">{r.l}</p><p className={`mt-0.5 text-sm font-bold font-mono ${r.l === "Side" ? sideTone : "text-txt-primary"}`}>{r.v}</p></div>))}</div></div>
         <div className="flex items-center justify-between gap-3 border-t border-border-default px-5 py-4">
-          <button
-            onClick={onCancel}
-            className="rounded-lg border border-border-default bg-inset px-4 py-2 text-xs font-semibold text-txt-secondary hover:border-border-muted hover:text-txt-primary cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className={`rounded-lg px-4 py-2 text-xs font-bold text-white cursor-pointer ${
-              isOpen ? "bg-accent hover:bg-accent/90" : "bg-sell hover:bg-sell/90"
-            }`}
-          >
-            {isOpen ? "Confirm Open Position" : "Confirm Close Position"}
-          </button>
+          <button onClick={onCancel} className="rounded-lg border border-border-default bg-inset px-4 py-2 text-xs font-semibold text-txt-secondary cursor-pointer">Cancel</button>
+          <button onClick={onConfirm} className={`rounded-lg px-4 py-2 text-xs font-bold text-white cursor-pointer ${isOpen ? "bg-accent" : "bg-sell"}`}>{isOpen ? "Confirm Open" : "Confirm Close"}</button>
         </div>
       </div>
     </div>
@@ -568,192 +389,53 @@ function TradeConfirmationModal({
 }
 
 function TradeExecutionModal({ notice, onClose }: { notice: TradeNotice; onClose: () => void }) {
-  const toneClass = notice.kind === "error" ? "text-sell" : notice.kind === "success" ? "text-buy" : "text-accent";
-  const borderClass = notice.kind === "error" ? "border-sell/30" : notice.kind === "success" ? "border-buy/30" : "border-accent/30";
-  const bgClass = notice.kind === "error" ? "bg-sell/10" : notice.kind === "success" ? "bg-buy/10" : "bg-accent/10";
+  const tone = notice.kind === "error" ? "text-sell" : notice.kind === "success" ? "text-buy" : "text-accent";
+  const bd = notice.kind === "error" ? "border-sell/30" : notice.kind === "success" ? "border-buy/30" : "border-accent/30";
+  const bg = notice.kind === "error" ? "bg-sell/10" : notice.kind === "success" ? "bg-buy/10" : "bg-accent/10";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
-      <div className={`w-full max-w-md overflow-hidden rounded-xl border ${borderClass} bg-panel shadow-2xl`}>
-        <div className={`px-5 py-4 ${bgClass} border-b ${borderClass}`}>
+      <div className={`w-full max-w-md overflow-hidden rounded-xl border ${bd} bg-panel shadow-2xl`}>
+        <div className={`px-5 py-4 ${bg} border-b ${bd}`}>
           <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className={`text-xs font-bold uppercase tracking-wider ${toneClass}`}>
-                {notice.kind === "error" ? "Execution Failed" : "Execution Confirmed"}
-              </p>
-              <h3 className="mt-1 text-lg font-bold text-txt-primary">{notice.title}</h3>
-              <p className="mt-1 text-xs text-txt-secondary leading-relaxed">{notice.detail}</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="rounded-md px-2 py-1 text-xs text-txt-faint hover:bg-elevated hover:text-txt-secondary cursor-pointer"
-              aria-label="Close execution notification"
-            >
-              Close
-            </button>
+            <div><p className={`text-xs font-bold uppercase tracking-wider ${tone}`}>{notice.kind === "error" ? "Failed" : "Confirmed"}</p><h3 className="mt-1 text-lg font-bold text-txt-primary">{notice.title}</h3><p className="mt-1 text-xs text-txt-secondary">{notice.detail}</p></div>
+            <button onClick={onClose} className="rounded-md px-2 py-1 text-xs text-txt-faint hover:text-txt-secondary cursor-pointer">Close</button>
           </div>
         </div>
-
         {notice.rows && notice.rows.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 p-5">
-            {notice.rows.map((row) => (
-              <div key={row.label} className="rounded-lg border border-border-default bg-inset/50 px-3 py-2">
-                <p className="text-[9px] uppercase tracking-wider text-txt-faint">{row.label}</p>
-                <p className={`mt-0.5 text-sm font-bold font-mono ${
-                  row.tone === "buy" ? "text-buy" : row.tone === "sell" ? "text-sell" : row.tone === "accent" ? "text-accent" : "text-txt-primary"
-                }`}>
-                  {row.value}
-                </p>
-              </div>
-            ))}
-          </div>
+          <div className="grid grid-cols-2 gap-2 p-5">{notice.rows.map((r) => (<div key={r.label} className="rounded-lg border border-border-default bg-inset/50 px-3 py-2"><p className="text-[9px] uppercase tracking-wider text-txt-faint">{r.label}</p><p className={`mt-0.5 text-sm font-bold font-mono ${r.tone === "buy" ? "text-buy" : r.tone === "sell" ? "text-sell" : r.tone === "accent" ? "text-accent" : "text-txt-primary"}`}>{r.value}</p></div>))}</div>
         )}
-
-        <div className="flex items-center justify-end gap-2 border-t border-border-default px-5 py-4">
-          <button
-            onClick={onClose}
-            className={`rounded-lg px-4 py-2 text-xs font-bold cursor-pointer ${
-              notice.kind === "error"
-                ? "bg-sell text-white hover:bg-sell/90"
-                : "bg-accent text-white hover:bg-accent/90"
-            }`}
-          >
-            Got it
-          </button>
-        </div>
+        <div className="flex justify-end border-t border-border-default px-5 py-4"><button onClick={onClose} className={`rounded-lg px-4 py-2 text-xs font-bold cursor-pointer ${notice.kind === "error" ? "bg-sell text-white" : "bg-accent text-white"}`}>Got it</button></div>
       </div>
     </div>
   );
 }
 
-function OpenPaperPositionsPanel({
-  trades,
-  currentPair,
-  currentPrices,
-  onSelectPair,
-  onClose,
-}: {
-  trades: PaperTrade[];
-  currentPair: string;
-  currentPrices: Map<string, number>;
-  onSelectPair: (pair: string) => void;
-  onClose: (trade: PaperTrade) => void;
-}) {
-  return (
-    <Card padding="none" className="overflow-hidden">
-      <div className="px-4 py-3 border-b border-border-default">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-txt-primary">Open Paper Positions</h3>
-          <span className="text-[10px] font-mono text-accent">{trades.length}</span>
-        </div>
-      </div>
-
-      {trades.length === 0 ? (
-        <div className="px-4 py-5 text-center">
-          <p className="text-xs text-txt-dim">No open paper positions</p>
-          <p className="text-[10px] text-txt-faint mt-1">Executed paper trades will appear here.</p>
-        </div>
-      ) : (
-        <div className="divide-y divide-border-default">
-          {trades.map((trade) => {
-            const base = trade.pair.split("/")[0];
-            const markPrice = currentPrices.get(base) ?? currentPrices.get(trade.pair) ?? trade.entryPrice;
-            return (
-              <OpenPaperPositionRow
-                key={trade.id}
-                trade={trade}
-                markPrice={markPrice}
-                isActivePair={trade.pair === currentPair}
-                onSelectPair={onSelectPair}
-                onClose={onClose}
-              />
-            );
-          })}
-        </div>
-      )}
-    </Card>
-  );
-}
-
-function OpenPaperPositionRow({
-  trade,
-  markPrice,
-  isActivePair,
-  onSelectPair,
-  onClose,
-}: {
-  trade: PaperTrade;
-  markPrice: number;
-  isActivePair: boolean;
-  onSelectPair: (pair: string) => void;
-  onClose: (trade: PaperTrade) => void;
-}) {
-  const priceChange = trade.side === "LONG"
-    ? markPrice - trade.entryPrice
-    : trade.entryPrice - markPrice;
-  const pnl = priceChange * trade.quantity;
+function OpenPaperPositionRow({ trade, markPrice, isActive, onSelect, onClose }: { trade: PaperTrade; markPrice: number; isActive: boolean; onSelect: (p: string) => void; onClose: (t: PaperTrade) => void }) {
+  const pnl = (trade.side === "LONG" ? markPrice - trade.entryPrice : trade.entryPrice - markPrice) * trade.quantity;
   const pnlPct = trade.margin > 0 ? (pnl / trade.margin) * 100 : 0;
   const isProfit = pnl >= 0;
-  const liqDistance = trade.side === "LONG"
-    ? ((markPrice - trade.liquidationPrice) / markPrice) * 100
-    : ((trade.liquidationPrice - markPrice) / markPrice) * 100;
+  const liqDist = trade.side === "LONG" ? ((markPrice - trade.liquidationPrice) / markPrice) * 100 : ((trade.liquidationPrice - markPrice) / markPrice) * 100;
 
   return (
-    <div className="px-4 py-3 space-y-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${trade.side === "LONG" ? "bg-buy/15 text-buy" : "bg-sell/15 text-sell"}`}>
-              {trade.side}
-            </span>
-            <button
-              onClick={() => onSelectPair(trade.pair)}
-              className={`text-sm font-bold truncate cursor-pointer ${isActivePair ? "text-accent" : "text-txt-primary hover:text-accent"}`}
-            >
-              {trade.pair}
-            </button>
-            <span className="text-[9px] text-accent font-mono">{trade.leverage}x</span>
+    <div className="px-4 py-2.5 hover:bg-elevated/10 transition-colors">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${trade.side === "LONG" ? "bg-buy/15 text-buy" : "bg-sell/15 text-sell"}`}>{trade.side}</span>
+          <button onClick={() => onSelect(trade.pair)} className={`text-xs font-bold truncate cursor-pointer ${isActive ? "text-accent" : "text-txt-primary hover:text-accent"}`}>{trade.pair}</button>
+          <span className="text-[9px] text-accent font-mono">{trade.leverage}x</span>
+          <span className="text-[9px] text-txt-faint">M {formatUsd(trade.margin)}</span>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="text-right"><p className={`text-xs font-bold font-mono ${isProfit ? "text-buy" : "text-sell"}`}>{isProfit ? "+" : ""}{formatUsd(pnl)}</p><p className={`text-[9px] font-mono ${isProfit ? "text-buy/70" : "text-sell/70"}`}>{pnlPct >= 0 ? "+" : ""}{pnlPct.toFixed(2)}%</p></div>
+          <div className="flex items-center gap-2 text-[9px] font-mono text-txt-faint">
+            <span>E <span className="text-txt-secondary">${formatPrice(trade.entryPrice)}</span></span>
+            <span>TP <span className="text-buy">{trade.takeProfit > 0 ? `$${formatPrice(trade.takeProfit)}` : "—"}</span></span>
+            <span>SL <span className="text-sell">{trade.stopLoss > 0 ? `$${formatPrice(trade.stopLoss)}` : "—"}</span></span>
+            <span className={liqDist < 5 ? "text-sell font-bold" : liqDist < 15 ? "text-hold" : ""}>Liq {liqDist.toFixed(1)}%</span>
           </div>
-          <p className="text-[9px] text-txt-faint mt-1">
-            Margin {formatUsd(trade.margin)} · Size {trade.quantity.toFixed(5)}
-          </p>
+          <button onClick={() => onClose(trade)} className="text-[10px] py-1 px-2.5 rounded border border-sell/25 bg-sell/10 text-sell cursor-pointer font-semibold">Close</button>
         </div>
-        <div className="text-right shrink-0">
-          <p className={`text-sm font-bold font-mono ${isProfit ? "text-buy" : "text-sell"}`}>
-            {isProfit ? "+" : ""}{formatUsd(pnl)}
-          </p>
-          <p className={`text-[10px] font-mono ${isProfit ? "text-buy" : "text-sell"}`}>
-            {pnlPct >= 0 ? "+" : ""}{pnlPct.toFixed(2)}%
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[9px] font-mono">
-        <span className="text-txt-dim">Entry <span className="text-txt-secondary">${formatPrice(trade.entryPrice)}</span></span>
-        <span className="text-txt-dim">Mark <span className="text-txt-secondary">${formatPrice(markPrice)}</span></span>
-        <span className="text-txt-dim">TP <span className="text-buy">{trade.takeProfit > 0 ? `$${formatPrice(trade.takeProfit)}` : "-"}</span></span>
-        <span className="text-txt-dim">SL <span className="text-sell">{trade.stopLoss > 0 ? `$${formatPrice(trade.stopLoss)}` : "-"}</span></span>
-        <span className="text-txt-dim">Liq <span className="text-sell">${formatPrice(trade.liquidationPrice)}</span></span>
-        <span className={liqDistance < 5 ? "text-sell" : liqDistance < 15 ? "text-hold" : "text-txt-dim"}>
-          Dist {liqDistance.toFixed(1)}%
-        </span>
-      </div>
-
-      <div className="flex items-center gap-2">
-        {!isActivePair && (
-          <button
-            onClick={() => onSelectPair(trade.pair)}
-            className="flex-1 text-[10px] py-1.5 rounded border border-border-default bg-inset text-txt-secondary hover:border-accent/40 hover:text-accent transition-colors cursor-pointer"
-          >
-            View Chart
-          </button>
-        )}
-        <button
-          onClick={() => onClose(trade)}
-          className="flex-1 text-[10px] py-1.5 rounded border border-sell/25 bg-sell/10 text-sell hover:bg-sell/15 transition-colors cursor-pointer font-semibold"
-        >
-          Close Position
-        </button>
       </div>
     </div>
   );
