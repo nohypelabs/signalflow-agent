@@ -128,6 +128,8 @@ interface Props {
   currentPrice?: number | null;
   liveSignals?: Signal[];
   tickerMap?: Map<string, SoDEXTicker>;
+  tradeMode?: "paper" | "live";
+  onModeChange?: (mode: "paper" | "live") => void;
 }
 
 /* ── Component ── */
@@ -138,6 +140,8 @@ export default function TradingChart({
   currentPrice,
   liveSignals = [],
   tickerMap,
+  tradeMode,
+  onModeChange,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -526,6 +530,12 @@ export default function TradingChart({
                 <span className="w-1.5 h-1.5 rounded-full bg-buy animate-pulse" />
                 Live
               </span>
+            )}
+            {tradeMode && onModeChange && (
+              <div className="flex items-center gap-0.5 bg-inset rounded-lg p-0.5 border border-border-default">
+                <button onClick={() => onModeChange("paper")} className={`text-[9px] px-2 py-1 rounded-md cursor-pointer font-semibold transition-colors ${tradeMode === "paper" ? "bg-accent/15 text-accent border border-accent/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Paper</button>
+                <button onClick={() => onModeChange("live")} className={`text-[9px] px-2 py-1 rounded-md cursor-pointer font-semibold transition-colors ${tradeMode === "live" ? "bg-sell/15 text-sell border border-sell/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Live</button>
+              </div>
             )}
           </div>
         </div>

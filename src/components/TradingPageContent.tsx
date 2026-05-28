@@ -18,8 +18,6 @@ import {
   BarChartIcon,
   BriefcaseIcon,
   DocumentIcon,
-  WalletIcon,
-  ActivityIcon,
 } from "@/components/ui/icons";
 import { usePaperTrading } from "@/lib/hooks/usePaperTrading";
 import type { PaperTrade } from "@/lib/hooks/usePaperTrading";
@@ -218,37 +216,13 @@ export default function TradingPageContent() {
       {notice && <TradeExecutionModal notice={notice} onClose={() => setNotice(null)} />}
       {pendingAction && <TradeConfirmationModal action={pendingAction} onCancel={() => setPendingAction(null)} onConfirm={handleConfirmPendingAction} />}
 
-      {/* ═══ [1] MARKET HEADER — unchanged ═══ */}
-      <div className="shrink-0 border-b border-border-default bg-card/80 backdrop-blur-sm">
-        <div className="flex items-center gap-4 px-4 py-2">
-          <div className="flex-1" />
-          <div className="flex items-center gap-2.5">
-            {signalContext && (
-              <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-accent/5 border border-accent/15">
-                <ActivityIcon size={11} className="text-accent" />
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${signalContext.action === "LONG" ? "bg-buy/15 text-buy" : signalContext.action === "SHORT" ? "bg-sell/15 text-sell" : "bg-hold/15 text-hold"}`}>{signalContext.actionV2 ?? signalContext.action}</span>
-                <span className="text-[9px] text-accent font-mono">{signalContext.confidence}%</span>
-              </div>
-            )}
-            <div className="flex items-center gap-0.5 bg-inset rounded-lg p-0.5 border border-border-default">
-              <button onClick={() => setTradeMode("paper")} className={`text-[9px] px-2.5 py-1 rounded-md cursor-pointer font-semibold ${tradeMode === "paper" ? "bg-accent/15 text-accent border border-accent/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Paper</button>
-              <button onClick={() => setTradeMode("live")} className={`text-[9px] px-2.5 py-1 rounded-md cursor-pointer font-semibold ${tradeMode === "live" ? "bg-sell/15 text-sell border border-sell/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Live</button>
-            </div>
-            {d.isConnected ? (
-              <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-inset border border-border-default"><WalletIcon size={11} className="text-buy" /><span className="text-[10px] font-mono text-txt-secondary">{d.shortAddress}</span></div>
-            ) : (
-              <span className="text-[9px] text-hold px-2.5 py-1 rounded-lg bg-hold/5 border border-hold/15 flex items-center gap-1.5"><WalletIcon size={11} /> Connect</span>
-            )}
-          </div>
-        </div>
-      </div>
 
-      {/* ═══ [2] THREE-COLUMN BODY — fills remaining height ═══ */}
+      {/* ═══ THREE-COLUMN BODY — fills full height ═══ */}
       <div className="flex-1 min-h-0 flex">
         {/* ─── COLUMN A: Chart (~65%) ─── */}
         <div className="flex-[13] min-w-0 flex flex-col border-r border-border-default">
           <ErrorBoundary name="Trading Chart">
-            <TradingChart klines={d.klines} symbol={pair} currentPrice={currentPrice} liveSignals={d.liveSignals} tickerMap={d.tickerMap} />
+            <TradingChart klines={d.klines} symbol={pair} currentPrice={currentPrice} liveSignals={d.liveSignals} tickerMap={d.tickerMap} tradeMode={tradeMode} onModeChange={setTradeMode} />
           </ErrorBoundary>
         </div>
 
