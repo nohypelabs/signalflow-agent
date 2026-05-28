@@ -5,13 +5,13 @@ import { useEffect, useState } from "react";
 const STORAGE_KEY = "signalflow-dashboard-intro-dismissed";
 
 const SHARDS = [
-  { left: "-8%", top: "10%", width: "24%", height: "14%", delay: "-4s", duration: "13s", opacity: "0.34", tint: "linear-gradient(135deg, rgba(255, 199, 58, 0.95), rgba(255, 244, 214, 0.3) 42%, rgba(255, 199, 58, 0))" },
-  { left: "6%", top: "24%", width: "28%", height: "12%", delay: "-9s", duration: "15s", opacity: "0.28", tint: "linear-gradient(135deg, rgba(0, 229, 168, 0.9), rgba(230, 255, 247, 0.28) 38%, rgba(0, 229, 168, 0))" },
-  { left: "20%", top: "5%", width: "18%", height: "20%", delay: "-6s", duration: "12s", opacity: "0.22", tint: "linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(245, 247, 250, 0.18) 38%, rgba(255, 255, 255, 0))" },
-  { left: "40%", top: "15%", width: "30%", height: "18%", delay: "-8s", duration: "18s", opacity: "0.24", tint: "linear-gradient(135deg, rgba(255, 199, 58, 0.8), rgba(255, 236, 171, 0.25) 40%, rgba(255, 199, 58, 0))" },
-  { left: "56%", top: "30%", width: "22%", height: "14%", delay: "-2s", duration: "11s", opacity: "0.2", tint: "linear-gradient(135deg, rgba(165, 180, 252, 0.55), rgba(226, 232, 240, 0.2) 44%, rgba(165, 180, 252, 0))" },
-  { left: "72%", top: "8%", width: "26%", height: "16%", delay: "-11s", duration: "16s", opacity: "0.25", tint: "linear-gradient(135deg, rgba(248, 250, 252, 0.85), rgba(203, 213, 225, 0.18) 36%, rgba(248, 250, 252, 0))" },
-  { left: "84%", top: "34%", width: "20%", height: "12%", delay: "-5s", duration: "14s", opacity: "0.18", tint: "linear-gradient(135deg, rgba(255, 199, 58, 0.85), rgba(255, 255, 255, 0.15) 34%, rgba(255, 199, 58, 0))" },
+  { left: "-12%", top: "12%", width: "28%", height: "15%", delay: "-4s", duration: "13s", opacity: "0.34", tint: "linear-gradient(135deg, rgba(255, 199, 58, 0.95), rgba(255, 244, 214, 0.28) 44%, rgba(255, 199, 58, 0))" },
+  { left: "4%", top: "23%", width: "30%", height: "13%", delay: "-9s", duration: "15s", opacity: "0.28", tint: "linear-gradient(135deg, rgba(0, 229, 168, 0.9), rgba(230, 255, 247, 0.24) 40%, rgba(0, 229, 168, 0))" },
+  { left: "18%", top: "4%", width: "20%", height: "22%", delay: "-6s", duration: "12s", opacity: "0.22", tint: "linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(245, 247, 250, 0.15) 38%, rgba(255, 255, 255, 0))" },
+  { left: "36%", top: "16%", width: "34%", height: "19%", delay: "-8s", duration: "18s", opacity: "0.24", tint: "linear-gradient(135deg, rgba(255, 199, 58, 0.82), rgba(255, 236, 171, 0.22) 40%, rgba(255, 199, 58, 0))" },
+  { left: "54%", top: "31%", width: "24%", height: "15%", delay: "-2s", duration: "11s", opacity: "0.2", tint: "linear-gradient(135deg, rgba(165, 180, 252, 0.52), rgba(226, 232, 240, 0.18) 44%, rgba(165, 180, 252, 0))" },
+  { left: "70%", top: "7%", width: "28%", height: "17%", delay: "-11s", duration: "16s", opacity: "0.25", tint: "linear-gradient(135deg, rgba(248, 250, 252, 0.88), rgba(203, 213, 225, 0.16) 36%, rgba(248, 250, 252, 0))" },
+  { left: "83%", top: "35%", width: "22%", height: "12%", delay: "-5s", duration: "14s", opacity: "0.18", tint: "linear-gradient(135deg, rgba(255, 199, 58, 0.85), rgba(255, 255, 255, 0.13) 34%, rgba(255, 199, 58, 0))" },
 ];
 
 export default function DashboardIntroGate() {
@@ -41,14 +41,15 @@ export default function DashboardIntroGate() {
   return (
     <div className="fixed inset-0 z-[90] overflow-hidden bg-[#070b14] text-white">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_18%,rgba(255,199,58,0.18),transparent_24%),radial-gradient(circle_at_86%_24%,rgba(0,229,168,0.14),transparent_22%),linear-gradient(135deg,#0c1525_0%,#08101c_42%,#05070d_100%)]" />
-      <div className="absolute inset-0 opacity-50 [background-image:linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] [background-size:72px_72px]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,transparent_52%,rgba(3,7,18,0.48)_100%)]" />
+      <div className="absolute inset-0 opacity-45 [background-image:linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] [background-size:72px_72px]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,transparent_52%,rgba(3,7,18,0.5)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_52%,rgba(255,255,255,0.02),transparent_22%)]" />
 
       <div className="absolute inset-0 overflow-hidden">
         {SHARDS.map((shard, index) => (
           <div
             key={`${shard.left}-${index}`}
-            className="absolute -rotate-45 rounded-full blur-[1px]"
+            className="absolute -rotate-45 rounded-full blur-[1px] shadow-[0_0_40px_rgba(0,0,0,0.3)]"
             style={{
               left: shard.left,
               top: shard.top,
@@ -64,7 +65,13 @@ export default function DashboardIntroGate() {
                 animationDuration: shard.duration,
               }}
             >
-              <div className="intro-breathe absolute inset-0 rounded-full" style={{ background: shard.tint }} />
+              <div
+                className="intro-breathe absolute inset-0 rounded-full border border-white/10"
+                style={{
+                  background: shard.tint,
+                  boxShadow: "0 12px 40px rgba(0, 0, 0, 0.35), inset 0 0 18px rgba(255, 255, 255, 0.12)",
+                }}
+              />
             </div>
           </div>
         ))}
@@ -91,14 +98,14 @@ export default function DashboardIntroGate() {
             <button
               type="button"
               onClick={dismiss}
-            className="group intro-glow relative h-16 w-full max-w-[360px] overflow-hidden rounded-full border border-white/10 bg-[#243550] p-1.5 text-left shadow-[0_24px_80px_rgba(0,0,0,0.5)] sm:h-20"
+              className="group intro-glow relative h-16 w-full max-w-[420px] overflow-hidden rounded-full border border-white/10 bg-[#22324c] p-1.5 text-left shadow-[0_24px_80px_rgba(0,0,0,0.5)] sm:h-20"
               aria-label="Enter dashboard"
             >
               <span className="absolute inset-0 rounded-full bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0))]" />
-              <span className="absolute inset-y-1 left-1 right-16 flex items-center rounded-full bg-[#2d4261] px-6 text-[12px] font-bold uppercase tracking-[0.22em] text-white/95 transition-colors group-hover:bg-[#31496b] sm:text-[13px]">
+              <span className="absolute inset-y-1 left-1 right-[78px] flex items-center rounded-full border border-white/6 bg-[#2c4060] px-6 text-[12px] font-bold uppercase tracking-[0.26em] text-white/95 transition-colors group-hover:bg-[#334b70] sm:text-[13px]">
                 Enter Dashboard
               </span>
-              <span className="absolute inset-y-1 right-1 flex w-14 items-center justify-center rounded-full bg-[#f3be2d] text-[#09111f] shadow-[0_8px_25px_rgba(243,190,45,0.3)] transition-transform group-hover:translate-x-0.5">
+              <span className="absolute inset-y-1 right-1 flex w-[70px] items-center justify-center rounded-full bg-[#f3be2d] text-[#09111f] shadow-[0_8px_25px_rgba(243,190,45,0.3)] transition-transform group-hover:translate-x-0.5">
                 <ArrowIcon />
               </span>
             </button>
