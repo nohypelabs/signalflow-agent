@@ -53,9 +53,9 @@ export default function AppShell({
           mobileOpen={mobileMenuOpen}
           onMobileClose={() => setMobileMenuOpen(false)}
         />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 pb-20 md:pb-0">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-20 md:pb-0">
           {children}
-          <footer className="text-center text-[11px] text-txt-dim py-4 border-t border-border-default mt-auto">
+          <footer className="text-center text-[11px] text-txt-dim py-4 border-t border-border-default mt-4">
             <p>SignalFlow Agent — Built by <span className="text-txt-muted">NoHype Labs</span></p>
             <p className="mt-0.5 text-txt-faint">SoSoValue Buildathon 2026 — Wave 2</p>
           </footer>
