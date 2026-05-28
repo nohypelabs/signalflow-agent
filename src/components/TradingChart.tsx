@@ -174,6 +174,7 @@ export default function TradingChart({
   // Chart display toggles
   const [chartType, setChartType] = useState<"candles" | "line">("candles");
   const [chartEngine, setChartEngine] = useState<"native" | "tradingview">("native");
+  const [fullscreen, setFullscreen] = useState(false);
   const [showSignals, setShowSignals] = useState(true);
   const [showTradePlan, setShowTradePlan] = useState(true);
   const [showVolume, setShowVolume] = useState(true);
@@ -197,7 +198,7 @@ export default function TradingChart({
   // Cancel pending drawing on Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") cancelPending();
+      if (e.key === "Escape") { cancelPending(); setFullscreen(false); }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -491,9 +492,12 @@ export default function TradingChart({
   const dataAge = lastKline ? Date.now() - lastKline.t : null;
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-card border border-border-default rounded-lg overflow-hidden">
+    <div className={fullscreen
+      ? "fixed inset-0 z-40 bg-background p-2 flex flex-col"
+      : "flex-1 flex flex-col min-w-0 bg-card border border-border-default rounded-lg overflow-hidden"
+    }>
       {/* Header */}
-      <div className="px-4 pt-3 pb-2 flex flex-col gap-1.5 shrink-0 border-b border-border-default">
+        <div className="px-4 pt-3 pb-2 flex flex-col gap-1.5 shrink-0 border-b border-border-default">
         {/* Row 1: Pair + Price + Signal badge + freshness */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -668,6 +672,26 @@ export default function TradingChart({
               }`}
             >
               Volume {showVolume ? "On" : "Off"}
+            </button>
+
+            {/* Separator */}
+            <div className="w-px h-3 bg-border-default" />
+
+            {/* Fullscreen toggle */}
+            <button
+              onClick={() => setFullscreen((v) => !v)}
+              className="text-[9px] px-1.5 py-0.5 rounded transition-all cursor-pointer text-txt-faint hover:text-txt-secondary hover:bg-elevated/40"
+              title={fullscreen ? "Exit fullscreen (Esc)" : "Fullscreen"}
+            >
+              {fullscreen ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8 3v3a2 2 0 01-2 2H3M21 8h-3a2 2 0 01-2-2V3M3 16h3a2 2 0 012 2v3M16 21v-3a2 2 0 012-2h3" />
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8 3H5a2 2 0 00-2 2v3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M16 21h3a2 2 0 002-2v-3" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
