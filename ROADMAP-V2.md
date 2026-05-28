@@ -1,85 +1,82 @@
-# SignalFlow Agent — Wave 2 Roadmap (Updated)
+# SignalFlow Agent — Wave 2 Roadmap
 ## Deadline: June 3, 2026
+## Status: ✅ WAVE 2 COMPLETE
 
-### Completed (commit 62765c0)
-- ✅ Phase 1: Bug fixes & dedup (SOL weights, scoring functions)
-- ✅ Phase 2: Deepen API usage (treasury activity, index snapshots, macro history)
-- ✅ Phase 3: New components (ETFFlowChart, MacroCalendar, NewsSentiment, SignalHistory)
-- ✅ Error boundary, orderbook depth, macro event history chart
-- ✅ Trading chart on trading page + 1m/3m/5m timeframes
-- ✅ Redesign trading page (order form, chart, orderbook)
-- ✅ Execute button on /signals page
-- ✅ Paper trading engine (futures with leverage + liquidation)
-- ✅ Signal engine v2 (5-factor confluence, market regime, 7-tier classification)
-- ✅ LONG/SHORT terminology (futures-focused platform)
+### Wave 1 (Baseline) — ✅ COMPLETE
+- Next.js dashboard shell with dark-themed trading interface
+- SoSoValue API integration (ETF, sentiment, macro, treasury, indices)
+- SoDEX live market data (tickers, klines, orderbooks)
+- Heuristic 5-dimension signal scoring engine
+- AI signal generation via Deepseek with structured prompts
+- Full sidebar navigation with 8 pages
 
-### Remaining — Wave 2 Final Push
+### Wave 2 — ✅ ALL PHASES COMPLETE (commit 210deaf)
 
-#### Phase 1: Trading Type Foundation
-- Add `TradingType` = scalping | intraday | swing | position
-- Add to Signal, PaperTrade, SignalV2 types
-- TradingTypeConfig registry (timeframe, hold duration, max leverage, description)
-- **UX: Onboarding type selector** (see UX Flow below)
-- UI: type selector on OrderForm, type badge on SignalCard
-- Filter signals by selected type
-- Build verify
+#### Phase 1: Bug fixes & dedup — ✅ DONE
+- SOL weights fix, scoring functions dedup
 
-#### Phase 2: Per-Type Weight Adjustment
-- Weight profiles per trading type:
-  - Scalping: momentum 40%, volatility 25%, volume 20%, trend 10%, structure 5%
-  - Intraday: momentum 30%, trend 25%, volatility 20%, volume 15%, structure 10%
-  - Swing: trend 35%, structure 25%, momentum 20%, volume 10%, volatility 10%
-  - Position: trend 45%, structure 30%, momentum 10%, volume 10%, volatility 5%
-- Pass tradingType to generateSignalV2()
-- Signal engine adapts weights dynamically
-- **UX: Signal cards show type-specific confidence & TP/SL**
+#### Phase 2: Deepen API usage — ✅ DONE
+- Treasury activity, index snapshots, macro history
+
+#### Phase 3: New components — ✅ DONE
+- ETFFlowChart, MacroCalendar, NewsSentiment, SignalHistory
+- Error boundary, orderbook depth, macro event history chart
+
+#### Phase 4: Trading chart & page redesign — ✅ DONE
+- Trading chart on trading page + 1m/3m/5m timeframes
+- Redesign trading page (order form, chart, orderbook)
+- Execute button on /signals page
+
+#### Phase 5: Paper trading engine — ✅ DONE
+- Paper futures with leverage + liquidation
+- Per-type performance stats
+
+#### Phase 6: Signal engine V2 — ✅ DONE
+- 5-factor confluence, market regime detection, 7-tier classification
+- LONG/SHORT terminology (futures-focused platform)
+
+#### Phase 7: Trading type system — ✅ DONE
+- TradingType = scalping | intraday | swing | position
+- Per-type factor weights (engine adapts dynamically)
+- Per-type TP/SL multipliers (blended with regime)
+- Per-type confidence thresholds (60%–75%)
+- Per-type leverage caps (3x–20x)
+- Onboarding modal + TypeSwitcher UI
 - Strategy Config UI shows per-type weights
-- Build verify
 
-#### Phase 3: Per-Type TP/SL Tuning
-- TP/SL multipliers per type:
-  - Scalping: TP 1.0-1.5x ATR, SL 0.5-0.8x ATR (tight)
-  - Intraday: TP 2.0-2.5x ATR, SL 1.0-1.2x ATR (moderate)
-  - Swing: TP 3.0-4.0x ATR, SL 1.2-1.5x ATR (wide)
-  - Position: TP 4.0-6.0x ATR, SL 1.5-2.0x ATR (widest)
-- Confidence thresholds per type: scalping 60%, intraday 65%, swing 70%, position 75%
-- R:R targets per type
-- Build verify
+#### Phase 8: Multi-timeframe confluence — ✅ DONE
+- Signal generation on 1H, 4H, and 1D timeframes
+- Alignment scoring (95 = all agree, 30 = conflicting)
+- Color-coded MTF badges on signal cards
 
-#### Phase 4: Multi-Timeframe Confluence (NEW — from research)
-- Generate signals on multiple timeframes (1H, 4H, 1D)
-- Combine into "Multi-TF Confluence Score"
-- Higher score = stronger conviction
-- Show multi-TF alignment on signal cards
-- Build verify
+#### Phase 9: Backtest engine — ✅ DONE
+- Walk-forward historical replay
+- Per-regime accuracy breakdown
+- Win rate, profit factor, max drawdown metrics
+- Equity curve visualization
+- Per-type backtesting
 
-#### Phase 5: Signal Backtest Engine
-- Historical kline replay with walk-forward validation
-- Per-type performance metrics
-- Out-of-sample testing
-- Overfitting detection
-- BacktestPanel on /performance page
-- Build verify
-
-#### Phase 6: Performance Dashboard Polish
+#### Phase 10: Performance dashboard polish — ✅ DONE
 - Per-type performance breakdown
 - Paper trading stats by type
 - Multi-TF confluence stats
 - Regime-based accuracy
-- Build verify
 
-#### Phase 7: Final Wave 2 Submission Prep
-- Update docs, README
-- Demo flow documentation
-- Final build verify
+#### Phase 11: /portfolio page — ✅ DONE
+- Paper futures PnL tracking page
+- Open positions with real-time P&L
 
-### Key Insights from Research
-- Factor relevance shifts by timeframe (scalping = momentum/volume, position = trend/macro)
-- Confidence threshold should scale with timeframe (lower for scalping, higher for position)
-- R:R ratio naturally differs by type
-- Overfitting risk: use walk-forward optimization, not simple replay
-- Multi-TF confluence is the highest-value enhancement
-- Regime-based type recommendation adds sophistication
+#### Phase 12: Final Wave 2 submission prep — ✅ DONE
+- Updated docs, README, demo flow
+- Cache stale data fix (service worker, no-cache headers, CacheBuster)
+- Dashboard redesign (dark fintech color system)
+- KPI cards with real data (no hardcoded values)
 
-### UX Flow: Trader Type Onboarding
-(See detailed UX spec below)
+### Key Features Delivered
+
+**Signal Engine V2:** 5-layer architecture (Regime → Confluence → Classification → TP/SL → Filtering)
+**Trading Types:** 4 types with per-type weights, TP/SL, confidence, leverage
+**Multi-TF Confluence:** 1H/4H/1D alignment scoring
+**Paper Futures:** 1-100x leverage, auto-liquidation, per-type stats
+**Backtest Engine:** Walk-forward with per-regime accuracy, equity curves
+**Dashboard:** Dark fintech theme, real-time KPIs, no mock data

@@ -268,47 +268,79 @@ pnpm start        # Production server — http://localhost:3000
 ```
 src/
 ├── app/
-│   ├── layout.tsx               # Root layout + PWA metadata
-│   ├── page.tsx                 # Main SPA orchestrator
-│   └── api/
-│       ├── signals/             # GET — V2 engine + multi-TF confluence
-│       ├── signals/analyze      # POST — AI signal generation
-│       ├── backtest/            # GET — Historical backtest
-│       ├── market/[type]        # GET — SoDEX tickers, klines
-│       ├── orders/              # GET + POST — SoDEX orders
-│       ├── balance/             # GET — Wallet balance
-│       ├── performance/         # GET — Portfolio performance
-│       └── status/              # GET — SoDEX health
+│   ├── layout.tsx               # Root layout + PWA metadata + CacheBuster
+│   ├── providers.tsx            # Wagmi + TanStack Query providers
+│   ├── globals.css              # CSS variables (dark fintech color system)
+│   └── (dashboard)/
+│       ├── layout.tsx           # AppShell with sidebar + header
+│       ├── page.tsx             # Redirects to /dashboard
+│       ├── dashboard/           # KPI cards, chart, signal feed
+│       ├── signals/             # Signal list + onboarding + type filtering
+│       ├── trading/             # Trade form + chart + orders
+│       ├── portfolio/           # Paper futures PnL + positions
+│       ├── trade-history/       # Past trades
+│       ├── signal-history/      # Signal history tracking
+│       ├── performance/         # Performance + backtest panel
+│       ├── strategy-config/     # Per-type weight profiles
+│       ├── data-sources/        # API module status
+│       ├── settings/            # Settings
+│       └── docs/                # In-app documentation
+├── app/api/
+│   ├── signals/                 # GET — V2 engine + multi-TF confluence
+│   ├── signals/analyze          # POST — AI signal generation
+│   ├── backtest/                # GET — Historical backtest
+│   ├── market/[type]            # GET — SoDEX tickers, klines
+│   ├── orders/                  # GET + POST — SoDEX orders
+│   ├── orders/[id]              # DELETE — cancel order
+│   ├── balance/                 # GET — Wallet balance
+│   ├── orderbook/               # GET — Orderbook depth
+│   ├── etf-flow/                # GET — ETF flow data
+│   ├── macro/                   # GET — Macro events
+│   ├── news/                    # GET — News sentiment
+│   ├── performance/             # GET — Portfolio performance
+│   ├── sources/                 # GET — Data source availability
+│   └── status/                  # GET — SoDEX health
 ├── components/
+│   ├── layout/                  # AppShell, Sidebar, Header, WalletDropdown, MobileBottomNav
+│   ├── ui/                      # Button, Card, Badge, Skeleton, EmptyState, etc.
+│   ├── signals/                 # SignalCard, SignalFilters, SignalAnalysisDrawer, etc.
+│   ├── charts/                  # ChartDrawingOverlay, ChartDrawingToolbar
+│   ├── shared/                  # SectionCard
 │   ├── SignalsPage.tsx          # Signals with onboarding + type filtering
 │   ├── TraderTypeModal.tsx      # Trading style onboarding modal
 │   ├── TypeSwitcher.tsx         # Type dropdown switcher
-│   ├── SignalCard.tsx           # Signal card with type + MTF badges
 │   ├── OrderForm.tsx            # Type-aware order form
 │   ├── BacktestPanel.tsx        # Historical backtest UI
 │   ├── PaperTradingStats.tsx    # Per-type paper trading stats
+│   ├── PortfolioPage.tsx        # Paper futures PnL page
 │   ├── StrategyConfig.tsx       # Per-type weight profiles
 │   ├── PerformancePage.tsx      # Performance + backtest
+│   ├── ETFFlowChart.tsx         # ETF flow visualization
+│   ├── MacroCalendar.tsx        # Macro events calendar
+│   ├── NewsSentimentDashboard.tsx # News sentiment analysis
 │   └── ...
 ├── lib/
 │   ├── strategy/
 │   │   ├── signal-engine-v2.ts  # 5-layer signal engine with type adaptation
 │   │   ├── signal-engine.ts     # Legacy 5-dimension scoring
-│   │   ├── indicators.ts        # Technical indicators (SMA, EMA, RSI, MACD, BB, ATR)
+│   │   ├── indicators.ts        # Technical indicators (SMA, EMA, RSI, MACD, BB, ATR, ADX, OBV, ROC, Fibonacci)
 │   │   └── backtest.ts          # Walk-forward backtest engine
 │   ├── types/
 │   │   ├── signal.ts            # Signal, SignalV2 types
 │   │   ├── trading-type.ts      # TradingType config registry
-│   │   └── trade.ts             # SoDEX trade types
-│   ├── api/
-│   │   └── signals.ts           # Client-side signal fetcher
-│   ├── hooks/
-│   │   ├── useSignals.ts        # Signal data hook
-│   │   ├── usePaperTrading.ts   # Paper futures engine
-│   │   └── ...
+│   │   ├── trade.ts             # SoDEX trade types
+│   │   └── datasource.ts        # AIProvider, AIConfig types
+│   ├── chart-drawings/          # Chart drawing tools (types, math, storage)
+│   ├── api/                     # Client-side fetch helpers + no-cache headers
+│   ├── hooks/                   # 16 hooks (useSignals, usePaperTrading, useMarket, etc.)
 │   ├── sosovalue.ts             # SoSoValue API client
 │   ├── sodex.ts                 # SoDEX API client
-│   └── dashboard-context.tsx    # Global dashboard state
+│   ├── deepseek.ts              # LLM chat client
+│   ├── ai-providers.ts          # AI provider registry
+│   ├── dashboard-context.tsx    # Global dashboard state
+│   ├── eip712.ts                # EIP-712 typed data signing
+│   ├── wallet-config.ts         # Wagmi wallet configuration
+│   └── pair-map.ts              # Pair-to-SoDEX symbol mapping
 └── ...
 ```
 

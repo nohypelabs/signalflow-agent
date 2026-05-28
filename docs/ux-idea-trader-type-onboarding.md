@@ -21,4 +21,13 @@ dan personalized.
 - Other pages unchanged
 - Simpler, faster to ship, lower risk
 
-### Decision: PENDING (discussing with user)
+### Decision: ✅ DONE — Approach B implemented
+
+**Implemented approach:** Signal Page Only (Approach B)
+- Modal (`TraderTypeModal.tsx`) muncul hanya di `/signals` page
+- Selection affects signals filtering + display + OrderForm leverage caps
+- TypeSwitcher dropdown di header untuk quick switching
+- Per-type weights, TP/SL, confidence thresholds all adapt
+- Other pages unaffected by type selection
+
+**Commit:** Part of Wave 2 trading type system implementation
