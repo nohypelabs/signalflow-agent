@@ -63,7 +63,9 @@ export default function TopBar({
       {/* <FavoriteTickerBar tickers={favoriteTickers} /> */}
 
       {/* Main header bar */}
-      <header className="flex items-center justify-between px-3 md:px-4 h-11 bg-surface border-b border-border-default">
+      <header className="relative flex items-center justify-between px-3 md:px-4 h-11 bg-surface border-b border-border-default">
+        {/* Subtle accent glow at bottom edge */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent" />
         {/* Left: menu + brand */}
         <div className="flex items-center gap-2 md:gap-3">
           <button

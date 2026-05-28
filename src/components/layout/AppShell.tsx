@@ -5,6 +5,7 @@ import Header from "./Header";
 import Sidebar from "./Sidebar";
 import MobileBottomNav from "./MobileBottomNav";
 import TradeForm from "@/components/TradeForm";
+import { AmbientGrid } from "@/components/ui/Polish";
 import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker, SoDEXNewOrderRequest } from "@/lib/sodex-types";
 
@@ -53,12 +54,15 @@ export default function AppShell({
           mobileOpen={mobileMenuOpen}
           onMobileClose={() => setMobileMenuOpen(false)}
         />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-20 md:pb-0">
-          {children}
-          <footer className="text-center text-[11px] text-txt-dim py-4 border-t border-border-default mt-4">
-            <p>SignalFlow Agent — Built by <span className="text-txt-muted">NoHype Labs</span></p>
-            <p className="mt-0.5 text-txt-faint">SoSoValue Buildathon 2026 — Wave 2</p>
-          </footer>
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-20 md:pb-0 relative">
+          <AmbientGrid opacity={0.025} size={28} />
+          <div className="relative z-10">
+            {children}
+            <footer className="text-center text-[11px] text-txt-dim py-4 border-t border-border-default mt-4">
+              <p>SignalFlow Agent — Built by <span className="text-txt-muted">NoHype Labs</span></p>
+              <p className="mt-0.5 text-txt-faint">SoSoValue Buildathon 2026 — Wave 2</p>
+            </footer>
+          </div>
         </main>
       </div>
       <MobileBottomNav />
