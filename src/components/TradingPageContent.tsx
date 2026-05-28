@@ -26,6 +26,34 @@ type TradeNotice = {
   rows?: { label: string; value: string; tone?: "buy" | "sell" | "accent" | "muted" }[];
 };
 
+type TradeOrderInput = {
+  side: "LONG" | "SHORT";
+  leverage: number;
+  margin: number;
+  quantity: number;
+  takeProfit: string;
+  stopLoss: string;
+};
+
+type PendingTradeAction =
+  | {
+      kind: "open";
+      mode: "paper" | "live";
+      pair: string;
+      order: TradeOrderInput;
+      entryPrice: number;
+      takeProfit: number;
+      stopLoss: number;
+      liquidationPrice: number;
+    }
+  | {
+      kind: "close";
+      trade: PaperTrade;
+      markPrice: number;
+      pnl: number;
+      roi: number;
+    };
+
 export default function TradingPageContent() {
   const d = useDashboard();
   const searchParams = useSearchParams();
@@ -33,6 +61,7 @@ export default function TradingPageContent() {
   const [tradeMode, setTradeMode] = useState<"paper" | "live">("paper");
   const [tradeError, setTradeError] = useState<string | null>(null);
   const [notice, setNotice] = useState<TradeNotice | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingTradeAction | null>(null);
   const paper = usePaperTrading();
   const checkPaperTpSl = paper.checkTpSl;
 
@@ -103,7 +132,14 @@ export default function TradingPageContent() {
     return currentPrices.get(base) ?? currentPrices.get(trade.pair) ?? null;
   };
 
-  const handleExecute = (order: { side: "LONG" | "SHORT"; leverage: number; margin: number; quantity: number; takeProfit: string; stopLoss: string }) => {
+  const calculateLiquidationPrice = (entryPrice: number, side: "LONG" | "SHORT", leverage: number) => {
+    const maintenanceMargin = 0.005;
+    return side === "LONG"
+      ? entryPrice * (1 - (1 / leverage) + maintenanceMargin)
+      : entryPrice * (1 + (1 / leverage) - maintenanceMargin);
+  };
+
+  const handleExecute = (order: TradeOrderInput) => {
     const entryPrice = currentPrice || 0;
     const tp = parseFloat(order.takeProfit) || 0;
     const sl = parseFloat(order.stopLoss) || 0;
@@ -114,9 +150,24 @@ export default function TradingPageContent() {
       return;
     }
 
-    if (tradeMode === "paper") {
+    setPendingAction({
+      kind: "open",
+      mode: tradeMode,
+      pair,
+      order,
+      entryPrice,
+      takeProfit: tp,
+      stopLoss: sl,
+      liquidationPrice: calculateLiquidationPrice(entryPrice, order.side, order.leverage),
+    });
+  };
+
+  const executeConfirmedOpen = (action: Extract<PendingTradeAction, { kind: "open" }>) => {
+    const { order, entryPrice, takeProfit: tp, stopLoss: sl } = action;
+
+    if (action.mode === "paper") {
       const trade = paper.openTrade({
-        pair,
+        pair: action.pair,
         side: order.side,
         leverage: order.leverage,
         margin: order.margin,
@@ -156,7 +207,7 @@ export default function TradingPageContent() {
       // Live trade via SoDEX
       d.handleExecuteSignal({
         id: `manual-${Date.now()}`,
-        pair,
+        pair: action.pair,
         action: order.side,
         confidence: 0,
         price: entryPrice,
@@ -181,6 +232,20 @@ export default function TradingPageContent() {
         sources: ["Manual"],
         timeAgo: "just now",
       } as Signal);
+      setNotice({
+        id: Date.now(),
+        kind: "info",
+        title: "Live order submitted",
+        detail: `${order.side} ${action.pair} order has been sent to the live execution flow.`,
+        rows: [
+          { label: "Pair", value: action.pair },
+          { label: "Side", value: order.side, tone: order.side === "LONG" ? "buy" : "sell" },
+          { label: "Entry", value: `$${formatPrice(entryPrice)}` },
+          { label: "Size", value: order.quantity.toFixed(5) },
+          { label: "Take Profit", value: tp > 0 ? `$${formatPrice(tp)}` : "Not set" },
+          { label: "Stop Loss", value: sl > 0 ? `$${formatPrice(sl)}` : "Not set" },
+        ],
+      });
     }
   };
 
@@ -193,11 +258,22 @@ export default function TradingPageContent() {
       return;
     }
 
-    paper.closeTrade(trade.id, markPrice);
     const priceChange = trade.side === "LONG"
       ? markPrice - trade.entryPrice
       : trade.entryPrice - markPrice;
     const pnl = priceChange * trade.quantity;
+    setPendingAction({
+      kind: "close",
+      trade,
+      markPrice,
+      pnl,
+      roi: trade.margin > 0 ? (pnl / trade.margin) * 100 : 0,
+    });
+  };
+
+  const executeConfirmedClose = (action: Extract<PendingTradeAction, { kind: "close" }>) => {
+    const { trade, markPrice, pnl, roi } = action;
+    paper.closeTrade(trade.id, markPrice);
     setNotice({
       id: Date.now(),
       kind: "info",
@@ -207,9 +283,17 @@ export default function TradingPageContent() {
         { label: "Pair", value: trade.pair },
         { label: "Exit", value: `$${formatPrice(markPrice)}` },
         { label: "PnL", value: `${pnl >= 0 ? "+" : ""}${formatUsd(pnl)}`, tone: pnl >= 0 ? "buy" : "sell" },
-        { label: "ROI", value: `${pnl >= 0 ? "+" : ""}${((pnl / trade.margin) * 100).toFixed(2)}%`, tone: pnl >= 0 ? "buy" : "sell" },
+        { label: "ROI", value: `${roi >= 0 ? "+" : ""}${roi.toFixed(2)}%`, tone: roi >= 0 ? "buy" : "sell" },
       ],
     });
+  };
+
+  const handleConfirmPendingAction = () => {
+    const action = pendingAction;
+    if (!action) return;
+    setPendingAction(null);
+    if (action.kind === "open") executeConfirmedOpen(action);
+    else executeConfirmedClose(action);
   };
 
   return (
@@ -236,6 +320,13 @@ export default function TradingPageContent() {
       </div>
 
       {notice && <TradeExecutionModal notice={notice} onClose={() => setNotice(null)} />}
+      {pendingAction && (
+        <TradeConfirmationModal
+          action={pendingAction}
+          onCancel={() => setPendingAction(null)}
+          onConfirm={handleConfirmPendingAction}
+        />
+      )}
 
       {/* Wallet bar */}
       {d.isConnected && (
@@ -384,6 +475,96 @@ function formatUsd(value: number): string {
     ? abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     : abs.toFixed(2);
   return `${value < 0 ? "-" : ""}$${formatted}`;
+}
+
+function TradeConfirmationModal({
+  action,
+  onCancel,
+  onConfirm,
+}: {
+  action: PendingTradeAction;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const isOpen = action.kind === "open";
+  const title = isOpen ? "Confirm Position Entry" : "Confirm Position Exit";
+  const intent = isOpen
+    ? `Please review this ${action.mode === "paper" ? "paper" : "live"} futures order before opening the position.`
+    : "Please review this exit before closing the paper position.";
+  const side = isOpen ? action.order.side : action.trade.side;
+  const sideTone = side === "LONG" ? "text-buy" : "text-sell";
+  const rows = isOpen
+    ? [
+        { label: "Pair", value: action.pair },
+        { label: "Side", value: side },
+        { label: "Entry", value: `$${formatPrice(action.entryPrice)}` },
+        { label: "Margin", value: formatUsd(action.order.margin) },
+        { label: "Leverage", value: `${action.order.leverage}x` },
+        { label: "Liquidation", value: `$${formatPrice(action.liquidationPrice)}` },
+        { label: "Take Profit", value: action.takeProfit > 0 ? `$${formatPrice(action.takeProfit)}` : "Not set" },
+        { label: "Stop Loss", value: action.stopLoss > 0 ? `$${formatPrice(action.stopLoss)}` : "Not set" },
+      ]
+    : [
+        { label: "Pair", value: action.trade.pair },
+        { label: "Side", value: side },
+        { label: "Entry", value: `$${formatPrice(action.trade.entryPrice)}` },
+        { label: "Exit", value: `$${formatPrice(action.markPrice)}` },
+        { label: "Margin", value: formatUsd(action.trade.margin) },
+        { label: "PnL", value: `${action.pnl >= 0 ? "+" : ""}${formatUsd(action.pnl)}` },
+        { label: "ROI", value: `${action.roi >= 0 ? "+" : ""}${action.roi.toFixed(2)}%` },
+        { label: "Status", value: "Manual close" },
+      ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg overflow-hidden rounded-xl border border-accent/30 bg-panel shadow-2xl">
+        <div className="border-b border-border-default bg-accent/10 px-5 py-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-accent">Action Required</p>
+          <h3 className="mt-1 text-lg font-bold text-txt-primary">{title}</h3>
+          <p className="mt-1 text-xs text-txt-secondary leading-relaxed">{intent}</p>
+        </div>
+
+        <div className="p-5">
+          <div className="mb-4 rounded-lg border border-border-default bg-inset/50 px-3 py-2">
+            <p className="text-[9px] uppercase tracking-wider text-txt-faint">Confirmation</p>
+            <p className="mt-1 text-sm text-txt-secondary">
+              {isOpen
+                ? "Are you sure you want to open this position?"
+                : "Are you sure you want to close this position at the current mark price?"}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {rows.map((row) => (
+              <div key={row.label} className="rounded-lg border border-border-default bg-inset/40 px-3 py-2">
+                <p className="text-[9px] uppercase tracking-wider text-txt-faint">{row.label}</p>
+                <p className={`mt-0.5 text-sm font-bold font-mono ${row.label === "Side" ? sideTone : row.label === "PnL" || row.label === "ROI" ? action.kind === "close" && action.pnl < 0 ? "text-sell" : "text-buy" : "text-txt-primary"}`}>
+                  {row.value}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 border-t border-border-default px-5 py-4">
+          <button
+            onClick={onCancel}
+            className="rounded-lg border border-border-default bg-inset px-4 py-2 text-xs font-semibold text-txt-secondary hover:border-border-muted hover:text-txt-primary cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className={`rounded-lg px-4 py-2 text-xs font-bold text-white cursor-pointer ${
+              isOpen ? "bg-accent hover:bg-accent/90" : "bg-sell hover:bg-sell/90"
+            }`}
+          >
+            {isOpen ? "Confirm Open Position" : "Confirm Close Position"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function TradeExecutionModal({ notice, onClose }: { notice: TradeNotice; onClose: () => void }) {
