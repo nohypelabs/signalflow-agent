@@ -220,14 +220,14 @@ export default function TradingPageContent() {
       {/* ═══ THREE-COLUMN BODY — fills full height ═══ */}
       <div className="flex-1 min-h-0 flex">
         {/* ─── COLUMN A: Chart (~65%) ─── */}
-        <div className="flex-[11] min-w-0 flex flex-col border-r border-border-default">
+        <div className="flex-[13] min-w-0 flex flex-col border-r border-border-default">
           <ErrorBoundary name="Trading Chart">
             <TradingChart klines={d.klines} symbol={pair} currentPrice={currentPrice} liveSignals={d.liveSignals} tickerMap={d.tickerMap} tradeMode={tradeMode} onModeChange={setTradeMode} onPairChange={setPair} />
           </ErrorBoundary>
         </div>
 
         {/* ─── COLUMN B: Orderbook + Trades (~20%) ─── */}
-        <div className="flex-[4] min-w-0 flex flex-col border-r border-border-default bg-surface/10">
+        <div className="flex-[3] min-w-0 flex flex-col border-r border-border-default bg-surface/10">
           {/* Tab switcher */}
           <div className="shrink-0 flex items-center border-b border-border-default bg-inset/30">
             <button onClick={() => setBookTab("book")} className={`flex-1 text-[11px] py-2 font-medium cursor-pointer transition-colors border-b-2 ${bookTab === "book" ? "text-accent border-accent bg-accent/5" : "text-txt-dim border-transparent hover:text-txt-secondary"}`}>Order Book</button>
@@ -248,7 +248,7 @@ export default function TradingPageContent() {
         </div>
 
         {/* ─── COLUMN C: Order Form (~15%) ─── */}
-        <div className="flex-[4] min-w-0 flex flex-col overflow-y-auto scrollbar-none">
+        <div className="flex-[3] min-w-0 flex flex-col overflow-y-auto scrollbar-none">
           <ErrorBoundary name="Order Form">
             <OrderForm pair={pair} coin={coin} currentPrice={currentPrice} signal={signalContext} isConnected={d.isConnected} paperBalance={paper.balance.available} mode={tradeMode} tradingType={tradingType} error={tradeError} onModeChange={setTradeMode} onExecute={handleExecute} />
           </ErrorBoundary>
