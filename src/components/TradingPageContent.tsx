@@ -404,7 +404,7 @@ export default function TradingPageContent() {
               />
             </ErrorBoundary>
             <ErrorBoundary name="Recent Trades">
-              <RecentTrades orders={d.orders} loading={d.ordersLoading} />
+              <RecentTrades orders={d.orders} loading={d.ordersLoading} paperTrades={paper.trades} />
             </ErrorBoundary>
           </div>
         </div>
