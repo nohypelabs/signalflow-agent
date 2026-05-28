@@ -18,11 +18,8 @@ import {
   BarChartIcon,
   BriefcaseIcon,
   DocumentIcon,
-  TrendUpIcon,
-  TrendDownIcon,
   WalletIcon,
   ActivityIcon,
-  ChartIcon,
 } from "@/components/ui/icons";
 import { usePaperTrading } from "@/lib/hooks/usePaperTrading";
 import type { PaperTrade } from "@/lib/hooks/usePaperTrading";
@@ -68,12 +65,6 @@ function formatUsd(value: number): string {
   return `${value < 0 ? "-" : ""}$${formatted}`;
 }
 
-function fmtCompact(n: number): string {
-  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)}B`;
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toFixed(2);
-}
 
 /* ══════════════════════════════════════════════════════
    MAIN COMPONENT
@@ -211,13 +202,7 @@ export default function TradingPageContent() {
     if (a.kind === "open") executeConfirmedOpen(a); else executeConfirmedClose(a);
   };
 
-  /* ── Market stats ── */
-  const changePct = ticker?.changePct ?? 0;
-  const high24h = ticker ? parseFloat(ticker.highPx ?? "0") : 0;
-  const low24h = ticker ? parseFloat(ticker.lowPx ?? "0") : 0;
-  const vol24h = ticker ? parseFloat(ticker.volume ?? "0") : 0;
 
-  /* ── Bottom tab config ── */
   const tabCfg: { id: BottomTab; label: string; icon: React.ReactNode; count: number }[] = [
     { id: "orders", label: "Open Orders", icon: <ClipboardIcon size={13} />, count: d.openOrders.length },
     { id: "trades", label: "Trades", icon: <BarChartIcon size={13} />, count: 0 },
@@ -236,22 +221,6 @@ export default function TradingPageContent() {
       {/* ═══ [1] MARKET HEADER — unchanged ═══ */}
       <div className="shrink-0 border-b border-border-default bg-card/80 backdrop-blur-sm">
         <div className="flex items-center gap-4 px-4 py-2">
-          <div className="flex items-baseline gap-2">
-            {currentPrice ? (
-              <>
-                <span className="text-lg font-bold font-mono text-txt-primary tabular-nums">${currentPrice.toLocaleString("en-US", { maximumFractionDigits: coin === "BTC" ? 0 : 2 })}</span>
-                <span className={`text-xs font-bold font-mono tabular-nums flex items-center gap-0.5 ${changePct >= 0 ? "text-buy" : "text-sell"}`}>
-                  {changePct >= 0 ? "+" : ""}{changePct.toFixed(2)}%{changePct >= 0 ? <TrendUpIcon size={11} /> : <TrendDownIcon size={11} />}
-                </span>
-              </>
-            ) : <span className="text-xs text-txt-dim font-mono">Loading…</span>}
-          </div>
-          <div className="w-px h-7 bg-border-default" />
-          <div className="flex items-center gap-4">
-            {high24h > 0 && <div className="flex flex-col"><span className="text-[8px] text-txt-faint uppercase tracking-wider leading-none mb-0.5">24h High</span><span className="text-[11px] font-mono text-buy tabular-nums">${formatPrice(high24h)}</span></div>}
-            {low24h > 0 && <div className="flex flex-col"><span className="text-[8px] text-txt-faint uppercase tracking-wider leading-none mb-0.5">24h Low</span><span className="text-[11px] font-mono text-sell tabular-nums">${formatPrice(low24h)}</span></div>}
-            {vol24h > 0 && <div className="flex flex-col"><span className="text-[8px] text-txt-faint uppercase tracking-wider leading-none mb-0.5">24h Vol</span><span className="text-[11px] font-mono text-txt-secondary tabular-nums">{fmtCompact(vol24h)}</span></div>}
-          </div>
           <div className="flex-1" />
           <div className="flex items-center gap-2.5">
             {signalContext && (
