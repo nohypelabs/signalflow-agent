@@ -23,6 +23,7 @@ type TradeNotice = {
   kind: "success" | "error" | "info";
   title: string;
   detail: string;
+  rows?: { label: string; value: string; tone?: "buy" | "sell" | "accent" | "muted" }[];
 };
 
 export default function TradingPageContent() {
@@ -94,12 +95,6 @@ export default function TradingPageContent() {
     setTradeError(null);
   }, [pair, tradeMode]);
 
-  useEffect(() => {
-    if (!notice) return;
-    const timeout = window.setTimeout(() => setNotice(null), 4500);
-    return () => window.clearTimeout(timeout);
-  }, [notice]);
-
   const pairs = ["BTC/USDC", "ETH/USDC", "SOL/USDC", "AVAX/USDC", "LINK/USDC"];
   const openPaperTrades = useMemo(() => paper.trades.filter((trade) => trade.status === "OPEN"), [paper.trades]);
 
@@ -147,6 +142,14 @@ export default function TradingPageContent() {
           kind: "success",
           title: "Paper position opened",
           detail: `${trade.side} ${trade.pair} ${trade.leverage}x opened at $${formatPrice(trade.entryPrice)} with $${trade.margin.toFixed(2)} margin.`,
+          rows: [
+            { label: "Pair", value: trade.pair },
+            { label: "Side", value: trade.side, tone: trade.side === "LONG" ? "buy" : "sell" },
+            { label: "Entry", value: `$${formatPrice(trade.entryPrice)}` },
+            { label: "Margin", value: formatUsd(trade.margin) },
+            { label: "Leverage", value: `${trade.leverage}x`, tone: "accent" },
+            { label: "Liquidation", value: `$${formatPrice(trade.liquidationPrice)}`, tone: "sell" },
+          ],
         });
       }
     } else {
@@ -191,11 +194,21 @@ export default function TradingPageContent() {
     }
 
     paper.closeTrade(trade.id, markPrice);
+    const priceChange = trade.side === "LONG"
+      ? markPrice - trade.entryPrice
+      : trade.entryPrice - markPrice;
+    const pnl = priceChange * trade.quantity;
     setNotice({
       id: Date.now(),
       kind: "info",
       title: "Paper position closed",
       detail: `${trade.side} ${trade.pair} closed at $${formatPrice(markPrice)}.`,
+      rows: [
+        { label: "Pair", value: trade.pair },
+        { label: "Exit", value: `$${formatPrice(markPrice)}` },
+        { label: "PnL", value: `${pnl >= 0 ? "+" : ""}${formatUsd(pnl)}`, tone: pnl >= 0 ? "buy" : "sell" },
+        { label: "ROI", value: `${pnl >= 0 ? "+" : ""}${((pnl / trade.margin) * 100).toFixed(2)}%`, tone: pnl >= 0 ? "buy" : "sell" },
+      ],
     });
   };
 
@@ -222,33 +235,7 @@ export default function TradingPageContent() {
         </div>
       </div>
 
-      {notice && (
-        <div
-          className={`rounded-lg border px-4 py-3 ${
-            notice.kind === "success"
-              ? "border-buy/25 bg-buy/10"
-              : notice.kind === "error"
-                ? "border-sell/25 bg-sell/10"
-                : "border-accent/25 bg-accent/10"
-          }`}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className={`text-xs font-bold ${notice.kind === "error" ? "text-sell" : notice.kind === "success" ? "text-buy" : "text-accent"}`}>
-                {notice.title}
-              </p>
-              <p className="text-[10px] text-txt-secondary mt-0.5">{notice.detail}</p>
-            </div>
-            <button
-              onClick={() => setNotice(null)}
-              className="text-[10px] text-txt-faint hover:text-txt-secondary cursor-pointer"
-              aria-label="Dismiss notification"
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      )}
+      {notice && <TradeExecutionModal notice={notice} onClose={() => setNotice(null)} />}
 
       {/* Wallet bar */}
       {d.isConnected && (
@@ -397,6 +384,65 @@ function formatUsd(value: number): string {
     ? abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     : abs.toFixed(2);
   return `${value < 0 ? "-" : ""}$${formatted}`;
+}
+
+function TradeExecutionModal({ notice, onClose }: { notice: TradeNotice; onClose: () => void }) {
+  const toneClass = notice.kind === "error" ? "text-sell" : notice.kind === "success" ? "text-buy" : "text-accent";
+  const borderClass = notice.kind === "error" ? "border-sell/30" : notice.kind === "success" ? "border-buy/30" : "border-accent/30";
+  const bgClass = notice.kind === "error" ? "bg-sell/10" : notice.kind === "success" ? "bg-buy/10" : "bg-accent/10";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+      <div className={`w-full max-w-md overflow-hidden rounded-xl border ${borderClass} bg-panel shadow-2xl`}>
+        <div className={`px-5 py-4 ${bgClass} border-b ${borderClass}`}>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className={`text-xs font-bold uppercase tracking-wider ${toneClass}`}>
+                {notice.kind === "error" ? "Execution Failed" : "Execution Confirmed"}
+              </p>
+              <h3 className="mt-1 text-lg font-bold text-txt-primary">{notice.title}</h3>
+              <p className="mt-1 text-xs text-txt-secondary leading-relaxed">{notice.detail}</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="rounded-md px-2 py-1 text-xs text-txt-faint hover:bg-elevated hover:text-txt-secondary cursor-pointer"
+              aria-label="Close execution notification"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+
+        {notice.rows && notice.rows.length > 0 && (
+          <div className="grid grid-cols-2 gap-2 p-5">
+            {notice.rows.map((row) => (
+              <div key={row.label} className="rounded-lg border border-border-default bg-inset/50 px-3 py-2">
+                <p className="text-[9px] uppercase tracking-wider text-txt-faint">{row.label}</p>
+                <p className={`mt-0.5 text-sm font-bold font-mono ${
+                  row.tone === "buy" ? "text-buy" : row.tone === "sell" ? "text-sell" : row.tone === "accent" ? "text-accent" : "text-txt-primary"
+                }`}>
+                  {row.value}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center justify-end gap-2 border-t border-border-default px-5 py-4">
+          <button
+            onClick={onClose}
+            className={`rounded-lg px-4 py-2 text-xs font-bold cursor-pointer ${
+              notice.kind === "error"
+                ? "bg-sell text-white hover:bg-sell/90"
+                : "bg-accent text-white hover:bg-accent/90"
+            }`}
+          >
+            Got it
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function OpenPaperPositionsPanel({

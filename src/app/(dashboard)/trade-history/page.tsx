@@ -1,10 +1,12 @@
 "use client";
 
 import { useDashboard } from "@/lib/dashboard-context";
+import { usePaperTrading } from "@/lib/hooks/usePaperTrading";
 import TradeHistory from "@/components/TradeHistory";
 
 export default function TradeHistoryPage() {
   const d = useDashboard();
+  const paper = usePaperTrading();
   return (
     <TradeHistory
       orders={d.orders}
@@ -12,6 +14,8 @@ export default function TradeHistoryPage() {
       ordersError={d.ordersError}
       tickers={d.tickers}
       liveSignals={d.liveSignals}
+      paperTrades={paper.trades}
+      paperStats={paper.stats}
       onExecuteSignal={d.handleExecuteSignal}
       onCancelOrder={d.cancelOrder}
     />
