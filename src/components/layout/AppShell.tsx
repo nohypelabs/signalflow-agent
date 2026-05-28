@@ -61,7 +61,7 @@ export default function AppShell({
         <main
           className={
             fullScreen
-              ? "flex-1 min-h-0 overflow-hidden relative"
+              ? "flex-1 min-h-0 overflow-y-auto relative"
               : "flex-1 overflow-y-auto p-4 lg:p-6 pb-20 md:pb-0 relative"
           }
         >

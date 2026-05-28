@@ -281,12 +281,12 @@ export default function TradingPageContent() {
   ];
 
   return (
-    <div ref={rootRef} className="h-full flex flex-col overflow-hidden bg-background">
+    <div ref={rootRef} className="flex flex-col bg-background" style={{ minHeight: "100vh" }}>
       {notice && <TradeExecutionModal notice={notice} onClose={() => setNotice(null)} />}
       {pendingAction && <TradeConfirmationModal action={pendingAction} onCancel={() => setPendingAction(null)} onConfirm={handleConfirm} />}
 
       {/* ═══ THREE-COLUMN BODY ═══ */}
-      <div ref={containerRef} className="flex-1 min-h-0 flex overflow-hidden">
+      <div ref={containerRef} className="flex-1 min-h-[500px] flex overflow-hidden">
         {/* Column A: Chart */}
         <div className="min-w-0 flex flex-col" style={{ width: `${widths.chart}%` }}>
           <ErrorBoundary name="Trading Chart">
