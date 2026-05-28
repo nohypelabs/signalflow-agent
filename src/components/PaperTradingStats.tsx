@@ -38,7 +38,10 @@ function PositionRow({ trade, currentPrice, onClose }: { trade: PaperTrade; curr
   const priceChange = trade.side === "LONG"
     ? price - trade.entryPrice
     : trade.entryPrice - price;
-  const pnl = priceChange * trade.quantity;
+  // Use trade.currentPnl if available (updated by checkTpSl), otherwise calculate
+  const pnl = trade.currentPnl !== undefined && trade.currentPnl !== 0
+    ? trade.currentPnl
+    : priceChange * trade.quantity;
   const pnlPct = (pnl / trade.margin) * 100;
   const isProfit = pnl >= 0;
 
@@ -161,9 +164,9 @@ export default function PaperTradingStats({ stats, balance, trades, currentPrice
             <p className="text-xs font-mono text-[#ff8800]">{fmtUSD(balance.marginUsed)}</p>
           </div>
           <div>
-            <p className="text-[8px] text-txt-faint uppercase tracking-wider">Total P&L</p>
-            <p className={`text-sm font-bold font-mono ${stats.totalPnl >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
-              {stats.totalPnl >= 0 ? "+" : ""}{fmtUSD(stats.totalPnl)}
+            <p className="text-[8px] text-txt-faint uppercase tracking-wider">Unrealized</p>
+            <p className={`text-sm font-bold font-mono ${balance.unrealizedPnl >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
+              {balance.unrealizedPnl >= 0 ? "+" : ""}{fmtUSD(balance.unrealizedPnl)}
             </p>
           </div>
         </div>

@@ -264,7 +264,10 @@ function PositionRow({ trade, currentPrice, onClose }: { trade: PaperTrade; curr
   const priceChange = trade.side === "LONG"
     ? currentPrice - trade.entryPrice
     : trade.entryPrice - currentPrice;
-  const pnl = priceChange * trade.quantity;
+  // Use trade.currentPnl if available (updated by checkTpSl), otherwise calculate
+  const pnl = trade.currentPnl !== undefined && trade.currentPnl !== 0
+    ? trade.currentPnl
+    : priceChange * trade.quantity;
   const pnlPct = (pnl / trade.margin) * 100;
   const isProfit = pnl >= 0;
 

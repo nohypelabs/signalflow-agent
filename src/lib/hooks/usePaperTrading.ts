@@ -28,6 +28,7 @@ export interface PaperTrade {
   tradingType?: string;     // scalping | intraday | swing | position
   maxPnl: number;             // peak P&L (for trailing)
   minPnl: number;             // trough P&L
+  currentPnl: number;         // real-time unrealized P&L (updated on each tick)
 }
 
 export interface PaperBalance {
@@ -179,6 +180,7 @@ export function usePaperTrading() {
       tradingType: params.tradingType,
       maxPnl: 0,
       minPnl: 0,
+      currentPnl: 0,
     };
 
     setTrades((prev) => [trade, ...prev]);
@@ -255,7 +257,7 @@ export function usePaperTrading() {
         }
       }
 
-      // Track max/min P&L
+      // Track max/min P&L and current P&L
       const priceChange = trade.side === "LONG"
         ? price - trade.entryPrice
         : trade.entryPrice - price;
@@ -263,7 +265,7 @@ export function usePaperTrading() {
       setTrades((prev) =>
         prev.map((t) =>
           t.id === trade.id
-            ? { ...t, maxPnl: Math.max(t.maxPnl, currentPnl), minPnl: Math.min(t.minPnl, currentPnl) }
+            ? { ...t, currentPnl: parseFloat(currentPnl.toFixed(4)), maxPnl: Math.max(t.maxPnl, currentPnl), minPnl: Math.min(t.minPnl, currentPnl) }
             : t
         )
       );
@@ -277,14 +279,15 @@ export function usePaperTrading() {
 
   // ── Compute balance ──────────────────────────────────
   const openTradesList = trades.filter((t) => t.status === "OPEN");
+  const closedTradesPnl = trades.filter((t) => t.status !== "OPEN").reduce((s, t) => s + (t.pnl ?? 0), 0);
   const marginUsed = openTradesList.reduce((s, t) => s + t.margin, 0);
-  const unrealizedPnl = 0; // calculated on each tick in component
+  const unrealizedPnl = openTradesList.reduce((s, t) => s + (t.currentPnl ?? 0), 0);
 
   const balance: PaperBalance = {
-    total: initialBalance + trades.filter((t) => t.status !== "OPEN").reduce((s, t) => s + (t.pnl ?? 0), 0),
+    total: initialBalance + closedTradesPnl + unrealizedPnl,
     available: initialBalance - marginUsed,
     marginUsed,
-    unrealizedPnl,
+    unrealizedPnl: parseFloat(unrealizedPnl.toFixed(4)),
     initialBalance,
   };
 
