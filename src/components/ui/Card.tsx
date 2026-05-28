@@ -1,6 +1,7 @@
 "use client";
 
-import { type ReactNode, type HTMLAttributes } from "react";
+import { type ReactNode, type CSSProperties } from "react";
+import { motion } from "framer-motion";
 
 const variants = {
   default: "bg-card border border-border-default",
@@ -16,11 +17,15 @@ const paddings = {
   none: "p-0",
 };
 
-interface Props extends HTMLAttributes<HTMLDivElement> {
+interface Props {
   variant?: keyof typeof variants;
   padding?: keyof typeof paddings;
   hover?: boolean;
   accent?: string;
+  className?: string;
+  style?: CSSProperties;
+  children: ReactNode;
+  onClick?: (e?: any) => void;
 }
 
 export default function Card({
@@ -29,19 +34,33 @@ export default function Card({
   hover = false,
   accent,
   className = "",
+  style,
   children,
-  ...rest
+  onClick,
 }: Props) {
+  const baseClass = `rounded-xl ${variants[variant]} ${paddings[padding]} ${className}`;
+  const accentStyle = accent
+    ? { borderTop: `2px solid ${accent}`, ...style }
+    : style;
+
+  if (hover) {
+    return (
+      <motion.div
+        whileHover={{
+          y: -2,
+          transition: { duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] },
+        }}
+        className={`${baseClass} hover:border-accent-dim hover:shadow-[0_4px_20px_rgba(0,229,168,0.06)] cursor-pointer transition-[border-color,box-shadow] duration-200`}
+        style={accentStyle}
+        onClick={onClick}
+      >
+        {children}
+      </motion.div>
+    );
+  }
+
   return (
-    <div
-      className={`
-        rounded-xl ${variants[variant]} ${paddings[padding]}
-        ${hover ? "hover:border-accent-dim cursor-pointer" : ""}
-        ${className}
-      `}
-      style={accent ? { borderTop: `2px solid ${accent}` } : undefined}
-      {...rest}
-    >
+    <div className={baseClass} style={accentStyle} onClick={onClick}>
       {children}
     </div>
   );

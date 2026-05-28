@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, type ButtonHTMLAttributes } from "react";
+import { motion } from "framer-motion";
 
 const variants: Record<string, string> = {
   primary: "bg-accent text-[#05070D] font-bold hover:bg-accent/90 disabled:opacity-50",
@@ -33,7 +34,9 @@ export default function Button({
   ...rest
 }: Props) {
   return (
-    <button
+    <motion.button
+      whileTap={{ scale: 0.97, transition: { duration: 0.1 } }}
+      whileHover={{ scale: 1.01 }}
       className={`
         font-semibold inline-flex items-center justify-center gap-2
         ${variants[variant] || variants.primary}
@@ -42,7 +45,7 @@ export default function Button({
         ${className}
       `}
       disabled={disabled || loading}
-      {...rest}
+      {...(rest as any)}
     >
       {loading && (
         <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
@@ -51,6 +54,6 @@ export default function Button({
         </svg>
       )}
       {children}
-    </button>
+    </motion.button>
   );
 }

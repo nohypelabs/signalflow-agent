@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import type { DashboardMetrics, MetricField, MetricStatus } from "@/lib/hooks/useDashboardMetrics";
 import type { TopGainerResult, SignalBreakdown } from "@/lib/api/dashboard-metrics";
 import { formatPercent } from "@/lib/api/dashboard-metrics";
@@ -161,9 +162,10 @@ export default function KPICards({ metrics }: Props) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
       {cards.map((c) => (
-        <div
+        <motion.div
           key={c.label}
-          className="group relative bg-card border border-border-default rounded-lg overflow-hidden hover:border-border-muted transition-colors"
+          whileHover={{ y: -2, transition: { duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] } }}
+          className="group relative bg-card border border-border-default rounded-lg overflow-hidden hover:border-border-muted hover:shadow-[0_4px_20px_rgba(0,229,168,0.06)] transition-[border-color,box-shadow] duration-200"
         >
           {/* Top accent stripe */}
           <div
@@ -213,7 +215,7 @@ export default function KPICards({ metrics }: Props) {
               )}
             </div>
           </div>
-        </div>
+        </motion.div>
       ))}
     </div>
   );
