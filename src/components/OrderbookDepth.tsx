@@ -159,7 +159,7 @@ export default function OrderbookDepth({ symbol = "vBTC_vUSDC", coin = "BTC" }: 
   }
 
   return (
-    <Card padding="none" className="overflow-hidden h-full flex flex-col">
+    <Card padding="none" className="overflow-hidden flex flex-col">
       {/* Header */}
       <div className="px-4 py-3 border-b border-border-default shrink-0">
         <div className="flex items-center justify-between">

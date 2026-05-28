@@ -218,7 +218,7 @@ export default function TradingPageContent() {
 
 
       {/* ═══ THREE-COLUMN BODY — fills full height ═══ */}
-      <div className="flex-1 min-h-0 flex">
+      <div className="flex-1 min-h-0 flex overflow-hidden">
         {/* ─── COLUMN A: Chart (~65%) ─── */}
         <div className="flex-[13] min-w-0 flex flex-col border-r border-border-default">
           <ErrorBoundary name="Trading Chart">
