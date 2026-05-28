@@ -51,6 +51,8 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
   const [showTpSl, setShowTpSl] = useState(false);
   const [reduceOnly, setReduceOnly] = useState(false);
   const [sliderPct, setSliderPct] = useState(0);
+  const [marginMode, setMarginMode] = useState<"Isolated" | "Cross">("Isolated");
+  const [showMarginDropdown, setShowMarginDropdown] = useState(false);
 
   // Type-aware leverage limits
   const typeConfig = tradingType ? TRADING_TYPES[tradingType] : null;
@@ -196,9 +198,22 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-txt-dim"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" /></svg>
             </button>
           </div>
-          <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-inset border border-border-default cursor-pointer">
-            <span className="text-[10px] text-txt-secondary font-medium">Isolated</span>
-            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-txt-dim"><path d="M19 9l-7 7-7-7" /></svg>
+          <div className="relative">
+            <button onClick={() => setShowMarginDropdown(!showMarginDropdown)}
+              className="flex items-center gap-1 px-2 py-1 rounded-md bg-inset border border-border-default cursor-pointer hover:border-border-muted transition-colors">
+              <span className="text-[10px] text-txt-secondary font-medium">{marginMode}</span>
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-txt-dim"><path d="M19 9l-7 7-7-7" /></svg>
+            </button>
+            {showMarginDropdown && (
+              <div className="absolute right-0 top-full mt-1 z-30 bg-card border border-border-default rounded-lg shadow-xl overflow-hidden min-w-[100px]">
+                {(["Isolated", "Cross"] as const).map((mode) => (
+                  <button key={mode} onClick={() => { setMarginMode(mode); setShowMarginDropdown(false); }}
+                    className={`w-full text-left px-3 py-2 text-[10px] font-medium cursor-pointer transition-colors ${
+                      marginMode === mode ? "bg-accent/15 text-accent" : "text-txt-secondary hover:bg-elevated/40 hover:text-txt-primary"
+                    }`}>{mode}</button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

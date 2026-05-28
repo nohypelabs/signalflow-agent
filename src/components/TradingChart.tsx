@@ -157,6 +157,11 @@ export default function TradingChart({
   const [tf, setTf] = useState<Timeframe>("1h");
   const [pair, setPair] = useState(initialSymbol);
   const [showModal, setShowModal] = useState(false);
+
+  // Sync pair when parent changes it (e.g., from MarketSelectorModal)
+  useEffect(() => {
+    setPair(initialSymbol);
+  }, [initialSymbol]);
   const [klines, setKlines] = useState<SoDEXKline[] | null>(
     initialKlines ? normalizeKlines(initialKlines) : null,
   );
