@@ -159,9 +159,9 @@ export default function OrderbookDepth({ symbol = "vBTC_vUSDC", coin = "BTC" }: 
   }
 
   return (
-    <Card padding="none" className="overflow-hidden">
+    <Card padding="none" className="overflow-hidden h-full flex flex-col">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border-default">
+      <div className="px-4 py-3 border-b border-border-default shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ChartBarIcon size={16} className="text-accent" />
@@ -184,7 +184,7 @@ export default function OrderbookDepth({ symbol = "vBTC_vUSDC", coin = "BTC" }: 
       </div>
 
       {/* Spread info */}
-      <div className="px-4 py-2 bg-elevated/20 border-b border-border-default flex items-center justify-between">
+      <div className="px-4 py-2 bg-elevated/20 border-b border-border-default flex items-center justify-between shrink-0">
         <span className="text-[9px] text-txt-faint">Spread</span>
         <span className="text-[10px] font-mono text-txt-secondary">
           {spread > 0 ? `${fmtPrice(spread, coin)} (${spreadPct.toFixed(3)}%)` : "—"}
@@ -192,28 +192,28 @@ export default function OrderbookDepth({ symbol = "vBTC_vUSDC", coin = "BTC" }: 
       </div>
 
       {/* Column headers */}
-      <div className="px-3 py-1.5 flex items-center gap-2 text-[8px] text-txt-faint uppercase tracking-wider border-b border-border-default">
+      <div className="px-3 py-1.5 flex items-center gap-2 text-[8px] text-txt-faint uppercase tracking-wider border-b border-border-default shrink-0">
         <span className="flex-1">Price</span>
         <span className="flex-1 text-right">Size</span>
         <span className="flex-1 text-right">Total</span>
       </div>
 
-      {/* Asks (reversed so lowest ask is at bottom) */}
-      <div className="max-h-48 overflow-y-auto">
+      {/* Asks (reversed so lowest ask is at bottom) — fills available space */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {[...asks].reverse().map((entry, i) => (
           <DepthRow key={`ask-${i}`} entry={entry} maxTotal={maxTotal} side="ask" coin={coin} />
         ))}
       </div>
 
       {/* Mid price */}
-      <div className="px-4 py-1.5 bg-elevated/30 border-y border-border-default text-center">
+      <div className="px-4 py-1.5 bg-elevated/30 border-y border-border-default text-center shrink-0">
         <span className="text-xs font-bold font-mono text-txt-primary">
           {midPrice > 0 ? `$${fmtPrice(midPrice, coin)}` : "—"}
         </span>
       </div>
 
-      {/* Bids */}
-      <div className="max-h-48 overflow-y-auto">
+      {/* Bids — fills available space */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {bids.map((entry, i) => (
           <DepthRow key={`bid-${i}`} entry={entry} maxTotal={maxTotal} side="bid" coin={coin} />
         ))}
