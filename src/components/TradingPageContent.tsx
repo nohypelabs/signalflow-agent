@@ -34,6 +34,10 @@ function formatUsd(value: number): string { const abs = Math.abs(value); const f
 const DEFAULT_WIDTHS = { chart: 65, book: 18, form: 17 };
 const MIN_WIDTHS = { chart: 30, book: 12, form: 12 };
 const WIDTHS_KEY = "sf-panel-widths";
+const BOTTOM_HEIGHT_KEY = "sf-bottom-height";
+const DEFAULT_BOTTOM_HEIGHT = 200;
+const MIN_BOTTOM_HEIGHT = 80;
+const MAX_BOTTOM_HEIGHT_RATIO = 0.6; // max 60% of viewport
 
 function loadWidths(): typeof DEFAULT_WIDTHS {
   if (typeof window === "undefined") return DEFAULT_WIDTHS;
@@ -46,6 +50,16 @@ function loadWidths(): typeof DEFAULT_WIDTHS {
 
 function saveWidths(w: typeof DEFAULT_WIDTHS) {
   try { localStorage.setItem(WIDTHS_KEY, JSON.stringify(w)); } catch {}
+}
+
+function loadBottomHeight(): number {
+  if (typeof window === "undefined") return DEFAULT_BOTTOM_HEIGHT;
+  const v = parseInt(localStorage.getItem(BOTTOM_HEIGHT_KEY) || "", 10);
+  return Number.isFinite(v) && v >= MIN_BOTTOM_HEIGHT ? v : DEFAULT_BOTTOM_HEIGHT;
+}
+
+function saveBottomHeight(h: number) {
+  try { localStorage.setItem(BOTTOM_HEIGHT_KEY, String(h)); } catch {}
 }
 
 /* ══════════════════════════════════════════════════════
@@ -93,6 +107,48 @@ function ResizeHandle({ onDrag, onDoubleClick }: { onDrag: (deltaX: number) => v
   );
 }
 
+function ResizeHandleH({ onDrag, onDoubleClick }: { onDrag: (deltaY: number) => void; onDoubleClick: () => void }) {
+  const dragging = useRef(false);
+  const startY = useRef(0);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    dragging.current = true;
+    startY.current = e.clientY;
+    document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragging.current) return;
+      onDrag(e.clientY - startY.current);
+      startY.current = e.clientY;
+    };
+
+    const handleMouseUp = () => {
+      dragging.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  }, [onDrag]);
+
+  return (
+    <div
+      onMouseDown={handleMouseDown}
+      onDoubleClick={onDoubleClick}
+      className="h-1.5 shrink-0 cursor-row-resize hover:bg-accent/40 active:bg-accent/60 transition-colors relative group border-t border-b border-border-default bg-inset/30"
+      style={{ zIndex: 10 }}
+    >
+      <div className="absolute inset-x-0 -top-1 -bottom-1" />
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-0.5 rounded-full bg-border-muted group-hover:bg-accent/60 transition-colors" />
+    </div>
+  );
+}
+
 /* ══════════════════════════════════════════════════════
    MAIN COMPONENT
    ══════════════════════════════════════════════════════ */
@@ -112,7 +168,9 @@ export default function TradingPageContent() {
 
   /* ── Panel widths ── */
   const [widths, setWidths] = useState(loadWidths);
+  const [bottomHeight, setBottomHeight] = useState(loadBottomHeight);
   const containerRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const handleResize = useCallback((which: "chart" | "book", deltaPx: number) => {
     const container = containerRef.current;
@@ -125,13 +183,23 @@ export default function TradingPageContent() {
       const other = which === "chart" ? "book" : "form";
       let newA = prev[which] + deltaPct;
       let newB = prev[other] - deltaPct;
-
-      // Enforce minimums
       if (newA < MIN_WIDTHS[which]) { newB += newA - MIN_WIDTHS[which]; newA = MIN_WIDTHS[which]; }
       if (newB < MIN_WIDTHS[other]) { newA += newB - MIN_WIDTHS[other]; newB = MIN_WIDTHS[other]; }
-
       const next = { ...prev, [which]: newA, [other]: newB };
       saveWidths(next);
+      return next;
+    });
+  }, []);
+
+  const handleVerticalResize = useCallback((deltaY: number) => {
+    // Dragging DOWN increases bottom panel height (shrinks chart)
+    // Dragging UP decreases bottom panel height (grows chart)
+    const root = rootRef.current;
+    if (!root) return;
+    const maxH = root.offsetHeight * MAX_BOTTOM_HEIGHT_RATIO;
+    setBottomHeight((prev) => {
+      const next = Math.max(MIN_BOTTOM_HEIGHT, Math.min(maxH, prev - deltaY));
+      saveBottomHeight(next);
       return next;
     });
   }, []);
@@ -139,6 +207,11 @@ export default function TradingPageContent() {
   const resetWidths = useCallback(() => {
     setWidths(DEFAULT_WIDTHS);
     saveWidths(DEFAULT_WIDTHS);
+  }, []);
+
+  const resetBottomHeight = useCallback(() => {
+    setBottomHeight(DEFAULT_BOTTOM_HEIGHT);
+    saveBottomHeight(DEFAULT_BOTTOM_HEIGHT);
   }, []);
 
   /* ── Trading logic (unchanged) ── */
@@ -208,7 +281,7 @@ export default function TradingPageContent() {
   ];
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-background">
+    <div ref={rootRef} className="h-full flex flex-col overflow-hidden bg-background">
       {notice && <TradeExecutionModal notice={notice} onClose={() => setNotice(null)} />}
       {pendingAction && <TradeConfirmationModal action={pendingAction} onCancel={() => setPendingAction(null)} onConfirm={handleConfirm} />}
 
@@ -247,8 +320,11 @@ export default function TradingPageContent() {
         </div>
       </div>
 
+      {/* ═══ RESIZE HANDLE: Chart ↔ Bottom Panel ═══ */}
+      <ResizeHandleH onDrag={handleVerticalResize} onDoubleClick={resetBottomHeight} />
+
       {/* ═══ BOTTOM PANEL ═══ */}
-      <div className="shrink-0 h-[200px] border-t border-border-default bg-card/50 flex flex-col">
+      <div className="shrink-0 border-t border-border-default bg-card/50 flex flex-col" style={{ height: `${bottomHeight}px` }}>
         <div className="flex items-center gap-0 px-3 border-b border-border-default bg-inset/30 shrink-0">
           {tabCfg.map((tab) => (
             <button key={tab.id} onClick={() => setBottomTab(tab.id)} className={`flex items-center gap-1.5 px-3 py-2 text-[11px] font-medium cursor-pointer border-b-2 transition-colors ${bottomTab === tab.id ? "text-accent border-accent bg-accent/5" : "text-txt-dim border-transparent hover:text-txt-secondary hover:bg-elevated/20"}`}>
