@@ -222,7 +222,7 @@ export default function TradingPageContent() {
         {/* ─── COLUMN A: Chart (~65%) ─── */}
         <div className="flex-[11] min-w-0 flex flex-col border-r border-border-default">
           <ErrorBoundary name="Trading Chart">
-            <TradingChart klines={d.klines} symbol={pair} currentPrice={currentPrice} liveSignals={d.liveSignals} tickerMap={d.tickerMap} tradeMode={tradeMode} onModeChange={setTradeMode} />
+            <TradingChart klines={d.klines} symbol={pair} currentPrice={currentPrice} liveSignals={d.liveSignals} tickerMap={d.tickerMap} tradeMode={tradeMode} onModeChange={setTradeMode} onPairChange={setPair} />
           </ErrorBoundary>
         </div>
 

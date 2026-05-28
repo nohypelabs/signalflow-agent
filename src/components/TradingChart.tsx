@@ -20,6 +20,7 @@ import { fetchKlines } from "@/lib/api/datasources";
 import { useChartDrawings } from "@/lib/hooks/useChartDrawings";
 import ChartDrawingToolbar from "./charts/ChartDrawingToolbar";
 import ChartDrawingOverlay from "./charts/ChartDrawingOverlay";
+import MarketSelectorModal from "./MarketSelectorModal";
 
 /* ── Constants ── */
 
@@ -130,6 +131,7 @@ interface Props {
   tickerMap?: Map<string, SoDEXTicker>;
   tradeMode?: "paper" | "live";
   onModeChange?: (mode: "paper" | "live") => void;
+  onPairChange?: (pair: string) => void;
 }
 
 /* ── Component ── */
@@ -142,6 +144,7 @@ export default function TradingChart({
   tickerMap,
   tradeMode,
   onModeChange,
+  onPairChange,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -153,6 +156,7 @@ export default function TradingChart({
 
   const [tf, setTf] = useState<Timeframe>("1h");
   const [pair, setPair] = useState(initialSymbol);
+  const [showModal, setShowModal] = useState(false);
   const [klines, setKlines] = useState<SoDEXKline[] | null>(
     initialKlines ? normalizeKlines(initialKlines) : null,
   );
@@ -486,20 +490,13 @@ export default function TradingChart({
         {/* Row 1: Pair + Price + Signal badge + freshness */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <select
-              value={pair}
-              onChange={(e) => setPair(e.target.value)}
-              className="bg-elevated text-txt-primary text-sm font-semibold font-mono px-2 py-1 rounded border border-border-default cursor-pointer focus:outline-none focus:border-accent/50 appearance-none pr-6"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2364748B' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 8px center",
-              }}
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-1.5 bg-elevated text-txt-primary text-sm font-semibold font-mono px-2.5 py-1 rounded border border-border-default cursor-pointer hover:border-accent/40 transition-colors"
             >
-              {AVAILABLE_PAIRS.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
+              {pair}
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1L5 5L9 1" stroke="#64748B" strokeWidth="1.5" strokeLinecap="round" /></svg>
+            </button>
             {displayPrice != null && (
               <div className="flex items-baseline gap-2">
                 <span className="text-lg font-bold font-mono text-txt-primary tabular-nums">
@@ -711,6 +708,15 @@ export default function TradingChart({
           </div>
         )}
       </div>
+
+      {/* Market Selector Modal */}
+      <MarketSelectorModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onSelectMarket={(p) => { setPair(p); onPairChange?.(p); }}
+        currentSymbol={pair}
+        tickerMap={tickerMap}
+      />
     </div>
   );
 }
