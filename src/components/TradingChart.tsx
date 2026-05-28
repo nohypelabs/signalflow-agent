@@ -499,10 +499,18 @@ export default function TradingChart({
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-1.5 bg-elevated text-txt-primary text-sm font-semibold font-mono px-2.5 py-1 rounded border border-border-default cursor-pointer hover:border-accent/40 transition-colors"
+              className="flex items-center gap-2 bg-accent/8 text-txt-primary text-sm font-semibold font-mono px-3 py-1.5 rounded-lg border border-accent/20 cursor-pointer hover:bg-accent/15 hover:border-accent/40 transition-all"
             >
-              {pair}
-              <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1L5 5L9 1" stroke="#64748B" strokeWidth="1.5" strokeLinecap="round" /></svg>
+              <img
+                src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${pair.split("/")[0].toLowerCase()}.svg`}
+                alt={pair.split("/")[0]}
+                width={18}
+                height={18}
+                className="rounded-full"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+              <span>{pair}</span>
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1L5 5L9 1" stroke="var(--accent-primary)" strokeWidth="1.5" strokeLinecap="round" /></svg>
             </button>
             {displayPrice != null && (
               <div className="flex items-baseline gap-2">
