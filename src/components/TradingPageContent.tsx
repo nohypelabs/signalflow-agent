@@ -135,7 +135,7 @@ export default function TradingPageContent() {
   useEffect(() => { if (paper.error) setTradeError(paper.error); }, [paper.error]);
   useEffect(() => { setTradeError(null); }, [pair, tradeMode]);
 
-  const pairs = ["BTC/USDC", "ETH/USDC", "SOL/USDC", "AVAX/USDC", "LINK/USDC"];
+
   const openPaperTrades = useMemo(() => paper.trades.filter((t) => t.status === "OPEN"), [paper.trades]);
 
   const getMarkPrice = (trade: PaperTrade) => {
@@ -236,14 +236,6 @@ export default function TradingPageContent() {
       {/* ═══ [1] MARKET HEADER — unchanged ═══ */}
       <div className="shrink-0 border-b border-border-default bg-card/80 backdrop-blur-sm">
         <div className="flex items-center gap-4 px-4 py-2">
-          <div className="flex items-center gap-0.5 bg-inset border border-border-default rounded-lg p-0.5">
-            {pairs.map((p) => (
-              <button key={p} onClick={() => setPair(p)} className={`text-[10px] px-2.5 py-1.5 rounded-md transition-all cursor-pointer font-semibold ${pair === p ? "bg-accent/15 text-accent shadow-[0_0_8px_rgba(0,229,168,0.1)] border border-accent/20" : "text-txt-dim hover:text-txt-secondary border border-transparent"}`}>
-                {p.replace("/USDC", "")}
-              </button>
-            ))}
-          </div>
-          <div className="w-px h-7 bg-border-default" />
           <div className="flex items-baseline gap-2">
             {currentPrice ? (
               <>
