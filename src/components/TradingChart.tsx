@@ -21,6 +21,7 @@ import { useChartDrawings } from "@/lib/hooks/useChartDrawings";
 import ChartDrawingToolbar from "./charts/ChartDrawingToolbar";
 import ChartDrawingOverlay from "./charts/ChartDrawingOverlay";
 import MarketSelectorModal from "./MarketSelectorModal";
+import TradingViewWidget from "./TradingViewWidget";
 
 /* ── Constants ── */
 
@@ -173,6 +174,7 @@ export default function TradingChart({
 
   // Chart display toggles
   const [chartType, setChartType] = useState<"candles" | "line">("candles");
+  const [chartEngine, setChartEngine] = useState<"native" | "tradingview">("native");
   const [showSignals, setShowSignals] = useState(true);
   const [showTradePlan, setShowTradePlan] = useState(true);
   const [showVolume, setShowVolume] = useState(true);
@@ -606,6 +608,27 @@ export default function TradingChart({
               </button>
             </div>
 
+            {/* Chart engine toggle: Native | TV */}
+            <div className="flex items-center bg-inset rounded border border-border-default overflow-hidden">
+              <button
+                onClick={() => setChartEngine("native")}
+                className={`text-[9px] px-2 py-0.5 transition-all cursor-pointer font-semibold ${
+                  chartEngine === "native" ? "text-accent bg-elevated" : "text-txt-dim hover:text-txt-secondary"
+                }`}
+              >
+                SF
+              </button>
+              <div className="w-px h-3 bg-border-default" />
+              <button
+                onClick={() => setChartEngine("tradingview")}
+                className={`text-[9px] px-2 py-0.5 transition-all cursor-pointer font-semibold ${
+                  chartEngine === "tradingview" ? "text-accent bg-elevated" : "text-txt-dim hover:text-txt-secondary"
+                }`}
+              >
+                TV
+              </button>
+            </div>
+
             {/* Separator */}
             <div className="w-px h-3 bg-border-default" />
 
@@ -654,63 +677,69 @@ export default function TradingChart({
 
       {/* Chart container */}
       <div className="flex-1 min-h-0 relative">
-        <div ref={containerRef} className="absolute inset-0" />
+        {chartEngine === "tradingview" ? (
+          <TradingViewWidget symbol={pair} interval={tf === "1m" ? "1" : tf === "5m" ? "5" : tf === "15m" ? "15" : tf === "1h" ? "60" : tf === "4h" ? "240" : tf === "1D" ? "D" : "W"} />
+        ) : (
+          <>
+            <div ref={containerRef} className="absolute inset-0" />
 
-        {/* Drawing toolbar + overlay */}
-        <ChartDrawingToolbar
-          activeTool={activeTool}
-          onSelectTool={selectTool}
-          onClear={clearAll}
-          onToggleHidden={toggleHidden}
-          hidden={hidden}
-          drawingCount={drawings.length}
-          pendingFirstClick={pending.firstClick !== null}
-        />
-        <ChartDrawingOverlay
-          chart={chartRef.current}
-          series={candleRef.current}
-          drawings={drawings}
-          hidden={hidden}
-          pendingFirstClick={pending.firstClick}
-          activeTool={activeTool}
-          onClick={handleChartClick}
-        />
+            {/* Drawing toolbar + overlay */}
+            <ChartDrawingToolbar
+              activeTool={activeTool}
+              onSelectTool={selectTool}
+              onClear={clearAll}
+              onToggleHidden={toggleHidden}
+              hidden={hidden}
+              drawingCount={drawings.length}
+              pendingFirstClick={pending.firstClick !== null}
+            />
+            <ChartDrawingOverlay
+              chart={chartRef.current}
+              series={candleRef.current}
+              drawings={drawings}
+              hidden={hidden}
+              pendingFirstClick={pending.firstClick}
+              activeTool={activeTool}
+              onClick={handleChartClick}
+            />
 
-        {/* Empty / Error state overlay */}
-        {!klines && !loading && (
-          <div className="absolute inset-0 flex items-center justify-center z-10">
-            <div className="flex flex-col items-center gap-3 text-center px-4">
-              <div className="w-10 h-10 rounded-xl bg-inset border border-border-default flex items-center justify-center">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-txt-dim">
-                  {error ? (
-                    <><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></>
-                  ) : (
-                    <><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></>
-                  )}
-                </svg>
+            {/* Empty / Error state overlay */}
+            {!klines && !loading && (
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <div className="flex flex-col items-center gap-3 text-center px-4">
+                  <div className="w-10 h-10 rounded-xl bg-inset border border-border-default flex items-center justify-center">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-txt-dim">
+                      {error ? (
+                        <><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></>
+                      ) : (
+                        <><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></>
+                      )}
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-txt-muted font-medium">
+                      {error ? "Chart Error" : "No Data Available"}
+                    </p>
+                    <p className="text-xs text-txt-dim mt-1 max-w-xs">
+                      {error || `SoDEX has no ${tf} klines for ${pair}. Try a different timeframe or pair.`}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-txt-muted font-medium">
-                  {error ? "Chart Error" : "No Data Available"}
-                </p>
-                <p className="text-xs text-txt-dim mt-1 max-w-xs">
-                  {error || `SoDEX has no ${tf} klines for ${pair}. Try a different timeframe or pair.`}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* OHLCV tooltip overlay */}
-        {hoverData && (
-          <div className="absolute top-2 left-3 flex items-center gap-3 text-[10px] font-mono z-10 pointer-events-none">
-            <span className="text-txt-faint">{formatTooltipTime(hoverData.time, tf)}</span>
-            <span className="text-txt-faint">O <span className="text-txt-secondary">{fmtPrice(hoverData.open)}</span></span>
-            <span className="text-txt-faint">H <span className="text-buy">{fmtPrice(hoverData.high)}</span></span>
-            <span className="text-txt-faint">L <span className="text-sell">{fmtPrice(hoverData.low)}</span></span>
-            <span className="text-txt-faint">C <span className="text-txt-primary">{fmtPrice(hoverData.close)}</span></span>
-            <span className="text-txt-faint">V <span className="text-txt-secondary">{hoverData.volume.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
-          </div>
+            {/* OHLCV tooltip overlay */}
+            {hoverData && (
+              <div className="absolute top-2 left-3 flex items-center gap-3 text-[10px] font-mono z-10 pointer-events-none">
+                <span className="text-txt-faint">{formatTooltipTime(hoverData.time, tf)}</span>
+                <span className="text-txt-faint">O <span className="text-txt-secondary">{fmtPrice(hoverData.open)}</span></span>
+                <span className="text-txt-faint">H <span className="text-buy">{fmtPrice(hoverData.high)}</span></span>
+                <span className="text-txt-faint">L <span className="text-sell">{fmtPrice(hoverData.low)}</span></span>
+                <span className="text-txt-faint">C <span className="text-txt-primary">{fmtPrice(hoverData.close)}</span></span>
+                <span className="text-txt-faint">V <span className="text-txt-secondary">{hoverData.volume.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
+              </div>
+            )}
+          </>
         )}
       </div>
 
