@@ -43,12 +43,43 @@ function categorize(base: string): Category {
   return "Crypto";
 }
 
-const CATEGORY_ICONS: Record<Category, string> = {
-  Crypto: "₿",
-  Stocks: "📈",
-  Commodities: "🥇",
-  Indices: "📊",
-};
+function CategoryIcon({ category, size = 12 }: { category: Category; size?: number }) {
+  const s = { width: size, height: size };
+  switch (category) {
+    case "Crypto":
+      return (
+        <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9 8h4.5a2.5 2.5 0 010 5H9V8z" />
+          <path d="M9 13h5a2.5 2.5 0 010 5H9v-5z" />
+          <path d="M11 6v2M13 6v2M11 16v2M13 16v2" />
+        </svg>
+      );
+    case "Stocks":
+      return (
+        <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+          <polyline points="16 7 22 7 22 13" />
+        </svg>
+      );
+    case "Commodities":
+      return (
+        <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 2a7 7 0 00-3 13.33V17h6v-1.67A7 7 0 0012 2z" />
+          <path d="M9 17h6M10 21h4" />
+        </svg>
+      );
+    case "Indices":
+      return (
+        <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <path d="M3 9h18M9 3v18" />
+          <path d="M13 14l2 2 3-3" />
+        </svg>
+      );
+  }
+}
 
 /* ── Helpers ── */
 
@@ -279,7 +310,7 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
                     ? "bg-accent/15 text-accent border border-accent/20"
                     : "text-txt-dim hover:text-txt-secondary border border-transparent hover:border-border-default"
                 }`}>
-                {cat === "All" ? "All" : `${CATEGORY_ICONS[cat]} ${cat}`}
+                {cat === "All" ? "All" : <span className="flex items-center gap-1"><CategoryIcon category={cat} size={10} /> {cat}</span>}
                 <span className="ml-1 text-[8px] opacity-60">{catCounts[cat] || 0}</span>
               </button>
             ))}
