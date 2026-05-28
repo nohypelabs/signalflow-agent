@@ -15,6 +15,7 @@ interface Props {
   paperBalance?: number;
   mode?: "paper" | "live";
   tradingType?: TradingType | null;
+  error?: string | null;
   onModeChange?: (mode: "paper" | "live") => void;
   onExecute: (order: {
     side: "LONG" | "SHORT";
@@ -36,7 +37,7 @@ function fmtPrice(p: number, coin: string): string {
 const LEVERAGE_PRESETS = [1, 2, 3, 5, 10];
 const MARGIN_PRESETS = [100, 250, 500, 1000];
 
-export default function OrderForm({ pair, coin, currentPrice, signal, isConnected, paperBalance, mode = "paper", tradingType, onModeChange, onExecute }: Props) {
+export default function OrderForm({ pair, coin, currentPrice, signal, isConnected, paperBalance, mode = "paper", tradingType, error, onModeChange, onExecute }: Props) {
   const [side, setSide] = useState<"LONG" | "SHORT">("LONG");
   const [leverage, setLeverage] = useState(3);
   const [margin, setMargin] = useState("");
@@ -59,7 +60,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
     if (typeConfig && leverage > typeConfig.maxLeverage) {
       setLeverage(typeConfig.defaultLeverage);
     }
-  }, [typeConfig]);
+  }, [typeConfig, leverage]);
 
   // Pre-fill from signal
   useEffect(() => {
@@ -124,8 +125,33 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
     return (reward / risk).toFixed(2);
   }, [currentPrice, takeProfit, stopLoss]);
 
+  const validationError = useMemo(() => {
+    const entry = currentPrice ?? 0;
+    const tp = parseFloat(takeProfit) || 0;
+    const sl = parseFloat(stopLoss) || 0;
+
+    if (!entry) return "Market price is not available.";
+    if (!marginNum) return null;
+    if (marginNum <= 0) return "Margin must be greater than 0.";
+    if (mode === "paper" && paperBalance != null && marginNum > paperBalance) return "Margin exceeds available paper balance.";
+
+    if (tp > 0) {
+      if (side === "LONG" && tp <= entry) return "LONG take profit must be above entry price.";
+      if (side === "SHORT" && tp >= entry) return "SHORT take profit must be below entry price.";
+    }
+
+    if (sl > 0) {
+      if (side === "LONG" && sl >= entry) return "LONG stop loss must be below entry price.";
+      if (side === "SHORT" && sl <= entry) return "SHORT stop loss must be above entry price.";
+      if (liqPrice > 0 && side === "LONG" && sl <= liqPrice) return "LONG stop loss must sit above liquidation price.";
+      if (liqPrice > 0 && side === "SHORT" && sl >= liqPrice) return "SHORT stop loss must sit below liquidation price.";
+    }
+
+    return null;
+  }, [currentPrice, takeProfit, stopLoss, marginNum, mode, paperBalance, side, liqPrice]);
+
   const handleSubmit = () => {
-    if (!marginNum || !currentPrice) return;
+    if (!marginNum || !currentPrice || validationError) return;
     onExecute({
       side,
       leverage,
@@ -136,7 +162,8 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
     });
   };
 
-  const accentColor = side === "LONG" ? "#00ff88" : "#ff4444";
+  const isSubmitDisabled = (mode === "live" && !isConnected) || !marginNum || !currentPrice || Boolean(validationError);
+  const displayedError = error ?? (marginNum > 0 ? validationError : null);
 
   return (
     <Card padding="none" className="overflow-hidden">
@@ -355,6 +382,12 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
           </div>
         )}
 
+        {displayedError && (
+          <div className="px-3 py-2 rounded-lg border border-[#ff4444]/20 bg-[#ff4444]/5 text-[10px] text-[#ff7777] leading-relaxed">
+            {displayedError}
+          </div>
+        )}
+
         {/* Signal context */}
         {signal && (
           <div className="px-3 py-2 rounded-lg border border-accent/20 bg-accent/5">
@@ -376,11 +409,11 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
         {/* Submit */}
         <button
           onClick={handleSubmit}
-          disabled={(mode === "live" && !isConnected) || !marginNum || !currentPrice}
+          disabled={isSubmitDisabled}
           className={`w-full py-3 text-sm font-bold rounded-lg transition-all cursor-pointer ${
             (mode === "live" && !isConnected)
               ? "bg-inset text-txt-dim cursor-not-allowed"
-              : !marginNum || !currentPrice
+              : !marginNum || !currentPrice || validationError
                 ? "bg-inset text-txt-dim cursor-not-allowed"
                 : side === "LONG"
                   ? "bg-[#00ff88] text-[#0B1020] hover:shadow-[0_0_30px_rgba(0,255,136,0.3)] active:scale-[0.98]"
@@ -391,6 +424,8 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
             ? "Connect Wallet"
             : !marginNum || !currentPrice
               ? "Enter Margin"
+              : validationError
+                ? "Fix Order"
               : mode === "paper"
                 ? `📝 Paper ${side} ${leverage}x · $${marginNum}`
                 : `${side} ${leverage}x`

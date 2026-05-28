@@ -14,13 +14,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const result = await placeOrder({
-      symbol: body.symbol,
-      side: body.side,
-      type: body.type,
-      quantity: body.quantity,
-      price: body.price,
-    });
+    if (!body?.symbol || !body?.side || !body?.type || !body?.quantity) {
+      return jsonNoCache({ error: "Invalid order payload" }, { status: 400 });
+    }
+
+    const result = await placeOrder(body);
     return jsonNoCache(result);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Order placement failed";
@@ -31,7 +29,10 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   if (!process.env.SODEX_API_KEY_NAME) {
-    return jsonNoCache([]);
+    return jsonNoCache(
+      { error: "SoDEX API key not configured. Set SODEX_API_KEY_NAME in .env.local" },
+      { status: 503 },
+    );
   }
 
   try {
@@ -40,7 +41,6 @@ export async function GET() {
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Failed to fetch orders";
     console.error("[/api/orders GET] SoDEX error:", msg);
-    // Return empty array so UI doesn't break
-    return jsonNoCache([]);
+    return jsonNoCache({ error: msg }, { status: 502 });
   }
 }

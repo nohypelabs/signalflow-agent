@@ -1,4 +1,4 @@
-import { getETFSummary, getETFList } from "@/lib/sosovalue";
+import { getETFSummary, getETFList, type ETFSummaryItem } from "@/lib/sosovalue";
 import { jsonNoCache } from "@/lib/api/no-cache";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     country,
     data: summary,
     etfs: etfList,
-    totalInflow: summary.reduce((s: number, d: any) => s + (d.total_net_inflow ?? 0), 0),
+    totalInflow: summary.reduce((s: number, d: ETFSummaryItem) => s + (d.total_net_inflow ?? 0), 0),
     cumInflow: summary.length > 0 ? summary[0].cum_net_inflow : 0,
     latestAUM: summary.length > 0 ? summary[0].total_net_assets : 0,
   });

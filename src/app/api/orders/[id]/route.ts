@@ -16,8 +16,13 @@ export async function DELETE(
   }
 
   const { id } = await params;
+  const orderId = Number(id);
+  if (!Number.isInteger(orderId) || orderId <= 0) {
+    return jsonNoCache({ error: "Invalid order id" }, { status: 400 });
+  }
+
   try {
-    await cancelOrder(Number(id));
+    await cancelOrder(orderId);
     return jsonNoCache({ success: true });
   } catch (err) {
     return jsonNoCache(

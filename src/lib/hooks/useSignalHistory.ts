@@ -177,7 +177,7 @@ function computeStreaks(history: RecordedSignal[]): StreakInfo {
   const last10 = resolved.slice(0, 10).map((s) => (s.resolved?.correct ? "win" as const : "loss" as const));
 
   // Current streak
-  let currentType: "win" | "loss" = resolved[0].resolved?.correct ? "win" : "loss";
+  const currentType: "win" | "loss" = resolved[0].resolved?.correct ? "win" : "loss";
   let currentCount = 0;
   for (const s of resolved) {
     const isWin = s.resolved?.correct;

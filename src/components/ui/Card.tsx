@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, type CSSProperties } from "react";
+import { type ReactNode, type CSSProperties, type MouseEvent } from "react";
 import { motion } from "framer-motion";
 
 const variants = {
@@ -25,7 +25,7 @@ interface Props {
   className?: string;
   style?: CSSProperties;
   children: ReactNode;
-  onClick?: (e?: any) => void;
+  onClick?: (e: MouseEvent<HTMLDivElement>) => void;
 }
 
 export default function Card({

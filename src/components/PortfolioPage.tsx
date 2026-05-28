@@ -630,6 +630,8 @@ function HistoryRow({ trade, signalMap }: { trade: PaperTrade; signalMap?: Map<s
 // ── Equity Curve SVG ────────────────────────────────────────
 
 function EquityCurveSVG({ points }: { points: { x: number; y: number; label: string }[] }) {
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
   if (points.length < 2) return null;
 
   const values = points.map((p) => p.y);
@@ -654,8 +656,6 @@ function EquityCurveSVG({ points }: { points: { x: number; y: number; label: str
     path += ` L${scaleX(i)},${scaleY(values[i])}`;
   }
   const areaPath = `${path} L${scaleX(values.length - 1)},${vbH - padB} L${scaleX(0)},${vbH - padB} Z`;
-
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     const svg = e.currentTarget;

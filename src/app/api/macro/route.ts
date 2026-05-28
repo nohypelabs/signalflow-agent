@@ -1,4 +1,4 @@
-import { getMacroEvents, getMacroEventHistory } from "@/lib/sosovalue";
+import { getMacroEvents, getMacroEventHistory, type MacroEvent } from "@/lib/sosovalue";
 import { jsonNoCache } from "@/lib/api/no-cache";
 
 export const dynamic = "force-dynamic";
@@ -20,13 +20,13 @@ export async function GET(req: Request) {
   const todayStr = today.toISOString().slice(0, 10);
   const next7Str = next7.toISOString().slice(0, 10);
 
-  const upcoming = events.filter((e: any) => e.date >= todayStr && e.date <= next7Str);
-  const todayEvents = events.filter((e: any) => e.date === todayStr);
+  const upcoming = events.filter((e: MacroEvent) => e.date >= todayStr && e.date <= next7Str);
+  const todayEvents = events.filter((e: MacroEvent) => e.date === todayStr);
 
   return jsonNoCache({
     events,
     upcoming,
     today: todayEvents,
-    totalEvents: events.reduce((s: number, e: any) => s + (e.events?.length ?? 0), 0),
+    totalEvents: events.reduce((s: number, e: MacroEvent) => s + (e.events?.length ?? 0), 0),
   });
 }

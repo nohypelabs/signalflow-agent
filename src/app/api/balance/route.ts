@@ -11,7 +11,10 @@ export async function GET(req: NextRequest) {
   }
 
   if (!process.env.SODEX_API_KEY_NAME) {
-    return jsonNoCache({ balances: [] });
+    return jsonNoCache(
+      { error: "SoDEX API key not configured. Set SODEX_API_KEY_NAME in .env.local", balances: [] },
+      { status: 503 },
+    );
   }
 
   try {
@@ -20,6 +23,6 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Balance fetch failed";
     console.error("[/api/balance] GET error:", msg);
-    return jsonNoCache({ balances: [] });
+    return jsonNoCache({ error: msg, balances: [] }, { status: 502 });
   }
 }

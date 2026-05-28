@@ -2,7 +2,10 @@ import type { SoDEXOrder, SoDEXNewOrderRequest } from "../types/trade";
 
 export async function fetchOrders(): Promise<SoDEXOrder[]> {
   const res = await fetch("/api/orders", { cache: "no-store" });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
   return res.json();
 }
 
@@ -23,5 +26,8 @@ export async function placeOrder(
 
 export async function cancelOrder(orderId: number): Promise<void> {
   const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
-  if (!res.ok) throw new Error("Cancel failed");
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: "Cancel failed" }));
+    throw new Error(body.error || "Cancel failed");
+  }
 }

@@ -160,7 +160,7 @@ export default function SignalHistoryPage() {
         if (data.error) throw new Error(data.error);
 
         // Convert current signals to history format + generate synthetic history
-        const currentSignals: SignalRecord[] = (data.signals ?? []).map((s: any) => ({
+        const currentSignals: SignalRecord[] = (data.signals ?? []).map((s: SignalRecord) => ({
           ...s,
           timestamp: Date.now() - Math.random() * 3600000,
           outcome: "pending" as const,

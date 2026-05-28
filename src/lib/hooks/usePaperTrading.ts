@@ -71,8 +71,27 @@ export interface PaperStats {
 
 const STORAGE_KEY = "signalflow-paper-futures";
 const INITIAL_BALANCE = 10000;
+type CloseReason = "TP" | "SL" | "LIQ" | "MANUAL";
 
 // ── Storage ────────────────────────────────────────────
+
+function isPaperTrade(value: unknown): value is PaperTrade {
+  if (!value || typeof value !== "object") return false;
+  const trade = value as Partial<PaperTrade>;
+  return (
+    typeof trade.id === "string" &&
+    typeof trade.pair === "string" &&
+    (trade.side === "LONG" || trade.side === "SHORT") &&
+    typeof trade.leverage === "number" &&
+    typeof trade.margin === "number" &&
+    typeof trade.entryPrice === "number" &&
+    typeof trade.quantity === "number" &&
+    typeof trade.notional === "number" &&
+    typeof trade.liquidationPrice === "number" &&
+    typeof trade.status === "string" &&
+    typeof trade.openedAt === "number"
+  );
+}
 
 function loadFromStorage(): { trades: PaperTrade[]; balance: number } {
   if (typeof window === "undefined") return { trades: [], balance: INITIAL_BALANCE };
@@ -80,7 +99,9 @@ function loadFromStorage(): { trades: PaperTrade[]; balance: number } {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const data = JSON.parse(raw);
-      return { trades: data.trades ?? [], balance: data.balance ?? INITIAL_BALANCE };
+      const trades = Array.isArray(data.trades) ? data.trades.filter(isPaperTrade) : [];
+      const balance = Number.isFinite(data.balance) && data.balance > 0 ? data.balance : INITIAL_BALANCE;
+      return { trades, balance };
     }
   } catch {}
   return { trades: [], balance: INITIAL_BALANCE };
@@ -110,12 +131,96 @@ function calcLiquidationPrice(
   }
 }
 
+function calculatePnl(trade: PaperTrade, exitPrice: number, reason?: CloseReason) {
+  const priceChange = trade.side === "LONG"
+    ? exitPrice - trade.entryPrice
+    : trade.entryPrice - exitPrice;
+  const rawPnl = priceChange * trade.quantity;
+  const pnl = reason === "LIQ" ? Math.max(rawPnl, -trade.margin) : rawPnl;
+  const pnlPercent = trade.margin > 0 ? (pnl / trade.margin) * 100 : 0;
+  const roi = trade.entryPrice > 0 ? (priceChange / trade.entryPrice) * 100 : 0;
+
+  return {
+    pnl: parseFloat(pnl.toFixed(4)),
+    pnlPercent: parseFloat(pnlPercent.toFixed(2)),
+    roi: parseFloat(roi.toFixed(2)),
+  };
+}
+
+function getMarkPrice(currentPrices: Map<string, number>, pair: string): number | null {
+  const base = pair.split("/")[0];
+  const price = currentPrices.get(base) ?? currentPrices.get(pair);
+  return price && Number.isFinite(price) && price > 0 ? price : null;
+}
+
+function closePaperTrade(trade: PaperTrade, exitPrice: number, reason: CloseReason, closedAt = Date.now()): PaperTrade {
+  const result = calculatePnl(trade, exitPrice, reason);
+  return {
+    ...trade,
+    exitPrice,
+    status: `CLOSED_${reason}` as PaperTrade["status"],
+    pnl: result.pnl,
+    pnlPercent: result.pnlPercent,
+    roi: result.roi,
+    closedAt,
+    currentPnl: result.pnl,
+    maxPnl: Math.max(trade.maxPnl, result.pnl),
+    minPnl: Math.min(trade.minPnl, result.pnl),
+  };
+}
+
+function calculateBalance(trades: PaperTrade[], initialBalance: number): PaperBalance {
+  const openTradesList = trades.filter((t) => t.status === "OPEN");
+  const closedTradesPnl = trades.filter((t) => t.status !== "OPEN").reduce((s, t) => s + (t.pnl ?? 0), 0);
+  const marginUsed = openTradesList.reduce((s, t) => s + t.margin, 0);
+  const unrealizedPnl = openTradesList.reduce((s, t) => s + (t.currentPnl ?? 0), 0);
+  const total = initialBalance + closedTradesPnl + unrealizedPnl;
+  const available = total - marginUsed;
+
+  return {
+    total: parseFloat(total.toFixed(4)),
+    available: parseFloat(Math.max(0, available).toFixed(4)),
+    marginUsed: parseFloat(marginUsed.toFixed(4)),
+    unrealizedPnl: parseFloat(unrealizedPnl.toFixed(4)),
+    initialBalance,
+  };
+}
+
+function validateTrade(params: {
+  side: "LONG" | "SHORT";
+  margin: number;
+  entryPrice: number;
+  takeProfit: number;
+  stopLoss: number;
+  available: number;
+  liquidationPrice: number;
+}): string | null {
+  if (!Number.isFinite(params.entryPrice) || params.entryPrice <= 0) return "Market price is not available.";
+  if (!Number.isFinite(params.margin) || params.margin <= 0) return "Margin must be greater than 0.";
+  if (params.margin > params.available) return "Insufficient paper balance.";
+
+  if (params.takeProfit > 0) {
+    if (params.side === "LONG" && params.takeProfit <= params.entryPrice) return "LONG take profit must be above entry price.";
+    if (params.side === "SHORT" && params.takeProfit >= params.entryPrice) return "SHORT take profit must be below entry price.";
+  }
+
+  if (params.stopLoss > 0) {
+    if (params.side === "LONG" && params.stopLoss >= params.entryPrice) return "LONG stop loss must be below entry price.";
+    if (params.side === "SHORT" && params.stopLoss <= params.entryPrice) return "SHORT stop loss must be above entry price.";
+    if (params.side === "LONG" && params.stopLoss <= params.liquidationPrice) return "LONG stop loss must sit above liquidation price.";
+    if (params.side === "SHORT" && params.stopLoss >= params.liquidationPrice) return "SHORT stop loss must sit below liquidation price.";
+  }
+
+  return null;
+}
+
 // ── Hook ───────────────────────────────────────────────
 
 export function usePaperTrading() {
   const [trades, setTrades] = useState<PaperTrade[]>([]);
   const [initialBalance, setInitialBalance] = useState(INITIAL_BALANCE);
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const { trades: saved, balance } = loadFromStorage();
@@ -143,18 +248,25 @@ export function usePaperTrading() {
   }): PaperTrade | null => {
     const lev = Math.max(1, Math.min(100, params.leverage));
     const margin = params.margin;
+    const liqPrice = calcLiquidationPrice(params.entryPrice, params.side, lev);
+    const available = calculateBalance(trades, initialBalance).available;
+    const validationError = validateTrade({
+      side: params.side,
+      margin,
+      entryPrice: params.entryPrice,
+      takeProfit: params.takeProfit,
+      stopLoss: params.stopLoss,
+      available,
+      liquidationPrice: liqPrice,
+    });
 
-    // Check available balance
-    const usedMargin = trades
-      .filter((t) => t.status === "OPEN")
-      .reduce((s, t) => s + t.margin, 0);
-    const available = initialBalance - usedMargin;
-
-    if (margin > available) return null;
+    if (validationError) {
+      setError(validationError);
+      return null;
+    }
 
     const notional = margin * lev;
     const quantity = notional / params.entryPrice;
-    const liqPrice = calcLiquidationPrice(params.entryPrice, params.side, lev);
 
     const trade: PaperTrade = {
       id: `paper-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -183,94 +295,71 @@ export function usePaperTrading() {
       currentPnl: 0,
     };
 
+    setError(null);
     setTrades((prev) => [trade, ...prev]);
     return trade;
   }, [trades, initialBalance]);
 
   // ── Close a position ─────────────────────────────────
-  const closeTrade = useCallback((tradeId: string, exitPrice: number, reason: "TP" | "SL" | "LIQ" | "MANUAL") => {
+  const closeTrade = useCallback((tradeId: string, exitPrice: number, reason: CloseReason) => {
+    if (!Number.isFinite(exitPrice) || exitPrice <= 0) {
+      setError("Exit price is not available.");
+      return;
+    }
+
     setTrades((prev) =>
       prev.map((t) => {
         if (t.id !== tradeId || t.status !== "OPEN") return t;
-
-        // P&L calculation (futures)
-        const priceChange = t.side === "LONG"
-          ? exitPrice - t.entryPrice
-          : t.entryPrice - exitPrice;
-
-        const pnl = priceChange * t.quantity; // in USDC
-        const pnlPercent = (pnl / t.margin) * 100; // ROI on margin
-        const roi = (priceChange / t.entryPrice) * 100; // unleveraged return
-
-        return {
-          ...t,
-          exitPrice,
-          status: `CLOSED_${reason}` as PaperTrade["status"],
-          pnl: parseFloat(pnl.toFixed(4)),
-          pnlPercent: parseFloat(pnlPercent.toFixed(2)),
-          roi: parseFloat(roi.toFixed(2)),
-          closedAt: Date.now(),
-        };
+        return closePaperTrade(t, exitPrice, reason);
       }),
     );
+    setError(null);
   }, []);
 
   // ── Check TP/SL/Liquidation for open positions ───────
   const checkTpSl = useCallback((currentPrices: Map<string, number>) => {
-    const openTrades = trades.filter((t) => t.status === "OPEN");
-    for (const trade of openTrades) {
-      const base = trade.pair.split("/")[0];
-      const price = currentPrices.get(base) ?? currentPrices.get(trade.pair);
-      if (!price) continue;
+    const closedAt = Date.now();
+    setTrades((prev) =>
+      prev.map((trade) => {
+        if (trade.status !== "OPEN") return trade;
+        const price = getMarkPrice(currentPrices, trade.pair);
+        if (!price) return trade;
 
-      // Check liquidation first
-      if (trade.side === "LONG" && price <= trade.liquidationPrice) {
-        closeTrade(trade.id, trade.liquidationPrice, "LIQ");
-        continue;
-      }
-      if (trade.side === "SHORT" && price >= trade.liquidationPrice) {
-        closeTrade(trade.id, trade.liquidationPrice, "LIQ");
-        continue;
-      }
+        if (trade.side === "LONG" && price <= trade.liquidationPrice) {
+          return closePaperTrade(trade, trade.liquidationPrice, "LIQ", closedAt);
+        }
+        if (trade.side === "SHORT" && price >= trade.liquidationPrice) {
+          return closePaperTrade(trade, trade.liquidationPrice, "LIQ", closedAt);
+        }
 
-      // Check TP
-      if (trade.takeProfit > 0) {
-        if (trade.side === "LONG" && price >= trade.takeProfit) {
-          closeTrade(trade.id, trade.takeProfit, "TP");
-          continue;
+        if (trade.takeProfit > 0) {
+          if (trade.side === "LONG" && price >= trade.takeProfit) {
+            return closePaperTrade(trade, trade.takeProfit, "TP", closedAt);
+          }
+          if (trade.side === "SHORT" && price <= trade.takeProfit) {
+            return closePaperTrade(trade, trade.takeProfit, "TP", closedAt);
+          }
         }
-        if (trade.side === "SHORT" && price <= trade.takeProfit) {
-          closeTrade(trade.id, trade.takeProfit, "TP");
-          continue;
-        }
-      }
 
-      // Check SL
-      if (trade.stopLoss > 0) {
-        if (trade.side === "LONG" && price <= trade.stopLoss) {
-          closeTrade(trade.id, trade.stopLoss, "SL");
-          continue;
+        if (trade.stopLoss > 0) {
+          if (trade.side === "LONG" && price <= trade.stopLoss) {
+            return closePaperTrade(trade, trade.stopLoss, "SL", closedAt);
+          }
+          if (trade.side === "SHORT" && price >= trade.stopLoss) {
+            return closePaperTrade(trade, trade.stopLoss, "SL", closedAt);
+          }
         }
-        if (trade.side === "SHORT" && price >= trade.stopLoss) {
-          closeTrade(trade.id, trade.stopLoss, "SL");
-          continue;
-        }
-      }
 
-      // Track max/min P&L and current P&L
-      const priceChange = trade.side === "LONG"
-        ? price - trade.entryPrice
-        : trade.entryPrice - price;
-      const currentPnl = priceChange * trade.quantity;
-      setTrades((prev) =>
-        prev.map((t) =>
-          t.id === trade.id
-            ? { ...t, currentPnl: parseFloat(currentPnl.toFixed(4)), maxPnl: Math.max(t.maxPnl, currentPnl), minPnl: Math.min(t.minPnl, currentPnl) }
-            : t
-        )
-      );
-    }
-  }, [trades, closeTrade]);
+        const currentPnl = calculatePnl(trade, price).pnl;
+        return {
+          ...trade,
+          currentPnl,
+          maxPnl: Math.max(trade.maxPnl, currentPnl),
+          minPnl: Math.min(trade.minPnl, currentPnl),
+        };
+      }),
+    );
+  }, []);
 
   // ── Close position manually ──────────────────────────
   const closeManual = useCallback((tradeId: string, currentPrice: number) => {
@@ -279,17 +368,7 @@ export function usePaperTrading() {
 
   // ── Compute balance ──────────────────────────────────
   const openTradesList = trades.filter((t) => t.status === "OPEN");
-  const closedTradesPnl = trades.filter((t) => t.status !== "OPEN").reduce((s, t) => s + (t.pnl ?? 0), 0);
-  const marginUsed = openTradesList.reduce((s, t) => s + t.margin, 0);
-  const unrealizedPnl = openTradesList.reduce((s, t) => s + (t.currentPnl ?? 0), 0);
-
-  const balance: PaperBalance = {
-    total: initialBalance + closedTradesPnl + unrealizedPnl,
-    available: initialBalance - marginUsed,
-    marginUsed,
-    unrealizedPnl: parseFloat(unrealizedPnl.toFixed(4)),
-    initialBalance,
-  };
+  const balance = calculateBalance(trades, initialBalance);
 
   // ── Compute stats ────────────────────────────────────
   const closedTrades = trades.filter((t) => t.status !== "OPEN");
@@ -364,6 +443,7 @@ export function usePaperTrading() {
     balance,
     stats,
     loaded,
+    error,
     openTrade,
     closeTrade: closeManual,
     checkTpSl,

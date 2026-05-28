@@ -1,4 +1,5 @@
 import { createConfig, http } from "wagmi";
+import type { CreateConnectorFn } from "wagmi";
 import { defineChain } from "viem";
 import { injected, walletConnect } from "wagmi/connectors";
 
@@ -13,9 +14,8 @@ export const valuechain = defineChain({
 
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const connectors: any[] = [injected()];
-if (projectId) {
+const connectors: CreateConnectorFn[] = [injected()];
+if (typeof window !== "undefined" && projectId) {
   connectors.push(
     walletConnect({
       projectId,

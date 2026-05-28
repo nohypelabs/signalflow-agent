@@ -1,4 +1,4 @@
-import { getNewsHot } from "@/lib/sosovalue";
+import { getNewsHot, type NewsItem } from "@/lib/sosovalue";
 import { jsonNoCache } from "@/lib/api/no-cache";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   const pageSize = parseInt(url.searchParams.get("pageSize") || "30", 10);
 
   const hotNews = await getNewsHot(page, pageSize).catch(() => ({
-    list: [] as any[],
+    list: [] as NewsItem[],
     page: 1,
     page_size: 20,
     total: 0,
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   const list = hotNews.list ?? [];
 
   // Sentiment analysis
-  const bullish = list.filter((n: any) => {
+  const bullish = list.filter((n: NewsItem) => {
     const t = ((n.title ?? "") + (n.content ?? "")).toLowerCase();
     return (
       t.includes("surge") || t.includes("rally") || t.includes("bull") || t.includes("breakout") ||
@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     );
   }).length;
 
-  const bearish = list.filter((n: any) => {
+  const bearish = list.filter((n: NewsItem) => {
     const t = ((n.title ?? "") + (n.content ?? "")).toLowerCase();
     return (
       t.includes("crash") || t.includes("dump") || t.includes("bear") || t.includes("outflow") ||

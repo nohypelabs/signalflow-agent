@@ -22,7 +22,9 @@ export default function TradingPageContent() {
   const searchParams = useSearchParams();
   const [pair, setPair] = useState("BTC/USDC");
   const [tradeMode, setTradeMode] = useState<"paper" | "live">("paper");
+  const [tradeError, setTradeError] = useState<string | null>(null);
   const paper = usePaperTrading();
+  const checkPaperTpSl = paper.checkTpSl;
 
   // Read trading type from URL
   const tradingTypeParam = searchParams.get("type");
@@ -49,20 +51,39 @@ export default function TradingPageContent() {
   const ticker = sodexSymbol ? d.tickerMap.get(sodexSymbol) : undefined;
   const currentPrice = ticker ? parseFloat(ticker.lastPx) : null;
 
-  // Check TP/SL for paper trades every tick
-  useEffect(() => {
-    if (!currentPrice) return;
+  const currentPrices = useMemo(() => {
     const base = pair.split("/")[0];
     const prices = new Map<string, number>();
-    prices.set(base, currentPrice);
-    prices.set(pair, currentPrice);
-    // Also add other pairs from tickers
-    for (const t of d.tickers ?? []) {
-      const sym = t.symbol.replace("v", "").replace("_", "/");
-      prices.set(sym.split("/")[0], parseFloat(t.lastPx));
+    if (currentPrice && Number.isFinite(currentPrice)) {
+      prices.set(base, currentPrice);
+      prices.set(pair, currentPrice);
     }
-    paper.checkTpSl(prices);
-  }, [currentPrice, d.tickers]);
+
+    for (const t of d.tickers ?? []) {
+      const markPrice = parseFloat(t.lastPx);
+      if (!Number.isFinite(markPrice) || markPrice <= 0) continue;
+      const [rawBase, rawQuote] = t.symbol.split("_");
+      const tickerBase = rawBase?.replace(/^v/, "");
+      const tickerQuote = rawQuote?.replace(/^v/, "");
+      if (!tickerBase) continue;
+      prices.set(tickerBase, markPrice);
+      if (tickerQuote) prices.set(`${tickerBase}/${tickerQuote}`, markPrice);
+    }
+    return prices;
+  }, [currentPrice, d.tickers, pair]);
+
+  // Check TP/SL for paper trades every tick.
+  useEffect(() => {
+    if (currentPrices.size > 0) checkPaperTpSl(currentPrices);
+  }, [currentPrices, checkPaperTpSl]);
+
+  useEffect(() => {
+    if (paper.error) setTradeError(paper.error);
+  }, [paper.error]);
+
+  useEffect(() => {
+    setTradeError(null);
+  }, [pair, tradeMode]);
 
   const pairs = ["BTC/USDC", "ETH/USDC", "SOL/USDC", "AVAX/USDC", "LINK/USDC"];
 
@@ -70,6 +91,12 @@ export default function TradingPageContent() {
     const entryPrice = currentPrice || 0;
     const tp = parseFloat(order.takeProfit) || 0;
     const sl = parseFloat(order.stopLoss) || 0;
+    setTradeError(null);
+
+    if (!entryPrice) {
+      setTradeError("Market price is not available.");
+      return;
+    }
 
     if (tradeMode === "paper") {
       const trade = paper.openTrade({
@@ -85,7 +112,7 @@ export default function TradingPageContent() {
         tradingType: tradingType ?? undefined,
       });
       if (!trade) {
-        alert("Insufficient paper balance");
+        setTradeError(paper.error ?? "Paper trade rejected.");
       }
     } else {
       // Live trade via SoDEX
@@ -235,6 +262,7 @@ export default function TradingPageContent() {
               paperBalance={paper.balance.available}
               mode={tradeMode}
               tradingType={tradingType}
+              error={tradeError}
               onModeChange={setTradeMode}
               onExecute={handleExecute}
             />

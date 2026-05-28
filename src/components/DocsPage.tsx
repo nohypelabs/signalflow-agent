@@ -1124,7 +1124,7 @@ function WalletInfrastructure() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
         <div className="bg-inset border border-accent-dim rounded-lg p-3">
           <h4 className="text-xs font-bold text-accent m-0 mb-1">Disconnected</h4>
-          <p className="text-[10px] text-[#aaaacc] m-0">Shows "Connect Wallet" button. All trading UI disabled.</p>
+          <p className="text-[10px] text-[#aaaacc] m-0">Shows &quot;Connect Wallet&quot; button. All trading UI disabled.</p>
         </div>
         <div className="bg-inset border border-buy-dim rounded-lg p-3">
           <h4 className="text-xs font-bold text-buy m-0 mb-1">Connected</h4>
@@ -1132,7 +1132,7 @@ function WalletInfrastructure() {
         </div>
         <div className="bg-inset border border-hold-dim rounded-lg p-3">
           <h4 className="text-xs font-bold text-hold m-0 mb-1">Wrong Network</h4>
-          <p className="text-[10px] text-[#aaaacc] m-0">Shows "Wrong Network" with Switch Network and Disconnect options.</p>
+          <p className="text-[10px] text-[#aaaacc] m-0">Shows &quot;Wrong Network&quot; with Switch Network and Disconnect options.</p>
         </div>
       </div>
 

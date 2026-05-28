@@ -3,6 +3,7 @@
 import type { Signal } from "@/lib/types/signal";
 import type { SignalPhase, AIThesis } from "@/lib/hooks/useSignalGeneration";
 import type { AIError } from "@/lib/ai/providerErrors";
+import type { AIConfig } from "@/lib/types/datasource";
 import Button from "@/components/ui/Button";
 import ConfidenceGauge from "@/components/ui/ConfidenceGauge";
 
@@ -61,7 +62,7 @@ function phaseMessage(phase: SignalPhase, coin: string): string {
 /* ── Props ── */
 
 interface Props {
-  aiConfig: any;
+  aiConfig: AIConfig;
   aiProviderLabel: string;
   aiCoin: string;
   onCoinChange: (coin: string) => void;
