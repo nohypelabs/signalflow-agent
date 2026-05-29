@@ -315,67 +315,71 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
       badge={<Badge variant={decision.action === "LONG" ? "buy" : decision.action === "SHORT" ? "sell" : "hold"} size="sm">LIVE LOGIC</Badge>}
       className="h-[494px]"
     >
-      <div className="space-y-3 p-4">
-        <div>
-          <div className="mb-2 text-xs font-semibold tracking-wide text-txt-tertiary uppercase">Primary Signal</div>
-          <div className="grid grid-cols-3 gap-1.5">
-            {["LONG", "SHORT", "NO TRADE"].map((item) => {
-              const isActive = decision.action === item;
-              const colors = signalColors[item];
-              return (
-                <button
-                  key={item}
-                  type="button"
-                  aria-pressed={isActive}
-                  className={cx(
-                    "flex h-14 flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-all",
-                    isActive ? colors.active : colors.idle
-                  )}
-                >
-                  <div className="text-xl">{colors.icon}</div>
-                  {item}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-2 text-xs font-semibold tracking-wide text-txt-tertiary uppercase">Signal Strength</div>
-          <div className="flex items-center justify-center py-1">
-            <div className="text-center">
-              <SpeedometerGauge value={decision.confidence} size="md" showLabel={false} />
-              <div
-                className="mt-1 text-3xl font-bold tabular-nums tracking-tight"
-                style={{
-                  color: decision.action === "LONG"
-                    ? "var(--color-buy)"
-                    : decision.action === "SHORT"
-                      ? "var(--color-sell)"
-                      : "var(--color-hold)",
-                }}
-              >
-                {decision.confidence}%
-              </div>
-              <div className="text-sm font-medium text-txt-tertiary">{decision.label}</div>
+      <div className="space-y-3 p-3.5">
+        <div className="grid grid-cols-[minmax(0,1fr)_180px] items-center gap-3">
+          <div>
+            <div className="mb-2 text-xs font-semibold tracking-wide text-txt-tertiary uppercase">Primary Signal</div>
+            <div className="grid grid-cols-3 gap-1.5">
+              {["LONG", "SHORT", "NO TRADE"].map((item) => {
+                const isActive = decision.action === item;
+                const colors = signalColors[item];
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    aria-pressed={isActive}
+                    className={cx(
+                      "flex h-14 flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-all",
+                      isActive ? colors.active : colors.idle
+                    )}
+                  >
+                    <div className="text-xl">{colors.icon}</div>
+                    {item}
+                  </button>
+                );
+              })}
             </div>
           </div>
+
+          <div className="text-center">
+            <div className="mb-1 text-xs font-semibold tracking-wide text-txt-tertiary uppercase">Strength</div>
+            <SpeedometerGauge value={decision.confidence} size="sm" showLabel={false} />
+            <div
+              className="-mt-1 text-2xl font-bold tabular-nums tracking-tight"
+              style={{
+                color: decision.action === "LONG"
+                  ? "var(--color-buy)"
+                  : decision.action === "SHORT"
+                    ? "var(--color-sell)"
+                    : "var(--color-hold)",
+              }}
+            >
+              {decision.confidence}%
+            </div>
+            <div className="text-xs font-medium text-txt-tertiary">{decision.label}</div>
+          </div>
         </div>
 
-        <Card variant="inset" padding="sm" className="rounded-xl">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">Source Weighting</div>
-          <div className="space-y-1.5">
-            {decision.sources.map((source) => (
-              <div key={source.label} className="grid grid-cols-[96px_42px_1fr] items-center gap-2 text-xs">
-                <span className="font-medium text-txt-secondary">{source.label}</span>
-                <span className={cx("font-mono tabular-nums", sourceTone(source))}>
-                  {source.available ? `${source.signed > 0 ? "+" : ""}${Math.round(source.signed)}` : "--"}
-                </span>
-                <span className="truncate text-right text-[11px] text-txt-tertiary">{source.note}</span>
+        <div className="grid grid-cols-3 gap-1.5 rounded-xl border border-border-default bg-inset p-2">
+          {decision.sources.map((source) => {
+            const label = source.label === "SoSoValue News"
+              ? "News"
+              : source.label === "AI Thesis"
+                ? "AI"
+                : "SoDEX";
+            return (
+              <div key={source.label} className="min-w-0 rounded-lg bg-card/45 px-2 py-1.5">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="truncate text-[10px] font-semibold text-txt-secondary">{label}</span>
+                  <span className={cx("font-mono text-xs font-semibold tabular-nums", sourceTone(source))}>
+                    {source.available ? `${source.signed > 0 ? "+" : ""}${Math.round(source.signed)}` : "--"}
+                  </span>
+                </div>
+                <div className="mt-0.5 truncate text-[10px] text-txt-tertiary">{source.note}</div>
               </div>
-            ))}
-          </div>
-        </Card>
+            );
+          })}
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <Card variant="inset" padding="sm" className="rounded-xl">
@@ -383,7 +387,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
               {decision.action === "NO TRADE" ? "Watch Triggers" : "Take Profit (TP)"}
             </div>
             <div className="space-y-1.5">
-              {decision.targets.map(([label, price, risk]) => (
+              {decision.targets.slice(0, 2).map(([label, price, risk]) => (
                 <div key={label} className="grid grid-cols-[36px_1fr_54px] gap-1 font-mono text-xs">
                   <span className="text-txt-muted">{label}</span>
                   <span className={decision.action === "NO TRADE" ? "text-hold" : "text-buy"}>{price}</span>
@@ -401,9 +405,9 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
               <span className="text-sell">{decision.stop[1]}</span>
               <span className="text-txt-tertiary">{decision.stop[2]}</span>
             </div>
-            <div className="my-3 h-px bg-border-default" />
+            <div className="my-2 h-px bg-border-default" />
             <div className="text-[11px] font-semibold text-txt-tertiary uppercase tracking-wide">Risk / Reward</div>
-            <div className="mt-1 font-mono text-xl font-bold text-txt-primary">{decision.riskReward}</div>
+            <div className="mt-0.5 font-mono text-base font-bold text-txt-primary">{decision.riskReward}</div>
           </Card>
         </div>
 
@@ -414,13 +418,8 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
           disabled={!currentSignal || decision.action === "NO TRADE"}
           className="w-full h-11 rounded-xl text-sm"
         >
-          <span className="text-lg">▶</span> {decision.action === "NO TRADE" ? "Wait For Setup" : "Execute Setup"}
+          <span className="text-lg">▶</span> {decision.action === "NO TRADE" ? "Wait For Setup" : `Execute Setup · ${decision.positionSize}`}
         </Button>
-
-        <div className="flex justify-between text-sm">
-          <span className="text-txt-tertiary">Position Size (Risk 1%):</span>
-          <span className="font-mono font-semibold text-txt-primary">{decision.positionSize}</span>
-        </div>
       </div>
     </Panel>
   );
