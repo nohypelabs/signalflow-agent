@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import type { TradingType } from "@/lib/types/trading-type";
-import { TRADING_TYPES, TRADING_TYPE_LIST } from "@/lib/types/trading-type";
+import { TRADING_TYPE_LIST } from "@/lib/types/trading-type";
 
 interface BacktestData {
   pair: string;

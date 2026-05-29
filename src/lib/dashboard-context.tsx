@@ -261,7 +261,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const handleExecuteOrder = useCallback(
-    async (_order: SoDEXNewOrderRequest) => {
+    async () => {
       await refreshOrders();
     },
     [refreshOrders],

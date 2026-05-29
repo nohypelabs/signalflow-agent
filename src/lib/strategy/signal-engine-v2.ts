@@ -8,7 +8,7 @@
 //   LAYER 5: Filtering (minimum confluence gates)
 
 import { sma, ema, rsi, macd, bollingerBands, atr, last } from "./indicators";
-import type { SignalDimensions, SignalDimensionDetails, SignalExecution } from "../types/signal";
+import type { SignalDimensions, SignalDimensionDetails } from "../types/signal";
 import type { TradingType } from "../types/trading-type";
 import { TRADING_TYPES } from "../types/trading-type";
 import type { NewsItem, ETFSummaryItem, MacroEvent, MarketSnapshot, BTCPurchaseHistory } from "../sosovalue";
@@ -340,7 +340,6 @@ function detectRegime(
   const recentHigh = Math.max(...closes.slice(-20));
   const recentLow = Math.min(...closes.slice(-20));
   const currentPrice = closes[closes.length - 1];
-  const range = recentHigh - recentLow;
   const isBreakout =
     (currentPrice >= recentHigh * 0.995 || currentPrice <= recentLow * 1.005) &&
     atrRatio > 1.2 &&
@@ -787,7 +786,7 @@ function calculateConfluence(factors: ConfluenceFactor[]): ConfluenceResult {
 // LAYER 3: SIGNAL CLASSIFICATION
 // ═══════════════════════════════════════════════════════════════
 
-function classifySignal(confluence: ConfluenceResult, regime: MarketRegime): SignalActionV2 {
+function classifySignal(confluence: ConfluenceResult): SignalActionV2 {
   const { score, bullishCount, bearishCount } = confluence;
 
   // STRONG_BUY: confluence > 75 AND 3+ factors bullish (score > 60)
@@ -848,8 +847,6 @@ function calculateTPSL(
   let m = regimeMultipliers[regime];
   if (tradingType) {
     const typeConfig = TRADING_TYPES[tradingType];
-    const tpMid = (typeConfig.tpMultiplier.min + typeConfig.tpMultiplier.max) / 2;
-    const slMid = (typeConfig.slMultiplier.min + typeConfig.slMultiplier.max) / 2;
 
     // Regime factor: trending/breakout → use max of type range; ranging → use min
     const regimeFactor = regime === "TRENDING_UP" || regime === "TRENDING_DOWN" || regime === "BREAKOUT"
@@ -1153,7 +1150,7 @@ export function generateSignalV2(input: {
   const confluence = calculateConfluence(factors);
 
   // ── LAYER 3: Signal Classification ─────────────────────
-  let action = classifySignal(confluence, regime);
+  let action = classifySignal(confluence);
 
   // ── LAYER 5: Filtering ─────────────────────────────────
   if (!passesFilter(confluence, action)) {

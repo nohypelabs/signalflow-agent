@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { SoDEXTicker } from "@/lib/sodex-types";
-import { sodexSymbolToBase } from "@/lib/pair-map";
 
 const STORAGE_KEY = "signalflow_favorite_tickers";
 const MAX_FAVORITES = 7;
@@ -49,7 +48,6 @@ function formatPrice(px: number): number {
 function resolveFavorites(symbols: string[], tickerMap?: Map<string, SoDEXTicker>): FavoriteTicker[] {
   const now = new Date().toISOString();
   return symbols.map((sym) => {
-    const sodexKey = `${sym}_vUSDC`.replace(/^/, "v");
     const ticker = tickerMap?.get(`v${sym}_vUSDC`);
     if (ticker) {
       const price = parseFloat(ticker.lastPx);

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type MotionProps, type HTMLMotionProps } from "framer-motion";
+import { motion } from "framer-motion";
 import { type ReactNode } from "react";
 
 /* ── Shared easing ── */

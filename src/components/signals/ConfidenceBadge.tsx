@@ -1,7 +1,5 @@
 "use client";
 
-import type { SignalAction } from "@/lib/types/signal";
-
 function getConfidenceColor(value: number): { color: string; label: string } {
   if (value >= 85) return { color: "var(--color-info)", label: "High" };
   if (value >= 70) return { color: "var(--color-buy)", label: "Strong" };

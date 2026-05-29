@@ -145,7 +145,6 @@ export default function PortfolioChart({ klines: initialKlines, symbol, currentP
 
   const max = Math.max(...values);
   const min = Math.min(...values);
-  const range = max - min || 1;
   const pad = max * 0.02; // 2% breathing room
   const yMax = max + pad;
   const yMin = min - pad;

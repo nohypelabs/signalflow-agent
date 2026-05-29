@@ -1,4 +1,4 @@
-import { sma, ema, rsi, macd, bollingerBands, atr, last } from "./indicators";
+import { ema, rsi, macd, bollingerBands, atr, last } from "./indicators";
 import type { Signal, SignalAction, SignalDimensions, SignalDimensionDetails, SignalExecution } from "../types/signal";
 import type { NewsItem, ETFSummaryItem, MacroEvent, MarketSnapshot, BTCPurchaseHistory } from "../sosovalue";
 import type { SoDEXKline } from "../sodex-types";

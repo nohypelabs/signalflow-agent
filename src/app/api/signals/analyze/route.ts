@@ -12,7 +12,6 @@ import {
   getNewsHot,
   getCurrencies,
 } from "@/lib/sosovalue";
-import type { ETFSummaryItem, MarketSnapshot, NewsItem, MacroEvent } from "@/lib/sosovalue";
 import { getTickers, getKlines } from "@/lib/sodex";
 import { generateSignal } from "@/lib/strategy/signal-engine";
 import { pairToSodexSymbol } from "@/lib/pair-map";

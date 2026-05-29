@@ -51,7 +51,6 @@ export function rsi(closes: number[], period = 14): number[] {
       result.push(100 - 100 / (1 + rs));
     } else {
       // Smoothed
-      const prevRsi = result[i - 1];
       // Recalc from smoothed averages
       let avgGain = 0, avgLoss = 0;
       const startIdx = gains.length - period;

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import Card from "@/components/ui/Card";
 import type { Signal } from "@/lib/types/signal";
 import type { TradingType } from "@/lib/types/trading-type";
 import { TRADING_TYPES } from "@/lib/types/trading-type";
@@ -37,7 +36,7 @@ function fmtPrice(p: number, coin: string): string {
 const LEVERAGE_PRESETS = [1, 2, 3, 5, 10];
 const MARGIN_PRESETS = [100, 250, 500, 1000];
 
-export default function OrderForm({ pair, coin, currentPrice, signal, isConnected, paperBalance, mode = "paper", tradingType, error, onModeChange, onExecute }: Props) {
+export default function OrderForm({ pair, coin, currentPrice, signal, isConnected, paperBalance, mode = "paper", tradingType, error, onExecute }: Props) {
   const [side, setSide] = useState<"LONG" | "SHORT">("LONG");
   const [orderType, setOrderType] = useState<"Market" | "Limit">("Market");
   const [limitPrice, setLimitPrice] = useState("");

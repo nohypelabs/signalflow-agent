@@ -5,7 +5,6 @@ import type { TradingType, TradingTypeConfig } from "@/lib/types/trading-type";
 import {
   TRADING_TYPE_LIST,
   TRADING_TYPES,
-  loadTradingType,
   saveTradingType,
 } from "@/lib/types/trading-type";
 

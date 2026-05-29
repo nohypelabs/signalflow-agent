@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useMemo } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import type { IChartApi, ISeriesApi, Time } from "lightweight-charts";
 import type { ChartDrawing, Point } from "@/lib/chart-drawings/types";
 import { FIB_COLORS } from "@/lib/chart-drawings/types";
@@ -227,7 +227,6 @@ function drawMeasure(
   ctx.font = "10px 'JetBrains Mono', monospace";
   const textWidth = ctx.measureText(label).width;
   const padX = 6;
-  const padY = 4;
   const boxW = textWidth + padX * 2;
   const boxH = 16;
 

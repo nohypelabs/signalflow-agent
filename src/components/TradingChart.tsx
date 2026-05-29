@@ -535,6 +535,8 @@ export default function TradingChart({
               className="group flex items-center gap-2.5 min-w-0 rounded-lg border border-border-default bg-inset/40 px-2.5 py-1.5 text-txt-primary hover:border-border-muted hover:bg-elevated/25 transition-colors cursor-pointer"
             >
               <div className="relative shrink-0">
+                {/* Dynamic external crypto icons are intentionally rendered as plain images. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${pair.split("/")[0].toLowerCase()}.svg`}
                   alt={pair.split("/")[0]}

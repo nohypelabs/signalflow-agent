@@ -9,7 +9,6 @@ import {
   computeSignalBreakdown,
   computeTopGainer,
   formatUsd,
-  formatPercent,
   isFresh,
   logKPI,
 } from "../api/dashboard-metrics";

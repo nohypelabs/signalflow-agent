@@ -5,7 +5,6 @@ import {
   getMacroEvents,
   getBTCTreasuries,
   getETFList,
-  getKlines,
   getIndexSnapshot,
 } from "@/lib/sosovalue";
 import { getTickers, getSymbols } from "@/lib/sodex";

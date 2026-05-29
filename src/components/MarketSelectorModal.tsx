@@ -119,6 +119,8 @@ function MarketIcon({ base, category, size = 26 }: { base: string; category: Cat
 
   if (category === "Crypto" && !errored) {
     return (
+      // Dynamic external crypto icons are intentionally rendered as plain images.
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${base.toLowerCase()}.svg`}
         alt={base} width={size} height={size}

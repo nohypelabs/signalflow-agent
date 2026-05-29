@@ -8,10 +8,6 @@ import { valuechain } from "@/lib/wallet-config";
 import type { SoDEXBalance } from "@/lib/sodex-types";
 import StatusDot from "@/components/ui/StatusDot";
 
-function formatAddr(addr: string) {
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-}
-
 function formatFullAddr(addr: string) {
   return `${addr.slice(0, 10)}...${addr.slice(-8)}`;
 }
