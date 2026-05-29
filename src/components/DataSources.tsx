@@ -50,6 +50,7 @@ export default function DataSources() {
   const { modules, loading, error } = useDataSources();
   const { services } = useStatus();
   const [aiProviderId, setAiProviderId] = useState<string>("deepseek");
+  const [moduleCollapsed, setModuleCollapsed] = useState<boolean>(true);
 
   // Read current AI provider from localStorage
   useEffect(() => {
@@ -166,10 +167,36 @@ export default function DataSources() {
 
       {/* Module detail table */}
       <Card padding="none" className="overflow-hidden">
-        <div className="px-4 py-3 border-b border-border-default">
-          <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider">Module Status</h3>
+        <div className="px-4 py-3 border-b border-border-default flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider">Module Status</h3>
+            <span className="text-[10px] text-txt-faint font-mono">
+              {modules.length + 1} modules
+            </span>
+          </div>
+          <button
+            onClick={() => setModuleCollapsed((v) => !v)}
+            className="inline-flex items-center gap-1.5 text-[10px] text-txt-dim hover:text-txt-secondary px-2 py-1 rounded-md border border-border-default hover:border-border-muted hover:bg-elevated/30 transition-colors"
+            aria-expanded={!moduleCollapsed}
+            aria-controls="module-status-content"
+          >
+            {moduleCollapsed ? "Expand" : "Collapse"}
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              className={`transition-transform duration-200 ${moduleCollapsed ? "" : "rotate-180"}`}
+            >
+              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
-        {loading ? (
+        {moduleCollapsed ? (
+          <div className="px-4 py-3 text-[11px] text-txt-faint">
+            Detail module disembunyikan.
+          </div>
+        ) : loading ? (
           <div className="p-4 space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} variant="table-row" />
@@ -180,7 +207,7 @@ export default function DataSources() {
             <p className="text-xs text-sell">Failed to load module status: {error}</p>
           </div>
         ) : (
-          <div className="divide-y divide-border-default">
+          <div id="module-status-content" className="divide-y divide-border-default">
             {modules.map((m) => (
               <div key={m.name} className="flex items-center justify-between px-4 py-2.5 hover:bg-elevated/30 transition-colors">
                 <div className="flex items-center gap-3">
