@@ -59,6 +59,11 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
+    const allRoutes = groups.flatMap((group) => group.items.map((item) => item.href));
+    allRoutes.forEach((href) => router.prefetch(href));
+  }, [router]);
+
+  useEffect(() => {
     if (mobileOpen) {
       document.body.style.overflow = "hidden";
     } else {
