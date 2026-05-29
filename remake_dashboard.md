@@ -7,6 +7,27 @@ Core direction: turn the dashboard from separate trading widgets into a visible 
 Visual reference from prior session:
 `/home/dracarys/.codex/generated_images/019e73d8-13cd-7cb0-82cb-a1d9d5df4b7c`
 
+## Implementation Log
+
+2026-05-29:
+- Initial implementation added `src/components/dashboard/SignalFlowRail.tsx`.
+- Initial implementation added `src/components/dashboard/CurrentDecisionPanel.tsx`.
+- Initial implementation added `src/components/dashboard/SignalStream.tsx`.
+- Initial implementation added `src/components/dashboard/EvidenceFlow.tsx`.
+- `src/app/(dashboard)/dashboard/page.tsx` was recomposed into the SignalFlow pipeline workbench:
+  - rail at the top,
+  - chart plus signal stream plus flow summary on the left,
+  - current decision output panel on the right,
+  - evidence flow below,
+  - AI generator/reasoning retained as the explain layer.
+- Validation passed with `pnpm lint`, `pnpm build`, and `git diff --check`.
+
+Remaining polish:
+- Browser screenshot review at desktop/tablet/mobile widths.
+- Fine tune panel heights once real viewport is inspected.
+- Consider a compact source-health mode for `DataSources`.
+- Consider making `KPICards` expose a compact `FlowSummary` variant if the full KPI layout feels too large under the chart.
+
 ## Product Intent
 
 The dashboard should read as:
