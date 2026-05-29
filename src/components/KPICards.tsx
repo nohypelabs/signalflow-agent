@@ -101,11 +101,11 @@ export default function KPICards({ metrics }: Props) {
         if (s.total === 0) return "No active signals";
         return (
           <>
-            <span className="text-buy">{s.buy} BUY</span>
+            <span className="text-buy">{s.buy} LONG</span>
             <span className="text-txt-dim mx-0.5">·</span>
-            <span className="text-hold">{s.hold} HOLD</span>
+            <span className="text-hold">{s.hold} NO TRADE</span>
             <span className="text-txt-dim mx-0.5">·</span>
-            <span className="text-sell">{s.sell} SELL</span>
+            <span className="text-sell">{s.sell} SHORT</span>
           </>
         );
       })(),

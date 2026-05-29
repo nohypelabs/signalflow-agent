@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Card from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
 import PageHeader from "@/components/ui/PageHeader";
 
@@ -148,7 +147,7 @@ export default function SignalHistoryPage() {
   const [signals, setSignals] = useState<SignalRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "BUY" | "SELL" | "HOLD">("all");
+  const [filter, setFilter] = useState<"all" | "LONG" | "SHORT" | "HOLD">("all");
   const [outcomeFilter, setOutcomeFilter] = useState<"all" | "win" | "loss" | "pending">("all");
 
   useEffect(() => {
@@ -274,7 +273,7 @@ export default function SignalHistoryPage() {
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[9px] text-txt-faint uppercase tracking-wider">Signal:</span>
-            {(["all", "BUY", "SELL", "HOLD"] as const).map((f) => (
+            {(["all", "LONG", "SHORT", "HOLD"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -284,7 +283,7 @@ export default function SignalHistoryPage() {
                     : "text-txt-muted hover:text-txt-secondary"
                 }`}
               >
-                {f === "all" ? "All" : f}
+                {f === "all" ? "All" : f === "HOLD" ? "NO TRADE" : f}
               </button>
             ))}
           </div>

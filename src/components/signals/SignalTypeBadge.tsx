@@ -27,7 +27,7 @@ const actionStyles: Record<string, { bg: string; border: string; text: string; l
     bg: "bg-hold-muted",
     border: "border-hold-dim",
     text: "text-hold",
-    label: "HOLD",
+    label: "NO TRADE",
   },
   WEAK_SELL: {
     bg: "bg-[#ff4444]/10",

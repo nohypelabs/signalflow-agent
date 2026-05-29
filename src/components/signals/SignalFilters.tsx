@@ -21,7 +21,7 @@ interface Props {
 const typeOptions: { label: string; value: SignalAction | "ALL" }[] = [
   { label: "All", value: "ALL" },
   { label: "LONG", value: "LONG" },
-  { label: "HOLD", value: "HOLD" },
+  { label: "NO TRADE", value: "HOLD" },
   { label: "SHORT", value: "SHORT" },
 ];
 

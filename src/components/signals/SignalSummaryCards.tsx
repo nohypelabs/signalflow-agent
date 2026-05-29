@@ -20,9 +20,9 @@ export default function SignalSummaryCards({ signals }: Props) {
 
   const stats = [
     { label: "Total Active", value: total, color: "var(--accent-primary)" },
-    { label: "BUY", value: buyCount, color: "var(--color-buy)" },
-    { label: "HOLD", value: holdCount, color: "var(--color-hold)" },
-    { label: "SELL", value: sellCount, color: "var(--color-sell)" },
+    { label: "LONG", value: buyCount, color: "var(--color-buy)" },
+    { label: "NO TRADE", value: holdCount, color: "var(--color-hold)" },
+    { label: "SHORT", value: sellCount, color: "var(--color-sell)" },
     { label: "Avg Confidence", value: `${avgConfidence}%`, color: "var(--text-secondary)" },
     { label: "High Confidence", value: highConfidence, color: "var(--color-info)" },
   ];
