@@ -101,6 +101,12 @@ export default function AISignalGenerator({
 }: Props) {
   const displaySignal = baseSignal;
   const hasResult = displaySignal && !analyzing;
+  const signalAccent = displaySignal?.action === "LONG"
+    ? "var(--color-buy)"
+    : displaySignal?.action === "SHORT"
+      ? "var(--color-sell)"
+      : "var(--color-hold)";
+  const displayAction = displaySignal?.action === "HOLD" ? "NO TRADE" : displaySignal?.action;
 
   return (
     <div className="bg-card border border-border-default rounded-lg overflow-hidden">
@@ -274,9 +280,9 @@ export default function AISignalGenerator({
                   <span className="text-lg font-bold text-txt-primary">{displaySignal.pair}</span>
                   <span
                     className="text-xs uppercase tracking-wider font-bold px-2 py-0.5 rounded"
-                    style={{ backgroundColor: `${accent}20`, color: accent }}
+                    style={{ backgroundColor: `color-mix(in srgb, ${signalAccent} 12%, transparent)`, color: signalAccent }}
                   >
-                    {displaySignal.action}
+                    {displayAction}
                   </span>
                   {aiThesis && (
                     <span className="text-[8px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-accent-muted text-accent">
@@ -298,7 +304,7 @@ export default function AISignalGenerator({
           </div>
 
           {/* Thesis */}
-          <div className="bg-elevated/50 rounded-lg p-3 border-l-2" style={{ borderLeftColor: accent }}>
+          <div className="bg-elevated/50 rounded-lg p-3 border-l-2" style={{ borderLeftColor: signalAccent }}>
             <p className="text-[10px] text-txt-muted uppercase tracking-wider mb-1">
               {aiThesis ? "AI Thesis" : "Technical Analysis"}
             </p>

@@ -37,11 +37,6 @@ const TF_CONFIG: Record<Timeframe, { interval: string; limit: number }> = {
   "1W":  { interval: "1w", limit: 52 },
 };
 
-const AVAILABLE_PAIRS = [
-  "BTC/USDC", "ETH/USDC", "SOL/USDC", "AVAX/USDC",
-  "LINK/USDC", "DOGE/USDC", "ADA/USDC", "XRP/USDC", "BNB/USDC",
-];
-
 const CHART_COLORS = {
   bg: "#0B1020",
   grid: "#1a2035",
@@ -532,105 +527,48 @@ export default function TradingChart({
       : "h-full w-full flex flex-col min-w-0 bg-card border border-border-default rounded-lg overflow-hidden"
     }>
       {/* Header */}
-        <div className={`px-4 ${compact ? "pt-2.5 pb-2" : "pt-3 pb-2"} flex flex-col gap-1.5 shrink-0 border-b border-border-default`}>
-        {/* Row 1: Pair + Price + Signal badge + freshness */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 lg:gap-3 min-w-0">
+      <div className={`px-4 ${compact ? "pt-3 pb-2" : "pt-3 pb-2.5"} flex flex-col gap-2 shrink-0 border-b border-border-default`}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setShowModal(true)}
-              className={`flex items-center gap-3 bg-card hover:bg-elevated/40 text-txt-primary ${compact ? "px-3 py-2" : "px-4 py-2.5"} rounded-xl border border-border-default hover:border-accent/30 cursor-pointer transition-all group`}
+              className="group flex items-center gap-2.5 min-w-0 rounded-lg border border-border-default bg-inset/40 px-2.5 py-1.5 text-txt-primary hover:border-border-muted hover:bg-elevated/25 transition-colors cursor-pointer"
             >
-              {/* Icon */}
-              <div className="relative">
+              <div className="relative shrink-0">
                 <img
                   src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${pair.split("/")[0].toLowerCase()}.svg`}
                   alt={pair.split("/")[0]}
-                  width={compact ? 26 : 32}
-                  height={compact ? 26 : 32}
+                  width={compact ? 22 : 26}
+                  height={compact ? 22 : 26}
                   className="rounded-full"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                 />
-                {/* Live dot */}
                 {dataAge !== null && dataAge < 120_000 && (
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-buy border-2 border-card animate-pulse" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-buy border-2 border-card" />
                 )}
               </div>
-
-              {/* Pair info */}
-              <div className="flex flex-col items-start gap-1">
-                <div className="flex items-center gap-2">
-                  <span className={`${compact ? "text-[13px]" : "text-[15px]"} font-bold font-mono tracking-tight`}>{pair}</span>
-                  {!compact && <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-accent/10 text-accent border border-accent/20">
-                    {["BTC", "ETH", "SOL"].includes(pair.split("/")[0].toUpperCase()) ? "20x" : "5x"} Max
-                  </span>}
-                </div>
-                <div className="flex items-center gap-2">
-                  {latestSignal && (
-                    <span className={`inline-flex items-center gap-1 px-2 py-[3px] rounded-md text-[9px] font-bold uppercase tracking-wider leading-none border ${
-                      latestSignal.action === "LONG"
-                        ? "bg-buy/10 text-buy border-buy/20"
-                        : latestSignal.action === "SHORT"
-                          ? "bg-sell/10 text-sell border-sell/20"
-                          : "bg-hold/10 text-hold border-hold/20"
-                    }`}>
-                      {latestSignal.action === "LONG" ? (
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
-                      ) : latestSignal.action === "SHORT" ? (
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12l7 7 7-7" /></svg>
-                      ) : (
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M5 12h14" /></svg>
-                      )}
-                      {latestSignal.action} <span className="opacity-60">{latestSignal.confidence}%</span>
-                    </span>
-                  )}
-                  {!latestSignal && (
-                    <span className="text-[9px] text-txt-faint">No active signal</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Chevron */}
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-txt-faint group-hover:text-accent transition-colors ml-1"><path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <span className={`${compact ? "text-[13px]" : "text-[15px]"} font-bold font-mono tracking-tight truncate`}>{pair}</span>
+              {!compact && (
+                <span className="text-[9px] font-mono text-txt-faint border-l border-border-default pl-2">
+                  {["BTC", "ETH", "SOL"].includes(pair.split("/")[0].toUpperCase()) ? "20x" : "5x"} Max
+                </span>
+              )}
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-txt-faint group-hover:text-txt-secondary transition-colors shrink-0"><path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </button>
 
-            {/* Market stats columns */}
-            {displayPrice != null && currentTicker && (
-              <div className={`items-center ${compact ? "hidden lg:flex gap-3" : "flex gap-5"} ml-2`}>
-                {/* Mark */}
-                <div className="flex flex-col items-center">
-                  <span className="text-[10px] text-txt-dim tracking-wide leading-none mb-0.5 text-center">Mark</span>
-                  <span className="text-sm font-mono font-bold text-txt-primary tabular-nums text-center">{fmtPrice(displayPrice)}</span>
-                </div>
-                {/* 24h Change */}
-                <div className="flex flex-col items-center">
-                  <span className="text-[10px] text-txt-dim tracking-wide leading-none mb-0.5 text-center">24h Change</span>
-                  <span className={`text-sm font-mono font-bold tabular-nums text-center ${displayChange !== undefined && displayChange >= 0 ? "text-buy" : "text-sell"}`}>
-                    {displayChange !== undefined ? `${displayChange >= 0 ? "+" : ""}${displayChange.toFixed(2)}%` : "—"}
-                  </span>
-                </div>
-                {/* 24h Volume */}
-                <div className="flex flex-col items-center">
-                  <span className="text-[10px] text-txt-dim tracking-wide leading-none mb-0.5 text-center">24h Volume</span>
-                  <span className="text-sm font-mono text-txt-secondary tabular-nums text-center">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span>
-                </div>
-                {!compact && (
-                  <>
-                    {/* Oracle */}
-                    <div className="flex flex-col items-center">
-                      <span className="text-[10px] text-txt-dim tracking-wide leading-none mb-0.5 text-center">Oracle</span>
-                      <span className="text-sm font-mono text-txt-secondary tabular-nums text-center">{fmtPrice(displayPrice * 1.0001)}</span>
-                    </div>
-                    {/* Open Interest */}
-                    <div className="flex flex-col items-center">
-                      <span className="text-[10px] text-txt-dim tracking-wide leading-none mb-0.5 text-center">Open Interest</span>
-                      <span className="text-sm font-mono text-txt-secondary tabular-nums text-center">—</span>
-                    </div>
-                  </>
-                )}
+            {displayPrice != null && (
+              <div className="flex items-baseline gap-2 min-w-0">
+                <span className={`${compact ? "text-lg" : "text-xl"} font-semibold font-mono text-txt-primary tabular-nums leading-none`}>
+                  {fmtPrice(displayPrice)}
+                </span>
+                <span className={`text-xs font-semibold font-mono tabular-nums ${displayChange !== undefined && displayChange >= 0 ? "text-buy" : "text-sell"}`}>
+                  {displayChange !== undefined ? `${displayChange >= 0 ? "+" : ""}${displayChange.toFixed(2)}%` : "—"}
+                </span>
               </div>
             )}
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-2 shrink-0">
             {dataAge !== null && dataAge < 120_000 && (
               <span className="text-[9px] text-txt-faint flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-buy animate-pulse" />
@@ -697,6 +635,30 @@ export default function TradingChart({
               </div>
             )}
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px]">
+          {latestSignal ? (
+            <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md font-bold uppercase tracking-wider leading-none border ${
+              latestSignal.action === "LONG"
+                ? "bg-buy/10 text-buy border-buy/20"
+                : latestSignal.action === "SHORT"
+                  ? "bg-sell/10 text-sell border-sell/20"
+                  : "bg-hold/10 text-hold border-hold/20"
+            }`}>
+              <span>{latestSignal.action === "HOLD" ? "NO TRADE" : latestSignal.action}</span>
+              <span className="opacity-65">{latestSignal.confidence}%</span>
+            </span>
+          ) : (
+            <span className="text-txt-faint">No active signal</span>
+          )}
+          {displayPrice != null && currentTicker && (
+            <>
+              <span className="text-txt-dim">Mark <span className="text-txt-secondary font-mono">{fmtPrice(displayPrice)}</span></span>
+              <span className="text-txt-dim">Vol <span className="text-txt-secondary font-mono">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span></span>
+              <span className="hidden md:inline text-txt-dim">Oracle <span className="text-txt-secondary font-mono">{fmtPrice(displayPrice * 1.0001)}</span></span>
+            </>
+          )}
         </div>
 
         {/* Row 2: Timeframe dropdown + favorites + toggles */}
