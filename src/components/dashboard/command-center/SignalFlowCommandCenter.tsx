@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Target, Layers, Activity } from "lucide-react";
+import { Target, Layers, Activity, Fuel } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -196,11 +196,16 @@ function confidenceLabel(value: number): string {
   return "Watch";
 }
 
-function sourceTone(source: DecisionSource): string {
-  if (!source.available) return "text-txt-muted";
-  if (source.signed > 12) return "text-buy";
-  if (source.signed < -12) return "text-sell";
-  return "text-hold";
+function hasExternalSignalLayers(sources?: Record<string, boolean | number>): boolean {
+  if (!sources) return false;
+  return Boolean(
+    sources.news ||
+    sources.etf ||
+    sources.macro ||
+    sources.treasuries ||
+    sources.treasuryActivity ||
+    (typeof sources.snapshots === "number" && sources.snapshots > 0)
+  );
 }
 
 function buildTargets(action: DecisionAction, entry: number, signal: Signal | null): Array<[string, string, string]> {
@@ -235,6 +240,17 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
   const aiSignal = d.aiSignal && normalizePair(d.aiSignal.pair) === normalizePair(pair) ? d.aiSignal : null;
   const ticker = d.tickerMap.get(pairToSodexSymbol(pair));
   const currentPrice = currentSignal?.price ?? (ticker ? parseFloat(ticker.lastPx) : 0);
+  const coin = pair.split("/")[0];
+  const fullEngineReady = hasExternalSignalLayers(d.signalsData?.sources) && !news?.error;
+  const engineModeLabel = fullEngineReady
+    ? "5-layer engine + AI thesis"
+    : "TA fallback: SoDEX RSI / trend / volume";
+
+  const generateSignal = async () => {
+    d.setAiCoin(coin);
+    d.setIncludeAI(true);
+    await d.generate(coin, true);
+  };
 
   const decision = useMemo(() => {
     const sources: DecisionSource[] = [
@@ -358,25 +374,28 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
           <div className="text-sm font-medium text-txt-tertiary">{decision.label}</div>
         </div>
 
-        <div className="grid grid-cols-3 gap-1.5 rounded-xl border border-border-default bg-inset p-1.5">
-          {decision.sources.map((source) => {
-            const label = source.label === "SoSoValue News"
-              ? "News"
-              : source.label === "AI Thesis"
-                ? "AI"
-                : "SoDEX";
-            return (
-              <div key={source.label} className="min-w-0 rounded-lg bg-card/45 px-2 py-1">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="truncate text-[10px] font-semibold text-txt-secondary">{label}</span>
-                  <span className={cx("font-mono text-xs font-semibold tabular-nums", sourceTone(source))}>
-                    {source.available ? `${source.signed > 0 ? "+" : ""}${Math.round(source.signed)}` : "--"}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <Button
+          variant={fullEngineReady ? "primary" : "secondary"}
+          size="lg"
+          loading={d.analyzing}
+          onClick={generateSignal}
+          className="w-full h-[58px] justify-start rounded-xl px-3 text-left"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-accent-dim bg-accent-muted text-accent">
+            <Fuel size={18} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold text-txt-primary">
+              {d.analyzing ? "Analyzing SignalFlow Layers" : "Generate Signal"}
+            </span>
+            <span className="block truncate text-[11px] font-medium text-txt-tertiary">
+              {engineModeLabel}
+            </span>
+          </span>
+          <Badge variant={fullEngineReady ? "live" : "warning"} size="sm">
+            {fullEngineReady ? "FULL" : "FALLBACK"}
+          </Badge>
+        </Button>
 
         <div className="grid grid-cols-2 gap-3">
           <Card variant="inset" padding="sm" className="rounded-xl !p-2.5">

@@ -58,7 +58,7 @@ export interface DashboardState {
   analyzing: boolean;
   includeAI: boolean;
   setIncludeAI: (v: boolean) => void;
-  generate: (coin: string) => Promise<Signal | null>;
+  generate: (coin: string, includeAIOverride?: boolean) => Promise<Signal | null>;
   clearAISignal: () => void;
   aiCoin: string;
   setAiCoin: (c: string) => void;
@@ -178,8 +178,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const aiSignal = baseSignal;
 
   // Wrapped generate that passes includeAI
-  const generate = useCallback(async (coin: string) => {
-    return generateRaw(coin, includeAI);
+  const generate = useCallback(async (coin: string, includeAIOverride?: boolean) => {
+    return generateRaw(coin, includeAIOverride ?? includeAI);
   }, [generateRaw, includeAI]);
 
   // Signal history
