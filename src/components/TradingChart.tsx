@@ -514,7 +514,26 @@ export default function TradingChart({
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
               <span>{pair}</span>
-              <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1L5 5L9 1" stroke="var(--accent-primary)" strokeWidth="1.5" strokeLinecap="round" /></svg>
+              {latestSignal && (
+                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-wider leading-none ${
+                  latestSignal.action === "LONG"
+                    ? "bg-buy/15 text-buy border border-buy/25"
+                    : latestSignal.action === "SHORT"
+                      ? "bg-sell/15 text-sell border border-sell/25"
+                      : "bg-hold/15 text-hold border border-hold/25"
+                }`}>
+                  {latestSignal.action === "LONG" ? (
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+                  ) : latestSignal.action === "SHORT" ? (
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12l7 7 7-7" /></svg>
+                  ) : (
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M5 12h14" /></svg>
+                  )}
+                  {latestSignal.action}
+                  <span className="opacity-70">{latestSignal.confidence}%</span>
+                </span>
+              )}
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="opacity-50"><path d="M1 1L5 5L9 1" stroke="var(--accent-primary)" strokeWidth="1.5" strokeLinecap="round" /></svg>
             </button>
             {displayPrice != null && (
               <div className="flex items-baseline gap-2">
