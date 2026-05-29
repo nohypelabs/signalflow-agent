@@ -65,6 +65,12 @@ function timeAgo(ts: number | null): string {
   return `${Math.floor(sec / 3600)}h ago`;
 }
 
+function formatTopPrice(price: number): string {
+  if (price >= 1000) return price.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  if (price >= 1) return price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+}
+
 /* ── Main ── */
 export default function KPICards({ metrics }: Props) {
   const cards = [
@@ -130,7 +136,17 @@ export default function KPICards({ metrics }: Props) {
       sub: (() => {
         const g = metrics.topGainer.value as TopGainerResult | null;
         if (!g) return "Market broadly negative";
-        return `${formatPercent(g.change24h)} · $${g.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+        return (
+          <>
+            <span className={g.change24h >= 0 ? "text-buy font-semibold" : "text-sell font-semibold"}>
+              {formatPercent(g.change24h)}
+            </span>
+            <span className="text-txt-dim mx-0.5">·</span>
+            <span className="text-txt-secondary font-medium">
+              ${formatTopPrice(g.price)}
+            </span>
+          </>
+        );
       })(),
     },
   ];
