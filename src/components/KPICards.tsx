@@ -159,12 +159,6 @@ export default function KPICards({ metrics }: Props) {
           whileHover={{ y: -1.5, transition: { duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] } }}
           className="group relative bg-card border border-border-default rounded-lg overflow-hidden hover:bg-elevated/20 hover:border-border-muted transition-[background-color,border-color,transform] duration-200"
         >
-          {/* Top accent stripe */}
-          <div
-            className="absolute top-0 left-0 right-0 h-[1px]"
-            style={{ background: `linear-gradient(90deg, ${c.accent}80, transparent)` }}
-          />
-
           <div className="px-3.5 md:px-4 pt-3 pb-3.5">
             {/* Row 1: icon + label + status */}
             <div className="flex items-center justify-between mb-3">
