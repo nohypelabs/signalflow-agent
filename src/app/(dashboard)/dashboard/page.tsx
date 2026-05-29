@@ -28,57 +28,69 @@ export default function DashboardPage() {
 
       {/* Chart + Signals row */}
       <StaggerItem>
-        <div className="flex flex-col md:flex-row gap-4">
-          <TradingChart
-            klines={d.klines}
-            symbol="BTC/USDC"
-            currentPrice={
-              d.tickerMap.get("vBTC_vUSDC")
-                ? parseFloat(d.tickerMap.get("vBTC_vUSDC")!.lastPx)
-                : null
-            }
-            liveSignals={d.liveSignals}
-            tickerMap={d.tickerMap}
-          />
-          <SignalList
-            onSelect={d.setSelectedSignal}
-            selected={d.selectedSignal?.id ?? null}
-            tickers={d.tickers}
-            liveSignals={d.liveSignals}
-          />
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+          <div className="xl:col-span-8 min-w-0">
+            <div className="h-[clamp(420px,60vh,560px)]">
+              <TradingChart
+                klines={d.klines}
+                symbol="BTC/USDC"
+                currentPrice={
+                  d.tickerMap.get("vBTC_vUSDC")
+                    ? parseFloat(d.tickerMap.get("vBTC_vUSDC")!.lastPx)
+                    : null
+                }
+                liveSignals={d.liveSignals}
+                tickerMap={d.tickerMap}
+                compact
+              />
+            </div>
+          </div>
+          <div className="xl:col-span-4 min-w-0">
+            <div className="xl:sticky xl:top-4 h-[clamp(400px,60vh,560px)]">
+              <SignalList
+                onSelect={d.setSelectedSignal}
+                selected={d.selectedSignal?.id ?? null}
+                tickers={d.tickers}
+                liveSignals={d.liveSignals}
+                className="transition-all duration-300 hover:border-border-muted"
+              />
+            </div>
+          </div>
         </div>
       </StaggerItem>
 
-      {/* AI Generator */}
+      {/* AI Row */}
       <StaggerItem>
-        <AISignalGenerator
-          aiConfig={d.aiConfig}
-          aiProviderLabel={d.aiProviderLabel}
-          aiCoin={d.aiCoin}
-          onCoinChange={d.setAiCoin}
-          analyzing={d.analyzing}
-          phase={d.signalPhase}
-          baseSignal={d.baseSignal}
-          aiThesis={d.aiThesis}
-          aiError={d.aiError}
-          includeAI={d.includeAI}
-          onIncludeAIChange={d.setIncludeAI}
-          onGenerate={async () => {
-            const signal = await d.generate(d.aiCoin);
-            if (signal) d.recordSignal(signal);
-          }}
-          onPinSignal={() => {
-            if (d.baseSignal) d.setSelectedSignal(d.baseSignal);
-          }}
-          onExecuteSignal={() => {
-            if (d.baseSignal) d.handleExecuteSignal(d.baseSignal);
-          }}
-        />
-      </StaggerItem>
-
-      {/* AI Reasoning */}
-      <StaggerItem>
-        <AIReasoning signal={d.displaySignal} liveDims={d.liveDims} tickerMap={d.tickerMap} />
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+          <div className="xl:col-span-6 transition-all duration-300">
+            <AISignalGenerator
+              aiConfig={d.aiConfig}
+              aiProviderLabel={d.aiProviderLabel}
+              aiCoin={d.aiCoin}
+              onCoinChange={d.setAiCoin}
+              analyzing={d.analyzing}
+              phase={d.signalPhase}
+              baseSignal={d.baseSignal}
+              aiThesis={d.aiThesis}
+              aiError={d.aiError}
+              includeAI={d.includeAI}
+              onIncludeAIChange={d.setIncludeAI}
+              onGenerate={async () => {
+                const signal = await d.generate(d.aiCoin);
+                if (signal) d.recordSignal(signal);
+              }}
+              onPinSignal={() => {
+                if (d.baseSignal) d.setSelectedSignal(d.baseSignal);
+              }}
+              onExecuteSignal={() => {
+                if (d.baseSignal) d.handleExecuteSignal(d.baseSignal);
+              }}
+            />
+          </div>
+          <div className="xl:col-span-6 transition-all duration-300">
+            <AIReasoning signal={d.displaySignal} liveDims={d.liveDims} tickerMap={d.tickerMap} />
+          </div>
+        </div>
       </StaggerItem>
 
       {/* Data Sources */}

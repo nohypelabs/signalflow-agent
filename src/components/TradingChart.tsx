@@ -139,6 +139,7 @@ interface Props {
   tradeMode?: "paper" | "live";
   onModeChange?: (mode: "paper" | "live") => void;
   onPairChange?: (pair: string) => void;
+  compact?: boolean;
 }
 
 /* ── Component ── */
@@ -152,6 +153,7 @@ export default function TradingChart({
   tradeMode,
   onModeChange,
   onPairChange,
+  compact = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -183,6 +185,7 @@ export default function TradingChart({
   const [chartEngine, setChartEngine] = useState<"native" | "tradingview">("native");
   const [fullscreen, setFullscreen] = useState(false);
   const [showTfDropdown, setShowTfDropdown] = useState(false);
+  const [showCompactControls, setShowCompactControls] = useState(false);
   const [favTfs, setFavTfs] = useState<Timeframe[]>(() => {
     if (typeof window === "undefined") return ["1h", "4h", "1D"];
     try { return JSON.parse(localStorage.getItem("sf-fav-tfs") || "[\"1h\",\"4h\",\"1D\"]"); } catch { return ["1h", "4h", "1D"]; }
@@ -218,11 +221,14 @@ export default function TradingChart({
 
   // Close TF dropdown on outside click
   useEffect(() => {
-    if (!showTfDropdown) return;
-    const handler = () => setShowTfDropdown(false);
+    if (!showTfDropdown && !showCompactControls) return;
+    const handler = () => {
+      setShowTfDropdown(false);
+      setShowCompactControls(false);
+    };
     setTimeout(() => window.addEventListener("click", handler), 0);
     return () => window.removeEventListener("click", handler);
-  }, [showTfDropdown]);
+  }, [showTfDropdown, showCompactControls]);
 
   // Cancel pending drawing on Escape
   useEffect(() => {
@@ -523,24 +529,24 @@ export default function TradingChart({
   return (
     <div className={fullscreen
       ? "fixed inset-0 z-40 bg-background p-2 flex flex-col"
-      : "flex-1 flex flex-col min-w-0 bg-card border border-border-default rounded-lg overflow-hidden"
+      : "h-full w-full flex flex-col min-w-0 bg-card border border-border-default rounded-lg overflow-hidden"
     }>
       {/* Header */}
-        <div className="px-4 pt-3 pb-2 flex flex-col gap-1.5 shrink-0 border-b border-border-default">
+        <div className={`px-4 ${compact ? "pt-2.5 pb-2" : "pt-3 pb-2"} flex flex-col gap-1.5 shrink-0 border-b border-border-default`}>
         {/* Row 1: Pair + Price + Signal badge + freshness */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 lg:gap-3 min-w-0">
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-3 bg-card hover:bg-elevated/40 text-txt-primary px-4 py-2.5 rounded-xl border border-border-default hover:border-accent/30 cursor-pointer transition-all group"
+              className={`flex items-center gap-3 bg-card hover:bg-elevated/40 text-txt-primary ${compact ? "px-3 py-2" : "px-4 py-2.5"} rounded-xl border border-border-default hover:border-accent/30 cursor-pointer transition-all group`}
             >
               {/* Icon */}
               <div className="relative">
                 <img
                   src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${pair.split("/")[0].toLowerCase()}.svg`}
                   alt={pair.split("/")[0]}
-                  width={32}
-                  height={32}
+                  width={compact ? 26 : 32}
+                  height={compact ? 26 : 32}
                   className="rounded-full"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                 />
@@ -553,10 +559,10 @@ export default function TradingChart({
               {/* Pair info */}
               <div className="flex flex-col items-start gap-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-[15px] font-bold font-mono tracking-tight">{pair}</span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-accent/10 text-accent border border-accent/20">
+                  <span className={`${compact ? "text-[13px]" : "text-[15px]"} font-bold font-mono tracking-tight`}>{pair}</span>
+                  {!compact && <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-accent/10 text-accent border border-accent/20">
                     {["BTC", "ETH", "SOL"].includes(pair.split("/")[0].toUpperCase()) ? "20x" : "5x"} Max
-                  </span>
+                  </span>}
                 </div>
                 <div className="flex items-center gap-2">
                   {latestSignal && (
@@ -589,16 +595,11 @@ export default function TradingChart({
 
             {/* Market stats columns */}
             {displayPrice != null && currentTicker && (
-              <div className="flex items-center gap-5 ml-2">
+              <div className={`items-center ${compact ? "hidden lg:flex gap-3" : "flex gap-5"} ml-2`}>
                 {/* Mark */}
                 <div className="flex flex-col items-center">
                   <span className="text-[10px] text-txt-dim tracking-wide leading-none mb-0.5 text-center">Mark</span>
                   <span className="text-sm font-mono font-bold text-txt-primary tabular-nums text-center">{fmtPrice(displayPrice)}</span>
-                </div>
-                {/* Oracle */}
-                <div className="flex flex-col items-center">
-                  <span className="text-[10px] text-txt-dim tracking-wide leading-none mb-0.5 text-center">Oracle</span>
-                  <span className="text-sm font-mono text-txt-secondary tabular-nums text-center">{fmtPrice(displayPrice * 1.0001)}</span>
                 </div>
                 {/* 24h Change */}
                 <div className="flex flex-col items-center">
@@ -612,11 +613,20 @@ export default function TradingChart({
                   <span className="text-[10px] text-txt-dim tracking-wide leading-none mb-0.5 text-center">24h Volume</span>
                   <span className="text-sm font-mono text-txt-secondary tabular-nums text-center">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span>
                 </div>
-                {/* Open Interest */}
-                <div className="flex flex-col items-center">
-                  <span className="text-[10px] text-txt-dim tracking-wide leading-none mb-0.5 text-center">Open Interest</span>
-                  <span className="text-sm font-mono text-txt-secondary tabular-nums text-center">—</span>
-                </div>
+                {!compact && (
+                  <>
+                    {/* Oracle */}
+                    <div className="flex flex-col items-center">
+                      <span className="text-[10px] text-txt-dim tracking-wide leading-none mb-0.5 text-center">Oracle</span>
+                      <span className="text-sm font-mono text-txt-secondary tabular-nums text-center">{fmtPrice(displayPrice * 1.0001)}</span>
+                    </div>
+                    {/* Open Interest */}
+                    <div className="flex flex-col items-center">
+                      <span className="text-[10px] text-txt-dim tracking-wide leading-none mb-0.5 text-center">Open Interest</span>
+                      <span className="text-sm font-mono text-txt-secondary tabular-nums text-center">—</span>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -631,6 +641,59 @@ export default function TradingChart({
               <div className="flex items-center gap-0.5 bg-inset rounded-lg p-0.5 border border-border-default">
                 <button onClick={() => onModeChange("paper")} className={`text-[9px] px-2 py-1 rounded-md cursor-pointer font-semibold transition-colors ${tradeMode === "paper" ? "bg-accent/15 text-accent border border-accent/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Paper</button>
                 <button onClick={() => onModeChange("live")} className={`text-[9px] px-2 py-1 rounded-md cursor-pointer font-semibold transition-colors ${tradeMode === "live" ? "bg-sell/15 text-sell border border-sell/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Live</button>
+              </div>
+            )}
+            {compact && (
+              <div className="relative">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowCompactControls((v) => !v);
+                    setShowTfDropdown(false);
+                  }}
+                  className="text-[10px] px-2 py-1 rounded-md border border-border-default text-txt-dim hover:text-txt-secondary hover:bg-elevated/40 transition-colors"
+                  title="Chart controls"
+                >
+                  Display
+                </button>
+                {showCompactControls && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute right-0 top-full mt-1.5 z-30 bg-card border border-border-muted rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.35)] p-2 min-w-[180px]"
+                  >
+                    <div className="text-[9px] text-txt-muted uppercase tracking-wider px-1 pb-1.5 border-b border-border-default">Chart Display</div>
+                    <div className="mt-2 space-y-1.5">
+                      <button
+                        onClick={() => setChartEngine((v) => (v === "native" ? "tradingview" : "native"))}
+                        className="w-full flex items-center justify-between text-[10px] px-2 py-1 rounded-md hover:bg-elevated/40 transition-colors text-txt-secondary"
+                      >
+                        <span>Engine</span>
+                        <span className="text-txt-primary font-medium">{chartEngine === "native" ? "SignalFlow" : "TradingView"}</span>
+                      </button>
+                      <button
+                        onClick={() => setShowSignals((v) => !v)}
+                        className="w-full flex items-center justify-between text-[10px] px-2 py-1 rounded-md hover:bg-elevated/40 transition-colors text-txt-secondary"
+                      >
+                        <span>Signals</span>
+                        <span className={showSignals ? "text-accent font-medium" : "text-txt-faint"}>{showSignals ? "On" : "Off"}</span>
+                      </button>
+                      <button
+                        onClick={() => setShowTradePlan((v) => !v)}
+                        className="w-full flex items-center justify-between text-[10px] px-2 py-1 rounded-md hover:bg-elevated/40 transition-colors text-txt-secondary"
+                      >
+                        <span>Trade Plan</span>
+                        <span className={showTradePlan ? "text-accent font-medium" : "text-txt-faint"}>{showTradePlan ? "On" : "Off"}</span>
+                      </button>
+                      <button
+                        onClick={() => setShowVolume((v) => !v)}
+                        className="w-full flex items-center justify-between text-[10px] px-2 py-1 rounded-md hover:bg-elevated/40 transition-colors text-txt-secondary"
+                      >
+                        <span>Volume</span>
+                        <span className={showVolume ? "text-accent font-medium" : "text-txt-faint"}>{showVolume ? "On" : "Off"}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -656,7 +719,7 @@ export default function TradingChart({
             {/* TF dropdown */}
             <div className="relative">
               <button
-                onClick={(e) => { e.stopPropagation(); setShowTfDropdown(!showTfDropdown); }}
+                onClick={(e) => { e.stopPropagation(); setShowTfDropdown(!showTfDropdown); setShowCompactControls(false); }}
                 className="text-[10px] font-medium px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-txt-dim hover:text-txt-secondary border border-border-default flex items-center gap-1 hover:bg-elevated/30 hover:border-border-muted"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
@@ -721,48 +784,52 @@ export default function TradingChart({
               </button>
             </div>
 
-            {/* Chart engine toggle */}
-            <div className="flex items-center bg-inset rounded-lg border border-border-default overflow-hidden">
-              <button
-                onClick={() => setChartEngine("native")}
-                className={`text-[10px] px-3 py-1.5 transition-all cursor-pointer font-medium ${
-                  chartEngine === "native" ? "text-accent bg-accent/12 border-r border-accent/15" : "text-txt-dim hover:text-txt-secondary border-r border-border-default"
-                }`}
-              >
-                SignalFlow
-              </button>
-              <button
-                onClick={() => setChartEngine("tradingview")}
-                className={`text-[10px] px-3 py-1.5 transition-all cursor-pointer font-medium ${
-                  chartEngine === "tradingview" ? "text-accent bg-accent/12" : "text-txt-dim hover:text-txt-secondary"
-                }`}
-              >
-                TradingView
-              </button>
-            </div>
+            {!compact && (
+              <>
+                {/* Chart engine toggle */}
+                <div className="flex items-center bg-inset rounded-lg border border-border-default overflow-hidden">
+                  <button
+                    onClick={() => setChartEngine("native")}
+                    className={`text-[10px] px-3 py-1.5 transition-all cursor-pointer font-medium ${
+                      chartEngine === "native" ? "text-accent bg-accent/12 border-r border-accent/15" : "text-txt-dim hover:text-txt-secondary border-r border-border-default"
+                    }`}
+                  >
+                    SignalFlow
+                  </button>
+                  <button
+                    onClick={() => setChartEngine("tradingview")}
+                    className={`text-[10px] px-3 py-1.5 transition-all cursor-pointer font-medium ${
+                      chartEngine === "tradingview" ? "text-accent bg-accent/12" : "text-txt-dim hover:text-txt-secondary"
+                    }`}
+                  >
+                    TradingView
+                  </button>
+                </div>
 
-            {/* Separator */}
-            <div className="w-px h-3 bg-border-default" />
+                {/* Separator */}
+                <div className="w-px h-3 bg-border-default" />
 
-            {/* Signals toggle */}
-            <button
-              onClick={() => setShowSignals((v) => !v)}
-              className={`text-[9px] px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                showSignals ? "text-accent bg-accent/10" : "text-txt-faint hover:text-txt-dim"
-              }`}
-            >
-              Signals {showSignals ? "On" : "Off"}
-            </button>
+                {/* Signals toggle */}
+                <button
+                  onClick={() => setShowSignals((v) => !v)}
+                  className={`text-[9px] px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                    showSignals ? "text-accent bg-accent/10" : "text-txt-faint hover:text-txt-dim"
+                  }`}
+                >
+                  Signals {showSignals ? "On" : "Off"}
+                </button>
 
-            {/* Trade Plan toggle */}
-            <button
-              onClick={() => setShowTradePlan((v) => !v)}
-              className={`text-[9px] px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                showTradePlan ? "text-accent bg-accent/10" : "text-txt-faint hover:text-txt-dim"
-              }`}
-            >
-              Trade Plan {showTradePlan ? "On" : "Off"}
-            </button>
+                {/* Trade Plan toggle */}
+                <button
+                  onClick={() => setShowTradePlan((v) => !v)}
+                  className={`text-[9px] px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                    showTradePlan ? "text-accent bg-accent/10" : "text-txt-faint hover:text-txt-dim"
+                  }`}
+                >
+                  Trade Plan {showTradePlan ? "On" : "Off"}
+                </button>
+              </>
+            )}
 
             {/* Volume toggle */}
             <button
@@ -774,8 +841,7 @@ export default function TradingChart({
               Volume {showVolume ? "On" : "Off"}
             </button>
 
-            {/* Separator */}
-            <div className="w-px h-3 bg-border-default" />
+            {!compact && <div className="w-px h-3 bg-border-default" />}
 
             {/* Fullscreen toggle */}
             <button
@@ -797,7 +863,7 @@ export default function TradingChart({
         </div>
 
         {/* Row 4: Trade plan info (only when visible) */}
-        {showTradePlan && latestSignal?.execution && (
+        {showTradePlan && latestSignal?.execution && !compact && (
           <div className="flex items-center gap-3 text-[9px] font-mono text-txt-faint">
             <span>Entry <span className="text-accent">{fmtPrice(latestSignal.execution.entry)}</span></span>
             <span>TP <span className="text-buy">{fmtPrice(latestSignal.execution.takeProfit)}</span></span>

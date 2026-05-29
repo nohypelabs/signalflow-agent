@@ -33,11 +33,12 @@ interface Props {
   selected: string | null;
   tickers?: SoDEXTicker[] | null;
   liveSignals?: Signal[];
+  className?: string;
 }
 
 /* ── Component ── */
 
-export default function SignalList({ onSelect, selected, tickers, liveSignals }: Props) {
+export default function SignalList({ onSelect, selected, tickers, liveSignals, className = "" }: Props) {
   const tickerMap = new Map<string, SoDEXTicker>();
   if (tickers) tickers.forEach((t) => tickerMap.set(t.symbol, t));
 
@@ -51,7 +52,7 @@ export default function SignalList({ onSelect, selected, tickers, liveSignals }:
   );
 
   return (
-    <div className="w-full lg:w-80 shrink-0 flex flex-col bg-card border border-border-default rounded-lg overflow-hidden">
+    <div className={`w-full min-w-0 h-full flex flex-col bg-card border border-border-default rounded-lg overflow-hidden ${className}`}>
       {/* Header */}
       <div className="px-4 py-3 border-b border-border-default flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
@@ -94,7 +95,7 @@ export default function SignalList({ onSelect, selected, tickers, liveSignals }:
               key={s.id}
               onClick={() => onSelect(s)}
               className={`
-                text-left w-full px-4 py-3 cursor-pointer transition-all border-l-2 ${cfg.border}
+                text-left w-full px-4 py-3 cursor-pointer transition-all duration-200 border-l-2 ${cfg.border}
                 ${isSelected
                   ? `bg-elevated/80 ring-1 ring-inset ring-accent-dim ${cfg.glow}`
                   : isTop
