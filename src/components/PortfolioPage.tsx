@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import type { PaperTrade, PaperStats, PaperBalance } from "@/lib/hooks/usePaperTrading";
 import type { Signal } from "@/lib/types/signal";
 import { TRADING_TYPES, TRADING_TYPE_LIST } from "@/lib/types/trading-type";
 import type { TradingType } from "@/lib/types/trading-type";
+import TradingTypeIcon from "@/components/TradingTypeIcon";
 
 interface Props {
   trades: PaperTrade[];
@@ -266,7 +267,9 @@ export default function PortfolioPage({ trades, stats, balance, currentPrices, o
               return (
                 <div key={type.id} className="p-3 rounded-xl border bg-inset/20" style={{ borderColor: `${type.color}25` }}>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">{type.icon}</span>
+                    <span className="w-5 h-5 rounded bg-elevated/30 border border-border-default flex items-center justify-center text-txt-secondary">
+                      <TradingTypeIcon type={type.id} size={11} />
+                    </span>
                     <span className="text-xs font-bold" style={{ color: type.color }}>{type.label}</span>
                   </div>
                   <div className="space-y-1">
@@ -381,7 +384,10 @@ export default function PortfolioPage({ trades, stats, balance, currentPrices, o
                 className={`text-[10px] px-2 py-0.5 rounded cursor-pointer ${typeFilter === t.id ? "font-semibold" : "text-txt-dim hover:text-txt-secondary"}`}
                 style={typeFilter === t.id ? { backgroundColor: `${t.color}15`, color: t.color } : undefined}
               >
-                {t.icon} {t.label}
+                <span className="inline-flex items-center gap-1">
+                  <TradingTypeIcon type={t.id} size={11} />
+                  {t.label}
+                </span>
               </button>
             ))}
           </div>
@@ -419,7 +425,7 @@ export default function PortfolioPage({ trades, stats, balance, currentPrices, o
               <div className="flex items-center gap-1.5 ml-auto">
                 <span className="text-[9px] text-txt-dim uppercase tracking-wider">Export:</span>
                 <button onClick={exportCSV} className="text-[10px] px-2 py-0.5 rounded bg-inset border border-border-default text-txt-secondary hover:text-accent hover:border-accent/40 cursor-pointer transition-colors">
-                  📊 CSV
+                  CSV
                 </button>
                 <button onClick={exportJSON} className="text-[10px] px-2 py-0.5 rounded bg-inset border border-border-default text-txt-secondary hover:text-accent hover:border-accent/40 cursor-pointer transition-colors">
                   { } JSON
@@ -565,7 +571,10 @@ function PositionRow({ trade, currentPrice, onClose }: { trade: PaperTrade; curr
           <span className="text-[9px] text-accent font-mono">{trade.leverage}x</span>
           {typeConfig && (
             <span className="text-[8px] px-1.5 py-0.5 rounded font-semibold" style={{ backgroundColor: `${typeConfig.color}15`, color: typeConfig.color }}>
-              {typeConfig.icon} {typeConfig.label}
+              <span className="inline-flex items-center gap-1">
+                <TradingTypeIcon type={typeConfig.id} size={11} />
+                {typeConfig.label}
+              </span>
             </span>
           )}
         </div>
@@ -622,7 +631,7 @@ function HistoryRow({ trade, signalMap }: { trade: PaperTrade; signalMap?: Map<s
         <span className="text-xs font-bold text-txt-primary">{trade.pair}</span>
         {typeConfig && (
           <span className="text-[8px] px-1 py-0.5 rounded" style={{ backgroundColor: `${typeConfig.color}15`, color: typeConfig.color }}>
-            {typeConfig.icon}
+            <TradingTypeIcon type={typeConfig.id} size={10} />
           </span>
         )}
         <span className={`text-[8px] px-1 py-0.5 rounded ${
@@ -635,7 +644,7 @@ function HistoryRow({ trade, signalMap }: { trade: PaperTrade; signalMap?: Map<s
         </span>
         {hasSignal && (
           <span className="text-[7px] px-1 py-0.5 rounded bg-accent/10 text-accent" title={signal ? `Signal: ${signal.action} ${signal.confidence}%` : `Signal ID: ${trade.signalId}`}>
-            🎯 {trade.confidence}%
+            C {trade.confidence}%
           </span>
         )}
       </div>

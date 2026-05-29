@@ -739,7 +739,7 @@ export default function TradingChart({
                       >
                         {tf === t && <span className="w-1.5 h-1.5 rounded-full bg-accent" />}
                         <span>{t}</span>
-                        {favTfs.includes(t) && <span className="text-hold text-[8px] ml-auto">★</span>}
+                        {favTfs.includes(t) && <span className="text-hold text-[8px] ml-auto">Fav</span>}
                       </button>
                       <button
                         onClick={() => toggleFavTf(t)}

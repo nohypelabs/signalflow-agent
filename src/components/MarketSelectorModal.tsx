@@ -323,7 +323,7 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
           <span className="text-right cursor-pointer hover:text-txt-secondary transition-colors" onClick={() => toggleSort("price")}>Last Price{renderSortArrow("price")}</span>
           <span className="text-right cursor-pointer hover:text-txt-secondary transition-colors" onClick={() => toggleSort("change")}>24h Change{renderSortArrow("change")}</span>
           <span className="text-right cursor-pointer hover:text-txt-secondary transition-colors" onClick={() => toggleSort("volume")}>Volume{renderSortArrow("volume")}</span>
-          <span className="text-center">★</span>
+          <span className="text-center">Fav</span>
         </div>
 
         {/* ═══ Market List ═══ */}

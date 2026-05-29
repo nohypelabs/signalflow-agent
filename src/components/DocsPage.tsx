@@ -1387,7 +1387,7 @@ function Roadmap() {
     <div className="prose prose-invert max-w-none space-y-6">
       <h2 className="text-2xl font-bold text-white">Roadmap</h2>
 
-      <h3 className="text-lg font-bold text-accent mt-6">Wave 1 — Baseline ✅</h3>
+      <h3 className="text-lg font-bold text-accent mt-6">Wave 1 — Baseline (Complete)</h3>
       <ul className="text-[#aaaacc] space-y-1 ml-4 mt-2">
         {[
           "Next.js dashboard shell with dark-themed trading interface",
@@ -1403,7 +1403,7 @@ function Roadmap() {
         ))}
       </ul>
 
-      <h3 className="text-lg font-bold text-accent mt-8">Wave 2 — Execution ✅</h3>
+      <h3 className="text-lg font-bold text-accent mt-8">Wave 2 — Execution (Complete)</h3>
       <ul className="text-[#aaaacc] space-y-1 ml-4 mt-2">
         {[
           "Wallet connection — MetaMask (desktop) + WalletConnect v2 (mobile)",
@@ -1435,7 +1435,7 @@ function Roadmap() {
         ))}
       </ul>
 
-      <h3 className="text-lg font-bold text-hold mt-8">Wave 3 — Production 🔨</h3>
+      <h3 className="text-lg font-bold text-hold mt-8">Wave 3 — Production (In Progress)</h3>
       <ul className="text-[#aaaacc] space-y-1 ml-4 mt-2">
         {[
           "Backtesting engine — validate signal accuracy against historical data",

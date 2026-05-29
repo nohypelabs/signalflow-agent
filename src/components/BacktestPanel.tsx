@@ -184,8 +184,8 @@ export default function BacktestPanel() {
             <div className="p-3 rounded-lg bg-inset/30 border border-border-default">
               <p className="text-[9px] text-txt-faint uppercase tracking-wider mb-2">Streaks</p>
               <div className="flex items-center gap-4">
-                <span className="text-sm font-bold text-buy">🔥 {data.maxWinStreak}W</span>
-                <span className="text-sm font-bold text-sell">❄️ {data.maxLossStreak}L</span>
+                <span className="text-sm font-bold text-buy">Best {data.maxWinStreak}W</span>
+                <span className="text-sm font-bold text-sell">Worst {data.maxLossStreak}L</span>
               </div>
             </div>
           </div>
