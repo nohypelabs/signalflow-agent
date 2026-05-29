@@ -18,14 +18,6 @@ function fmtUSD(n: number): string {
   return `${n < 0 ? "-" : ""}$${abs.toFixed(2)}`;
 }
 
-function fmtTime(ms: number): string {
-  const mins = Math.floor(ms / 60000);
-  if (mins < 60) return `${mins}m`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ${mins % 60}m`;
-  return `${Math.floor(hours / 24)}d ${hours % 24}h`;
-}
-
 function fmtPrice(p: number): string {
   if (p >= 10000) return p.toLocaleString("en-US", { maximumFractionDigits: 0 });
   if (p >= 100) return p.toFixed(2);
@@ -94,7 +86,7 @@ function PositionRow({ trade, currentPrice, onClose }: { trade: PaperTrade; curr
       </div>
 
       {/* Row 2: Entry + Current + Liq */}
-      <div className="flex items-center gap-3 text-[9px] font-mono text-txt-faint mb-1.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] font-mono text-txt-faint mb-1.5">
         <span>Entry <span className="text-txt-secondary">${fmtPrice(trade.entryPrice)}</span></span>
         <span>Size <span className="text-txt-secondary">{trade.quantity.toFixed(4)}</span></span>
         <span>Margin <span className="text-txt-secondary">${trade.margin.toFixed(0)}</span></span>
@@ -102,7 +94,7 @@ function PositionRow({ trade, currentPrice, onClose }: { trade: PaperTrade; curr
       </div>
 
       {/* Row 3: TP/SL/Liq bars */}
-      <div className="flex items-center gap-2 text-[8px]">
+      <div className="flex flex-wrap items-center gap-2 text-[8px]">
         {slDist !== null && (
           <span className={`px-1.5 py-0.5 rounded ${slDist < 5 ? "bg-[#ff4444]/20 text-[#ff4444]" : "text-txt-faint"}`}>
             SL {slDist.toFixed(1)}% → ${fmtPrice(trade.stopLoss)}
@@ -119,7 +111,7 @@ function PositionRow({ trade, currentPrice, onClose }: { trade: PaperTrade; curr
         {onClose && currentPrice && (
           <button
             onClick={() => onClose(trade.id, currentPrice)}
-            className="ml-auto text-[9px] text-sell hover:text-sell/80 font-semibold cursor-pointer"
+            className="sm:ml-auto text-[9px] text-sell hover:text-sell/80 font-semibold cursor-pointer"
           >
             Close
           </button>
@@ -150,7 +142,7 @@ export default function PaperTradingStats({ stats, balance, trades, currentPrice
 
       {/* Balance */}
       <div className="px-4 py-3 bg-elevated/20 border-b border-border-default">
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div>
             <p className="text-[8px] text-txt-faint uppercase tracking-wider">Balance</p>
             <p className="text-sm font-bold font-mono text-txt-primary">{fmtUSD(balance.total)}</p>
@@ -173,7 +165,7 @@ export default function PaperTradingStats({ stats, balance, trades, currentPrice
       </div>
 
       {/* Stats */}
-      <div className="px-4 py-3 grid grid-cols-4 gap-2 border-b border-border-default">
+      <div className="px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-2 border-b border-border-default">
         {[
           { label: "Win Rate", value: `${stats.winRate.toFixed(1)}%`, color: stats.winRate > 55 ? "#00ff88" : stats.winRate > 45 ? "#ff8800" : "#ff4444" },
           { label: "Trades", value: `${stats.closedTrades}`, color: "var(--text-secondary)" },
@@ -188,7 +180,7 @@ export default function PaperTradingStats({ stats, balance, trades, currentPrice
       </div>
 
       {/* More stats */}
-      <div className="px-4 py-2 grid grid-cols-2 gap-2 border-b border-border-default">
+      <div className="px-4 py-2 grid grid-cols-1 sm:grid-cols-2 gap-2 border-b border-border-default">
         <div className="flex items-center justify-between">
           <span className="text-[9px] text-txt-faint">Profit Factor</span>
           <span className={`text-[10px] font-mono ${stats.profitFactor > 1.5 ? "text-[#00ff88]" : stats.profitFactor > 1 ? "text-[#ff8800]" : "text-[#ff4444]"}`}>

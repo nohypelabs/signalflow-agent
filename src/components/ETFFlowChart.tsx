@@ -38,7 +38,7 @@ function BarChart({ data }: { data: ETFDayData[] }) {
 
   return (
     <div className="relative h-40 flex items-end gap-px">
-      {reversed.map((d, i) => {
+      {reversed.map((d) => {
         const height = maxAbs > 0 ? (Math.abs(d.total_net_inflow) / maxAbs) * 100 : 0;
         const isPositive = d.total_net_inflow >= 0;
         return (
@@ -143,12 +143,12 @@ export default function ETFFlowChart({ symbol = "BTC" }: { symbol?: string }) {
     <Card padding="none" className="overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-border-default">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <span className="text-base">📊</span>
             <h3 className="text-sm font-semibold text-txt-primary">{symbol} ETF Flows</h3>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
             {data.etfs.slice(0, 5).map((etf) => (
               <span
                 key={etf.ticker}
@@ -176,7 +176,7 @@ export default function ETFFlowChart({ symbol = "BTC" }: { symbol?: string }) {
       </div>
 
       {/* Stats */}
-      <div className="px-4 pb-4 grid grid-cols-3 gap-3">
+      <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
         <div className="bg-elevated/30 rounded-lg p-2.5">
           <p className="text-[9px] text-txt-faint uppercase tracking-wider">Weekly Flow</p>
           <p className={`text-sm font-bold font-mono mt-0.5 ${weeklyInflow >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
