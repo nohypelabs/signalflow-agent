@@ -172,7 +172,7 @@ export default function MacroCalendar() {
               </div>
               <div className="flex-1 space-y-1">
                 {day.events.map((event, i) => (
-                  <div key={i} className="flex items-center gap-2">
+                  <div key={i} className="flex items-center gap-2.5">
                     <span className="w-4 h-4 rounded bg-elevated/20 flex items-center justify-center text-txt-secondary"><EventIcon type={eventIcon(event)} /></span>
                     <span className="text-[11px] text-txt-secondary leading-tight">{event}</span>
                     <div

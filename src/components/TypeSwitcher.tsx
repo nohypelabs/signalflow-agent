@@ -62,7 +62,7 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
       <button
         onClick={() => setOpen(!open)}
         className={`
-          flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all
+          flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all leading-none
           ${current
             ? "border-border-strong bg-card hover:bg-elevated"
             : "border-border-default bg-card/50 hover:bg-card text-txt-dim"
@@ -72,7 +72,7 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
       >
         {current ? (
           <>
-            <span className="text-sm text-txt-secondary"><TradingTypeIcon type={current.id} size={13} /></span>
+            <span className="w-4 h-4 inline-flex items-center justify-center text-txt-secondary"><TradingTypeIcon type={current.id} size={12} /></span>
             {!compact && (
               <>
                 <span className="text-xs font-semibold" style={{ color: current.color }}>
@@ -130,11 +130,11 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
                   }
                 `}
               >
-                <span className="text-txt-secondary w-5 h-5 rounded bg-elevated/30 border border-border-default flex items-center justify-center shrink-0">
+                <span className="text-txt-secondary w-5 h-5 rounded bg-elevated/30 border border-border-default inline-flex items-center justify-center shrink-0">
                   <TradingTypeIcon type={config.id} size={11} />
                 </span>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <span
                       className="text-xs font-semibold"
                       style={{ color: config.color }}
@@ -171,7 +171,7 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
               <span className="text-txt-secondary w-5 h-5 rounded bg-elevated/30 border border-border-default flex items-center justify-center shrink-0">
                 <DataSourceIcon size={11} />
               </span>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <span className="text-xs font-semibold text-txt-secondary">All Types</span>
                 <p className="text-[10px] text-txt-faint">Show all signals unfiltered</p>
               </div>

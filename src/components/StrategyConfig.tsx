@@ -184,14 +184,14 @@ export default function StrategyConfig() {
               return (
                 <div key={d.key}>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-txt-secondary inline-flex"><DimIcon icon={d.icon} /></span>
+                    <span className="w-4 h-4 inline-flex items-center justify-center text-txt-secondary"><DimIcon icon={d.icon} /></span>
                     <span className="text-xs font-semibold w-20 shrink-0" style={{ color: d.color }}>{d.label}</span>
                     <div className="flex-1">
                       <ProgressBar value={liveScore ?? 0} color={d.color} height="sm" />
                     </div>
                     <span className="text-[10px] text-txt-dim w-8 text-right font-mono">{liveScore ?? "—"}%</span>
                   </div>
-                  <div className="flex items-center gap-2 ml-7">
+                  <div className="flex items-center gap-2 ml-6">
                     <input
                       type="range" min="0" max="50" value={config[d.key]}
                       onChange={(e) => update(d.key, Number(e.target.value))}
@@ -203,7 +203,7 @@ export default function StrategyConfig() {
                     </span>
                   </div>
                   {liveDetail && (
-                    <p className="text-[9px] text-txt-faint ml-7 mt-0.5 truncate">{liveDetail}</p>
+                    <p className="text-[9px] text-txt-faint ml-6 mt-0.5 truncate">{liveDetail}</p>
                   )}
                 </div>
               );

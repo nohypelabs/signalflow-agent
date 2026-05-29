@@ -140,11 +140,11 @@ export default function DataSources() {
             <Card key={g.name} padding="none" className="overflow-hidden hover:border-border-muted transition-colors">
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <span className="w-5 h-5 rounded bg-elevated/30 border border-border-default flex items-center justify-center text-txt-secondary">
                       {g.name === "SoDEX" ? <ActivityIcon size={12} /> : g.name === "AI Model" || g.name === aiProvider?.name ? <DataSourceIcon size={12} /> : <BarChartIcon size={12} />}
                     </span>
-                    <span className="text-sm font-semibold text-txt-primary">{g.name}</span>
+                    <span className="text-sm font-semibold text-txt-primary truncate">{g.name}</span>
                   </div>
                   <Badge variant={g.status === "live" ? "live" : g.status === "degraded" ? "warning" : g.status === "offline" ? "error" : "muted"} size="sm">
                     {cfg.label}
