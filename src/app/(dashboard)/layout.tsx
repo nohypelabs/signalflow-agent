@@ -43,7 +43,6 @@ function ShellWithProps({ children }: { children: React.ReactNode }) {
           : null
       }
       fullScreen={isFullScreen}
-      hideHeader={isDashboard}
     >
       {children}
     </AppShell>

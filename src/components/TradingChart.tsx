@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { createChart, ColorType, CrosshairMode, createSeriesMarkers, CandlestickSeries, HistogramSeries, LineSeries } from "lightweight-charts";
+import { createChart, ColorType, CrosshairMode, createSeriesMarkers, CandlestickSeries, HistogramSeries, LineSeries, AreaSeries } from "lightweight-charts";
 import type {
   IChartApi,
   ISeriesApi,
@@ -12,6 +12,7 @@ import type {
   MouseEventParams,
   LineStyle,
   ISeriesMarkersPluginApi,
+  AreaData,
 } from "lightweight-charts";
 import type { SoDEXKline, SoDEXTicker } from "@/lib/types/trade";
 import type { Signal } from "@/lib/types/signal";
@@ -155,6 +156,7 @@ export default function TradingChart({
   const candleRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const volumeRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const lineSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const areaSeriesRef = useRef<ISeriesApi<"Area"> | null>(null);
   const markerLinesRef = useRef<IPriceLine[]>([]);
   const markersPluginRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
 
@@ -176,7 +178,7 @@ export default function TradingChart({
   } | null>(null);
 
   // Chart display toggles
-  const [chartType, setChartType] = useState<"candles" | "line">("candles");
+  const [chartType, setChartType] = useState<"area" | "candles" | "line">("area");
   const [chartEngine, setChartEngine] = useState<"native" | "tradingview">("native");
   const [fullscreen, setFullscreen] = useState(false);
   const [showTfDropdown, setShowTfDropdown] = useState(false);
@@ -350,9 +352,25 @@ export default function TradingChart({
       crosshairMarkerBackgroundColor: "#00E5A8",
       lastValueVisible: false,
       priceLineVisible: false,
-      visible: false, // hidden by default (candles mode)
+      visible: false,
     });
     lineSeriesRef.current = lineSeries;
+
+    // Area series (default "Area" chart mode)
+    const areaSeries = chart.addSeries(AreaSeries, {
+      lineColor: "#00E5A8",
+      lineWidth: 2,
+      topColor: "rgba(0, 229, 168, 0.25)",
+      bottomColor: "rgba(0, 229, 168, 0.02)",
+      crosshairMarkerVisible: true,
+      crosshairMarkerRadius: 4,
+      crosshairMarkerBackgroundColor: "#00E5A8",
+      crosshairMarkerBorderColor: "#0B1020",
+      lastValueVisible: false,
+      priceLineVisible: false,
+      visible: true, // visible by default (area mode)
+    });
+    areaSeriesRef.current = areaSeries;
 
     // Crosshair handler
     chart.subscribeCrosshairMove((param: MouseEventParams<Time>) => {
@@ -380,6 +398,7 @@ export default function TradingChart({
       candleRef.current = null;
       volumeRef.current = null;
       lineSeriesRef.current = null;
+      areaSeriesRef.current = null;
       markersPluginRef.current = null;
     };
   }, []);
@@ -396,19 +415,27 @@ export default function TradingChart({
     candleRef.current.setData(sortedCandles);
 
     // Line series data (close prices)
+    const lineData = klines.map((k) => ({
+      time: (k.t / 1000) as Time,
+      value: parseFloat(k.c),
+    }));
+    const sortedLineData = [...lineData].sort((a, b) => (a.time as number) - (b.time as number));
     if (lineSeriesRef.current) {
-      const lineData = klines.map((k) => ({
-        time: (k.t / 1000) as Time,
-        value: parseFloat(k.c),
-      }));
-      const sortedLineData = [...lineData].sort((a, b) => (a.time as number) - (b.time as number));
       lineSeriesRef.current.setData(sortedLineData);
     }
 
-    // Candle vs Line mode toggle
+    // Area series data (close prices, same as line)
+    if (areaSeriesRef.current) {
+      areaSeriesRef.current.setData(sortedLineData as AreaData<Time>[]);
+    }
+
+    // Chart type visibility toggle
     candleRef.current.applyOptions({ visible: chartType === "candles" });
     if (lineSeriesRef.current) {
       lineSeriesRef.current.applyOptions({ visible: chartType === "line" });
+    }
+    if (areaSeriesRef.current) {
+      areaSeriesRef.current.applyOptions({ visible: chartType === "area" });
     }
 
     // Volume visibility
@@ -526,315 +553,205 @@ export default function TradingChart({
       ? "fixed inset-0 z-40 bg-background p-2 flex flex-col"
       : "h-full w-full flex flex-col min-w-0 bg-card border border-border-default rounded-lg overflow-hidden"
     }>
-      {/* Header */}
-      <div className={`px-4 ${compact ? "pt-3 pb-2" : "pt-3 pb-2.5"} flex flex-col gap-2 shrink-0 border-b border-border-default`}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+      {/* Header — 2 rows */}
+      <div className="px-3 pt-2.5 pb-2 flex flex-col gap-1.5 shrink-0 border-b border-border-default">
+        {/* Row 1: Pair + Price + Signal */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
             <button
               onClick={() => setShowModal(true)}
-              className="group flex items-center gap-2.5 min-w-0 rounded-lg border border-border-default bg-inset/40 px-2.5 py-1.5 text-txt-primary hover:border-border-muted hover:bg-elevated/25 transition-colors cursor-pointer"
+              className="group flex items-center gap-2 min-w-0 rounded-lg border border-border-default bg-inset/40 px-2 py-1 text-txt-primary hover:border-border-muted hover:bg-elevated/25 transition-colors cursor-pointer"
             >
               <div className="relative shrink-0">
-                {/* Dynamic external crypto icons are intentionally rendered as plain images. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${pair.split("/")[0].toLowerCase()}.svg`}
                   alt={pair.split("/")[0]}
-                  width={compact ? 22 : 26}
-                  height={compact ? 22 : 26}
+                  width={20}
+                  height={20}
                   className="rounded-full"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                 />
                 {dataAge !== null && dataAge < 120_000 && (
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-buy border-2 border-card" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-buy border-[1.5px] border-card" />
                 )}
               </div>
-              <span className={`${compact ? "text-[13px]" : "text-[15px]"} font-bold font-mono tracking-tight truncate`}>{pair}</span>
-              {!compact && (
-                <span className="text-[9px] font-mono text-txt-faint border-l border-border-default pl-2">
-                  {["BTC", "ETH", "SOL"].includes(pair.split("/")[0].toUpperCase()) ? "20x" : "5x"} Max
-                </span>
-              )}
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-txt-faint group-hover:text-txt-secondary transition-colors shrink-0"><path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <span className="text-[13px] font-bold font-mono tracking-tight truncate">{pair}</span>
+              <span className="text-[9px] font-mono text-white/50">
+                {["BTC", "ETH", "SOL"].includes(pair.split("/")[0].toUpperCase()) ? "20x" : "5x"}
+              </span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className="text-txt-faint group-hover:text-txt-secondary transition-colors shrink-0"><path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </button>
 
             {displayPrice != null && (
-              <div className="flex items-baseline gap-2 min-w-0">
-                <span className={`${compact ? "text-lg" : "text-xl"} font-semibold font-mono text-txt-primary tabular-nums leading-none`}>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-[15px] font-semibold font-mono text-txt-primary tabular-nums leading-none">
                   {fmtPrice(displayPrice)}
                 </span>
-                <span className={`text-xs font-semibold font-mono tabular-nums ${displayChange !== undefined && displayChange >= 0 ? "text-buy" : "text-sell"}`}>
+                <span className={`text-[11px] font-semibold font-mono tabular-nums ${displayChange !== undefined && displayChange >= 0 ? "text-buy" : "text-sell"}`}>
                   {displayChange !== undefined ? `${displayChange >= 0 ? "+" : ""}${displayChange.toFixed(2)}%` : "—"}
                 </span>
               </div>
             )}
+
+            {dataAge !== null && dataAge < 120_000 && (
+              <span className="text-[9px] text-buy flex items-center gap-1 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-buy animate-pulse" />
+                LIVE
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {dataAge !== null && dataAge < 120_000 && (
-              <span className="text-[9px] text-txt-faint flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-buy animate-pulse" />
-                Live
-              </span>
-            )}
             {tradeMode && onModeChange && (
-              <div className="flex items-center gap-0.5 bg-inset rounded-lg p-0.5 border border-border-default">
-                <button onClick={() => onModeChange("paper")} className={`text-[9px] px-2 py-1 rounded-md cursor-pointer font-semibold transition-colors ${tradeMode === "paper" ? "bg-accent/15 text-accent border border-accent/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Paper</button>
-                <button onClick={() => onModeChange("live")} className={`text-[9px] px-2 py-1 rounded-md cursor-pointer font-semibold transition-colors ${tradeMode === "live" ? "bg-sell/15 text-sell border border-sell/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Live</button>
-              </div>
-            )}
-            {compact && (
-              <div className="relative">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowCompactControls((v) => !v);
-                    setShowTfDropdown(false);
-                  }}
-                  className="text-[10px] px-2 py-1 rounded-md border border-border-default text-txt-dim hover:text-txt-secondary hover:bg-elevated/40 transition-colors"
-                  title="Chart controls"
-                >
-                  Display
-                </button>
-                {showCompactControls && (
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    className="absolute right-0 top-full mt-1.5 z-30 bg-card border border-border-muted rounded-lg p-2 min-w-[180px]"
-                  >
-                    <div className="text-[9px] text-txt-muted uppercase tracking-wider px-1 pb-1.5 border-b border-border-default">Chart Display</div>
-                    <div className="mt-2 space-y-1.5">
-                      <button
-                        onClick={() => setChartEngine((v) => (v === "native" ? "tradingview" : "native"))}
-                        className="w-full flex items-center justify-between text-[10px] px-2 py-1 rounded-md hover:bg-elevated/40 transition-colors text-txt-secondary"
-                      >
-                        <span>Engine</span>
-                        <span className="text-txt-primary font-medium">{chartEngine === "native" ? "SignalFlow" : "TradingView"}</span>
-                      </button>
-                      <button
-                        onClick={() => setShowSignals((v) => !v)}
-                        className="w-full flex items-center justify-between text-[10px] px-2 py-1 rounded-md hover:bg-elevated/40 transition-colors text-txt-secondary"
-                      >
-                        <span>Signals</span>
-                        <span className={showSignals ? "text-accent font-medium" : "text-txt-faint"}>{showSignals ? "On" : "Off"}</span>
-                      </button>
-                      <button
-                        onClick={() => setShowTradePlan((v) => !v)}
-                        className="w-full flex items-center justify-between text-[10px] px-2 py-1 rounded-md hover:bg-elevated/40 transition-colors text-txt-secondary"
-                      >
-                        <span>Trade Plan</span>
-                        <span className={showTradePlan ? "text-accent font-medium" : "text-txt-faint"}>{showTradePlan ? "On" : "Off"}</span>
-                      </button>
-                      <button
-                        onClick={() => setShowVolume((v) => !v)}
-                        className="w-full flex items-center justify-between text-[10px] px-2 py-1 rounded-md hover:bg-elevated/40 transition-colors text-txt-secondary"
-                      >
-                        <span>Volume</span>
-                        <span className={showVolume ? "text-accent font-medium" : "text-txt-faint"}>{showVolume ? "On" : "Off"}</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
+              <div className="flex items-center gap-0.5 bg-inset rounded-md p-0.5 border border-border-default">
+                <button onClick={() => onModeChange("paper")} className={`text-[9px] px-1.5 py-0.5 rounded cursor-pointer font-semibold transition-colors ${tradeMode === "paper" ? "bg-accent/15 text-accent border border-accent/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Paper</button>
+                <button onClick={() => onModeChange("live")} className={`text-[9px] px-1.5 py-0.5 rounded cursor-pointer font-semibold transition-colors ${tradeMode === "live" ? "bg-sell/15 text-sell border border-sell/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Live</button>
               </div>
             )}
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px]">
-          {latestSignal ? (
-            <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md font-bold uppercase tracking-wider leading-none border ${
-              latestSignal.action === "LONG"
-                ? "bg-buy/10 text-buy border-buy/20"
-                : latestSignal.action === "SHORT"
-                  ? "bg-sell/10 text-sell border-sell/20"
-                  : "bg-hold/10 text-hold border-hold/20"
-            }`}>
-              <span>{latestSignal.action === "HOLD" ? "NO TRADE" : latestSignal.action}</span>
-              <span className="opacity-65">{latestSignal.confidence}%</span>
-            </span>
-          ) : (
-            <span className="text-txt-faint">No active signal</span>
-          )}
-          {displayPrice != null && currentTicker && (
-            <>
-              <span className="text-txt-dim">Mark <span className="text-txt-secondary font-mono">{fmtPrice(displayPrice)}</span></span>
-              <span className="text-txt-dim">Vol <span className="text-txt-secondary font-mono">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span></span>
-              <span className="hidden md:inline text-txt-dim">Oracle <span className="text-txt-secondary font-mono">{fmtPrice(displayPrice * 1.0001)}</span></span>
-            </>
-          )}
-        </div>
-
-        {/* Row 2: Timeframe dropdown + favorites + toggles */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            {/* Favorite TF quick buttons */}
-            {favTfs.map((t) => (
+        {/* Row 2: TF + Chart Type + Market Info + Controls */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1">
+            {/* TF inline buttons */}
+            {(Object.keys(TF_CONFIG) as Timeframe[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTf(t)}
-                className={`text-[10px] font-medium px-2.5 py-1 rounded transition-all cursor-pointer tracking-wide ${
+                className={`text-[10px] font-mono font-medium px-2 py-0.5 rounded transition-all cursor-pointer ${
                   tf === t
-                    ? "text-txt-primary bg-elevated shadow-sm border border-border-default"
-                    : "text-txt-dim hover:text-txt-secondary hover:bg-inset/60 border border-transparent"
+                    ? "text-accent bg-accent/12 border border-accent/25"
+                    : "text-txt-dim hover:text-txt-secondary hover:bg-elevated/30 border border-transparent"
                 }`}
               >
-                {t}
+                {t.toUpperCase()}
               </button>
             ))}
-            {/* TF dropdown */}
-            <div className="relative">
-              <button
-                onClick={(e) => { e.stopPropagation(); setShowTfDropdown(!showTfDropdown); setShowCompactControls(false); }}
-                className="text-[10px] font-medium px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-txt-dim hover:text-txt-secondary border border-border-default flex items-center gap-1 hover:bg-elevated/30 hover:border-border-muted"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-              </button>
-              {showTfDropdown && (
-                <div className="absolute left-0 top-full mt-1.5 z-30 bg-card border border-border-muted rounded-xl overflow-hidden min-w-[180px]" onClick={(e) => e.stopPropagation()}>
-                  <div className="px-3 py-2 border-b border-border-default bg-inset/30">
-                    <span className="text-[9px] text-txt-muted font-medium uppercase tracking-wider">Timeframe</span>
-                  </div>
-                  {(Object.keys(TF_CONFIG) as Timeframe[]).map((t, i) => (
-                    <div key={t} className={`flex items-center justify-between transition-colors ${i < Object.keys(TF_CONFIG).length - 1 ? "border-b border-border-default/30" : ""}`}>
-                      <button
-                        onClick={() => { setTf(t); setShowTfDropdown(false); }}
-                        className={`flex-1 flex items-center gap-2 text-left px-3 py-2.5 text-[12px] font-mono cursor-pointer transition-colors ${
-                          tf === t ? "text-accent bg-accent/8 font-semibold" : "text-txt-secondary hover:text-txt-primary hover:bg-elevated/30"
-                        }`}
-                      >
-                        {tf === t && <span className="w-1.5 h-1.5 rounded-full bg-accent" />}
-                        <span>{t}</span>
-                        {favTfs.includes(t) && <span className="text-hold text-[8px] ml-auto">Fav</span>}
-                      </button>
-                      <button
-                        onClick={() => toggleFavTf(t)}
-                        className={`px-3 py-2.5 cursor-pointer transition-all hover:scale-110 ${favTfs.includes(t) ? "text-hold" : "text-txt-faint/30 hover:text-hold/60"}`}
-                        title={favTfs.includes(t) ? "Remove from favorites" : "Add to favorites"}
-                      >
-                        {favTfs.includes(t) ? (
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--color-hold)" stroke="var(--color-hold)" strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-                        ) : (
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="opacity-30"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-                        )}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
             {loading && (
-              <span className="ml-1 text-[10px] text-accent animate-pulse">loading</span>
+              <span className="ml-1 text-[9px] text-accent animate-pulse">loading</span>
             )}
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Candles | Line toggle */}
-            <div className="flex items-center bg-inset rounded border border-border-default overflow-hidden">
-              <button
-                onClick={() => setChartType("candles")}
-                className={`text-[9px] px-2 py-0.5 transition-all cursor-pointer ${
-                  chartType === "candles" ? "text-accent bg-elevated" : "text-txt-dim hover:text-txt-secondary"
-                }`}
-              >
-                Candles
-              </button>
-              <div className="w-px h-3 bg-border-default" />
-              <button
-                onClick={() => setChartType("line")}
-                className={`text-[9px] px-2 py-0.5 transition-all cursor-pointer ${
-                  chartType === "line" ? "text-accent bg-elevated" : "text-txt-dim hover:text-txt-secondary"
-                }`}
-              >
-                Line
-              </button>
-            </div>
-
-            {!compact && (
-              <>
-                {/* Chart engine toggle */}
-                <div className="flex items-center bg-inset rounded-lg border border-border-default overflow-hidden">
-                  <button
-                    onClick={() => setChartEngine("native")}
-                    className={`text-[10px] px-3 py-1.5 transition-all cursor-pointer font-medium ${
-                      chartEngine === "native" ? "text-accent bg-accent/12 border-r border-accent/15" : "text-txt-dim hover:text-txt-secondary border-r border-border-default"
-                    }`}
-                  >
-                    SignalFlow
-                  </button>
-                  <button
-                    onClick={() => setChartEngine("tradingview")}
-                    className={`text-[10px] px-3 py-1.5 transition-all cursor-pointer font-medium ${
-                      chartEngine === "tradingview" ? "text-accent bg-accent/12" : "text-txt-dim hover:text-txt-secondary"
-                    }`}
-                  >
-                    TradingView
-                  </button>
-                </div>
-
-                {/* Separator */}
-                <div className="w-px h-3 bg-border-default" />
-
-                {/* Signals toggle */}
-                <button
-                  onClick={() => setShowSignals((v) => !v)}
-                  className={`text-[9px] px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                    showSignals ? "text-accent bg-accent/10" : "text-txt-faint hover:text-txt-dim"
-                  }`}
-                >
-                  Signals {showSignals ? "On" : "Off"}
-                </button>
-
-                {/* Trade Plan toggle */}
-                <button
-                  onClick={() => setShowTradePlan((v) => !v)}
-                  className={`text-[9px] px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                    showTradePlan ? "text-accent bg-accent/10" : "text-txt-faint hover:text-txt-dim"
-                  }`}
-                >
-                  Trade Plan {showTradePlan ? "On" : "Off"}
-                </button>
-              </>
+            {/* Market info compact */}
+            {displayPrice != null && currentTicker && (
+              <div className="hidden md:flex items-center gap-2.5 text-[10px] font-mono text-txt-muted">
+                <span>M <span className="text-txt-secondary">{fmtPrice(displayPrice)}</span></span>
+                <span>V <span className="text-txt-secondary">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span></span>
+              </div>
             )}
+
+            {/* Trade plan compact */}
+            {showTradePlan && latestSignal?.execution && !compact && (
+              <div className="hidden lg:flex items-center gap-2 text-[9px] font-mono text-txt-faint">
+                <span>E <span className="text-accent">{fmtPrice(latestSignal.execution.entry)}</span></span>
+                <span>TP <span className="text-buy">{fmtPrice(latestSignal.execution.takeProfit)}</span></span>
+                <span>SL <span className="text-sell">{fmtPrice(latestSignal.execution.stopLoss)}</span></span>
+              </div>
+            )}
+
+            <div className="w-px h-4 bg-border-default" />
+
+            {/* Chart type toggle */}
+            <div className="flex items-center bg-inset rounded-md border border-border-default overflow-hidden">
+              {(["area", "candles", "line"] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setChartType(type)}
+                  className={`text-[10px] px-2 py-0.5 transition-all cursor-pointer font-medium capitalize ${
+                    chartType === type ? "text-accent bg-elevated" : "text-txt-dim hover:text-txt-secondary"
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
 
             {/* Volume toggle */}
             <button
               onClick={() => setShowVolume((v) => !v)}
-              className={`text-[9px] px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+              className={`text-[9px] px-1.5 py-0.5 rounded transition-all cursor-pointer font-medium ${
                 showVolume ? "text-accent bg-accent/10" : "text-txt-faint hover:text-txt-dim"
               }`}
             >
-              Volume {showVolume ? "On" : "Off"}
+              Vol
             </button>
 
-            {!compact && <div className="w-px h-3 bg-border-default" />}
+            {/* Controls dropdown (⋯) */}
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCompactControls((v) => !v);
+                  setShowTfDropdown(false);
+                }}
+                className="flex items-center justify-center w-6 h-6 rounded-md border border-border-default text-txt-dim hover:text-txt-secondary hover:bg-elevated/40 transition-colors cursor-pointer"
+                title="Chart settings"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg>
+              </button>
+              {showCompactControls && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-0 top-full mt-1.5 z-30 bg-card border border-border-muted rounded-xl overflow-hidden min-w-[180px] shadow-2xl shadow-black/50"
+                >
+                  <div className="px-3 py-2 border-b border-border-default bg-inset/30">
+                    <span className="text-[9px] text-txt-muted font-semibold uppercase tracking-wider">Chart Settings</span>
+                  </div>
+                  <div className="p-1">
+                    <button
+                      onClick={() => setChartEngine((v) => (v === "native" ? "tradingview" : "native"))}
+                      className="w-full flex items-center justify-between text-[11px] px-3 py-2 rounded-lg hover:bg-elevated/40 transition-colors text-txt-secondary"
+                    >
+                      <span>Engine</span>
+                      <span className="text-txt-primary font-semibold text-[10px]">{chartEngine === "native" ? "SignalFlow" : "TradingView"}</span>
+                    </button>
+                    <button
+                      onClick={() => setShowSignals((v) => !v)}
+                      className="w-full flex items-center justify-between text-[11px] px-3 py-2 rounded-lg hover:bg-elevated/40 transition-colors text-txt-secondary"
+                    >
+                      <span>Signals</span>
+                      <span className={showSignals ? "text-accent font-semibold text-[10px]" : "text-txt-faint text-[10px]"}>{showSignals ? "On" : "Off"}</span>
+                    </button>
+                    <button
+                      onClick={() => setShowTradePlan((v) => !v)}
+                      className="w-full flex items-center justify-between text-[11px] px-3 py-2 rounded-lg hover:bg-elevated/40 transition-colors text-txt-secondary"
+                    >
+                      <span>Trade Plan</span>
+                      <span className={showTradePlan ? "text-accent font-semibold text-[10px]" : "text-txt-faint text-[10px]"}>{showTradePlan ? "On" : "Off"}</span>
+                    </button>
+                    <button
+                      onClick={() => setChartEngine((v) => (v === "native" ? "tradingview" : "native"))}
+                      className="w-full flex items-center justify-between text-[11px] px-3 py-2 rounded-lg hover:bg-elevated/40 transition-colors text-txt-secondary"
+                    >
+                      <span>Chart Engine</span>
+                      <span className="text-txt-primary font-semibold text-[10px]">{chartEngine === "native" ? "Native" : "TV"}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Fullscreen toggle */}
             <button
               onClick={() => setFullscreen((v) => !v)}
-              className="text-[9px] px-1.5 py-0.5 rounded transition-all cursor-pointer text-txt-faint hover:text-txt-secondary hover:bg-elevated/40"
+              className="flex items-center justify-center w-6 h-6 rounded-md text-txt-faint hover:text-txt-secondary hover:bg-elevated/40 transition-colors cursor-pointer"
               title={fullscreen ? "Exit fullscreen (Esc)" : "Fullscreen"}
             >
               {fullscreen ? (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M8 3v3a2 2 0 01-2 2H3M21 8h-3a2 2 0 01-2-2V3M3 16h3a2 2 0 012 2v3M16 21v-3a2 2 0 012-2h3" />
                 </svg>
               ) : (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M8 3H5a2 2 0 00-2 2v3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M16 21h3a2 2 0 002-2v-3" />
                 </svg>
               )}
             </button>
           </div>
         </div>
-
-        {/* Row 4: Trade plan info (only when visible) */}
-        {showTradePlan && latestSignal?.execution && !compact && (
-          <div className="flex items-center gap-3 text-[9px] font-mono text-txt-faint">
-            <span>Entry <span className="text-accent">{fmtPrice(latestSignal.execution.entry)}</span></span>
-            <span>TP <span className="text-buy">{fmtPrice(latestSignal.execution.takeProfit)}</span></span>
-            <span>SL <span className="text-sell">{fmtPrice(latestSignal.execution.stopLoss)}</span></span>
-            <span>R:R <span className="text-txt-secondary">{latestSignal.execution.riskReward}</span></span>
-          </div>
-        )}
       </div>
 
       {/* Chart container */}
