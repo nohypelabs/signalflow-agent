@@ -890,15 +890,132 @@ function SignalAccuracyCard() {
   );
 }
 
+/* ── Stock/Index/Commodity avatar with logo.dev ── */
+
+const STOCK_NAMES: Record<string, string> = {
+  NVDA: "NVIDIA",
+  AAPL: "Apple",
+  MSFT: "Microsoft",
+  TSLA: "Tesla",
+  GOOGL: "Alphabet",
+  AMZN: "Amazon",
+  META: "Meta",
+  MSTR: "MicroStrategy",
+  COIN: "Coinbase",
+  HOOD: "Robinhood",
+};
+
+const INDEX_NAMES: Record<string, string> = {
+  MAG7SSI: "Magnificent 7",
+  MEMESSI: "Meme Index",
+  DEFISSI: "DeFi Index",
+  USSI: "US Index",
+  XYZ100: "XYZ 100",
+  SP500: "S&P 500",
+  NASDAQ: "NASDAQ",
+};
+
+const COMMODITY_NAMES: Record<string, string> = {
+  XAUT: "Tether Gold",
+  GOLD: "Gold",
+  SILVER: "Silver",
+  WTIOIL: "WTI Crude",
+  BRENTOIL: "Brent Crude",
+  XAU: "Gold Spot",
+};
+
+const STOCK_COLORS: Record<string, string> = {
+  NVDA: "#76B900",
+  AAPL: "#A2AAAD",
+  MSFT: "#00A4EF",
+  TSLA: "#CC0000",
+  GOOGL: "#4285F4",
+  AMZN: "#FF9900",
+  META: "#0668E1",
+  MSTR: "#F7931A",
+  COIN: "#0052FF",
+  HOOD: "#00C805",
+  MAG7SSI: "#8B5CF6",
+  MEMESSI: "#F472B6",
+  DEFISSI: "#00E5A8",
+  USSI: "#3B82F6",
+  XYZ100: "#EF4444",
+  SP500: "#F59E0B",
+  NASDAQ: "#10B981",
+  XAUT: "#FFD700",
+  GOLD: "#FFD700",
+  SILVER: "#C0C0C0",
+  WTIOIL: "#475569",
+  BRENTOIL: "#64748B",
+  XAU: "#FFD700",
+};
+
+function isStockOrIndex(symbol: string): boolean {
+  const upper = symbol.toUpperCase();
+  return upper in STOCK_NAMES || upper in INDEX_NAMES || upper in COMMODITY_NAMES;
+}
+
+function assetName(symbol: string): string {
+  const upper = symbol.toUpperCase();
+  return STOCK_NAMES[upper] || INDEX_NAMES[upper] || COMMODITY_NAMES[upper] || symbol;
+}
+
+function assetCategory(symbol: string): string {
+  const upper = symbol.toUpperCase();
+  if (upper in STOCK_NAMES) return "Stock";
+  if (upper in INDEX_NAMES) return "Index";
+  if (upper in COMMODITY_NAMES) return "Commodity";
+  return "";
+}
+
+function StockAvatar({ symbol, size = 32 }: { symbol: string; size?: number }) {
+  const [errored, setErrored] = useState(false);
+  const upper = symbol.toUpperCase();
+  const color = STOCK_COLORS[upper] || coinColor(upper);
+  const logoUrl = `https://img.logo.dev/${symbol.toLowerCase()}?token=pk_XsCjJOo5QdyV2M_6rV3pcQ&size=${size * 2}&retina=true`;
+
+  if (errored) {
+    return (
+      <span
+        className="inline-flex items-center justify-center rounded-lg shrink-0 font-bold"
+        style={{ width: size, height: size, backgroundColor: color + "22", color, fontSize: size * 0.35 }}
+      >
+        {symbol.slice(0, 2)}
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className="inline-flex items-center justify-center rounded-lg shrink-0 overflow-hidden"
+      style={{ width: size, height: size, backgroundColor: "#ffffff08" }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={logoUrl}
+        alt={symbol}
+        width={size}
+        height={size}
+        className="object-contain"
+        onError={() => setErrored(true)}
+      />
+    </span>
+  );
+}
+
 function IndexCard() {
   const d = useDashboard();
   const tickers = d.tickers ?? [];
 
-  const coins = [
-    { sym: "vBTC_vUSDC", label: "BTC", full: "Bitcoin" },
-    { sym: "vETH_vUSDC", label: "ETH", full: "Ethereum" },
-    { sym: "vSOL_vUSDC", label: "SOL", full: "Solana" },
-  ];
+  // Filter for stocks, indices, and commodities — exclude crypto (those are in Top Movers)
+  const assets = tickers
+    .map((t) => ({
+      symbol: t.symbol.replace(/^v/, "").replace(/_vUSDC$/, ""),
+      rawSymbol: t.symbol,
+      price: parseFloat(t.lastPx ?? "0"),
+      change: typeof t.changePct === "number" ? t.changePct : parseFloat(String(t.changePct ?? "0")),
+    }))
+    .filter((t) => t.price > 0 && isStockOrIndex(t.symbol));
 
   return (
     <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
@@ -906,50 +1023,52 @@ function IndexCard() {
         <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">
           <Layers size={12} className="text-accent" /> Index Prices
         </h3>
-        <span className="text-[9px] text-txt-dim font-mono">live</span>
+        <span className="text-[9px] text-txt-dim font-mono tabular-nums">{assets.length} assets</span>
       </div>
-      <div className="divide-y divide-border-default">
-        {coins.map(({ sym, label, full }) => {
-          const t = tickers.find((tk) => tk.symbol === sym);
-          const price = t ? parseFloat(t.lastPx) : null;
-          const change = t
-            ? typeof t.changePct === "number"
-              ? t.changePct
-              : parseFloat(String(t.changePct ?? "0"))
-            : 0;
+      <div className="divide-y divide-border-default max-h-[280px] overflow-y-auto scrollbar-none">
+        {assets.map(({ symbol, price, change }) => {
           const isPositive = change >= 0;
+          const category = assetCategory(symbol);
 
           return (
-            <div key={sym} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-elevated/20">
-              <CoinAvatar symbol={label} size={32} />
+            <div key={symbol} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-elevated/20">
+              <StockAvatar symbol={symbol} size={30} />
               <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-sm font-bold text-txt-primary">{label}</span>
-                  <span className="text-[10px] text-txt-dim">{full}</span>
-                </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="font-mono text-sm font-bold tabular-nums text-txt-primary">
-                    {price != null ? fmtUsd(price) : "—"}
-                  </span>
-                  {price != null && (
-                    <span
-                      className={cx(
-                        "inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold font-mono tabular-nums",
-                        isPositive
-                          ? "bg-buy-muted text-buy"
-                          : change < 0
-                            ? "bg-sell-muted text-sell"
-                            : "bg-elevated text-txt-muted"
-                      )}
-                    >
-                      {changeArrow(change)} {Math.abs(change).toFixed(2)}%
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-txt-primary">{symbol}</span>
+                  {category && (
+                    <span className="rounded bg-elevated px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-txt-dim">
+                      {category}
                     </span>
                   )}
                 </div>
+                <span className="text-[10px] text-txt-dim">{assetName(symbol)}</span>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="font-mono text-sm font-bold tabular-nums text-txt-primary block">
+                  {fmtUsd(price)}
+                </span>
+                <span
+                  className={cx(
+                    "inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold font-mono tabular-nums mt-0.5",
+                    isPositive
+                      ? "bg-buy-muted text-buy"
+                      : change < 0
+                        ? "bg-sell-muted text-sell"
+                        : "bg-elevated text-txt-muted"
+                  )}
+                >
+                  {changeArrow(change)} {Math.abs(change).toFixed(2)}%
+                </span>
               </div>
             </div>
           );
         })}
+        {assets.length === 0 && (
+          <div className="flex items-center justify-center py-8">
+            <span className="text-[10px] text-txt-muted">No index data available</span>
+          </div>
+        )}
       </div>
     </Card>
   );
