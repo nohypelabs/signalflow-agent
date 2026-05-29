@@ -9,7 +9,6 @@ import {
   TradeIcon,
   HistoryIcon,
   StrategyIcon,
-  DataSourceIcon,
   PerformanceIcon,
   SettingsIcon,
   DocsIcon,
@@ -41,7 +40,6 @@ const groups = [
   {
     label: "System",
     items: [
-      { href: "/data-sources", label: "Data Sources", Icon: DataSourceIcon },
       { href: "/settings", label: "Settings", Icon: SettingsIcon },
       { href: "/docs", label: "Docs", Icon: DocsIcon },
     ],

@@ -1,12 +1,5 @@
-import type { ModuleStatus } from "../types/datasource";
 import type { SoDEXTicker, SoDEXKline } from "../types/trade";
 import type { CoinPerf } from "../types/datasource";
-
-export async function fetchSources(): Promise<{ modules: ModuleStatus[] }> {
-  const res = await fetch("/api/sources", { cache: "no-store" });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
 
 export async function fetchStatus(): Promise<{
   services: { name: string; status: "connected" | "error" | "no_key"; detail: string; latencyMs: number }[];

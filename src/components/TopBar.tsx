@@ -10,7 +10,6 @@ import {
   ActivityIcon,
   ChartIcon,
   ChevronDownIcon,
-  DataSourceIcon,
   DocsIcon,
   HistoryIcon,
   HomeIcon,
@@ -45,7 +44,6 @@ const navGroups = {
 };
 
 const systemItems = [
-  { href: "/data-sources", label: "Data Sources", Icon: DataSourceIcon, description: "API module status & health" },
   { href: "/settings", label: "Settings", Icon: SettingsIcon, description: "Preferences & configuration" },
   { href: "/docs", label: "Docs", Icon: DocsIcon, description: "In-app documentation" },
 ];

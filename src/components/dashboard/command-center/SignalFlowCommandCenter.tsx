@@ -371,9 +371,6 @@ function NewsFeed() {
             <span className="text-[11px] text-txt-tertiary text-center px-4">SoSoValue monthly limit reached. Resumes after quota reset.</span>
           </div>
         )}
-        <a href="/data-sources" className="flex w-full items-center justify-between px-4 py-3 text-xs font-medium text-accent hover:bg-accent-muted/30 transition-colors">
-          View All Sources <span className="text-sm">›</span>
-        </a>
       </div>
     </Panel>
   );

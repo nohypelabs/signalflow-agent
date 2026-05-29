@@ -8,13 +8,13 @@ export async function GET(req: Request) {
   const page = parseInt(url.searchParams.get("page") || "1", 10);
   const pageSize = parseInt(url.searchParams.get("pageSize") || "30", 10);
 
-  const hotNews = await getNewsHot(page, pageSize).catch(() => ({
-    list: [] as NewsItem[],
-    page: 1,
-    page_size: 20,
-    total: 0,
-  }));
+  let apiError: string | null = null;
+  const hotNews = await getNewsHot(page, pageSize).catch((err) => {
+    apiError = err?.message || "API request failed";
+    return { list: [] as NewsItem[], page: 1, page_size: 20, total: 0 };
+  });
   const list = hotNews.list ?? [];
+
 
   // Sentiment analysis
   const bullish = list.filter((n: NewsItem) => {
@@ -73,6 +73,7 @@ export async function GET(req: Request) {
     page,
     pageSize,
     total: hotNews.total ?? 0,
+    error: apiError,
     sentiment: {
       bullish,
       bearish,
