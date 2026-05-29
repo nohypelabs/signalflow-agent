@@ -100,7 +100,7 @@ export default function AIReasoning({ signal, liveDims, tickerMap }: Props) {
           <Badge variant="accent" size="sm">
             {livePrice !== null ? "SoDEX Live" : hasLive ? "SoSoValue" : "AI Generated"}
           </Badge>
-          <span className="text-[10px] text-txt-dim">{signal.timeAgo}</span>
+          <span className="text-[10px] text-txt-secondary">{signal.timeAgo}</span>
         </div>
       </div>
 
@@ -108,16 +108,16 @@ export default function AIReasoning({ signal, liveDims, tickerMap }: Props) {
         {/* Left: Thesis + Dimensions */}
         <div className="space-y-4">
           <div>
-            <p className="text-[10px] text-txt-muted uppercase tracking-wider mb-1.5">Signal Thesis</p>
+            <p className="text-[10px] text-txt-primary uppercase tracking-wider mb-1.5">Signal Thesis</p>
             <Card variant="inset" padding="md" className="border-l-2" style={{ borderLeftColor: accent }}>
-              <p className="text-sm text-txt-secondary leading-relaxed">
+              <p className="text-sm text-txt-primary leading-relaxed">
                 &ldquo;{signal.reasoning}&rdquo;
               </p>
             </Card>
           </div>
 
           <div>
-            <p className="text-[10px] text-txt-muted uppercase tracking-wider mb-2">
+            <p className="text-[10px] text-txt-primary uppercase tracking-wider mb-2">
               {hasLive ? "Live Dimensions (SoSoValue)" : "Signal Dimensions"}
             </p>
             <div className="flex flex-col gap-2.5">
@@ -137,7 +137,7 @@ export default function AIReasoning({ signal, liveDims, tickerMap }: Props) {
                       showValue
                     />
                     {detail && (
-                      <p className="text-[10px] text-txt-dim mt-0.5 ml-[5.5rem] leading-relaxed">
+                      <p className="text-[10px] text-txt-secondary mt-0.5 ml-[5.5rem] leading-relaxed">
                         {detail}
                       </p>
                     )}
@@ -151,7 +151,7 @@ export default function AIReasoning({ signal, liveDims, tickerMap }: Props) {
         {/* Right: Execution Plan */}
         <div className="space-y-4">
           <div>
-            <p className="text-[10px] text-txt-muted uppercase tracking-wider mb-2">Trade Execution Plan</p>
+            <p className="text-[10px] text-txt-primary uppercase tracking-wider mb-2">Trade Execution Plan</p>
             <div className="grid grid-cols-2 gap-2">
               {[
                 { label: "Order Type", value: signal.execution.orderType, color: "text-accent" },
@@ -174,7 +174,7 @@ export default function AIReasoning({ signal, liveDims, tickerMap }: Props) {
                 { label: "Risk/Reward", value: signal.execution.riskReward, color: "text-buy" },
               ].map((item) => (
                 <Card key={item.label} variant="inset" padding="sm">
-                  <p className="text-[10px] text-txt-muted">{item.label}</p>
+                  <p className="text-[10px] text-txt-primary">{item.label}</p>
                   <p className={`text-xs font-semibold mt-0.5 font-mono ${item.color}`}>
                     {item.value}
                   </p>
@@ -186,11 +186,11 @@ export default function AIReasoning({ signal, liveDims, tickerMap }: Props) {
           {/* Risk meter */}
           {stopLoss > 0 && entry > 0 && (
             <div>
-              <p className="text-[10px] text-txt-muted uppercase tracking-wider mb-1.5">Risk Assessment</p>
+              <p className="text-[10px] text-txt-primary uppercase tracking-wider mb-1.5">Risk Assessment</p>
               <Card variant="inset" padding="sm">
                 <div className="flex items-center gap-3">
                   <div className="flex-1">
-                    <div className="flex justify-between text-[10px] text-txt-muted mb-1">
+                    <div className="flex justify-between text-[10px] text-txt-primary mb-1">
                       <span>Entry → Stop Loss</span>
                       <span className="text-sell font-semibold">
                         -{((Math.abs(entry - stopLoss) / entry) * 100).toFixed(1)}%
@@ -204,7 +204,7 @@ export default function AIReasoning({ signal, liveDims, tickerMap }: Props) {
                     </div>
                   </div>
                   <div className="flex-1">
-                    <div className="flex justify-between text-[10px] text-txt-muted mb-1">
+                    <div className="flex justify-between text-[10px] text-txt-primary mb-1">
                       <span>Entry → Take Profit</span>
                       <span className="text-buy font-semibold">
                         +{((Math.abs(takeProfit - entry) / entry) * 100).toFixed(1)}%
@@ -224,7 +224,7 @@ export default function AIReasoning({ signal, liveDims, tickerMap }: Props) {
 
           {/* Sources */}
           <div>
-            <p className="text-[10px] text-txt-muted uppercase tracking-wider mb-2">Data Sources</p>
+            <p className="text-[10px] text-txt-primary uppercase tracking-wider mb-2">Data Sources</p>
             <div className="flex flex-wrap gap-1.5">
               {signal.sources.map((src) => (
                 <Badge key={src} variant="muted" size="sm">{src}</Badge>
@@ -236,7 +236,7 @@ export default function AIReasoning({ signal, liveDims, tickerMap }: Props) {
 
       {/* Footer metadata */}
       <div className="px-5 py-2.5 border-t border-border-default bg-inset/50">
-        <p className="text-[10px] text-txt-dim font-mono">
+        <p className="text-[10px] text-txt-primary font-mono">
           {livePrice !== null ? `Live: ${new Date().toISOString().slice(0, 19)}Z · Price: $${fmt(livePrice)}` : `Signal: ${new Date().toISOString().slice(0, 19)}Z`} · Confidence: {signal.confidence}% · Dimensions: 5 scored · Sources: {signal.sources.length}
         </p>
       </div>

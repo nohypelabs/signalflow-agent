@@ -46,7 +46,7 @@ function MiniBar({ value, color }: { value: number; color: string }) {
           style={{ width: `${value}%`, backgroundColor: color }}
         />
       </div>
-      <span className="text-[9px] font-mono tabular-nums text-txt-muted w-6 text-right">{value}</span>
+      <span className="text-[9px] font-mono tabular-nums text-txt-primary w-6 text-right">{value}</span>
     </div>
   );
 }
@@ -122,7 +122,7 @@ export default function AISignalGenerator({
             </div>
             <div>
               <h3 className="text-sm font-semibold text-txt-primary">Signal Generator</h3>
-              <p className="text-[9px] text-txt-faint">
+              <p className="text-[9px] text-txt-primary">
                 {includeAI ? `${aiProviderLabel}${aiConfig.model ? ` / ${aiConfig.model}` : ""}` : "Technical Analysis Engine"}
               </p>
             </div>
@@ -171,13 +171,13 @@ export default function AISignalGenerator({
             </button>
             <div>
               <span className="text-sm font-medium text-txt-primary">Include AI Thesis</span>
-              <p className="text-[10px] text-txt-muted mt-0.5">
+              <p className="text-[10px] text-txt-secondary mt-0.5">
                 Adds AI reasoning, risk notes, and scenario analysis
               </p>
             </div>
           </div>
           <span className={`text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded ${
-            includeAI ? "bg-elevated text-txt-primary" : "bg-elevated text-txt-faint"
+            includeAI ? "bg-elevated text-txt-primary" : "bg-elevated text-txt-secondary"
           }`}>
             {includeAI ? "ON" : "OFF"}
           </span>
@@ -199,8 +199,8 @@ export default function AISignalGenerator({
               <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
             </svg>
           </div>
-          <p className="text-xs text-txt-muted">Select a pair and generate a signal</p>
-          <p className="text-[10px] text-txt-faint mt-1">
+          <p className="text-xs text-txt-primary">Select a pair and generate a signal</p>
+          <p className="text-[10px] text-txt-secondary mt-1">
             {includeAI
               ? "Multi-dimensional analysis + AI thesis (optional)"
               : "Signal generated from live market data. No AI key required."}
@@ -218,7 +218,7 @@ export default function AISignalGenerator({
             </svg>
           </div>
           <p className="text-xs text-txt-secondary animate-pulse">{phaseMessage(phase, aiCoin)}</p>
-          <p className="text-[10px] text-txt-faint mt-1">ETF Flows · Sentiment · Macro · Momentum · Treasury</p>
+          <p className="text-[10px] text-txt-secondary mt-1">ETF Flows · Sentiment · Macro · Momentum · Treasury</p>
         </div>
       )}
 
@@ -232,7 +232,7 @@ export default function AISignalGenerator({
             <p className="text-xs text-sell">{aiError.message}</p>
           </div>
           {aiError.code === "not_configured" && (
-            <p className="text-[10px] text-txt-faint mt-1">
+            <p className="text-[10px] text-txt-secondary mt-1">
               Base signal still works without AI. Uncheck &quot;Include AI Thesis&quot; or configure a provider in Settings.
             </p>
           )}
@@ -248,7 +248,7 @@ export default function AISignalGenerator({
               <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
             <p className="text-[10px] text-hold">{aiError.message}</p>
-            <span className="text-[10px] text-txt-faint">Showing base signal.</span>
+            <span className="text-[10px] text-txt-primary">Showing base signal.</span>
             {aiError.retryable && (
               <button onClick={onGenerate} className="text-[10px] text-txt-secondary hover:underline cursor-pointer ml-auto">
                 Retry AI
@@ -290,7 +290,7 @@ export default function AISignalGenerator({
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-txt-muted font-mono">{fmtPrice(displaySignal.price)}</span>
+                <span className="text-xs text-txt-primary font-mono">{fmtPrice(displaySignal.price)}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -305,17 +305,17 @@ export default function AISignalGenerator({
 
           {/* Thesis */}
           <div className="bg-elevated/50 rounded-lg p-3 border-l-2" style={{ borderLeftColor: signalAccent }}>
-            <p className="text-[10px] text-txt-muted uppercase tracking-wider mb-1">
+            <p className="text-[10px] text-txt-primary uppercase tracking-wider mb-1">
               {aiThesis ? "AI Thesis" : "Technical Analysis"}
             </p>
-            <p className="text-sm text-txt-secondary leading-relaxed">
+            <p className="text-sm text-txt-primary leading-relaxed">
               &ldquo;{aiThesis?.reasoning ?? displaySignal.reasoning}&rdquo;
             </p>
           </div>
 
           {/* Score breakdown */}
           <div>
-            <p className="text-[10px] text-txt-muted uppercase tracking-wider mb-2">Score Breakdown</p>
+            <p className="text-[10px] text-txt-primary uppercase tracking-wider mb-2">Score Breakdown</p>
             <div className="grid grid-cols-5 gap-2">
               {dimLabels.map((d) => {
                 const score = displaySignal.dimensions[d.key];
@@ -327,7 +327,7 @@ export default function AISignalGenerator({
                     <span className="text-sm font-bold font-mono block" style={{ color: d.color }}>{score}</span>
                     <MiniBar value={score} color={d.color} />
                     {detail && (
-                      <p className="text-[8px] text-txt-faint mt-1 leading-tight line-clamp-2">{detail}</p>
+                      <p className="text-[8px] text-txt-primary mt-1 leading-tight line-clamp-2">{detail}</p>
                     )}
                   </div>
                 );
@@ -338,7 +338,7 @@ export default function AISignalGenerator({
           {/* Trade plan */}
           {displaySignal.execution.entry > 0 && (
             <div>
-              <p className="text-[10px] text-txt-muted uppercase tracking-wider mb-2">Trade Plan</p>
+              <p className="text-[10px] text-txt-primary uppercase tracking-wider mb-2">Trade Plan</p>
               <div className="grid grid-cols-4 gap-2">
                 {[
                   { label: "Entry", value: fmtPrice(displaySignal.execution.entry), color: "text-accent" },
@@ -347,7 +347,7 @@ export default function AISignalGenerator({
                   { label: "Risk/Reward", value: displaySignal.execution.riskReward || "—", color: "text-txt-primary" },
                 ].map((item) => (
                   <div key={item.label} className="bg-elevated/30 rounded-lg p-2 text-center">
-                    <p className="text-[9px] text-txt-faint">{item.label}</p>
+                    <p className="text-[9px] text-txt-primary">{item.label}</p>
                     <p className={`text-xs font-bold font-mono mt-0.5 ${item.color}`}>{item.value}</p>
                   </div>
                 ))}
@@ -359,10 +359,10 @@ export default function AISignalGenerator({
           <div className="flex items-center justify-between pt-2 border-t border-border-default">
             <div className="flex flex-wrap gap-1">
               {displaySignal.sources.map((src) => (
-                <span key={src} className="text-[8px] text-txt-faint bg-elevated px-1.5 py-0.5 rounded">{src}</span>
+                <span key={src} className="text-[8px] text-txt-primary bg-elevated px-1.5 py-0.5 rounded">{src}</span>
               ))}
             </div>
-            <span className="text-[9px] text-txt-faint">{displaySignal.timeAgo}</span>
+            <span className="text-[9px] text-txt-secondary">{displaySignal.timeAgo}</span>
           </div>
         </div>
       )}

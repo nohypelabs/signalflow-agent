@@ -37,6 +37,12 @@ Visual reference from prior session:
   - `src/components/dashboard/EvidenceFlow.tsx`
 - Validation passed with `pnpm lint`, `pnpm build`, and `git diff --check`.
 
+2026-05-29 Phase 7:
+- Added `src/components/dashboard/SignalThesisLayer.tsx` to connect technical generation, optional AI thesis, and explain/execution output into one visible flow.
+- `src/app/(dashboard)/dashboard/page.tsx` now uses `SignalThesisLayer` instead of rendering `AISignalGenerator` and `AIReasoning` as separate dashboard islands.
+- `AISignalGenerator` and `AIReasoning` small labels/body text were raised to higher contrast for readability in the explain layer.
+- Validation passed with `pnpm lint`, `pnpm build`, and `git diff --check`.
+
 Remaining polish:
 - Browser screenshot review at desktop/tablet/mobile widths.
 - Fine tune panel heights once real viewport is inspected.

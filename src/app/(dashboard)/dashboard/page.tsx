@@ -4,13 +4,12 @@ import { useDashboard } from "@/lib/dashboard-context";
 import { useDashboardMetrics } from "@/lib/hooks/useDashboardMetrics";
 import KPICards from "@/components/KPICards";
 import TradingChart from "@/components/TradingChart";
-import AISignalGenerator from "@/components/AISignalGenerator";
-import AIReasoning from "@/components/AIReasoning";
 import DataSources from "@/components/DataSources";
 import SignalFlowRail from "@/components/dashboard/SignalFlowRail";
 import CurrentDecisionPanel from "@/components/dashboard/CurrentDecisionPanel";
 import SignalStream from "@/components/dashboard/SignalStream";
 import EvidenceFlow from "@/components/dashboard/EvidenceFlow";
+import SignalThesisLayer from "@/components/dashboard/SignalThesisLayer";
 import ETFFlowChart from "@/components/ETFFlowChart";
 import MacroCalendar from "@/components/MacroCalendar";
 import MacroEventHistory from "@/components/MacroEventHistory";
@@ -89,33 +88,29 @@ export default function DashboardPage() {
       </StaggerItem>
 
       <StaggerItem>
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
-          <div className="xl:col-span-6 transition-all duration-300">
-            <AISignalGenerator
-              aiConfig={d.aiConfig}
-              aiProviderLabel={d.aiProviderLabel}
-              aiCoin={d.aiCoin}
-              onCoinChange={d.setAiCoin}
-              analyzing={d.analyzing}
-              phase={d.signalPhase}
-              baseSignal={d.baseSignal}
-              aiThesis={d.aiThesis}
-              aiError={d.aiError}
-              includeAI={d.includeAI}
-              onIncludeAIChange={d.setIncludeAI}
-              onGenerate={handleGenerate}
-              onPinSignal={() => {
-                if (d.baseSignal) d.setSelectedSignal(d.baseSignal);
-              }}
-              onExecuteSignal={() => {
-                if (d.baseSignal) d.handleExecuteSignal(d.baseSignal);
-              }}
-            />
-          </div>
-          <div className="xl:col-span-6 transition-all duration-300">
-            <AIReasoning signal={d.displaySignal} liveDims={d.liveDims} tickerMap={d.tickerMap} />
-          </div>
-        </div>
+        <SignalThesisLayer
+          generator={{
+            aiConfig: d.aiConfig,
+            aiProviderLabel: d.aiProviderLabel,
+            aiCoin: d.aiCoin,
+            onCoinChange: d.setAiCoin,
+            analyzing: d.analyzing,
+            phase: d.signalPhase,
+            baseSignal: d.baseSignal,
+            aiThesis: d.aiThesis,
+            aiError: d.aiError,
+            includeAI: d.includeAI,
+            onIncludeAIChange: d.setIncludeAI,
+            onGenerate: handleGenerate,
+            onPinSignal: () => {
+              if (d.baseSignal) d.setSelectedSignal(d.baseSignal);
+            },
+            onExecuteSignal: () => {
+              if (d.baseSignal) d.handleExecuteSignal(d.baseSignal);
+            },
+          }}
+          reasoning={{ signal: d.displaySignal, liveDims: d.liveDims, tickerMap: d.tickerMap }}
+        />
       </StaggerItem>
 
       {/* Data Sources */}
