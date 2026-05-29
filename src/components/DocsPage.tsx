@@ -1398,7 +1398,7 @@ function Roadmap() {
           "Full sidebar navigation with 8 pages",
         ].map((item) => (
           <li key={item} className="flex items-center gap-2">
-            <span className="text-buy text-xs">✓</span> {item}
+            <span className="text-buy text-xs">OK</span> {item}
           </li>
         ))}
       </ul>
@@ -1430,7 +1430,7 @@ function Roadmap() {
           "API status endpoint — dynamic AI provider testing based on user's selected provider/model/key",
         ].map((item) => (
           <li key={item} className="flex items-start gap-2">
-            <span className="text-buy text-xs mt-0.5 shrink-0">✓</span> <span>{item}</span>
+            <span className="text-buy text-xs mt-0.5 shrink-0">OK</span> <span>{item}</span>
           </li>
         ))}
       </ul>

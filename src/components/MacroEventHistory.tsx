@@ -24,7 +24,7 @@ function fmtVal(s: string): string {
   return s;
 }
 
-function HistoryChart({ data, eventName }: { data: MacroHistoryEntry[]; eventName: string }) {
+function HistoryChart({ data }: { data: MacroHistoryEntry[] }) {
   const reversed = useMemo(() => [...data].reverse(), [data]);
 
   const values = useMemo(() => {
@@ -266,7 +266,7 @@ export default function MacroEventHistory({ eventName = "Federal Funds Rate" }: 
             <p className="text-[10px] text-txt-faint mt-1">Data will appear when SoSoValue API is connected</p>
           </div>
         ) : (
-          <HistoryChart data={data} eventName={selectedEvent} />
+          <HistoryChart data={data} />
         )}
       </div>
     </Card>
