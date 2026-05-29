@@ -359,6 +359,12 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
     };
   }, [aiSignal, currentPrice, currentSignal, d.analyzing, news]);
 
+  const decisionTone = decision.action === "LONG"
+    ? "text-buy"
+    : decision.action === "SHORT"
+      ? "text-sell"
+      : "text-hold";
+
   const execute = () => {
     if (currentSignal && decision.action !== "NO TRADE") {
       d.handleExecuteSignal(currentSignal);
@@ -476,36 +482,36 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
 
         <div className="grid grid-cols-2 gap-3">
           <Card variant="inset" padding="sm" className="rounded-xl !p-2.5">
-            <div className={cx("mb-2 text-center text-[11px] font-semibold uppercase tracking-wide", decision.action === "NO TRADE" ? "text-hold" : "text-buy")}>
+            <div className={cx("mb-2 text-center text-[11px] font-semibold uppercase tracking-wide", decisionTone)}>
               {decision.action === "NO TRADE" ? "Watch Triggers" : "Take Profit (TP)"}
             </div>
             <div className="space-y-1">
               {decision.targets.slice(0, 1).map(([label, price, risk]) => (
                 <div key={label} className="grid grid-cols-[36px_1fr_54px] gap-1 font-mono text-xs">
-                  <span className="text-txt-muted">{label}</span>
-                  <span className={decision.action === "NO TRADE" ? "text-hold" : "text-buy"}>{price}</span>
-                  <span className="text-txt-tertiary">{risk}</span>
+                  <span className={decisionTone}>{label}</span>
+                  <span className={cx("font-semibold", decisionTone)}>{price}</span>
+                  <span className={decisionTone}>{risk}</span>
                 </div>
               ))}
             </div>
           </Card>
           <Card variant="inset" padding="sm" className="rounded-xl !p-2.5">
-            <div className={cx("mb-2 text-center text-[11px] font-semibold uppercase tracking-wide", decision.action === "NO TRADE" ? "text-hold" : "text-sell")}>
+            <div className={cx("mb-2 text-center text-[11px] font-semibold uppercase tracking-wide", decisionTone)}>
               {decision.action === "NO TRADE" ? "Risk State" : "Stop Loss (SL)"}
             </div>
             {decision.action === "NO TRADE" ? (
               <div className="rounded-lg border border-hold-dim bg-hold-muted px-2 py-1.5">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-txt-tertiary">Position</span>
+                  <span className={cx("text-[10px] font-semibold uppercase tracking-wide", decisionTone)}>Position</span>
                   <Badge variant="hold" size="sm">WAIT</Badge>
                 </div>
-                <div className="mt-1 text-xs font-semibold text-hold">Flat until setup confirms</div>
+                <div className={cx("mt-1 text-xs font-semibold", decisionTone)}>Flat until setup confirms</div>
               </div>
             ) : (
               <div className="grid grid-cols-[28px_1fr_58px] gap-1 font-mono text-xs">
-                <span className="text-txt-muted">{decision.stop[0]}</span>
-                <span className="text-sell">{decision.stop[1]}</span>
-                <span className="text-txt-tertiary">{decision.stop[2]}</span>
+                <span className={decisionTone}>{decision.stop[0]}</span>
+                <span className={cx("font-semibold", decisionTone)}>{decision.stop[1]}</span>
+                <span className={decisionTone}>{decision.stop[2]}</span>
               </div>
             )}
             {decision.action !== "NO TRADE" && (
