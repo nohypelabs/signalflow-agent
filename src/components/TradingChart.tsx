@@ -182,6 +182,11 @@ export default function TradingChart({
   const [chartType, setChartType] = useState<"candles" | "line">("candles");
   const [chartEngine, setChartEngine] = useState<"native" | "tradingview">("native");
   const [fullscreen, setFullscreen] = useState(false);
+  const [showTfDropdown, setShowTfDropdown] = useState(false);
+  const [favTfs, setFavTfs] = useState<Timeframe[]>(() => {
+    if (typeof window === "undefined") return ["1h", "4h", "1D"];
+    try { return JSON.parse(localStorage.getItem("sf-fav-tfs") || "[\"1h\",\"4h\",\"1D\"]"); } catch { return ["1h", "4h", "1D"]; }
+  });
   const [showSignals, setShowSignals] = useState(true);
   const [showTradePlan, setShowTradePlan] = useState(true);
   const [showVolume, setShowVolume] = useState(true);
@@ -201,6 +206,23 @@ export default function TradingChart({
     clearAll,
     toggleHidden,
   } = useChartDrawings(pair, tf);
+
+  // Toggle timeframe favorite
+  const toggleFavTf = useCallback((t: Timeframe) => {
+    setFavTfs((prev) => {
+      const next = prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t];
+      try { localStorage.setItem("sf-fav-tfs", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  // Close TF dropdown on outside click
+  useEffect(() => {
+    if (!showTfDropdown) return;
+    const handler = () => setShowTfDropdown(false);
+    setTimeout(() => window.addEventListener("click", handler), 0);
+    return () => window.removeEventListener("click", handler);
+  }, [showTfDropdown]);
 
   // Cancel pending drawing on Escape
   useEffect(() => {
@@ -561,14 +583,14 @@ export default function TradingChart({
                 </div>
                 {/* 24h Change */}
                 <div className="flex flex-col">
-                  <span className="text-[9px] text-txt-dim uppercase tracking-wider leading-none mb-0.5">24h Chg</span>
+                  <span className="text-[9px] text-txt-dim uppercase tracking-wider leading-none mb-0.5">24h Change</span>
                   <span className={`text-sm font-mono font-bold tabular-nums ${displayChange !== undefined && displayChange >= 0 ? "text-buy" : "text-sell"}`}>
                     {displayChange !== undefined ? `${displayChange >= 0 ? "+" : ""}${displayChange.toFixed(2)}%` : "—"}
                   </span>
                 </div>
                 {/* 24h Volume */}
                 <div className="flex flex-col">
-                  <span className="text-[9px] text-txt-dim uppercase tracking-wider leading-none mb-0.5">24h Vol</span>
+                  <span className="text-[9px] text-txt-dim uppercase tracking-wider leading-none mb-0.5">24h Volume</span>
                   <span className="text-sm font-mono text-txt-secondary tabular-nums">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span>
                 </div>
                 {/* Open Interest */}
@@ -595,24 +617,61 @@ export default function TradingChart({
           </div>
         </div>
 
-        {/* Row 2: Timeframe pills + toggles */}
+        {/* Row 2: Timeframe dropdown + favorites + toggles */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            {(Object.keys(TF_CONFIG) as Timeframe[]).map((t) => (
+          <div className="flex items-center gap-1.5">
+            {/* Favorite TF quick buttons */}
+            {favTfs.map((t) => (
               <button
                 key={t}
                 onClick={() => setTf(t)}
                 className={`text-[10px] font-medium px-2.5 py-1 rounded transition-all cursor-pointer tracking-wide ${
                   tf === t
                     ? "text-txt-primary bg-elevated shadow-sm border border-border-default"
-                    : "text-txt-dim hover:text-txt-secondary hover:bg-inset/60"
+                    : "text-txt-dim hover:text-txt-secondary hover:bg-inset/60 border border-transparent"
                 }`}
               >
                 {t}
               </button>
             ))}
+            {/* TF dropdown */}
+            <div className="relative">
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowTfDropdown(!showTfDropdown); }}
+                className="text-[10px] font-medium px-2 py-1 rounded transition-all cursor-pointer text-txt-dim hover:text-txt-secondary hover:bg-inset/60 border border-border-default flex items-center gap-1"
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+              </button>
+              {showTfDropdown && (
+                <div className="absolute left-0 top-full mt-1 z-30 bg-card border border-border-default rounded-lg shadow-xl overflow-hidden min-w-[120px]" onClick={(e) => e.stopPropagation()}>
+                  {(Object.keys(TF_CONFIG) as Timeframe[]).map((t) => (
+                    <div key={t} className="flex items-center justify-between hover:bg-elevated/40 transition-colors">
+                      <button
+                        onClick={() => { setTf(t); setShowTfDropdown(false); }}
+                        className={`flex-1 text-left px-3 py-2 text-[11px] font-mono cursor-pointer ${
+                          tf === t ? "text-accent bg-accent/5" : "text-txt-secondary hover:text-txt-primary"
+                        }`}
+                      >
+                        {t}
+                      </button>
+                      <button
+                        onClick={() => toggleFavTf(t)}
+                        className={`px-2 py-2 cursor-pointer transition-colors ${favTfs.includes(t) ? "text-hold" : "text-txt-faint hover:text-hold"}`}
+                        title={favTfs.includes(t) ? "Remove from favorites" : "Add to favorites"}
+                      >
+                        {favTfs.includes(t) ? (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--color-hold)" stroke="var(--color-hold)" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                        ) : (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             {loading && (
-              <span className="ml-2 text-[10px] text-accent animate-pulse">loading</span>
+              <span className="ml-1 text-[10px] text-accent animate-pulse">loading</span>
             )}
           </div>
 
@@ -646,7 +705,7 @@ export default function TradingChart({
                   chartEngine === "native" ? "text-accent bg-elevated" : "text-txt-dim hover:text-txt-secondary"
                 }`}
               >
-                SF
+                SignalFlow
               </button>
               <div className="w-px h-3 bg-border-default" />
               <button
@@ -655,7 +714,7 @@ export default function TradingChart({
                   chartEngine === "tradingview" ? "text-accent bg-elevated" : "text-txt-dim hover:text-txt-secondary"
                 }`}
               >
-                TV
+                TradingView
               </button>
             </div>
 
