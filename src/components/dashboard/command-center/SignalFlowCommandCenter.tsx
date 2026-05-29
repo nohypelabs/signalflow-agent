@@ -291,6 +291,7 @@ interface NewsItem {
 
 interface NewsResponse {
   list: NewsItem[];
+  error?: string | null;
   sentiment: { score: number; label: string };
   topCoins: Array<{ symbol: string; count: number }>;
 }
@@ -313,18 +314,25 @@ function sentimentVariant(label: string): string {
 
 function NewsFeed() {
   const [news, setNews] = useState<NewsResponse | null>(null);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     fetch("/api/news?pageSize=8")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((data) => setNews(data))
-      .catch(() => {});
+      .catch(() => setFetchError(true));
   }, []);
+
+  const apiError = news?.error;
+  const hasData = news && news.list.length > 0;
 
   return (
     <Panel
       title="NEWS FEED"
-      badge={news?.sentiment && (
+      badge={hasData && news?.sentiment && (
         <Badge variant={sentimentVariant(news.sentiment.label)} size="sm">
           {news.sentiment.label} {news.sentiment.score}
         </Badge>
@@ -332,7 +340,7 @@ function NewsFeed() {
       className="h-[494px]"
     >
       <div>
-        {news?.list.map((item) => (
+        {hasData && news?.list.map((item) => (
           <div
             key={item.id}
             className="border-b border-border-default px-3 py-2.5 transition-colors hover:bg-elevated/30"
@@ -348,8 +356,20 @@ function NewsFeed() {
             <p className="mt-1 text-xs font-medium text-txt-primary leading-snug line-clamp-2">{item.title}</p>
           </div>
         ))}
-        {!news && (
+        {fetchError && (
+          <div className="flex flex-col items-center justify-center py-8 gap-2">
+            <span className="text-xs font-semibold text-sell">Connection Failed</span>
+            <span className="text-[11px] text-txt-tertiary">Unable to reach news API</span>
+          </div>
+        )}
+        {!news && !fetchError && (
           <div className="flex items-center justify-center py-12 text-xs text-txt-muted">Loading news…</div>
+        )}
+        {apiError && !hasData && !fetchError && (
+          <div className="flex flex-col items-center justify-center py-8 gap-2">
+            <span className="text-xs font-semibold text-hold">API Quota Exceeded</span>
+            <span className="text-[11px] text-txt-tertiary text-center px-4">SoSoValue monthly limit reached. Resumes after quota reset.</span>
+          </div>
         )}
         <a href="/data-sources" className="flex w-full items-center justify-between px-4 py-3 text-xs font-medium text-accent hover:bg-accent-muted/30 transition-colors">
           View All Sources <span className="text-sm">›</span>

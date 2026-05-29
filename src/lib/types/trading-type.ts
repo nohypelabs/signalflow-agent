@@ -6,12 +6,15 @@
 // Swing: trend-following, wider TP/SL, structure-focused
 // Position: macro-driven, widest TP/SL, trend + fundamentals
 
+import type React from "react";
+import { Zap, BarChart3, TrendingUp, Landmark } from "lucide-react";
+
 export type TradingType = "scalping" | "intraday" | "swing" | "position";
 
 export interface TradingTypeConfig {
   id: TradingType;
   label: string;
-  icon: string;
+  icon: React.ElementType;
   description: string;
   timeframe: string;
   holdDuration: string;
@@ -38,7 +41,7 @@ export const TRADING_TYPES: Record<TradingType, TradingTypeConfig> = {
   scalping: {
     id: "scalping",
     label: "Scalper",
-    icon: "⚡",
+    icon: Zap,
     description: "High-frequency trades with tight risk management. Quick in, quick out.",
     timeframe: "1m – 15m",
     holdDuration: "< 1 hour",
@@ -61,7 +64,7 @@ export const TRADING_TYPES: Record<TradingType, TradingTypeConfig> = {
   intraday: {
     id: "intraday",
     label: "Intraday",
-    icon: "📊",
+    icon: BarChart3,
     description: "Balanced approach. Capture intraday moves with moderate risk.",
     timeframe: "1h – 4h",
     holdDuration: "1 – 6 hours",
@@ -84,7 +87,7 @@ export const TRADING_TYPES: Record<TradingType, TradingTypeConfig> = {
   swing: {
     id: "swing",
     label: "Swing Trader",
-    icon: "📈",
+    icon: TrendingUp,
     description: "Trend-following over days to weeks. Let winners run.",
     timeframe: "1D – 7D",
     holdDuration: "2 – 14 days",
@@ -107,7 +110,7 @@ export const TRADING_TYPES: Record<TradingType, TradingTypeConfig> = {
   position: {
     id: "position",
     label: "Position",
-    icon: "🏦",
+    icon: Landmark,
     description: "Long-term macro plays. Ride the big trends.",
     timeframe: "1W+",
     holdDuration: "2 – 8 weeks",

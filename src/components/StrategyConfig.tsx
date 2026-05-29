@@ -364,7 +364,7 @@ export default function StrategyConfig() {
               style={{ borderColor: `${type.color}25` }}
             >
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg">{type.icon}</span>
+                <span className="inline-flex items-center justify-center"><type.icon size={18} style={{ color: type.color }} /></span>
                 <div>
                   <p className="text-xs font-bold" style={{ color: type.color }}>{type.label}</p>
                   <p className="text-[9px] text-txt-faint font-mono">{type.timeframe}</p>

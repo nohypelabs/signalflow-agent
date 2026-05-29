@@ -1,7 +1,7 @@
 "use client";
 
-import type { TradingType } from "@/lib/types/trading-type";
-import { BarChartIcon, BriefcaseIcon, TrendUpIcon, ZapIcon } from "@/components/ui/icons";
+import type { TradingType, TradingTypeConfig } from "@/lib/types/trading-type";
+import { TRADING_TYPES } from "@/lib/types/trading-type";
 
 interface Props {
   type: TradingType;
@@ -10,8 +10,7 @@ interface Props {
 }
 
 export default function TradingTypeIcon({ type, size = 14, className = "" }: Props) {
-  if (type === "scalping") return <ZapIcon size={size} className={className} />;
-  if (type === "intraday") return <BarChartIcon size={size} className={className} />;
-  if (type === "swing") return <TrendUpIcon size={size} className={className} />;
-  return <BriefcaseIcon size={size} className={className} />;
+  const config: TradingTypeConfig = TRADING_TYPES[type];
+  const Icon = config.icon;
+  return <Icon size={size} className={className} style={{ color: config.color }} />;
 }

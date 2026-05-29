@@ -101,7 +101,7 @@ export default function BacktestPanel() {
           >
             <option value="">All Types</option>
             {TRADING_TYPE_LIST.map((t) => (
-              <option key={t.id} value={t.id}>{t.icon} {t.label}</option>
+              <option key={t.id} value={t.id}>{t.label}</option>
             ))}
           </select>
         </div>

@@ -173,7 +173,9 @@ function TypeCard({
       {/* Content */}
       <div className="relative z-10">
         {/* Icon */}
-        <div className="text-3xl md:text-4xl mb-3">{config.icon}</div>
+        <div className="mb-3">
+          <config.icon size={36} strokeWidth={1.5} style={{ color: config.color }} />
+        </div>
 
         {/* Label */}
         <h3
