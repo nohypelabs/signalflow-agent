@@ -6,7 +6,7 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import ProgressBar from "@/components/ui/ProgressBar";
 import { TRADING_TYPE_LIST } from "@/lib/types/trading-type";
-import { BarChartIcon, DataSourceIcon, DocumentIcon, TrendUpIcon } from "@/components/ui/icons";
+import { BarChartIcon, BriefcaseIcon, DataSourceIcon, DocumentIcon, TrendUpIcon } from "@/components/ui/icons";
 
 const STORAGE_KEY = "signalflow-strategy-config";
 
@@ -71,7 +71,7 @@ function DimIcon({ icon }: { icon: (typeof dimSliders)[number]["icon"] }) {
   if (icon === "sentiment") return <DocumentIcon size={12} />;
   if (icon === "macro") return <DataSourceIcon size={12} />;
   if (icon === "momentum") return <TrendUpIcon size={12} />;
-  return <DocumentIcon size={12} />;
+  return <BriefcaseIcon size={12} />;
 }
 
 export default function StrategyConfig() {

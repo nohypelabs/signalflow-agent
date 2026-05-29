@@ -7,7 +7,7 @@ import { getProvider } from "@/lib/ai-providers";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
-import { ActivityIcon, BarChartIcon, DataSourceIcon } from "@/components/ui/icons";
+import { ActivityIcon, BarChartIcon, DataSourceIcon, SignalIcon } from "@/components/ui/icons";
 
 /* ── Status config ── */
 
@@ -44,6 +44,14 @@ const GROUPS: SourceGroup[] = [
     description: "Live trading pairs, klines, orderbook depth, order execution, signal backtest",
   },
 ];
+
+function GroupIcon({ name }: { name: string }) {
+  if (name === "SoDEX") return <SignalIcon size={12} />;
+  if (name === "AI Model") return <ActivityIcon size={12} />;
+  if (name.includes("DeepSeek") || name.includes("OpenAI") || name.includes("Anthropic") || name.includes("Google")) return <ActivityIcon size={12} />;
+  if (name === "SoSoValue") return <DataSourceIcon size={12} />;
+  return <BarChartIcon size={12} />;
+}
 
 /* ── Component ── */
 
@@ -142,7 +150,7 @@ export default function DataSources() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="w-5 h-5 rounded bg-elevated/30 border border-border-default flex items-center justify-center text-txt-secondary">
-                      {g.name === "SoDEX" ? <ActivityIcon size={12} /> : g.name === "AI Model" || g.name === aiProvider?.name ? <DataSourceIcon size={12} /> : <BarChartIcon size={12} />}
+                      <GroupIcon name={g.name} />
                     </span>
                     <span className="text-sm font-semibold text-txt-primary truncate">{g.name}</span>
                   </div>

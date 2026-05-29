@@ -6,7 +6,7 @@ import type { AIError } from "@/lib/ai/providerErrors";
 import type { AIConfig } from "@/lib/types/datasource";
 import Button from "@/components/ui/Button";
 import ConfidenceGauge from "@/components/ui/ConfidenceGauge";
-import { BarChartIcon, DataSourceIcon, DocumentIcon, TrendUpIcon } from "@/components/ui/icons";
+import { BarChartIcon, BriefcaseIcon, DataSourceIcon, DocumentIcon, TrendUpIcon } from "@/components/ui/icons";
 
 /* ── Dimension config ── */
 
@@ -23,7 +23,7 @@ function DimIcon({ icon }: { icon: (typeof dimLabels)[number]["icon"] }) {
   if (icon === "sentiment") return <DocumentIcon size={12} />;
   if (icon === "macro") return <DataSourceIcon size={12} />;
   if (icon === "momentum") return <TrendUpIcon size={12} />;
-  return <DocumentIcon size={12} />;
+  return <BriefcaseIcon size={12} />;
 }
 
 const actionAccent: Record<string, string> = {

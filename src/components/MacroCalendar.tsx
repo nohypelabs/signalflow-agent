@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
-import { ActivityIcon, BarChartIcon, BriefcaseIcon, ChartBarIcon, DataSourceIcon, DocumentIcon } from "@/components/ui/icons";
+import { BarChartIcon, BriefcaseIcon, ChartBarIcon, DataSourceIcon, DocumentIcon } from "@/components/ui/icons";
 
 interface MacroDay {
   date: string;
@@ -42,9 +42,9 @@ function EventIcon({ type }: { type: ReturnType<typeof eventIcon> }) {
   if (type === "finance") return <BriefcaseIcon size={12} />;
   if (type === "momentum") return <ChartBarIcon size={12} />;
   if (type === "gdp") return <BarChartIcon size={12} />;
-  if (type === "jobs") return <DocumentIcon size={12} />;
+  if (type === "jobs") return <BriefcaseIcon size={12} />;
   if (type === "retail") return <DataSourceIcon size={12} />;
-  if (type === "energy") return <ActivityIcon size={12} />;
+  if (type === "energy") return <ChartBarIcon size={12} />;
   if (type === "treasury") return <BriefcaseIcon size={12} />;
   return <DocumentIcon size={12} />;
 }
