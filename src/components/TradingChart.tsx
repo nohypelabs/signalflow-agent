@@ -551,30 +551,30 @@ export default function TradingChart({
               <div className="flex items-center gap-5 ml-2">
                 {/* Mark */}
                 <div className="flex flex-col">
-                  <span className="text-[8px] text-txt-faint uppercase tracking-wider leading-none mb-0.5">Mark</span>
-                  <span className="text-xs font-mono font-bold text-txt-primary tabular-nums">{fmtPrice(displayPrice)}</span>
+                  <span className="text-[9px] text-txt-dim uppercase tracking-wider leading-none mb-0.5">Mark</span>
+                  <span className="text-sm font-mono font-bold text-txt-primary tabular-nums">{fmtPrice(displayPrice)}</span>
                 </div>
                 {/* Oracle */}
                 <div className="flex flex-col">
-                  <span className="text-[8px] text-txt-faint uppercase tracking-wider leading-none mb-0.5">Oracle</span>
-                  <span className="text-xs font-mono text-txt-secondary tabular-nums">{fmtPrice(displayPrice * 1.0001)}</span>
+                  <span className="text-[9px] text-txt-dim uppercase tracking-wider leading-none mb-0.5">Oracle</span>
+                  <span className="text-sm font-mono text-txt-secondary tabular-nums">{fmtPrice(displayPrice * 1.0001)}</span>
                 </div>
                 {/* 24h Change */}
                 <div className="flex flex-col">
-                  <span className="text-[8px] text-txt-faint uppercase tracking-wider leading-none mb-0.5">24h Chg</span>
-                  <span className={`text-xs font-mono font-bold tabular-nums ${displayChange !== undefined && displayChange >= 0 ? "text-buy" : "text-sell"}`}>
+                  <span className="text-[9px] text-txt-dim uppercase tracking-wider leading-none mb-0.5">24h Chg</span>
+                  <span className={`text-sm font-mono font-bold tabular-nums ${displayChange !== undefined && displayChange >= 0 ? "text-buy" : "text-sell"}`}>
                     {displayChange !== undefined ? `${displayChange >= 0 ? "+" : ""}${displayChange.toFixed(2)}%` : "—"}
                   </span>
                 </div>
                 {/* 24h Volume */}
                 <div className="flex flex-col">
-                  <span className="text-[8px] text-txt-faint uppercase tracking-wider leading-none mb-0.5">24h Vol</span>
-                  <span className="text-xs font-mono text-txt-secondary tabular-nums">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span>
+                  <span className="text-[9px] text-txt-dim uppercase tracking-wider leading-none mb-0.5">24h Vol</span>
+                  <span className="text-sm font-mono text-txt-secondary tabular-nums">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span>
                 </div>
                 {/* Open Interest */}
                 <div className="flex flex-col">
-                  <span className="text-[8px] text-txt-faint uppercase tracking-wider leading-none mb-0.5">OI</span>
-                  <span className="text-xs font-mono text-txt-secondary tabular-nums">—</span>
+                  <span className="text-[9px] text-txt-dim uppercase tracking-wider leading-none mb-0.5">OI</span>
+                  <span className="text-sm font-mono text-txt-secondary tabular-nums">—</span>
                 </div>
               </div>
             )}
