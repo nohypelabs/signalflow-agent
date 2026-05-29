@@ -84,9 +84,11 @@ interface Props {
   tickerMap?: Map<string, SoDEXTicker>;
   isFavorite?: (base: string) => boolean;
   onToggleFavorite?: (base: string) => void;
+  /** When true, skip outer wrapper styling (bg, border) — parent provides container styles */
+  embedded?: boolean;
 }
 
-export default function MarketTickerTape({ tickerMap, isFavorite, onToggleFavorite }: Props) {
+export default function MarketTickerTape({ tickerMap, isFavorite, onToggleFavorite, embedded }: Props) {
   const tickers = resolveTickers(tickerMap);
 
   if (tickers.length === 0) return null;
@@ -94,18 +96,24 @@ export default function MarketTickerTape({ tickerMap, isFavorite, onToggleFavori
   // Duplicate for seamless loop
   const doubled = [...tickers, ...tickers];
 
+  const content = (
+    <div className="ticker-tape-scroll flex items-center h-7 whitespace-nowrap">
+      {doubled.map((item, i) => (
+        <TickerItemChip
+          key={`${item.symbol}-${i}`}
+          item={item}
+          isFav={isFavorite?.(item.base) ?? false}
+          onToggleFav={onToggleFavorite}
+        />
+      ))}
+    </div>
+  );
+
+  if (embedded) return content;
+
   return (
     <div className="w-full bg-[#060810] border-b border-border-default overflow-hidden group">
-      <div className="ticker-tape-scroll flex items-center h-7 whitespace-nowrap">
-        {doubled.map((item, i) => (
-          <TickerItemChip
-            key={`${item.symbol}-${i}`}
-            item={item}
-            isFav={isFavorite?.(item.base) ?? false}
-            onToggleFav={onToggleFavorite}
-          />
-        ))}
-      </div>
+      {content}
     </div>
   );
 }

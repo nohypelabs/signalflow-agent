@@ -172,12 +172,14 @@ export default function TopBar({
 
   return (
     <div className="shrink-0">
-      {/* Scrolling market tape */}
-      <MarketTickerTape
-        tickerMap={tickerMap}
-        isFavorite={isFavorite}
-        onToggleFavorite={toggleFavorite}
-      />
+      {/* Mobile: scrolling market tape as separate bar */}
+      <div className="lg:hidden">
+        <MarketTickerTape
+          tickerMap={tickerMap}
+          isFavorite={isFavorite}
+          onToggleFavorite={toggleFavorite}
+        />
+      </div>
 
       {/* Main header bar */}
       <header className="relative flex items-center justify-between gap-3 px-4 h-12 bg-surface border-b border-border-default">
@@ -206,8 +208,18 @@ export default function TopBar({
           </div>
         </div>
 
+        {/* Center: scrolling ticker tape (desktop only) */}
+        <div className="hidden lg:flex w-[45%] min-w-0 mx-4 overflow-hidden rounded-md bg-[#060810]">
+          <MarketTickerTape
+            tickerMap={tickerMap}
+            isFavorite={isFavorite}
+            onToggleFavorite={toggleFavorite}
+            embedded
+          />
+        </div>
+
         {/* Right: pair summary + system modal + wallet */}
-        <div className="flex min-w-0 items-center gap-2.5">
+        <div className="flex min-w-0 items-center gap-2.5 shrink-0">
           <div className="hidden md:flex items-center gap-3 rounded-lg border border-border-default bg-inset/70 px-3 py-1.5 font-mono text-[11px]">
             {btcPrice && (
               <div className="flex items-center gap-1.5">
