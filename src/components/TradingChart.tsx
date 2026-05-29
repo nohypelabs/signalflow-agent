@@ -572,31 +572,31 @@ export default function TradingChart({
             {displayPrice != null && currentTicker && (
               <div className="flex items-center gap-5 ml-2">
                 {/* Mark */}
-                <div className="flex flex-col">
-                  <span className="text-[9px] text-txt-dim tracking-wider leading-none mb-0.5">Mark</span>
-                  <span className="text-sm font-mono font-bold text-txt-primary tabular-nums">{fmtPrice(displayPrice)}</span>
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] text-txt-dim tracking-wide leading-none mb-0.5 text-center">Mark</span>
+                  <span className="text-sm font-mono font-bold text-txt-primary tabular-nums text-center">{fmtPrice(displayPrice)}</span>
                 </div>
                 {/* Oracle */}
-                <div className="flex flex-col">
-                  <span className="text-[9px] text-txt-dim tracking-wider leading-none mb-0.5">Oracle</span>
-                  <span className="text-sm font-mono text-txt-secondary tabular-nums">{fmtPrice(displayPrice * 1.0001)}</span>
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] text-txt-dim tracking-wide leading-none mb-0.5 text-center">Oracle</span>
+                  <span className="text-sm font-mono text-txt-secondary tabular-nums text-center">{fmtPrice(displayPrice * 1.0001)}</span>
                 </div>
                 {/* 24h Change */}
-                <div className="flex flex-col">
-                  <span className="text-[9px] text-txt-dim tracking-wider leading-none mb-0.5">24h Change</span>
-                  <span className={`text-sm font-mono font-bold tabular-nums ${displayChange !== undefined && displayChange >= 0 ? "text-buy" : "text-sell"}`}>
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] text-txt-dim tracking-wide leading-none mb-0.5 text-center">24h Change</span>
+                  <span className={`text-sm font-mono font-bold tabular-nums text-center ${displayChange !== undefined && displayChange >= 0 ? "text-buy" : "text-sell"}`}>
                     {displayChange !== undefined ? `${displayChange >= 0 ? "+" : ""}${displayChange.toFixed(2)}%` : "—"}
                   </span>
                 </div>
                 {/* 24h Volume */}
-                <div className="flex flex-col">
-                  <span className="text-[9px] text-txt-dim tracking-wider leading-none mb-0.5">24h Volume</span>
-                  <span className="text-sm font-mono text-txt-secondary tabular-nums">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span>
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] text-txt-dim tracking-wide leading-none mb-0.5 text-center">24h Volume</span>
+                  <span className="text-sm font-mono text-txt-secondary tabular-nums text-center">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span>
                 </div>
                 {/* Open Interest */}
-                <div className="flex flex-col">
-                  <span className="text-[9px] text-txt-dim tracking-wider leading-none mb-0.5">Open Interest</span>
-                  <span className="text-sm font-mono text-txt-secondary tabular-nums">—</span>
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] text-txt-dim tracking-wide leading-none mb-0.5 text-center">Open Interest</span>
+                  <span className="text-sm font-mono text-txt-secondary tabular-nums text-center">—</span>
                 </div>
               </div>
             )}
