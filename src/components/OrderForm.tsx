@@ -299,27 +299,64 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
 
         {/* TP/SL fields (collapsible) */}
         {showTpSl && (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-3">
+            {/* Take Profit */}
             <div>
-              <label className="text-[8px] text-txt-faint uppercase tracking-wider mb-1 block">
-                TP {tpPercent && <span className="text-buy">({tpPercent}%)</span>}
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[8px] text-txt-faint uppercase tracking-wider">
+                  Take Profit {tpPercent && <span className="text-buy">({tpPercent}%)</span>}
+                </label>
+                {currentPrice && takeProfit && (
+                  <span className="text-[9px] font-mono text-buy/70 tabular-nums">
+                    ${fmtPrice(parseFloat(takeProfit), coin)}
+                  </span>
+                )}
+              </div>
               <div className="flex gap-1">
                 <input type="number" value={takeProfit} onChange={(e) => { setTakeProfit(e.target.value); setTpPercent(""); }} placeholder="Price"
                   className="flex-1 bg-inset border border-border-default rounded px-2 py-1.5 text-[10px] font-mono text-txt-primary outline-none focus:border-buy/50" />
                 <input type="number" value={tpPercent} onChange={(e) => setTpPercent(e.target.value)} placeholder="%"
-                  className="w-11 bg-inset border border-border-default rounded px-1.5 py-1.5 text-[10px] font-mono text-txt-primary outline-none focus:border-buy/50" />
+                  className="w-12 bg-inset border border-border-default rounded px-1.5 py-1.5 text-[10px] font-mono text-txt-primary outline-none focus:border-buy/50" />
+              </div>
+              <div className="flex gap-1 mt-1.5">
+                {[1, 2, 3, 5, 10, 25].map((pct) => (
+                  <button key={pct} onClick={() => setTpPercent(pct.toString())}
+                    className={`flex-1 text-[8px] py-1 rounded border cursor-pointer transition-colors ${
+                      tpPercent === pct.toString()
+                        ? "bg-buy/15 text-buy border-buy/30"
+                        : "border-border-default text-txt-dim hover:text-buy hover:border-buy/20"
+                    }`}>{pct}%</button>
+                ))}
               </div>
             </div>
+
+            {/* Stop Loss */}
             <div>
-              <label className="text-[8px] text-txt-faint uppercase tracking-wider mb-1 block">
-                SL {slPercent && <span className="text-sell">({slPercent}%)</span>}
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[8px] text-txt-faint uppercase tracking-wider">
+                  Stop Loss {slPercent && <span className="text-sell">({slPercent}%)</span>}
+                </label>
+                {currentPrice && stopLoss && (
+                  <span className="text-[9px] font-mono text-sell/70 tabular-nums">
+                    ${fmtPrice(parseFloat(stopLoss), coin)}
+                  </span>
+                )}
+              </div>
               <div className="flex gap-1">
                 <input type="number" value={stopLoss} onChange={(e) => { setStopLoss(e.target.value); setSlPercent(""); }} placeholder="Price"
                   className="flex-1 bg-inset border border-border-default rounded px-2 py-1.5 text-[10px] font-mono text-txt-primary outline-none focus:border-sell/50" />
                 <input type="number" value={slPercent} onChange={(e) => setSlPercent(e.target.value)} placeholder="%"
-                  className="w-11 bg-inset border border-border-default rounded px-1.5 py-1.5 text-[10px] font-mono text-txt-primary outline-none focus:border-sell/50" />
+                  className="w-12 bg-inset border border-border-default rounded px-1.5 py-1.5 text-[10px] font-mono text-txt-primary outline-none focus:border-sell/50" />
+              </div>
+              <div className="flex gap-1 mt-1.5">
+                {[1, 2, 3, 5, 10, 25].map((pct) => (
+                  <button key={pct} onClick={() => setSlPercent(pct.toString())}
+                    className={`flex-1 text-[8px] py-1 rounded border cursor-pointer transition-colors ${
+                      slPercent === pct.toString()
+                        ? "bg-sell/15 text-sell border-sell/30"
+                        : "border-border-default text-txt-dim hover:text-sell hover:border-sell/20"
+                    }`}>{pct}%</button>
+                ))}
               </div>
             </div>
           </div>
