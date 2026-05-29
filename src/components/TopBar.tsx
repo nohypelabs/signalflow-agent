@@ -222,7 +222,7 @@ export default function TopBar({
               className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
                 settingsOpen || isSystemActive
                   ? "border-accent/35 bg-accent/10 text-accent"
-                  : "border-border-default bg-elevated/35 text-txt-muted hover:text-txt-primary hover:border-border-muted"
+                  : "border-accent/10 bg-accent/5 text-txt-muted hover:text-accent hover:bg-accent/10 hover:border-accent/25"
               }`}
               title="System settings"
             >

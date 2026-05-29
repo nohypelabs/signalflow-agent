@@ -95,12 +95,12 @@ function TechIcon({ name, className = "" }: { name: string; className?: string }
 
 function PipelineStepCard({ step }: { step: (typeof pipelineSteps)[number] }) {
   return (
-    <Card variant="default" padding="none" className="relative flex h-[88px] min-w-[218px] flex-1 items-center gap-4 rounded-xl px-5">
-      <span className="absolute left-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent-muted text-[11px] font-bold text-accent">{step.number}</span>
-      <TechIcon name={step.icon} className="h-10 w-10 shrink-0" />
+    <Card variant="default" padding="none" className="relative flex h-[62px] items-center gap-3 rounded-xl px-3.5">
+      <span className="absolute left-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent-muted text-[9px] font-bold text-accent">{step.number}</span>
+      <TechIcon name={step.icon} className="h-7 w-7 shrink-0" />
       <div>
-        <h3 className="text-sm font-semibold text-txt-primary">{step.title}</h3>
-        <p className="mt-1 whitespace-pre-line text-xs leading-snug text-txt-tertiary">{step.description}</p>
+        <h3 className="text-xs font-semibold text-txt-primary">{step.title}</h3>
+        <p className="mt-0.5 whitespace-pre-line text-[11px] leading-snug text-txt-tertiary">{step.description}</p>
       </div>
     </Card>
   );
@@ -108,12 +108,21 @@ function PipelineStepCard({ step }: { step: (typeof pipelineSteps)[number] }) {
 
 function Connector() {
   return (
-    <div className="hidden min-w-[64px] flex-1 items-center lg:flex">
+    <div className="hidden min-w-[64px] flex-1 items-center lg:flex relative overflow-hidden">
+      {/* Base layer — static lines + heartbeat */}
       <div className="h-px flex-1 bg-accent-dim" />
-      <svg viewBox="0 0 64 26" className="h-7 w-16 text-accent">
-        <path d="M0 13h18l4-10 8 20 8-20 8 20 4-10h14" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <svg viewBox="0 0 64 26" className="h-7 w-16 shrink-0">
+        <path d="M0 13h18l4-10 8 20 8-20 8 20 4-10h14" fill="none" stroke="var(--color-accent-dim)" strokeWidth="1.5" />
       </svg>
       <div className="h-px flex-1 bg-accent-dim" />
+      {/* Shimmer overlay — one continuous flow across entire connector */}
+      <div className="absolute inset-0 pointer-events-none connector-shimmer-line" />
+      {/* Heartbeat shimmer — flowing dash along the ECG path */}
+      <svg viewBox="0 0 64 26" className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-7 w-16 shrink-0 pointer-events-none">
+        <path d="M0 13h18l4-10 8 20 8-20 8 20 4-10h14" fill="none" stroke="white" strokeWidth="1.5"
+          strokeDasharray="20 48" strokeLinecap="round" opacity="0.6"
+          className="connector-shimmer-svg" />
+      </svg>
     </div>
   );
 }
@@ -121,9 +130,9 @@ function Connector() {
 function PipelineFlow() {
   return (
     <Card variant="default" padding="sm" className="rounded-xl">
-      <div className="flex min-w-[1120px] items-center">
+      <div className="grid min-w-[1120px] grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] items-center gap-2">
         {pipelineSteps.map((step, index) => (
-          <div key={step.title} className="flex flex-1 items-center">
+          <div key={step.title} className="contents">
             <PipelineStepCard step={step} />
             {index < pipelineSteps.length - 1 && <Connector />}
           </div>
@@ -195,7 +204,7 @@ function DecisionPanel() {
   };
 
   return (
-    <Panel title="CURRENT DECISION PANEL" className="h-[494px]">
+    <Panel title="CURRENT DECISION SCORE" className="h-[494px]">
       <div className="space-y-4 p-4">
         {/* Signal Selector */}
         <div>
@@ -350,60 +359,6 @@ function EvidenceCard({ card }: { card: (typeof evidenceCards)[number] }) {
   );
 }
 
-/* ── Signal Engine Flow ── */
-
-function SignalEngineFlow() {
-  return (
-    <div className="relative mt-4 min-h-[100px]">
-      <div className="absolute left-[8%] right-[28%] top-0 hidden h-6 rounded-b-md border-b border-l border-r border-dashed border-accent-dim xl:block" />
-      <div className="grid grid-cols-1 items-end gap-4 pt-8 xl:grid-cols-[1fr_300px_320px_260px]">
-        <div className="hidden xl:block" />
-        <Card variant="default" padding="md" className="rounded-xl">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent-muted">
-              <TechIcon name="fusion" className="h-8 w-8" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold tracking-wide text-txt-primary">Signal Engine</h3>
-              <p className="mt-0.5 text-xs text-txt-tertiary">Weighted Fusion & Scoring</p>
-            </div>
-          </div>
-        </Card>
-        <div className="relative">
-          <span className="absolute -left-4 top-1/2 hidden h-px w-4 bg-accent-dim xl:block" />
-          <Card variant="default" padding="md" className="rounded-xl">
-            <h3 className="text-xs font-semibold tracking-wide text-txt-tertiary uppercase">Confluence Score</h3>
-            <div className="mt-1 font-mono text-2xl font-bold text-accent">
-              0.82 <span className="text-sm font-normal text-txt-muted">/ 1.00</span>
-            </div>
-            <div className="mt-0.5 text-xs text-buy font-medium">Strong Alignment</div>
-            <div className="absolute bottom-4 right-4 flex items-end gap-1.5">
-              {[14, 20, 26, 31, 36, 40, 45].map((height) => (
-                <span key={height} className="w-1.5 rounded-t bg-accent" style={{ height, opacity: 0.4 + (height / 45) * 0.6 }} />
-              ))}
-            </div>
-          </Card>
-        </div>
-        <div className="relative">
-          <span className="absolute -left-4 top-1/2 hidden h-px w-4 bg-accent-dim xl:block" />
-          <Card variant="default" padding="md" className="rounded-xl">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-buy-muted">
-                <TechIcon name="target" className="h-7 w-7" />
-              </div>
-              <div>
-                <h3 className="text-xs font-semibold tracking-wide text-txt-primary uppercase">Output: Trade Setup</h3>
-                <p className="mt-0.5 text-sm font-semibold text-buy">High Probability</p>
-                <p className="mt-0.5 text-[11px] text-txt-tertiary">Execution Ready <span className="inline-block h-1.5 w-1.5 rounded-full bg-buy animate-pulse-glow" /></p>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ── Evidence Flow ── */
 
 function EvidenceFlow() {
@@ -415,7 +370,7 @@ function EvidenceFlow() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
         {evidenceCards.map((card) => <EvidenceCard key={card.title} card={card} />)}
       </div>
-      <SignalEngineFlow />
+
     </Card>
   );
 }

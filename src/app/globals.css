@@ -289,6 +289,33 @@ main::-webkit-scrollbar-thumb {
   animation: intro-glow 2.4s ease-in-out infinite;
 }
 
+/* ── Connector Shimmer (Command Center pipeline) ── */
+@keyframes connector-shimmer-line {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.connector-shimmer-line {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 30%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.06) 70%,
+    transparent 100%
+  );
+  animation: connector-shimmer-line 3.5s linear infinite;
+  will-change: transform;
+}
+
+@keyframes connector-shimmer-svg {
+  0% { stroke-dashoffset: 68; }
+  100% { stroke-dashoffset: -68; }
+}
+.connector-shimmer-svg {
+  animation: connector-shimmer-svg 3.5s linear infinite;
+  will-change: stroke-dashoffset;
+}
+
 /* Hide scrollbar utility */
 .scrollbar-none {
   -ms-overflow-style: none;
