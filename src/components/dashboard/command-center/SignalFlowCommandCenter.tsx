@@ -242,9 +242,8 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
   const currentPrice = currentSignal?.price ?? (ticker ? parseFloat(ticker.lastPx) : 0);
   const coin = pair.split("/")[0];
   const fullEngineReady = hasExternalSignalLayers(d.signalsData?.sources) && !news?.error;
-  const engineModeLabel = fullEngineReady
-    ? "5-layer engine + AI thesis"
-    : "TA fallback: SoDEX RSI / trend / volume";
+  const ctaTitle = d.analyzing ? "Generating a new SignalFlow signal" : "Ready to generate a new signal?";
+  const ctaSubtitle = d.analyzing ? "Scoring the latest market layers." : "Push the gas.";
 
   const generateSignal = async () => {
     d.setAiCoin(coin);
@@ -296,8 +295,8 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
       sources,
       targets: buildTargets(action, currentPrice, signalForExecution),
       stop: buildStop(action, currentPrice, signalForExecution),
-      riskReward: action === "NO TRADE" ? "No setup" : signalForExecution?.execution.riskReward ?? "Live calc",
-      positionSize: action === "NO TRADE" ? "0% (wait)" : signalForExecution?.execution.positionSize ?? "1-2%",
+      riskReward: action === "NO TRADE" ? "Stand aside" : signalForExecution?.execution.riskReward ?? "Live calc",
+      positionSize: action === "NO TRADE" ? "Flat / no entry" : signalForExecution?.execution.positionSize ?? "1-2%",
     };
   }, [aiSignal, currentPrice, currentSignal, d.analyzing, news]);
 
@@ -386,15 +385,12 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-bold text-txt-primary">
-              {d.analyzing ? "Analyzing SignalFlow Layers" : "Generate Signal"}
+              {ctaTitle}
             </span>
             <span className="block truncate text-[11px] font-medium text-txt-tertiary">
-              {engineModeLabel}
+              {ctaSubtitle}
             </span>
           </span>
-          <Badge variant={fullEngineReady ? "live" : "warning"} size="sm">
-            {fullEngineReady ? "FULL" : "FALLBACK"}
-          </Badge>
         </Button>
 
         <div className="grid grid-cols-2 gap-3">
@@ -413,14 +409,24 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
             </div>
           </Card>
           <Card variant="inset" padding="sm" className="rounded-xl !p-2.5">
-            <div className="mb-2 text-[11px] font-semibold text-sell uppercase tracking-wide">
+            <div className={cx("mb-2 text-[11px] font-semibold uppercase tracking-wide", decision.action === "NO TRADE" ? "text-hold" : "text-sell")}>
               {decision.action === "NO TRADE" ? "Risk State" : "Stop Loss (SL)"}
             </div>
-            <div className="grid grid-cols-[28px_1fr_58px] gap-1 font-mono text-xs">
-              <span className="text-txt-muted">{decision.stop[0]}</span>
-              <span className="text-sell">{decision.stop[1]}</span>
-              <span className="text-txt-tertiary">{decision.stop[2]}</span>
-            </div>
+            {decision.action === "NO TRADE" ? (
+              <div className="rounded-lg border border-hold-dim bg-hold-muted px-2 py-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-txt-tertiary">Position</span>
+                  <Badge variant="hold" size="sm">WAIT</Badge>
+                </div>
+                <div className="mt-1 text-xs font-semibold text-hold">Flat until setup confirms</div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-[28px_1fr_58px] gap-1 font-mono text-xs">
+                <span className="text-txt-muted">{decision.stop[0]}</span>
+                <span className="text-sell">{decision.stop[1]}</span>
+                <span className="text-txt-tertiary">{decision.stop[2]}</span>
+              </div>
+            )}
             <div className="my-1.5 h-px bg-border-default" />
             <div className="text-[11px] font-semibold text-txt-tertiary uppercase tracking-wide">Risk / Reward</div>
             <div className="mt-0.5 font-mono text-base font-bold text-txt-primary">{decision.riskReward}</div>
