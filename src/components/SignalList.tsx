@@ -20,10 +20,10 @@ function truncate(s: string, max: number): string {
 
 /* ── Action config ── */
 
-const actionConfig: Record<string, { color: string; bg: string; border: string; glow: string }> = {
-  BUY: { color: "text-buy", bg: "bg-buy-muted", border: "border-l-border-default", glow: "" },
-  SELL: { color: "text-sell", bg: "bg-sell-muted", border: "border-l-border-default", glow: "" },
-  HOLD: { color: "text-hold", bg: "bg-hold-muted", border: "border-l-border-default", glow: "" },
+const actionConfig: Record<string, { color: string; bg: string; border: string; glow: string; label: string }> = {
+  BUY: { color: "text-buy", bg: "bg-buy-muted", border: "border-l-border-default", glow: "", label: "LONG" },
+  SELL: { color: "text-sell", bg: "bg-sell-muted", border: "border-l-border-default", glow: "", label: "SHORT" },
+  HOLD: { color: "text-hold", bg: "bg-hold-muted", border: "border-l-border-default", glow: "", label: "NO TRADE" },
 };
 
 /* ── Props ── */
@@ -109,7 +109,7 @@ export default function SignalList({ onSelect, selected, tickers, liveSignals, c
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold text-txt-primary">{s.pair}</span>
                   <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${cfg.bg} ${cfg.color}`}>
-                    {s.action}
+                    {cfg.label}
                   </span>
                   {isTop && (
                     <span className="text-[8px] uppercase tracking-wider font-bold px-1 py-0.5 rounded bg-elevated text-txt-secondary">
