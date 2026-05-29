@@ -4,9 +4,9 @@ import { type ReactNode, type CSSProperties, type MouseEvent } from "react";
 import { motion } from "framer-motion";
 
 const variants = {
-  default: "bg-card border border-border-default",
-  inset: "bg-inset border border-border-default",
-  elevated: "bg-elevated border border-border-muted",
+  default: "bg-card border border-border-default shadow-[0_1px_2px_rgba(0,0,0,0.28)]",
+  inset: "bg-inset border border-border-default shadow-[0_1px_2px_rgba(0,0,0,0.22)]",
+  elevated: "bg-elevated border border-border-muted shadow-[0_2px_6px_rgba(0,0,0,0.26)]",
   ghost: "bg-transparent border-none",
 };
 
@@ -38,7 +38,7 @@ export default function Card({
   children,
   onClick,
 }: Props) {
-  const baseClass = `rounded-xl ${variants[variant]} ${paddings[padding]} ${className}`;
+  const baseClass = `rounded-lg ${variants[variant]} ${paddings[padding]} ${className}`;
   const accentStyle = accent
     ? { borderTop: `2px solid ${accent}`, ...style }
     : style;
@@ -50,7 +50,7 @@ export default function Card({
           y: -2,
           transition: { duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] },
         }}
-        className={`${baseClass} hover:border-accent-dim hover:shadow-[0_4px_20px_rgba(0,229,168,0.06)] cursor-pointer transition-[border-color,box-shadow] duration-200`}
+        className={`${baseClass} hover:border-border-muted hover:shadow-[0_6px_16px_rgba(0,0,0,0.34)] cursor-pointer transition-[border-color,box-shadow] duration-200`}
         style={accentStyle}
         onClick={onClick}
       >
