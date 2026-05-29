@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Target, Layers, Activity } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -441,7 +442,9 @@ function SignalAccuracyCard() {
 
   return (
     <Card variant="default" padding="sm" className="rounded-xl">
-      <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">Signal Accuracy</h3>
+      <h3 className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">
+        <Target size={12} className="text-accent" /> Signal Accuracy
+      </h3>
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs text-txt-muted">Win Rate</span>
@@ -476,7 +479,9 @@ function IndexCard() {
 
   return (
     <Card variant="default" padding="sm" className="rounded-xl">
-      <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">Index Prices</h3>
+      <h3 className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">
+        <Layers size={12} className="text-accent" /> Index Prices
+      </h3>
       <div className="space-y-2">
         {coins.map((sym) => {
           const t = tickers.find((tk) => tk.symbol === sym);
@@ -517,7 +522,9 @@ function MarketStatsCard() {
 
   return (
     <Card variant="default" padding="sm" className="rounded-xl">
-      <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">Market Stats</h3>
+      <h3 className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">
+        <Activity size={12} className="text-accent" /> Market Stats
+      </h3>
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs text-txt-muted">Volume 24H</span>

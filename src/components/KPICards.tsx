@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
+import { TrendingUp } from "lucide-react";
 import type { DashboardMetrics, MetricStatus } from "@/lib/hooks/useDashboardMetrics";
 import { formatPercent } from "@/lib/api/dashboard-metrics";
 
@@ -136,6 +137,7 @@ function MiniKpiCard({
   tone = "neutral",
   trend,
   valueClassName = "text-txt-primary",
+  icon,
 }: {
   label: string;
   value: string;
@@ -147,6 +149,7 @@ function MiniKpiCard({
   tone?: "buy" | "sell" | "neutral";
   trend?: number | null;
   valueClassName?: string;
+  icon?: React.ReactNode;
 }) {
   return (
     <motion.div
@@ -154,7 +157,8 @@ function MiniKpiCard({
       className="min-w-0 h-full bg-card border border-border-default rounded-lg px-3.5 py-3 transition-[background-color,border-color,transform] duration-200 hover:bg-elevated/10 hover:border-border-muted"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[9px] uppercase font-semibold text-txt-primary truncate">
+        <span className="flex items-center gap-1 text-[9px] uppercase font-semibold text-txt-primary truncate">
+          {icon}
           {label}
         </span>
         <StatusBadge status={status} />
@@ -319,6 +323,7 @@ export default function KPICards({ metrics }: Props) {
         />
         <MiniKpiCard
           label="Top Mover"
+          icon={<TrendingUp size={10} className="text-buy shrink-0" />}
           value={topGainer?.pair ?? "-"}
           status={metrics.topGainer.status}
           source={metrics.topGainer.source}
