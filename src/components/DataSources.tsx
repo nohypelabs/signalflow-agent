@@ -137,9 +137,6 @@ export default function DataSources() {
           const cfg = statusConfig[g.status];
           return (
             <Card key={g.name} padding="none" className="overflow-hidden hover:border-border-muted transition-colors">
-              {/* Accent stripe */}
-              <div className="h-[2px]" style={{ background: `linear-gradient(90deg, ${g.color}60, transparent)` }} />
-
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -245,7 +242,7 @@ export default function DataSources() {
       </Card>
 
       {/* API endpoints */}
-      <Card padding="sm" className="bg-inset/30">
+      <Card padding="sm">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[9px] text-txt-faint font-mono">
           <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
             <span className="flex items-center gap-1.5">
