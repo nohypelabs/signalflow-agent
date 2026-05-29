@@ -20,6 +20,7 @@ interface Market {
   category: Category;
   status: string;
   signal: { action: string; confidence: number } | null;
+  maxLev: number;
 }
 
 interface Props {
@@ -192,11 +193,12 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
       const changePct = typeof t.changePct === "number" && !Number.isNaN(t.changePct) ? t.changePct : 0;
       const openPx = parseFloat(t.openPx || "0");
       const changeAbs = openPx > 0 ? price - openPx : 0;
+      const maxLev = ["BTC", "ETH", "SOL"].includes(base.toUpperCase()) ? 20 : 5;
       list.push({
         symbol, displayPair: `${base}/USDC`, base, lastPrice: price,
         change24h: changePct, changeAbs, volume24h: vol,
         category: categorize(base), status: "TRADING",
-        signal: signalMap.get(base) ?? null,
+        signal: signalMap.get(base) ?? null, maxLev,
       });
     }
     return list;
@@ -375,6 +377,7 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
                         {m.category !== "Crypto" && (
                           <span className="text-[7px] px-1 py-0.5 rounded bg-elevated text-txt-dim font-semibold uppercase">{m.category.slice(0, 3)}</span>
                         )}
+                        <span className="text-[7px] px-1 py-0.5 rounded bg-accent/10 text-accent font-bold font-mono">{m.maxLev}x</span>
                         {m.signal && (
                           <span className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[7px] font-bold uppercase leading-none ${
                             m.signal.action === "LONG"

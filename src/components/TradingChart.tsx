@@ -514,6 +514,9 @@ export default function TradingChart({
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
               <span className="text-base">{pair}</span>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8px] font-bold font-mono bg-accent/10 text-accent border border-accent/20">
+                {["BTC", "ETH", "SOL"].includes(pair.split("/")[0].toUpperCase()) ? "20x" : "5x"}
+              </span>
               {latestSignal && (
                 <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-wider leading-none ${
                   latestSignal.action === "LONG"
