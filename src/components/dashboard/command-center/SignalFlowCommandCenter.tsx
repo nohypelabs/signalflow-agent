@@ -1,10 +1,9 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Target, Layers, Activity, Fuel } from "lucide-react";
+import { Target, Layers, Activity, Play } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
 import SpeedometerGauge from "@/components/ui/SpeedometerGauge";
 import TradingChart from "@/components/TradingChart";
 import { useDashboard } from "@/lib/dashboard-context";
@@ -26,6 +25,63 @@ const pipelineSteps = [
 
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
+}
+
+function PedalIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19.6 4.7 10.4 7.5a3.2 3.2 0 0 0-2.1 4l4.7 14.2a3.1 3.1 0 0 0 3.9 2l4.9-1.6a3.2 3.2 0 0 0 2.1-4L23.7 6.7a3.1 3.1 0 0 0-4.1-2Z" />
+      <path d="m12 12.2 8.9-2.9M13.4 16.5l8.8-2.9M14.8 20.8l8.7-2.9" />
+    </svg>
+  );
+}
+
+function IconControlButton({
+  label,
+  detail,
+  onClick,
+  disabled = false,
+  loading = false,
+  intent = "accent",
+  children,
+}: {
+  label: string;
+  detail: string;
+  onClick: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+  intent?: "accent" | "execute";
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="group relative flex h-11 w-11 items-center justify-center">
+      <button
+        type="button"
+        aria-label={label}
+        title={`${label}: ${detail}`}
+        onClick={onClick}
+        disabled={disabled || loading}
+        className={cx(
+          "flex h-11 w-11 items-center justify-center rounded-xl border transition-all",
+          "focus:outline-none focus:ring-2 focus:ring-accent/40",
+          intent === "execute"
+            ? "border-buy-dim bg-buy-muted text-buy hover:border-buy hover:bg-buy-muted/80"
+            : "border-accent-dim bg-accent-muted text-accent hover:border-accent hover:bg-accent-muted/80",
+          (disabled || loading) && "cursor-not-allowed border-border-default bg-elevated text-txt-muted opacity-70"
+        )}
+      >
+        {loading ? (
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        ) : (
+          children
+        )}
+      </button>
+      <div className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-20 w-56 -translate-x-1/2 rounded-lg border border-border-default bg-panel px-3 py-2 text-left opacity-0 shadow-xl transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+        <div className="text-xs font-bold text-txt-primary">{label}</div>
+        <div className="mt-0.5 text-[11px] leading-snug text-txt-tertiary">{detail}</div>
+      </div>
+    </div>
+  );
 }
 
 
@@ -242,8 +298,11 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
   const currentPrice = currentSignal?.price ?? (ticker ? parseFloat(ticker.lastPx) : 0);
   const coin = pair.split("/")[0];
   const fullEngineReady = hasExternalSignalLayers(d.signalsData?.sources) && !news?.error;
-  const ctaTitle = d.analyzing ? "Generating a new SignalFlow signal" : "Ready to generate a new signal?";
-  const ctaSubtitle = d.analyzing ? "Scoring the latest market layers." : "Push the gas.";
+  const generateTooltip = d.analyzing
+    ? "Scoring the latest market layers."
+    : fullEngineReady
+      ? "Push the pedal to generate a fresh SignalFlow signal."
+      : "Push the pedal to generate from the live data currently available.";
 
   const generateSignal = async () => {
     d.setAiCoin(coin);
@@ -358,40 +417,40 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
         <div className="rounded-xl border border-border-default bg-inset/70 px-2 py-2 text-center">
           <div className="mb-1 text-[11px] font-semibold tracking-wide text-txt-tertiary uppercase">SignalFlow Final Score</div>
           <SpeedometerGauge value={decision.confidence} size="lg" showLabel={false} />
-          <div
-            className="-mt-2 text-5xl font-bold tabular-nums tracking-tight"
-            style={{
-              color: decision.action === "LONG"
-                ? "var(--color-buy)"
-                : decision.action === "SHORT"
-                  ? "var(--color-sell)"
-                  : "var(--color-hold)",
-            }}
-          >
-            {decision.confidence}%
+          <div className="-mt-2 grid grid-cols-[44px_auto_44px] items-center justify-center gap-3">
+            <IconControlButton
+              label={d.analyzing ? "Generating Signal" : "Generate Signal"}
+              detail={generateTooltip}
+              onClick={generateSignal}
+              loading={d.analyzing}
+              intent="accent"
+            >
+              <PedalIcon className="h-5 w-5" />
+            </IconControlButton>
+            <div
+              className="min-w-[104px] text-5xl font-bold tabular-nums tracking-tight"
+              style={{
+                color: decision.action === "LONG"
+                  ? "var(--color-buy)"
+                  : decision.action === "SHORT"
+                    ? "var(--color-sell)"
+                    : "var(--color-hold)",
+              }}
+            >
+              {decision.confidence}%
+            </div>
+            <IconControlButton
+              label={decision.action === "NO TRADE" ? "Wait For Setup" : "Execute Setup"}
+              detail={decision.action === "NO TRADE" ? "No executable setup yet." : `Execute this setup at ${decision.positionSize}.`}
+              onClick={execute}
+              disabled={!currentSignal || decision.action === "NO TRADE"}
+              intent="execute"
+            >
+              <Play size={19} fill="currentColor" />
+            </IconControlButton>
           </div>
           <div className="text-sm font-medium text-txt-tertiary">{decision.label}</div>
         </div>
-
-        <Button
-          variant={fullEngineReady ? "primary" : "secondary"}
-          size="lg"
-          loading={d.analyzing}
-          onClick={generateSignal}
-          className="w-full h-[58px] justify-start rounded-xl px-3 text-left"
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-accent-dim bg-accent-muted text-accent">
-            <Fuel size={18} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-bold text-txt-primary">
-              {ctaTitle}
-            </span>
-            <span className="block truncate text-[11px] font-medium text-txt-tertiary">
-              {ctaSubtitle}
-            </span>
-          </span>
-        </Button>
 
         <div className="grid grid-cols-2 gap-3">
           <Card variant="inset" padding="sm" className="rounded-xl !p-2.5">
@@ -432,16 +491,6 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
             <div className="mt-0.5 font-mono text-base font-bold text-txt-primary">{decision.riskReward}</div>
           </Card>
         </div>
-
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={execute}
-          disabled={!currentSignal || decision.action === "NO TRADE"}
-          className="w-full h-11 rounded-xl text-sm"
-        >
-          <span className="text-lg">▶</span> {decision.action === "NO TRADE" ? "Wait For Setup" : `Execute Setup · ${decision.positionSize}`}
-        </Button>
       </div>
     </Panel>
   );
