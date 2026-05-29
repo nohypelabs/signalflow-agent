@@ -21,9 +21,9 @@ function truncate(s: string, max: number): string {
 /* ── Action config ── */
 
 const actionConfig: Record<string, { color: string; bg: string; border: string; glow: string }> = {
-  BUY: { color: "text-buy", bg: "bg-buy-muted", border: "border-l-buy", glow: "shadow-[inset_0_0_20px_rgba(0,230,118,0.05)]" },
-  SELL: { color: "text-sell", bg: "bg-sell-muted", border: "border-l-sell", glow: "shadow-[inset_0_0_20px_rgba(239,68,68,0.05)]" },
-  HOLD: { color: "text-hold", bg: "bg-hold-muted", border: "border-l-hold", glow: "shadow-[inset_0_0_20px_rgba(245,158,11,0.05)]" },
+  BUY: { color: "text-buy", bg: "bg-buy-muted", border: "border-l-buy", glow: "" },
+  SELL: { color: "text-sell", bg: "bg-sell-muted", border: "border-l-sell", glow: "" },
+  HOLD: { color: "text-hold", bg: "bg-hold-muted", border: "border-l-hold", glow: "" },
 };
 
 /* ── Props ── */

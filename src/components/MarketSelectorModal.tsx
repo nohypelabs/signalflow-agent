@@ -255,7 +255,7 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-2 md:pt-[4vh] bg-black/75 backdrop-blur-md" onClick={onClose}>
       <div
-        className="w-[calc(100%-12px)] md:w-full max-w-5xl max-h-[94vh] md:max-h-[88vh] flex flex-col rounded-xl md:rounded-2xl border border-border-muted bg-card shadow-[0_25px_60px_rgba(0,0,0,0.5)] overflow-hidden"
+        className="w-[calc(100%-12px)] md:w-full max-w-5xl max-h-[94vh] md:max-h-[88vh] flex flex-col rounded-xl md:rounded-2xl border border-border-muted bg-card overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
@@ -285,7 +285,7 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
               <button key={tab.id} onClick={() => { setActiveTab(tab.id); setHighlightIdx(0); }}
                 className={`flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg font-medium cursor-pointer transition-all ${
                   activeTab === tab.id
-                    ? "bg-accent/12 text-accent border border-accent/25 shadow-[0_0_8px_rgba(0,229,168,0.08)]"
+                    ? "bg-accent/12 text-accent border border-accent/25"
                     : "text-txt-dim hover:text-txt-secondary border border-transparent hover:bg-elevated/30"
                 }`}>
                 {tab.icon} {tab.label}

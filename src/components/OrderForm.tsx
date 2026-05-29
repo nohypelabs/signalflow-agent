@@ -211,7 +211,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-txt-dim"><path d="M19 9l-7 7-7-7" /></svg>
             </button>
             {showMarginDropdown && (
-              <div className="absolute right-0 top-full mt-1.5 z-30 bg-card border border-border-muted rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.4)] overflow-hidden min-w-[140px]">
+              <div className="absolute right-0 top-full mt-1.5 z-30 bg-card border border-border-muted rounded-xl overflow-hidden min-w-[140px]">
                 <div className="px-3 py-2 border-b border-border-default bg-inset/30">
                   <span className="text-[9px] text-txt-muted font-medium uppercase tracking-wider">Margin Mode</span>
                 </div>
@@ -242,7 +242,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
             <div className="flex gap-1.5">
               {leveragePresets.map((lev) => (
                 <button key={lev} onClick={() => setLeverage(lev)} className={`flex-1 text-[10px] py-1.5 rounded-lg cursor-pointer transition-all font-medium ${
-                  leverage === lev ? "bg-accent/15 text-accent border border-accent/30 shadow-[0_0_8px_rgba(0,229,168,0.1)]" : "bg-inset text-txt-dim border border-border-default hover:border-border-muted hover:text-txt-secondary"
+                  leverage === lev ? "bg-accent/15 text-accent border border-accent/30" : "bg-inset text-txt-dim border border-border-default hover:border-border-muted hover:text-txt-secondary"
                 }`}>{lev}x</button>
               ))}
             </div>

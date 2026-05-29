@@ -659,7 +659,7 @@ export default function TradingChart({
                 {showCompactControls && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute right-0 top-full mt-1.5 z-30 bg-card border border-border-muted rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.35)] p-2 min-w-[180px]"
+                    className="absolute right-0 top-full mt-1.5 z-30 bg-card border border-border-muted rounded-lg p-2 min-w-[180px]"
                   >
                     <div className="text-[9px] text-txt-muted uppercase tracking-wider px-1 pb-1.5 border-b border-border-default">Chart Display</div>
                     <div className="mt-2 space-y-1.5">
@@ -725,7 +725,7 @@ export default function TradingChart({
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
               </button>
               {showTfDropdown && (
-                <div className="absolute left-0 top-full mt-1.5 z-30 bg-card border border-border-muted rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.4)] overflow-hidden min-w-[180px]" onClick={(e) => e.stopPropagation()}>
+                <div className="absolute left-0 top-full mt-1.5 z-30 bg-card border border-border-muted rounded-xl overflow-hidden min-w-[180px]" onClick={(e) => e.stopPropagation()}>
                   <div className="px-3 py-2 border-b border-border-default bg-inset/30">
                     <span className="text-[9px] text-txt-muted font-medium uppercase tracking-wider">Timeframe</span>
                   </div>

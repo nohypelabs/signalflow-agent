@@ -4,9 +4,9 @@ import { type ReactNode, type CSSProperties, type MouseEvent } from "react";
 import { motion } from "framer-motion";
 
 const variants = {
-  default: "bg-card border border-border-default shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_1px_2px_rgba(0,0,0,0.34),0_8px_20px_rgba(0,0,0,0.2)]",
-  inset: "bg-inset border border-border-default shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_1px_2px_rgba(0,0,0,0.28),0_6px_16px_rgba(0,0,0,0.16)]",
-  elevated: "bg-elevated border border-border-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_2px_6px_rgba(0,0,0,0.34),0_10px_24px_rgba(0,0,0,0.22)]",
+  default: "bg-card border border-border-default",
+  inset: "bg-inset border border-border-default",
+  elevated: "bg-elevated border border-border-muted",
   ghost: "bg-transparent border-none",
 };
 
@@ -50,7 +50,7 @@ export default function Card({
           y: -2,
           transition: { duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] },
         }}
-        className={`${baseClass} hover:border-border-strong hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_6px_rgba(0,0,0,0.38),0_12px_26px_rgba(0,0,0,0.26)] cursor-pointer transition-[border-color,box-shadow,transform] duration-200`}
+        className={`${baseClass} hover:border-border-muted hover:bg-elevated/20 cursor-pointer transition-[border-color,background-color,transform] duration-200`}
         style={accentStyle}
         onClick={onClick}
       >

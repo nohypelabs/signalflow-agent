@@ -104,7 +104,7 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
       {open && (
         <div
           ref={dropdownRef}
-          className={`absolute top-full mt-1 w-56 max-w-[calc(100vw-1rem)] rounded-xl border border-border-default bg-card shadow-2xl shadow-black/40 overflow-hidden z-50 ${
+          className={`absolute top-full mt-1 w-56 max-w-[calc(100vw-1rem)] rounded-xl border border-border-default bg-card overflow-hidden z-50 ${
             dropdownAlign === "left" ? "left-0" : "right-0"
           }`}
         >

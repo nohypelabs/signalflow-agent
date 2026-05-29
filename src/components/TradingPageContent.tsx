@@ -464,7 +464,7 @@ function TradeConfirmationModal({ action, onCancel, onConfirm }: { action: Pendi
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-lg overflow-hidden rounded-xl border border-accent/30 bg-panel shadow-2xl">
+      <div className="w-full max-w-lg overflow-hidden rounded-xl border border-accent/30 bg-panel">
         <div className="border-b border-border-default bg-accent/10 px-5 py-4">
           <p className="text-xs font-bold uppercase tracking-wider text-accent">Action Required</p>
           <h3 className="mt-1 text-lg font-bold text-txt-primary">{isOpen ? "Confirm Entry" : "Confirm Exit"}</h3>
@@ -485,7 +485,7 @@ function TradeExecutionModal({ notice, onClose }: { notice: TradeNotice; onClose
   const bg = notice.kind === "error" ? "bg-sell/10" : notice.kind === "success" ? "bg-buy/10" : "bg-accent/10";
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
-      <div className={`w-full max-w-md overflow-hidden rounded-xl border ${bd} bg-panel shadow-2xl`}>
+      <div className={`w-full max-w-md overflow-hidden rounded-xl border ${bd} bg-panel`}>
         <div className={`px-5 py-4 ${bg} border-b ${bd}`}>
           <div className="flex items-start justify-between gap-4">
             <div><p className={`text-xs font-bold uppercase tracking-wider ${tone}`}>{notice.kind === "error" ? "Failed" : "Confirmed"}</p><h3 className="mt-1 text-lg font-bold text-txt-primary">{notice.title}</h3><p className="mt-1 text-xs text-txt-secondary">{notice.detail}</p></div>
