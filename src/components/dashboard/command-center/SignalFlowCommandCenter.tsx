@@ -508,9 +508,13 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
                 <span className="text-txt-tertiary">{decision.stop[2]}</span>
               </div>
             )}
-            <div className="my-1.5 h-px bg-border-default" />
-            <div className="text-[11px] font-semibold text-txt-tertiary uppercase tracking-wide">Risk / Reward</div>
-            <div className="mt-0.5 font-mono text-base font-bold text-txt-primary">{decision.riskReward}</div>
+            {decision.action !== "NO TRADE" && (
+              <>
+                <div className="my-1.5 h-px bg-border-default" />
+                <div className="text-[11px] font-semibold text-txt-tertiary uppercase tracking-wide">Risk / Reward</div>
+                <div className="mt-0.5 font-mono text-base font-bold text-txt-primary">{decision.riskReward}</div>
+              </>
+            )}
           </Card>
         </div>
       </div>
