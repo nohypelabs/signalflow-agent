@@ -143,7 +143,7 @@ function MarketCanvas({ pair }: { pair: string }) {
   const currentPrice = ticker ? parseFloat(ticker.lastPx) : null;
 
   return (
-    <Card variant="default" padding="none" className="rounded-xl overflow-hidden h-[494px] flex flex-col">
+    <Card variant="default" padding="none" className="rounded-xl overflow-hidden h-[544px] flex flex-col">
       <TradingChart
         klines={d.klines}
         symbol={pair}
@@ -180,7 +180,7 @@ function DecisionPanel() {
   };
 
   return (
-    <Panel title="CURRENT DECISION SCORE" className="h-[494px]">
+    <Panel title="CURRENT DECISION SCORE" className="h-[544px]">
       <div className="space-y-4 p-4">
         {/* Signal Selector */}
         <div>
@@ -323,7 +323,7 @@ function NewsFeed() {
           {news.sentiment.label} {news.sentiment.score}
         </Badge>
       )}
-      className="h-[494px]"
+      className="h-[544px]"
     >
       <div>
         {hasData && news?.list.map((item) => (
@@ -556,10 +556,7 @@ function MarketStatsBar() {
 
 export default function SignalFlowCommandCenter() {
   const d = useDashboard();
-  const pairBase = d.selectedPair.startsWith("v")
-    ? d.selectedPair.replace(/^v/, "").replace(/_vUSDC$/, "")
-    : d.selectedPair.split("/")[0];
-  const pair = `${pairBase}/USDC`;
+  const pair = d.selectedPairDisplay;
 
   return (
     <div className="space-y-3 px-2 lg:px-3 pt-2 lg:pt-3">
@@ -572,6 +569,21 @@ export default function SignalFlowCommandCenter() {
         <NewsFeed />
       </div>
       <MarketStatsBar />
+
+      {/* Footer */}
+      <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border-default px-4 py-3 text-[10px] text-txt-muted">
+        <div className="flex items-center gap-3">
+          <span>SignalFlow Agent — AI-Powered Signal-to-Execution Dashboard</span>
+          <span className="text-border-default">|</span>
+          <span className="font-medium text-accent">SoSoValue Buildathon Wave 2 — 2026</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <a href="https://github.com/nohypelabs/signalflow-agent" target="_blank" rel="noopener noreferrer" className="hover:text-txt-primary transition-colors">GitHub</a>
+          <a href="https://x.com/nohypelabs" target="_blank" rel="noopener noreferrer" className="hover:text-txt-primary transition-colors">X/@nohypelabs</a>
+          <span className="text-border-default">|</span>
+          <span>NoHype Labs © 2026</span>
+        </div>
+      </footer>
     </div>
   );
 }

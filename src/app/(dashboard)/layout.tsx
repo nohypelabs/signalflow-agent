@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import { DashboardProvider, useDashboard } from "@/lib/dashboard-context";
 import AppShell from "@/components/layout/AppShell";
-import { pairToSodexSymbol } from "@/lib/pair-map";
 
 function ShellWithProps({ children }: { children: React.ReactNode }) {
   const d = useDashboard();
