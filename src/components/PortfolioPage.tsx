@@ -459,24 +459,50 @@ export default function PortfolioPage({ trades, stats, balance, currentPrices, o
               <p className="text-[10px] text-txt-faint mt-1">Trades will appear here after TP, SL, liquidation, or manual close</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <div className="min-w-[720px]">
-              {/* Table header */}
-              <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto_auto] gap-3 items-center px-4 py-2 text-[9px] text-txt-dim uppercase tracking-wider font-semibold border-b border-border-default">
-                <span>Side</span>
-                <span>Pair</span>
-                <span>Type</span>
-                <span>Lev</span>
-                <span>Entry</span>
-                <span>Exit</span>
-                <span>Hold</span>
-                <span>P&L</span>
+            <>
+              <div className="md:hidden divide-y divide-border-default">
+                {filteredClosed.map((t) => (
+                  <div key={t.id} className="px-3 py-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          t.side === "LONG" ? "bg-[#00ff88]/15 text-[#00ff88]" : "bg-[#ff4444]/15 text-[#ff4444]"
+                        }`}>{t.side}</span>
+                        <span className="text-xs font-bold text-txt-primary">{t.pair}</span>
+                        <span className="text-[9px] text-accent font-mono">{t.leverage}x</span>
+                      </div>
+                      <span className={`text-[11px] font-bold font-mono ${(t.pnl ?? 0) >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
+                        {(t.pnl ?? 0) >= 0 ? "+" : ""}{fmtUSD(t.pnl ?? 0)}
+                      </span>
+                    </div>
+                    <div className="mt-1.5 grid grid-cols-4 gap-2 text-[10px]">
+                      <div><p className="text-txt-faint">Entry</p><p className="font-mono text-txt-secondary">${fmtPrice(t.entryPrice)}</p></div>
+                      <div><p className="text-txt-faint">Exit</p><p className="font-mono text-txt-secondary">${fmtPrice(t.exitPrice ?? 0)}</p></div>
+                      <div><p className="text-txt-faint">Hold</p><p className="font-mono text-txt-secondary">{fmtTime((t.closedAt ?? Date.now()) - t.openedAt)}</p></div>
+                      <div><p className="text-txt-faint">Type</p><p className="font-mono text-txt-secondary">{t.tradingType ?? "—"}</p></div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              {filteredClosed.map((t) => (
-                <HistoryRow key={t.id} trade={t} signalMap={signalMap} />
-              ))}
+              <div className="hidden md:block overflow-x-auto">
+                <div className="min-w-[720px]">
+                {/* Table header */}
+                <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto_auto] gap-3 items-center px-4 py-2 text-[9px] text-txt-dim uppercase tracking-wider font-semibold border-b border-border-default">
+                  <span>Side</span>
+                  <span>Pair</span>
+                  <span>Type</span>
+                  <span>Lev</span>
+                  <span>Entry</span>
+                  <span>Exit</span>
+                  <span>Hold</span>
+                  <span>P&L</span>
+                </div>
+                {filteredClosed.map((t) => (
+                  <HistoryRow key={t.id} trade={t} signalMap={signalMap} />
+                ))}
               </div>
-            </div>
+              </div>
+            </>
           )}
         </Card>
       )}

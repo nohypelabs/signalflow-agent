@@ -244,7 +244,7 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
     else { setSortBy(col); setSortDir("desc"); }
   };
 
-  const SortArrow = ({ col }: { col: string }) => (
+  const renderSortArrow = (col: "volume" | "change" | "price") => (
     <span className={`ml-0.5 text-[9px] ${sortBy === col ? "text-accent" : "text-txt-faint"}`}>
       {sortBy === col ? (sortDir === "desc" ? "▼" : "▲") : "↕"}
     </span>
@@ -253,20 +253,20 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[4vh] bg-black/75 backdrop-blur-md" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-2 md:pt-[4vh] bg-black/75 backdrop-blur-md" onClick={onClose}>
       <div
-        className="w-full max-w-5xl max-h-[88vh] flex flex-col rounded-2xl border border-border-muted bg-card shadow-[0_25px_60px_rgba(0,0,0,0.5)] overflow-hidden"
+        className="w-[calc(100%-12px)] md:w-full max-w-5xl max-h-[94vh] md:max-h-[88vh] flex flex-col rounded-xl md:rounded-2xl border border-border-muted bg-card shadow-[0_25px_60px_rgba(0,0,0,0.5)] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
         {/* ═══ Search Bar ═══ */}
-        <div className="shrink-0 flex items-center gap-3 px-5 py-3.5 border-b border-border-default bg-inset/40">
+        <div className="shrink-0 flex items-center gap-2 md:gap-3 px-3 md:px-5 py-2.5 md:py-3.5 border-b border-border-default bg-inset/40">
           <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 border border-accent/20">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
           </div>
           <input ref={inputRef} type="text" value={search} onChange={(e) => { setSearch(e.target.value); setHighlightIdx(0); }}
             placeholder={`Search ${markets.length} markets…`}
-            className="flex-1 bg-transparent text-sm text-txt-primary outline-none placeholder:text-txt-muted" />
+            className="flex-1 min-w-0 bg-transparent text-sm text-txt-primary outline-none placeholder:text-txt-muted" />
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-txt-faint font-mono px-2 py-0.5 rounded bg-inset border border-border-default">{filtered.length}</span>
             <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-txt-faint hover:text-txt-secondary hover:bg-elevated cursor-pointer transition-colors">
@@ -276,8 +276,8 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
         </div>
 
         {/* ═══ Filter Tabs ═══ */}
-        <div className="shrink-0 flex items-center justify-between px-5 py-2.5 border-b border-border-default">
-          <div className="flex items-center gap-1">
+        <div className="shrink-0 flex flex-col md:flex-row md:items-center md:justify-between gap-2 px-3 md:px-5 py-2.5 border-b border-border-default">
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
             {[
               { id: "all" as const, label: "All Markets", icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg> },
               { id: "watchlist" as const, label: "Watchlist", icon: <StarIcon filled size={12} /> },
@@ -292,7 +292,7 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-txt-faint">
+          <div className="hidden md:flex items-center gap-2 text-[10px] text-txt-faint">
             <span className="font-mono">{markets.length} pairs</span>
             <span className="text-border-default">·</span>
             <span className="font-mono">{fmtVol(totalVolume)} volume</span>
@@ -301,7 +301,7 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
 
         {/* ═══ Category Sub-tabs ═══ */}
         {hasMultipleCategories && (
-          <div className="shrink-0 flex items-center gap-1.5 px-5 py-2 border-b border-border-default bg-inset/20 overflow-x-auto scrollbar-none">
+          <div className="shrink-0 flex items-center gap-1.5 px-3 md:px-5 py-2 border-b border-border-default bg-inset/20 overflow-x-auto scrollbar-none">
             {availableCategories.map((cat) => (
               <button key={cat} onClick={() => { setActiveCategory(cat); setHighlightIdx(0); }}
                 className={`flex items-center gap-1.5 text-[10px] px-3 py-1.5 rounded-lg font-medium cursor-pointer transition-all shrink-0 ${
@@ -318,11 +318,11 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
         )}
 
         {/* ═══ Table Header ═══ */}
-        <div className="shrink-0 grid grid-cols-[1fr_120px_90px_90px_40px] gap-3 px-5 py-2.5 border-b border-border-default bg-inset/30 text-[10px] text-txt-muted font-medium">
+        <div className="hidden md:grid shrink-0 grid-cols-[1fr_120px_90px_90px_40px] gap-3 px-5 py-2.5 border-b border-border-default bg-inset/30 text-[10px] text-txt-muted font-medium">
           <span className="tracking-wide">Market</span>
-          <span className="text-right cursor-pointer hover:text-txt-secondary transition-colors" onClick={() => toggleSort("price")}>Last Price<SortArrow col="price" /></span>
-          <span className="text-right cursor-pointer hover:text-txt-secondary transition-colors" onClick={() => toggleSort("change")}>24h Change<SortArrow col="change" /></span>
-          <span className="text-right cursor-pointer hover:text-txt-secondary transition-colors" onClick={() => toggleSort("volume")}>Volume<SortArrow col="volume" /></span>
+          <span className="text-right cursor-pointer hover:text-txt-secondary transition-colors" onClick={() => toggleSort("price")}>Last Price{renderSortArrow("price")}</span>
+          <span className="text-right cursor-pointer hover:text-txt-secondary transition-colors" onClick={() => toggleSort("change")}>24h Change{renderSortArrow("change")}</span>
+          <span className="text-right cursor-pointer hover:text-txt-secondary transition-colors" onClick={() => toggleSort("volume")}>Volume{renderSortArrow("volume")}</span>
           <span className="text-center">★</span>
         </div>
 
@@ -345,10 +345,9 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
               const isFav = watchlist.includes(m.base);
 
               return (
+                <div key={m.symbol} data-idx={idx}>
                 <div
-                  key={m.symbol}
-                  data-idx={idx}
-                  className={`grid grid-cols-[1fr_120px_90px_90px_40px] gap-3 px-5 py-3 cursor-pointer transition-all items-center border-b border-border-default/50 ${
+                  className={`hidden md:grid grid-cols-[1fr_120px_90px_90px_40px] gap-3 px-5 py-3 cursor-pointer transition-all items-center border-b border-border-default/50 ${
                     isHighlighted ? "bg-elevated/50" : "hover:bg-elevated/30"
                   } ${isActive ? "bg-accent/8 border-l-2 border-l-accent" : ""}`}
                   onClick={() => { onSelectMarket(m.displayPair); onClose(); }}
@@ -392,13 +391,52 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
                     <StarIcon filled={isFav} size={16} />
                   </button>
                 </div>
+                <div
+                  className={`md:hidden px-3 py-2.5 border-b border-border-default/50 ${isActive ? "bg-accent/8" : "hover:bg-elevated/20"}`}
+                  onClick={() => { onSelectMarket(m.displayPair); onClose(); }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <MarketIcon base={m.base} category={m.category} size={24} />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[12px] font-bold truncate ${isActive ? "text-accent" : "text-txt-primary"}`}>{m.base}</span>
+                          <span className="text-[9px] text-txt-faint">/USDC</span>
+                          <span className="text-[9px] px-1.5 py-[1px] rounded bg-accent/10 text-accent font-bold font-mono border border-accent/20">{m.maxLev}x</span>
+                        </div>
+                        {m.signal && <div className="mt-1"><SignalBadge action={m.signal.action} confidence={m.signal.confidence} /></div>}
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleWatch(m.base); }}
+                      className={`shrink-0 pt-0.5 ${isFav ? "text-hold" : "text-txt-faint/40"}`}
+                    >
+                      <StarIcon filled={isFav} size={15} />
+                    </button>
+                  </div>
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-[10px]">
+                    <div>
+                      <p className="text-txt-faint">Price</p>
+                      <p className="font-mono text-txt-primary">${fmtPrice(m.lastPrice)}</p>
+                    </div>
+                    <div>
+                      <p className="text-txt-faint">24h</p>
+                      <p className={`font-mono ${m.change24h >= 0 ? "text-buy" : "text-sell"}`}>{m.change24h >= 0 ? "+" : ""}{m.change24h.toFixed(2)}%</p>
+                    </div>
+                    <div>
+                      <p className="text-txt-faint">Vol</p>
+                      <p className="font-mono text-txt-secondary">{fmtVol(m.volume24h)}</p>
+                    </div>
+                  </div>
+                </div>
+                </div>
               );
             })
           )}
         </div>
 
         {/* ═══ Footer ═══ */}
-        <div className="shrink-0 flex items-center justify-between px-5 py-2.5 border-t border-border-default bg-inset/30">
+        <div className="hidden md:flex shrink-0 items-center justify-between px-5 py-2.5 border-t border-border-default bg-inset/30">
           <div className="flex items-center gap-3 text-[10px] text-txt-faint">
             <span className="font-mono">{filtered.length} markets</span>
             <span className="text-border-default">·</span>

@@ -224,12 +224,12 @@ export default function PerformancePage({
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
           <h2 className="text-lg font-bold text-txt-primary tracking-tight">Performance Analytics</h2>
           <p className="text-xs text-txt-muted mt-0.5">Market performance, signal accuracy, and risk metrics.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="accent" size="md">LIVE DATA</Badge>
           {exportCSV && (
             <button onClick={exportCSV} className="text-[10px] text-accent border border-accent/20 px-2 py-1 rounded hover:bg-accent/10 transition-colors">
@@ -259,12 +259,12 @@ export default function PerformancePage({
         {/* 30D returns bar chart */}
         <Card padding="lg">
           <h4 className="text-xs font-semibold text-txt-secondary mb-3">30-Day Returns</h4>
-          <div className="flex items-end gap-6 h-40">
+          <div className="flex items-end gap-3 md:gap-6 h-40 overflow-x-auto scrollbar-none">
             {coins.map((coin) => {
               const maxAbs = Math.max(...coins.map((c) => Math.abs(c.change30d)), 1);
               const color = COIN_COLORS[coin.symbol] || "#ffffff";
               return (
-                <div key={coin.symbol} className="flex-1 flex flex-col items-center gap-1">
+                <div key={coin.symbol} className="min-w-[56px] md:min-w-0 flex-1 flex flex-col items-center gap-1">
                   <span className="text-[10px] text-txt-muted font-mono">{fmtPrice(coin.price)}</span>
                   <span className={`text-xs font-bold tabular-nums ${coin.change30d >= 0 ? "text-buy" : "text-sell"}`}>
                     {fmtPct(coin.change30d)}
@@ -318,12 +318,12 @@ export default function PerformancePage({
       {/* ── Section 2: Signal Accuracy ── */}
       {historyHydrated && (
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider">Signal Accuracy Tracking</h3>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {/* Resolution window selector */}
               <span className="text-[9px] text-txt-dim">Resolve after:</span>
-              <div className="flex items-center gap-0.5 bg-inset border border-border-default rounded-lg p-0.5">
+              <div className="flex items-center gap-0.5 bg-inset border border-border-default rounded-lg p-0.5 overflow-x-auto scrollbar-none">
                 {(Object.keys(RES_WINDOW_LABELS) as ResolutionWindow[]).map((w) => (
                   <button
                     key={w}
@@ -412,9 +412,9 @@ export default function PerformancePage({
           {/* Equity Curve */}
           {equityCurve.length > 2 && (
             <Card padding="lg" className="mb-4">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                 <h4 className="text-xs font-semibold text-txt-secondary">Simulated Equity Curve</h4>
-                <div className="flex items-center gap-3 text-[10px]">
+                <div className="flex items-center gap-3 flex-wrap text-[10px]">
                   <span className="text-txt-dim">Start: <span className="text-txt-secondary font-mono">$10,000</span></span>
                   <span className="text-txt-dim">End: <span className="text-txt-primary font-mono font-bold">${equityCurve[equityCurve.length - 1].value.toLocaleString()}</span></span>
                   {drawdown && (

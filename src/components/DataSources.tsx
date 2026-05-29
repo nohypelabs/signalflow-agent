@@ -115,12 +115,12 @@ export default function DataSources() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
           <h2 className="text-lg font-bold text-txt-primary tracking-tight">Data Sources</h2>
           <p className="text-xs text-txt-muted mt-0.5">Live connections to market data, trading, and AI providers.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className={`flex items-center gap-1.5 text-[9px] uppercase tracking-wider font-bold px-2 py-1 rounded-lg ${
             allLive ? "bg-buy-muted text-buy" : anyOffline ? "bg-sell-muted text-sell" : "bg-hold-muted text-hold"
           }`}>
@@ -209,13 +209,13 @@ export default function DataSources() {
         ) : (
           <div id="module-status-content" className="divide-y divide-border-default">
             {modules.map((m) => (
-              <div key={m.name} className="flex items-center justify-between px-4 py-2.5 hover:bg-elevated/30 transition-colors">
-                <div className="flex items-center gap-3">
+              <div key={m.name} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 px-4 py-2.5 hover:bg-elevated/30 transition-colors">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className={`w-2 h-2 rounded-full ${m.status === "active" ? "bg-buy" : "bg-sell"}`} />
-                  <span className="text-xs text-txt-primary">{m.name}</span>
+                  <span className="text-xs text-txt-primary truncate">{m.name}</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] text-txt-dim">{m.detail}</span>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <span className="text-[10px] text-txt-dim truncate">{m.detail}</span>
                   <Badge variant={m.status === "active" ? "live" : "error"} size="sm">
                     {m.status === "active" ? "Active" : "Error"}
                   </Badge>
@@ -224,14 +224,14 @@ export default function DataSources() {
             ))}
 
             {/* AI Provider row */}
-            <div className="flex items-center justify-between px-4 py-2.5 hover:bg-elevated/30 transition-colors">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 px-4 py-2.5 hover:bg-elevated/30 transition-colors">
+              <div className="flex items-center gap-3 min-w-0">
                 <div className={`w-2 h-2 rounded-full ${aiService?.status === "connected" ? "bg-buy" : aiService?.status === "no_key" ? "bg-hold" : "bg-sell"}`} />
                 <span className="text-xs text-txt-primary">{aiProvider?.name ?? "AI Model"}</span>
                 <span className="text-[9px] text-txt-dim font-mono">{aiProvider?.defaultModel}</span>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-[10px] text-txt-dim">{aiService?.detail ?? "Not checked"}</span>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <span className="text-[10px] text-txt-dim truncate">{aiService?.detail ?? "Not checked"}</span>
                 {aiService?.latencyMs ? (
                   <span className="text-[9px] text-txt-faint font-mono">{aiService.latencyMs}ms</span>
                 ) : null}
@@ -246,8 +246,8 @@ export default function DataSources() {
 
       {/* API endpoints */}
       <Card padding="sm" className="bg-inset/30">
-        <div className="flex items-center justify-between text-[9px] text-txt-faint font-mono">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[9px] text-txt-faint font-mono">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
             <span className="flex items-center gap-1.5">
               <span className={`w-1 h-1 rounded-full ${services.find(s => s.name === "SoSoValue API")?.status === "connected" ? "bg-buy" : "bg-sell"}`} />
               SoSoValue API
