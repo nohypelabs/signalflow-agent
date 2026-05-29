@@ -251,8 +251,10 @@ main::-webkit-scrollbar-thumb {
   100% { transform: translateX(-50%); }
 }
 .ticker-tape-scroll {
-  animation: ticker-scroll 98s linear infinite;
+  animation: ticker-scroll 112.5s linear infinite;
   will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 .ticker-tape-scroll:hover {
   animation-play-state: paused;
