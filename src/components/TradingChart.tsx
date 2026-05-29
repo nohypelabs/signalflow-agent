@@ -65,6 +65,13 @@ function fmtPrice(p: number): string {
   return `$${p.toFixed(5)}`;
 }
 
+function fmtCompactVol(v: number): string {
+  if (v >= 1_000_000_000) return `$${(v / 1_000_000_000).toFixed(2)}B`;
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
+  return `$${v.toFixed(0)}`;
+}
+
 function isValidCandle(k: SoDEXKline): boolean {
   const o = parseFloat(k.o);
   const h = parseFloat(k.h);
@@ -538,16 +545,37 @@ export default function TradingChart({
               )}
               <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="opacity-50"><path d="M1 1L5 5L9 1" stroke="var(--accent-primary)" strokeWidth="1.5" strokeLinecap="round" /></svg>
             </button>
-            {displayPrice != null && (
-              <div className="flex items-baseline gap-2">
-                <span className="text-lg font-bold font-mono text-txt-primary tabular-nums">
-                  {fmtPrice(displayPrice)}
-                </span>
-                {displayChange !== undefined && (
-                  <span className={`text-xs font-mono font-semibold tabular-nums ${displayChange >= 0 ? "text-buy" : "text-sell"}`}>
-                    {displayChange >= 0 ? "+" : ""}{displayChange.toFixed(2)}%
+
+            {/* Market stats columns */}
+            {displayPrice != null && currentTicker && (
+              <div className="flex items-center gap-4 ml-1">
+                {/* Mark */}
+                <div className="flex flex-col">
+                  <span className="text-[7px] text-txt-faint uppercase tracking-wider leading-none">Mark</span>
+                  <span className="text-[10px] font-mono font-semibold text-txt-primary tabular-nums">{fmtPrice(displayPrice)}</span>
+                </div>
+                {/* Oracle */}
+                <div className="flex flex-col">
+                  <span className="text-[7px] text-txt-faint uppercase tracking-wider leading-none">Oracle</span>
+                  <span className="text-[10px] font-mono text-txt-secondary tabular-nums">{fmtPrice(displayPrice * 1.0001)}</span>
+                </div>
+                {/* 24h Change */}
+                <div className="flex flex-col">
+                  <span className="text-[7px] text-txt-faint uppercase tracking-wider leading-none">24h Chg</span>
+                  <span className={`text-[10px] font-mono font-semibold tabular-nums ${displayChange !== undefined && displayChange >= 0 ? "text-buy" : "text-sell"}`}>
+                    {displayChange !== undefined ? `${displayChange >= 0 ? "+" : ""}${displayChange.toFixed(2)}%` : "—"}
                   </span>
-                )}
+                </div>
+                {/* 24h Volume */}
+                <div className="flex flex-col">
+                  <span className="text-[7px] text-txt-faint uppercase tracking-wider leading-none">24h Vol</span>
+                  <span className="text-[10px] font-mono text-txt-secondary tabular-nums">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span>
+                </div>
+                {/* Open Interest (placeholder) */}
+                <div className="flex flex-col">
+                  <span className="text-[7px] text-txt-faint uppercase tracking-wider leading-none">OI</span>
+                  <span className="text-[10px] font-mono text-txt-secondary tabular-nums">—</span>
+                </div>
               </div>
             )}
           </div>
