@@ -426,7 +426,7 @@ export default function SignalFlowCommandCenter() {
   const [pair] = useState("BTC/USDC");
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 px-4 lg:px-6">
       <div className="overflow-x-auto">
         <PipelineFlow />
       </div>
