@@ -35,6 +35,21 @@ function resolveTickers(tickerMap?: Map<string, SoDEXTicker>): TickerItem[] {
   return items;
 }
 
+function TokenIcon({ base }: { base: string }) {
+  const src = `https://assets.coincap.io/assets/icons/${base.toLowerCase()}@2x.png`;
+  return (
+    <img
+      src={src}
+      alt={base}
+      width={14}
+      height={14}
+      className="rounded-full shrink-0"
+      loading="lazy"
+      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+    />
+  );
+}
+
 function TickerItemChip({
   item,
   isFav,
@@ -68,6 +83,7 @@ function TickerItemChip({
           </svg>
         </button>
       )}
+      <TokenIcon base={item.base} />
       <span className="text-txt-secondary font-semibold text-[10px]">{item.symbol}</span>
       <span className="text-txt-primary font-mono text-[10px] tabular-nums">{item.price}</span>
       <span className={`font-mono text-[10px] font-semibold tabular-nums ${isUp ? "text-buy" : "text-sell"}`}>
