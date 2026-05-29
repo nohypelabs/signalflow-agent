@@ -43,6 +43,13 @@ Visual reference from prior session:
 - `AISignalGenerator` and `AIReasoning` small labels/body text were raised to higher contrast for readability in the explain layer.
 - Validation passed with `pnpm lint`, `pnpm build`, and `git diff --check`.
 
+2026-05-29 Header correction:
+- Removed the rendered desktop sidebar from `src/components/layout/AppShell.tsx` so the dashboard matches the approved header-first sketch.
+- Moved Overview and Trading navigation into left-side header dropdowns in `src/components/TopBar.tsx`.
+- Moved subsystem navigation (`Data Sources`, `Settings`, `Docs`) into the right-side Settings dropdown near the pair strip.
+- Kept existing route logic by navigating to the same pages instead of removing old routes.
+- Validation passed with `pnpm lint`, `pnpm build`, `git diff --check`, and `/dashboard` returned `200 OK` locally.
+
 Remaining polish:
 - Browser screenshot review at desktop/tablet/mobile widths.
 - Fine tune panel heights once real viewport is inspected.

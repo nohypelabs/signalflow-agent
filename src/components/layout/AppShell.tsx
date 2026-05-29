@@ -1,9 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import Header from "./Header";
-import Sidebar from "./Sidebar";
-import MobileBottomNav from "./MobileBottomNav";
 import DashboardIntroGate from "./DashboardIntroGate";
 import TradeForm from "@/components/TradeForm";
 import { AmbientGrid } from "@/components/ui/Polish";
@@ -41,8 +38,6 @@ export default function AppShell({
   tradeForm,
   fullScreen = false,
 }: AppShellProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   return (
     <div className="flex flex-col h-screen">
       <Header
@@ -51,18 +46,13 @@ export default function AppShell({
         btcPrice={btcPrice}
         btcChange={btcChange}
         tickerMap={tickerMap}
-        onMenuToggle={() => setMobileMenuOpen(true)}
       />
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        <Sidebar
-          mobileOpen={mobileMenuOpen}
-          onMobileClose={() => setMobileMenuOpen(false)}
-        />
         <main
           className={
             fullScreen
               ? "flex-1 min-h-0 overflow-y-auto relative"
-              : "flex-1 overflow-y-auto p-4 lg:p-6 pb-20 md:pb-0 relative"
+              : "flex-1 overflow-y-auto p-4 lg:p-6 relative"
           }
         >
           {fullScreen ? (
@@ -73,16 +63,15 @@ export default function AppShell({
               <AmbientGrid opacity={0.025} size={28} />
               <div className="relative z-10">
                 {children}
-                <footer className="text-center text-[11px] text-txt-dim py-4 border-t border-border-default mt-4">
-                  <p>SignalFlow Agent — Built by <span className="text-txt-muted">NoHype Labs</span></p>
-                  <p className="mt-0.5 text-txt-faint">SoSoValue Buildathon 2026 — Wave 2</p>
+                <footer className="text-center text-[11px] text-txt-secondary py-4 border-t border-border-default mt-4">
+                  <p>SignalFlow Agent — Built by <span className="text-txt-primary">NoHype Labs</span></p>
+                  <p className="mt-0.5 text-txt-secondary">SoSoValue Buildathon 2026 — Wave 2</p>
                 </footer>
               </div>
             </>
           )}
         </main>
       </div>
-      <MobileBottomNav />
       <DashboardIntroGate />
       {tradeForm && (
         <TradeForm

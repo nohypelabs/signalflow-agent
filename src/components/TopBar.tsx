@@ -1,29 +1,67 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import WalletButton from "./WalletButton";
 import StatusDot from "@/components/ui/StatusDot";
 import MarketTickerTape from "./MarketTickerTape";
 import { useFavoriteTickers } from "@/lib/hooks/useFavoriteTickers";
-import { ActivityIcon, MenuIcon } from "@/components/ui/icons";
+import {
+  ActivityIcon,
+  ChartIcon,
+  ChevronDownIcon,
+  DataSourceIcon,
+  DocsIcon,
+  HistoryIcon,
+  HomeIcon,
+  PerformanceIcon,
+  SettingsIcon,
+  SignalIcon,
+  StrategyIcon,
+  TradeIcon,
+} from "@/components/ui/icons";
 import type { SoDEXTicker } from "@/lib/sodex-types";
 
 interface Props {
   sodexStatus?: "connected" | "error" | "loading";
   tickerCount?: number;
-  onMenuToggle?: () => void;
   btcPrice?: string;
   btcChange?: number;
   tickerMap?: Map<string, SoDEXTicker>;
 }
 
+const navigation = {
+  overview: [
+    { href: "/dashboard", label: "Dashboard", Icon: HomeIcon },
+    { href: "/signals", label: "Signals", Icon: SignalIcon },
+    { href: "/signal-history", label: "Signal History", Icon: HistoryIcon },
+    { href: "/performance", label: "Performance", Icon: PerformanceIcon },
+  ],
+  trading: [
+    { href: "/trading", label: "Trading", Icon: TradeIcon },
+    { href: "/portfolio", label: "Portfolio", Icon: ChartIcon },
+    { href: "/trade-history", label: "Trade History", Icon: HistoryIcon },
+    { href: "/strategy-config", label: "Strategy Config", Icon: StrategyIcon },
+  ],
+  system: [
+    { href: "/data-sources", label: "Data Sources", Icon: DataSourceIcon },
+    { href: "/settings", label: "Settings", Icon: SettingsIcon },
+    { href: "/docs", label: "Docs", Icon: DocsIcon },
+  ],
+};
+
+type MenuKey = keyof typeof navigation;
+
 export default function TopBar({
   sodexStatus = "loading",
   tickerCount,
-  onMenuToggle,
   btcPrice,
   btcChange,
   tickerMap,
 }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [openMenu, setOpenMenu] = useState<MenuKey | null>(null);
   const { isFavorite, toggleFavorite } = useFavoriteTickers(tickerMap);
 
   const dotStatus =
@@ -45,6 +83,57 @@ export default function TopBar({
   const now = new Date();
   const timeStr = now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" });
 
+  useEffect(() => {
+    Object.values(navigation).flat().forEach((item) => router.prefetch(item.href));
+  }, [router]);
+
+  const navigate = (href: string) => {
+    router.push(href);
+    setOpenMenu(null);
+  };
+
+  const menuButton = (key: MenuKey, label: string, align: "left" | "right" = "left") => {
+    const active = navigation[key].some((item) => pathname === item.href);
+    return (
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpenMenu(openMenu === key ? null : key)}
+          className={`flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-semibold transition-colors ${
+            active
+              ? "border-accent/35 bg-accent/10 text-txt-primary"
+              : "border-border-default bg-elevated/35 text-txt-secondary hover:text-txt-primary"
+          }`}
+        >
+          {label}
+          <ChevronDownIcon size={12} />
+        </button>
+        {openMenu === key && (
+          <div className={`absolute top-9 z-50 w-56 rounded-lg border border-border-default bg-surface p-2 shadow-2xl shadow-black/40 ${align === "right" ? "right-0" : "left-0"}`}>
+            {navigation[key].map(({ href, label: itemLabel, Icon }) => {
+              const itemActive = pathname === href;
+              return (
+                <button
+                  key={href}
+                  type="button"
+                  onClick={() => navigate(href)}
+                  className={`flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[12px] font-semibold transition-colors ${
+                    itemActive
+                      ? "bg-accent/10 text-txt-primary"
+                      : "text-txt-secondary hover:bg-elevated hover:text-txt-primary"
+                  }`}
+                >
+                  <Icon size={14} className={itemActive ? "text-accent" : "text-txt-secondary"} />
+                  {itemLabel}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="shrink-0">
       {/* Scrolling market tape */}
@@ -58,19 +147,11 @@ export default function TopBar({
       {/* <FavoriteTickerBar tickers={favoriteTickers} /> */}
 
       {/* Main header bar */}
-      <header className="relative flex items-center justify-between px-3 md:px-4 h-11 bg-surface border-b border-border-default">
+      <header className="relative flex items-center justify-between gap-3 px-3 md:px-4 h-12 bg-surface border-b border-border-default">
         {/* Subtle accent glow at bottom edge */}
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent" />
-        {/* Left: menu + brand */}
-        <div className="flex items-center gap-2 md:gap-3">
-          <button
-            onClick={onMenuToggle}
-            className="md:hidden p-1 text-txt-muted hover:text-txt-primary transition-colors"
-            aria-label="Menu"
-          >
-            <MenuIcon size={18} />
-          </button>
-
+        {/* Left: brand + primary navigation */}
+        <div className="flex min-w-0 items-center gap-2 md:gap-3">
           <div className="flex items-center gap-1.5">
             <div className="w-5 h-5 rounded bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
               <ActivityIcon size={12} />
@@ -78,53 +159,57 @@ export default function TopBar({
             <span className="font-bold text-[13px] text-txt-primary tracking-tight">SignalFlow</span>
           </div>
 
-          <div className="hidden md:flex items-center gap-1 ml-1">
+          <div className="hidden sm:flex items-center gap-1.5 ml-1">
+            {menuButton("overview", "Overview")}
+            {menuButton("trading", "Trading")}
+          </div>
+
+          <div className="hidden lg:flex items-center gap-1 ml-1">
             <StatusDot status={dotStatus} pulse size="sm" />
-            <span className="text-[10px] text-txt-muted">{statusLabel}</span>
+            <span className="text-[10px] font-semibold text-txt-secondary">{statusLabel}</span>
           </div>
         </div>
 
-        {/* Center: compact price summary */}
-        <div className="hidden sm:flex items-center gap-4 font-mono text-[11px]">
-          {btcPrice && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-txt-faint">BTC</span>
-              <span className="text-txt-primary font-semibold tabular-nums">{btcPrice}</span>
-              {btcChange !== undefined && (
-                <span className={`font-semibold tabular-nums ${btcChange >= 0 ? "text-buy" : "text-sell"}`}>
-                  {btcChange >= 0 ? "+" : ""}{btcChange.toFixed(2)}%
-                </span>
-              )}
-            </div>
-          )}
-          {ethPrice && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-txt-faint">ETH</span>
-              <span className="text-txt-primary font-semibold tabular-nums">{ethPrice}</span>
-              {ethChange !== undefined && (
-                <span className={`font-semibold tabular-nums ${ethChange >= 0 ? "text-buy" : "text-sell"}`}>
-                  {ethChange >= 0 ? "+" : ""}{ethChange.toFixed(2)}%
-                </span>
-              )}
-            </div>
-          )}
-          {tickerCount !== undefined && tickerCount > 0 && (
-            <div className="flex items-center gap-1">
-              <span className="text-txt-faint">Pairs</span>
-              <span className="text-txt-secondary font-semibold">{tickerCount}</span>
-            </div>
-          )}
-          <div className="flex items-center gap-1">
-            <span className="text-txt-faint">{timeStr}</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+        {/* Right: pair summary + system modal + wallet */}
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="hidden md:flex items-center gap-3 rounded-md border border-border-default bg-inset/70 px-2.5 py-1 font-mono text-[11px]">
+            {btcPrice && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-txt-secondary">BTC</span>
+                <span className="text-txt-primary font-semibold tabular-nums">{btcPrice}</span>
+                {btcChange !== undefined && (
+                  <span className={`font-semibold tabular-nums ${btcChange >= 0 ? "text-buy" : "text-sell"}`}>
+                    {btcChange >= 0 ? "+" : ""}{btcChange.toFixed(2)}%
+                  </span>
+                )}
+              </div>
+            )}
+            {ethPrice && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-txt-secondary">ETH</span>
+                <span className="text-txt-primary font-semibold tabular-nums">{ethPrice}</span>
+                {ethChange !== undefined && (
+                  <span className={`font-semibold tabular-nums ${ethChange >= 0 ? "text-buy" : "text-sell"}`}>
+                    {ethChange >= 0 ? "+" : ""}{ethChange.toFixed(2)}%
+                  </span>
+                )}
+              </div>
+            )}
           </div>
-        </div>
 
-        {/* Right: wallet */}
-        <div className="flex items-center gap-2">
           <div className="md:hidden flex items-center gap-1">
             <StatusDot status={dotStatus} pulse size="sm" />
           </div>
+          {menuButton("system", "Settings", "right")}
+          {tickerCount !== undefined && tickerCount > 0 && (
+            <span className="hidden xl:inline-flex text-[10px] font-mono font-semibold text-txt-secondary">
+              {tickerCount} PAIRS
+            </span>
+          )}
+          <span className="hidden lg:inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-txt-secondary">
+            {timeStr}
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+          </span>
           <WalletButton />
         </div>
       </header>
