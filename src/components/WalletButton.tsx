@@ -59,7 +59,7 @@ export default function WalletButton() {
         <Badge variant="error" size="sm">Wrong Network</Badge>
         <button
           onClick={handleSwitch}
-          className="px-2 py-1 text-[10px] font-semibold rounded-md bg-hold text-white hover:opacity-90 whitespace-nowrap"
+          className="px-2 py-1 text-[10px] font-semibold rounded-md bg-elevated border border-border-default text-txt-secondary hover:text-txt-primary hover:border-border-muted whitespace-nowrap transition-colors"
         >
           Switch
         </button>
@@ -77,7 +77,7 @@ export default function WalletButton() {
     <div className="relative">
       <button
         onClick={() => setDropdownOpen(!dropdownOpen)}
-        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-inset border border-border-default hover:border-accent-dim transition-colors"
+        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-elevated border border-border-default hover:bg-elevated/80 hover:border-border-muted transition-colors"
       >
         <StatusDot status="live" size="sm" />
         <span className="text-[11px] text-txt-primary font-mono font-medium">{shortAddress}</span>
