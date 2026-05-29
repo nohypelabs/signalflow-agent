@@ -6,8 +6,6 @@ import type { SoDEXTicker } from "@/lib/sodex-types";
 interface HeaderProps {
   sodexStatus?: "connected" | "error" | "loading";
   tickerCount?: number;
-  btcPrice?: string;
-  btcChange?: number;
   tickerMap?: Map<string, SoDEXTicker>;
 }
 

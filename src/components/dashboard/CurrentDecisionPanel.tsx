@@ -5,7 +5,7 @@ import type { SoDEXTicker } from "@/lib/types/trade";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import ConfidenceGauge from "@/components/ui/ConfidenceGauge";
+import SpeedometerGauge from "@/components/ui/SpeedometerGauge";
 
 interface Props {
   signal: Signal | null;
@@ -82,7 +82,7 @@ export default function CurrentDecisionPanel({
                   {livePrice ? "Live SoDEX mark" : "Signal entry reference"}
                 </p>
               </div>
-              <ConfidenceGauge value={signal.confidence} size="lg" />
+              <SpeedometerGauge value={signal.confidence} size="md" />
             </div>
 
             <div className="grid grid-cols-2 gap-2">

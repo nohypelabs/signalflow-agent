@@ -472,7 +472,7 @@ function TradeConfirmationModal({ action, onCancel, onConfirm }: { action: Pendi
         <div className="p-5"><div className="grid grid-cols-2 gap-2">{rows.map((r) => (<div key={r.l} className="rounded-lg border border-border-default bg-inset/40 px-3 py-2"><p className="text-[9px] uppercase tracking-wider text-txt-faint">{r.l}</p><p className={`mt-0.5 text-sm font-bold font-mono ${r.l === "Side" ? sideTone : "text-txt-primary"}`}>{r.v}</p></div>))}</div></div>
         <div className="flex items-center justify-between gap-3 border-t border-border-default px-5 py-4">
           <button onClick={onCancel} className="rounded-lg border border-border-default bg-inset px-4 py-2 text-xs font-semibold text-txt-secondary cursor-pointer">Cancel</button>
-          <button onClick={onConfirm} className={`rounded-lg px-4 py-2 text-xs font-bold text-white cursor-pointer ${isOpen ? "bg-accent" : "bg-sell"}`}>{isOpen ? "Confirm Open" : "Confirm Close"}</button>
+          <button onClick={onConfirm} className={`rounded-lg px-4 py-2 text-xs font-bold cursor-pointer backdrop-blur-sm transition-all ${isOpen ? "bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 hover:border-accent/50" : "bg-sell/10 text-sell border border-sell/30 hover:bg-sell/20 hover:border-sell/50"}`}>{isOpen ? "Confirm Open" : "Confirm Close"}</button>
         </div>
       </div>
     </div>
@@ -493,7 +493,7 @@ function TradeExecutionModal({ notice, onClose }: { notice: TradeNotice; onClose
           </div>
         </div>
         {notice.rows && notice.rows.length > 0 && <div className="grid grid-cols-2 gap-2 p-5">{notice.rows.map((r) => (<div key={r.label} className="rounded-lg border border-border-default bg-inset/50 px-3 py-2"><p className="text-[9px] uppercase tracking-wider text-txt-faint">{r.label}</p><p className={`mt-0.5 text-sm font-bold font-mono ${r.tone === "buy" ? "text-buy" : r.tone === "sell" ? "text-sell" : r.tone === "accent" ? "text-accent" : "text-txt-primary"}`}>{r.value}</p></div>))}</div>}
-        <div className="flex justify-end border-t border-border-default px-5 py-4"><button onClick={onClose} className={`rounded-lg px-4 py-2 text-xs font-bold cursor-pointer ${notice.kind === "error" ? "bg-sell text-white" : "bg-accent text-white"}`}>Got it</button></div>
+        <div className="flex justify-end border-t border-border-default px-5 py-4"><button onClick={onClose} className={`rounded-lg px-4 py-2 text-xs font-bold cursor-pointer backdrop-blur-sm transition-all ${notice.kind === "error" ? "bg-sell/10 text-sell border border-sell/30 hover:bg-sell/20 hover:border-sell/50" : "bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 hover:border-accent/50"}`}>Got it</button></div>
       </div>
     </div>
   );

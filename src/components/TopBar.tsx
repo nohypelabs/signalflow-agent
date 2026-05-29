@@ -27,8 +27,6 @@ import type { SoDEXTicker } from "@/lib/sodex-types";
 interface Props {
   sodexStatus?: "connected" | "error" | "loading";
   tickerCount?: number;
-  btcPrice?: string;
-  btcChange?: number;
   tickerMap?: Map<string, SoDEXTicker>;
 }
 
@@ -58,8 +56,6 @@ type MenuKey = keyof typeof navGroups;
 export default function TopBar({
   sodexStatus = "loading",
   tickerCount,
-  btcPrice,
-  btcChange,
   tickerMap,
 }: Props) {
   const router = useRouter();
@@ -78,12 +74,6 @@ export default function TopBar({
       : sodexStatus === "loading"
         ? "Connecting..."
         : "SoDEX Offline";
-
-  const ethTicker = tickerMap?.get("vETH_vUSDC");
-  const ethPrice = ethTicker
-    ? `$${parseFloat(ethTicker.lastPx).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-    : null;
-  const ethChange = ethTicker ? ethTicker.changePct : undefined;
 
   const now = new Date();
   const timeStr = now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" });
@@ -218,33 +208,8 @@ export default function TopBar({
           />
         </div>
 
-        {/* Right: pair summary + system modal + wallet */}
+        {/* Right: system modal + wallet */}
         <div className="flex min-w-0 items-center gap-2.5 shrink-0">
-          <div className="hidden md:flex items-center gap-3 rounded-lg border border-border-default bg-inset/70 px-3 py-1.5 font-mono text-[11px]">
-            {btcPrice && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-txt-muted">BTC</span>
-                <span className="text-txt-primary font-semibold tabular-nums">{btcPrice}</span>
-                {btcChange !== undefined && (
-                  <span className={`font-semibold tabular-nums ${btcChange >= 0 ? "text-buy" : "text-sell"}`}>
-                    {btcChange >= 0 ? "+" : ""}{btcChange.toFixed(2)}%
-                  </span>
-                )}
-              </div>
-            )}
-            {ethPrice && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-txt-muted">ETH</span>
-                <span className="text-txt-primary font-semibold tabular-nums">{ethPrice}</span>
-                {ethChange !== undefined && (
-                  <span className={`font-semibold tabular-nums ${ethChange >= 0 ? "text-buy" : "text-sell"}`}>
-                    {ethChange >= 0 ? "+" : ""}{ethChange.toFixed(2)}%
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-
           <div className="md:hidden flex items-center gap-1">
             <StatusDot status={dotStatus} pulse size="sm" />
           </div>

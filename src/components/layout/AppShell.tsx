@@ -12,8 +12,6 @@ interface AppShellProps {
   // Header props
   sodexStatus?: "connected" | "error" | "loading";
   tickerCount?: number;
-  btcPrice?: string;
-  btcChange?: number;
   tickerMap?: Map<string, SoDEXTicker>;
   // Trade form
   tradeForm?: {
@@ -33,8 +31,6 @@ export default function AppShell({
   children,
   sodexStatus,
   tickerCount,
-  btcPrice,
-  btcChange,
   tickerMap,
   tradeForm,
   fullScreen = false,
@@ -46,8 +42,6 @@ export default function AppShell({
         <Header
           sodexStatus={sodexStatus}
           tickerCount={tickerCount}
-          btcPrice={btcPrice}
-          btcChange={btcChange}
           tickerMap={tickerMap}
         />
       )}

@@ -397,14 +397,14 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
 
         {/* ═══ [8] Primary Action Button ═══ */}
         <button onClick={handleSubmit} disabled={isSubmitDisabled}
-          className={`w-full py-2.5 text-sm font-bold rounded-lg transition-all cursor-pointer ${
+          className={`w-full py-2.5 text-sm font-bold rounded-lg transition-all cursor-pointer backdrop-blur-sm ${
             (mode === "live" && !isConnected)
               ? "bg-inset text-txt-dim cursor-not-allowed"
               : !marginNum || !currentPrice || validationError
                 ? "bg-inset text-txt-dim cursor-not-allowed"
                 : side === "LONG"
-                  ? "bg-buy text-[#0B1020] hover:shadow-[0_0_30px_rgba(0,255,136,0.3)] active:scale-[0.98]"
-                  : "bg-sell text-white hover:shadow-[0_0_30px_rgba(255,68,68,0.3)] active:scale-[0.98]"
+                  ? "bg-buy/10 text-buy border border-buy/30 hover:bg-buy/20 hover:border-buy/50 active:scale-[0.98]"
+                  : "bg-sell/10 text-sell border border-sell/30 hover:bg-sell/20 hover:border-sell/50 active:scale-[0.98]"
           }`}>
           {(mode === "live" && !isConnected)
             ? "Connect Wallet"

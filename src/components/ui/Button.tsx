@@ -4,7 +4,7 @@ import { type ReactNode } from "react";
 import { motion, type HTMLMotionProps } from "framer-motion";
 
 const variants: Record<string, string> = {
-  primary: "bg-accent text-[#05070D] font-bold hover:bg-accent/90 disabled:opacity-50",
+  primary: "bg-accent/10 text-accent font-bold border border-accent/30 hover:bg-accent/20 hover:border-accent/50 backdrop-blur-sm disabled:opacity-50",
   secondary: "bg-transparent text-accent border border-accent-dim hover:bg-accent-muted",
   danger: "bg-transparent text-error border border-sell-dim hover:bg-sell-muted",
   success: "bg-transparent text-buy border border-buy-dim hover:bg-buy-muted",
