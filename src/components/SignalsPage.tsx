@@ -16,6 +16,7 @@ import TopSignalHighlight from "./signals/TopSignalHighlight";
 import SignalCard from "./signals/SignalCard";
 import SignalCompactRow from "./signals/SignalCompactRow";
 import TraderTypeModal from "@/components/TraderTypeModal";
+import TradingTypeIcon from "@/components/TradingTypeIcon";
 
 interface Props {
   tickers?: SoDEXTicker[] | null;
@@ -205,7 +206,9 @@ export default function SignalsPage({ tickers, liveSignals = [], liveDims, overa
               backgroundColor: `${TRADING_TYPES[tradingType].color}08`,
             }}
           >
-            <span className="text-lg">{TRADING_TYPES[tradingType].icon}</span>
+            <span className="w-7 h-7 rounded-md bg-elevated/30 border border-border-default flex items-center justify-center text-txt-secondary">
+              <TradingTypeIcon type={tradingType} size={14} />
+            </span>
             <div className="flex-1 min-w-[220px]">
               <span className="text-xs font-semibold" style={{ color: TRADING_TYPES[tradingType].color }}>
                 {TRADING_TYPES[tradingType].label} Mode
@@ -240,7 +243,9 @@ export default function SignalsPage({ tickers, liveSignals = [], liveDims, overa
               }}
               onClick={() => handleTypeSelect(recommended)}
             >
-              <span className="text-lg">{recConfig.icon}</span>
+              <span className="w-7 h-7 rounded-md bg-elevated/30 border border-border-default flex items-center justify-center text-txt-secondary">
+                <TradingTypeIcon type={recommended} size={14} />
+              </span>
               <div className="flex-1 min-w-[220px]">
                 <span className="text-[10px] text-txt-dim">Market regime: {dominantRegime.replace("_", " ")}</span>
                 <span className="text-xs font-semibold block sm:inline sm:ml-2" style={{ color: recConfig.color }}>

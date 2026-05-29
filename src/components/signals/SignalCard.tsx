@@ -13,6 +13,7 @@ import ConfidenceBadge from "./ConfidenceBadge";
 import SignalScoreBreakdown from "./SignalScoreBreakdown";
 import SignalAnalysisDrawer from "./SignalAnalysisDrawer";
 import { formatPrice, formatPercent } from "./signal-utils";
+import TradingTypeIcon from "@/components/TradingTypeIcon";
 
 interface Props {
   signal: Signal;
@@ -69,7 +70,8 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
                   border: `1px solid ${typeConfig.color}30`,
                 }}
               >
-                {typeConfig.icon} {typeConfig.label}
+                <TradingTypeIcon type={typeConfig.id} size={11} />
+                {typeConfig.label}
               </span>
             )}
             {/* Multi-TF confluence badge */}

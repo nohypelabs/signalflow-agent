@@ -8,6 +8,7 @@ import {
   saveTradingType,
   clearTradingType,
 } from "@/lib/types/trading-type";
+import TradingTypeIcon from "@/components/TradingTypeIcon";
 
 interface Props {
   currentType: TradingType | null;
@@ -70,7 +71,7 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
       >
         {current ? (
           <>
-            <span className="text-sm">{current.icon}</span>
+            <span className="text-sm text-txt-secondary"><TradingTypeIcon type={current.id} size={13} /></span>
             {!compact && (
               <>
                 <span className="text-xs font-semibold" style={{ color: current.color }}>
@@ -128,7 +129,9 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
                   }
                 `}
               >
-                <span className="text-lg w-7 text-center">{config.icon}</span>
+                <span className="text-txt-secondary w-7 h-7 rounded-md bg-elevated/30 border border-border-default flex items-center justify-center shrink-0">
+                  <TradingTypeIcon type={config.id} size={13} />
+                </span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span
