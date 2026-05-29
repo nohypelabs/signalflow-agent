@@ -50,6 +50,15 @@ Visual reference from prior session:
 - Kept existing route logic by navigating to the same pages instead of removing old routes.
 - Validation passed with `pnpm lint`, `pnpm build`, `git diff --check`, and `/dashboard` returned `200 OK` locally.
 
+2026-05-29 Reference-match Command Center:
+- `/dashboard` now renders `src/components/dashboard/command-center/SignalFlowCommandCenter.tsx` as the primary reference-match implementation.
+- The page owns its terminal header and hides AppShell chrome on `/dashboard` to avoid duplicate headers/ticker bars.
+- `SignalFlowCommandCenter` contains the required reusable mock data and components:
+  - `pipelineSteps`, `signalStream`, `evidenceCards`, `decisionPanelData`, `marketDataMock`
+  - `SignalFlowCommandCenter`, `HeaderBar`, `PipelineFlow`, `PipelineStepCard`, `MarketCanvas`, `DecisionPanel`, `ConfidenceGauge`, `SignalStream`, `EvidenceFlow`, `EvidenceCard`, `SignalEngineFlow`
+- Layout follows the approved reference: full-width pipeline, 60/25/15 market-decision-stream grid, evidence row, and signal-engine output flow.
+- Validation passed with `pnpm lint`, `pnpm exec tsc --noEmit --incremental false`, `pnpm build`, and `git diff --check`.
+
 Remaining polish:
 - Browser screenshot review at desktop/tablet/mobile widths.
 - Fine tune panel heights once real viewport is inspected.

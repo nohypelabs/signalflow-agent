@@ -7,7 +7,8 @@ import AppShell from "@/components/layout/AppShell";
 function ShellWithProps({ children }: { children: React.ReactNode }) {
   const d = useDashboard();
   const pathname = usePathname();
-  const isFullScreen = pathname === "/trading";
+  const isDashboard = pathname === "/dashboard";
+  const isFullScreen = pathname === "/trading" || isDashboard;
 
   return (
     <AppShell
@@ -42,6 +43,7 @@ function ShellWithProps({ children }: { children: React.ReactNode }) {
           : null
       }
       fullScreen={isFullScreen}
+      hideHeader={isDashboard}
     >
       {children}
     </AppShell>

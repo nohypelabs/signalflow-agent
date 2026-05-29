@@ -26,6 +26,7 @@ interface AppShellProps {
   } | null;
   /** When true, main takes full remaining height with no padding/scroll/footer — for trading terminal */
   fullScreen?: boolean;
+  hideHeader?: boolean;
 }
 
 export default function AppShell({
@@ -37,16 +38,19 @@ export default function AppShell({
   tickerMap,
   tradeForm,
   fullScreen = false,
+  hideHeader = false,
 }: AppShellProps) {
   return (
     <div className="flex flex-col h-screen">
-      <Header
-        sodexStatus={sodexStatus}
-        tickerCount={tickerCount}
-        btcPrice={btcPrice}
-        btcChange={btcChange}
-        tickerMap={tickerMap}
-      />
+      {!hideHeader && (
+        <Header
+          sodexStatus={sodexStatus}
+          tickerCount={tickerCount}
+          btcPrice={btcPrice}
+          btcChange={btcChange}
+          tickerMap={tickerMap}
+        />
+      )}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <main
           className={
