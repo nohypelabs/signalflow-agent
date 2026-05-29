@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import WalletButton from "./WalletButton";
 import StatusDot from "@/components/ui/StatusDot";
 import MarketTickerTape from "./MarketTickerTape";
-import { useFavoriteTickers } from "@/lib/hooks/useFavoriteTickers";
 import {
   ActivityIcon,
   ChartIcon,
@@ -62,7 +61,6 @@ export default function TopBar({
   const pathname = usePathname();
   const [openMenu, setOpenMenu] = useState<MenuKey | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const { isFavorite, toggleFavorite } = useFavoriteTickers(tickerMap);
   const settingsRef = useRef<HTMLDivElement>(null);
 
   const dotStatus =
@@ -164,11 +162,7 @@ export default function TopBar({
     <div className="shrink-0">
       {/* Mobile: scrolling market tape as separate bar */}
       <div className="lg:hidden">
-        <MarketTickerTape
-          tickerMap={tickerMap}
-          isFavorite={isFavorite}
-          onToggleFavorite={toggleFavorite}
-        />
+        <MarketTickerTape tickerMap={tickerMap} />
       </div>
 
       {/* Main header bar */}
@@ -200,12 +194,7 @@ export default function TopBar({
 
         {/* Center: scrolling ticker tape (desktop only) */}
         <div className="hidden lg:flex w-[49.5%] min-w-0 mx-4 overflow-hidden rounded-md bg-[#060810]">
-          <MarketTickerTape
-            tickerMap={tickerMap}
-            isFavorite={isFavorite}
-            onToggleFavorite={toggleFavorite}
-            embedded
-          />
+          <MarketTickerTape tickerMap={tickerMap} embedded />
         </div>
 
         {/* Right: system modal + wallet */}

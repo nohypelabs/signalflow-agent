@@ -50,39 +50,10 @@ function TokenIcon({ base }: { base: string }) {
   );
 }
 
-function TickerItemChip({
-  item,
-  isFav,
-  onToggleFav,
-}: {
-  item: TickerItem;
-  isFav: boolean;
-  onToggleFav?: (base: string) => void;
-}) {
+function TickerItemChip({ item }: { item: TickerItem }) {
   const isUp = item.changePct >= 0;
   return (
     <span className="inline-flex items-center gap-1.5 px-3 shrink-0">
-      {onToggleFav && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleFav(item.base);
-          }}
-          className="shrink-0 hover:scale-110 transition-transform"
-          title={isFav ? "Remove from watchlist" : "Add to watchlist"}
-        >
-          <svg
-            width="9"
-            height="9"
-            viewBox="0 0 24 24"
-            fill={isFav ? "var(--color-hold)" : "none"}
-            stroke={isFav ? "var(--color-hold)" : "var(--text-dim)"}
-            strokeWidth="2"
-          >
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-          </svg>
-        </button>
-      )}
       <TokenIcon base={item.base} />
       <span className="text-txt-secondary font-semibold text-[10px]">{item.symbol}</span>
       <span className="text-txt-primary font-mono text-[10px] tabular-nums">{item.price}</span>
@@ -98,13 +69,11 @@ function TickerItemChip({
 
 interface Props {
   tickerMap?: Map<string, SoDEXTicker>;
-  isFavorite?: (base: string) => boolean;
-  onToggleFavorite?: (base: string) => void;
   /** When true, skip outer wrapper styling (bg, border) — parent provides container styles */
   embedded?: boolean;
 }
 
-export default function MarketTickerTape({ tickerMap, isFavorite, onToggleFavorite, embedded }: Props) {
+export default function MarketTickerTape({ tickerMap, embedded }: Props) {
   const tickers = resolveTickers(tickerMap);
 
   if (tickers.length === 0) return null;
@@ -118,8 +87,6 @@ export default function MarketTickerTape({ tickerMap, isFavorite, onToggleFavori
         <TickerItemChip
           key={`${item.symbol}-${i}`}
           item={item}
-          isFav={isFavorite?.(item.base) ?? false}
-          onToggleFav={onToggleFavorite}
         />
       ))}
     </div>
