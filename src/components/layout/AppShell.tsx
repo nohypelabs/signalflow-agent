@@ -13,7 +13,6 @@ interface AppShellProps {
   sodexStatus?: "connected" | "error" | "loading";
   tickerCount?: number;
   tickerMap?: Map<string, SoDEXTicker>;
-  selectedPair?: string;
   onTickerClick?: (symbol: string) => void;
   // Trade form
   tradeForm?: {
@@ -24,7 +23,7 @@ interface AppShellProps {
     onExecute: (order: SoDEXNewOrderRequest) => Promise<void>;
     onClose: () => void;
   } | null;
-  /** When true, main takes full remaining height with no padding/scroll/footer — for trading terminal */
+  /** When true, main takes full remaining height with no padding/scroll — for trading terminal */
   fullScreen?: boolean;
   hideHeader?: boolean;
 }
@@ -34,7 +33,6 @@ export default function AppShell({
   sodexStatus,
   tickerCount,
   tickerMap,
-  selectedPair,
   onTickerClick,
   tradeForm,
   fullScreen = false,
@@ -47,7 +45,6 @@ export default function AppShell({
           sodexStatus={sodexStatus}
           tickerCount={tickerCount}
           tickerMap={tickerMap}
-          selectedPair={selectedPair}
           onTickerClick={onTickerClick}
         />
       )}
@@ -67,13 +64,22 @@ export default function AppShell({
               <AmbientGrid opacity={0.025} size={28} />
               <div className="relative z-10">
                 {children}
-                <footer className="text-center text-[11px] text-txt-secondary py-4 border-t border-border-default mt-4">
-                  <p>SignalFlow Agent — Built by <span className="text-txt-primary">NoHype Labs</span></p>
-                  <p className="mt-0.5 text-txt-secondary">SoSoValue Buildathon 2026 — Wave 2</p>
-                </footer>
               </div>
             </>
           )}
+          <footer className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-txt-secondary py-4 border-t border-border-default mt-4 px-2">
+            <div className="flex items-center gap-3">
+              <span>SignalFlow Agent — Built by <span className="text-txt-primary">NoHype Labs</span></span>
+              <span className="text-border-default">|</span>
+              <span className="font-medium text-accent">SoSoValue Buildathon Wave 2 — 2026</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <a href="https://github.com/nohypelabs/signalflow-agent" target="_blank" rel="noopener noreferrer" className="hover:text-txt-primary transition-colors">GitHub</a>
+              <a href="https://x.com/nohypelabs" target="_blank" rel="noopener noreferrer" className="hover:text-txt-primary transition-colors">X/@nohypelabs</a>
+              <span className="text-border-default">|</span>
+              <span>NoHype Labs © 2026</span>
+            </div>
+          </footer>
         </main>
       </div>
       <DashboardIntroGate />

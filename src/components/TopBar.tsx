@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import WalletButton from "./WalletButton";
-import { pairToSodexSymbol, sodexSymbolToBase } from "@/lib/pair-map";
 import StatusDot from "@/components/ui/StatusDot";
 import MarketTickerTape from "./MarketTickerTape";
 import {
@@ -27,7 +26,6 @@ interface Props {
   sodexStatus?: "connected" | "error" | "loading";
   tickerCount?: number;
   tickerMap?: Map<string, SoDEXTicker>;
-  selectedPair?: string;
   onTickerClick?: (symbol: string) => void;
 }
 
@@ -57,7 +55,6 @@ export default function TopBar({
   sodexStatus = "loading",
   tickerCount,
   tickerMap,
-  selectedPair,
   onTickerClick,
 }: Props) {
   const router = useRouter();
@@ -183,56 +180,6 @@ export default function TopBar({
           </div>
 
           <div className="h-5 w-px bg-border-default" />
-
-          {/* Selected ticker info */}
-          {selectedPair && tickerMap && (() => {
-            const sodexSym = pairToSodexSymbol(selectedPair);
-            const ticker = sodexSym ? tickerMap.get(sodexSym) : undefined;
-            if (!ticker) return null;
-            const base = sodexSymbolToBase(sodexSym);
-            const price = parseFloat(ticker.lastPx);
-            if (!Number.isFinite(price) || price <= 0) return null;
-            const isUp = ticker.changePct >= 0;
-            const high = parseFloat(ticker.highPx);
-            const low = parseFloat(ticker.lowPx);
-            const vol = parseFloat(ticker.quoteVolume);
-            const fmtPrice = (v: number) => v >= 10000
-              ? v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-              : v >= 1
-                ? v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                : v.toFixed(4);
-            const fmtVol = (v: number) => {
-              if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`;
-              if (v >= 1e6) return `$${(v / 1e6).toFixed(2)}M`;
-              if (v >= 1e3) return `$${(v / 1e3).toFixed(1)}K`;
-              return `$${v.toFixed(0)}`;
-            };
-            return (
-              <div className="hidden md:flex items-center gap-3 ml-1">
-                <div className="flex items-center gap-1.5">
-                  <img
-                    src={`https://assets.coincap.io/assets/icons/${base.toLowerCase()}@2x.png`}
-                    alt={base}
-                    width={16}
-                    height={16}
-                    className="rounded-full"
-                    loading="lazy"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                  />
-                  <span className="text-xs font-bold text-txt-primary">{base}/USDC</span>
-                </div>
-                <span className="text-xs font-mono font-bold text-txt-primary tabular-nums">{fmtPrice(price)}</span>
-                <span className={`flex items-center gap-0.5 text-[11px] font-mono font-semibold tabular-nums ${isUp ? "text-buy" : "text-sell"}`}>
-                  {isUp ? "▲" : "▼"} {isUp ? "+" : ""}{ticker.changePct.toFixed(2)}%
-                </span>
-                <div className="hidden lg:flex items-center gap-2 text-[10px] font-mono text-txt-muted">
-                  <span>H <span className="text-txt-secondary">{fmtPrice(high)}</span></span>
-                  <span>L <span className="text-txt-secondary">{fmtPrice(low)}</span></span>
-                  <span>Vol <span className="text-txt-secondary">{Number.isFinite(vol) ? fmtVol(vol) : "-"}</span></span>
-                </div>
-              </div>
-            );
-          })()}
 
           <nav className="flex items-center gap-1">
             {menuButton("overview", "Overview")}

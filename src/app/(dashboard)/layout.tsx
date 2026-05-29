@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { DashboardProvider, useDashboard } from "@/lib/dashboard-context";
 import AppShell from "@/components/layout/AppShell";
-import { pairToSodexSymbol } from "@/lib/pair-map";
+import DynamicTitle from "@/components/DynamicTitle";
 
 function ShellWithProps({ children }: { children: React.ReactNode }) {
   const d = useDashboard();
@@ -12,11 +12,12 @@ function ShellWithProps({ children }: { children: React.ReactNode }) {
   const isFullScreen = pathname === "/trading" || isDashboard;
 
   return (
+    <>
+    <DynamicTitle />
     <AppShell
       sodexStatus={d.sodexStatus}
       tickerCount={d.tickers?.length}
       tickerMap={d.tickerMap}
-      selectedPair={d.selectedPairDisplay}
       onTickerClick={(symbol) => {
         // symbol is display format like "BTC/USDC" from ticker tape
         d.setSelectedPair(symbol);
@@ -37,6 +38,7 @@ function ShellWithProps({ children }: { children: React.ReactNode }) {
     >
       {children}
     </AppShell>
+    </>
   );
 }
 
