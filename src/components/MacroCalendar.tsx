@@ -39,14 +39,14 @@ function eventIcon(event: string): "finance" | "momentum" | "gdp" | "jobs" | "re
 }
 
 function EventIcon({ type }: { type: ReturnType<typeof eventIcon> }) {
-  if (type === "finance") return <BriefcaseIcon size={13} />;
-  if (type === "momentum") return <ChartBarIcon size={13} />;
-  if (type === "gdp") return <BarChartIcon size={13} />;
-  if (type === "jobs") return <DocumentIcon size={13} />;
-  if (type === "retail") return <DataSourceIcon size={13} />;
-  if (type === "energy") return <ActivityIcon size={13} />;
-  if (type === "treasury") return <BriefcaseIcon size={13} />;
-  return <DocumentIcon size={13} />;
+  if (type === "finance") return <BriefcaseIcon size={12} />;
+  if (type === "momentum") return <ChartBarIcon size={12} />;
+  if (type === "gdp") return <BarChartIcon size={12} />;
+  if (type === "jobs") return <DocumentIcon size={12} />;
+  if (type === "retail") return <DataSourceIcon size={12} />;
+  if (type === "energy") return <ActivityIcon size={12} />;
+  if (type === "treasury") return <BriefcaseIcon size={12} />;
+  return <DocumentIcon size={12} />;
 }
 
 function fmtDate(dateStr: string): string {
@@ -173,7 +173,7 @@ export default function MacroCalendar() {
               <div className="flex-1 space-y-1">
                 {day.events.map((event, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="text-txt-secondary"><EventIcon type={eventIcon(event)} /></span>
+                    <span className="w-4 h-4 rounded bg-elevated/20 flex items-center justify-center text-txt-secondary"><EventIcon type={eventIcon(event)} /></span>
                     <span className="text-[11px] text-txt-secondary leading-tight">{event}</span>
                     <div
                       className="w-1.5 h-1.5 rounded-full flex-shrink-0"

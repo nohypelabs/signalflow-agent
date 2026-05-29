@@ -130,8 +130,8 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
                   }
                 `}
               >
-                <span className="text-txt-secondary w-7 h-7 rounded-md bg-elevated/30 border border-border-default flex items-center justify-center shrink-0">
-                  <TradingTypeIcon type={config.id} size={13} />
+                <span className="text-txt-secondary w-5 h-5 rounded bg-elevated/30 border border-border-default flex items-center justify-center shrink-0">
+                  <TradingTypeIcon type={config.id} size={11} />
                 </span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -168,8 +168,8 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
                 ${!currentType ? "bg-inset" : "hover:bg-inset/50"}
               `}
             >
-              <span className="text-txt-secondary w-7 h-7 rounded-md bg-elevated/30 border border-border-default flex items-center justify-center shrink-0">
-                <DataSourceIcon size={13} />
+              <span className="text-txt-secondary w-5 h-5 rounded bg-elevated/30 border border-border-default flex items-center justify-center shrink-0">
+                <DataSourceIcon size={11} />
               </span>
               <div className="flex-1">
                 <span className="text-xs font-semibold text-txt-secondary">All Types</span>
