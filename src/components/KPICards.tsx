@@ -1,37 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { DashboardMetrics, MetricField, MetricStatus } from "@/lib/hooks/useDashboardMetrics";
-import type { TopGainerResult, SignalBreakdown } from "@/lib/api/dashboard-metrics";
+import type { DashboardMetrics, MetricStatus } from "@/lib/hooks/useDashboardMetrics";
+import type { TopGainerResult } from "@/lib/api/dashboard-metrics";
 import { formatPercent } from "@/lib/api/dashboard-metrics";
 
 interface Props {
   metrics: DashboardMetrics;
 }
-
-/* ── Icons ── */
-const icons = {
-  volume: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-    </svg>
-  ),
-  signals: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 20h.01M7 20v-4M12 20v-8M17 20V8M22 4v16" />
-    </svg>
-  ),
-  confidence: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    </svg>
-  ),
-  gainer: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
-    </svg>
-  ),
-};
 
 /* ── Status Badge ── */
 function StatusBadge({ status }: { status: MetricStatus }) {
@@ -50,7 +26,7 @@ function StatusBadge({ status }: { status: MetricStatus }) {
     demo: "DEMO",
   };
   return (
-    <span className={`text-[8px] uppercase tracking-wider font-semibold px-1 py-0.5 rounded ${styles[status]}`}>
+    <span className={`text-[8px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-md ${styles[status]}`}>
       {labels[status]}
     </span>
   );
@@ -164,8 +140,8 @@ export default function KPICards({ metrics }: Props) {
       {cards.map((c) => (
         <motion.div
           key={c.label}
-          whileHover={{ y: -2, transition: { duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] } }}
-          className="group relative bg-card border border-border-default rounded-lg overflow-hidden hover:border-border-muted hover:shadow-[0_4px_20px_rgba(0,229,168,0.06)] transition-[border-color,box-shadow] duration-200"
+          whileHover={{ y: -1.5, transition: { duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] } }}
+          className="group relative bg-card border border-border-default rounded-lg overflow-hidden hover:border-border-muted hover:shadow-[0_6px_24px_rgba(0,229,168,0.05)] transition-[border-color,box-shadow,transform] duration-200"
         >
           {/* Top accent stripe */}
           <div
@@ -173,14 +149,14 @@ export default function KPICards({ metrics }: Props) {
             style={{ background: `linear-gradient(90deg, ${c.accent}80, transparent)` }}
           />
 
-          <div className="px-3.5 pt-3 pb-3">
+          <div className="px-3.5 md:px-4 pt-3 pb-3.5">
             {/* Row 1: icon + label + status */}
-            <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-1.5">
-                <span style={{ color: c.accent }} className="opacity-40">
-                  {c.icon}
-                </span>
-                <span className="text-[10px] text-txt-muted uppercase tracking-[0.12em] font-medium">
+                <span
+                  className="inline-flex items-center text-[10px] text-txt-muted uppercase tracking-[0.12em] font-medium"
+                  style={{ color: c.accent }}
+                >
                   {c.label}
                 </span>
               </div>
@@ -188,9 +164,9 @@ export default function KPICards({ metrics }: Props) {
             </div>
 
             {/* Row 2: value + trend */}
-            <div className="flex items-end gap-1.5">
+            <div className="flex items-end gap-1.5 min-h-[28px]">
               <span
-                className="text-xl font-bold font-mono tabular-nums tracking-tight leading-none"
+                className="text-[19px] md:text-[21px] font-semibold font-mono tabular-nums leading-none"
                 style={{ color: c.status === "error" ? "var(--color-sell)" : c.accent }}
               >
                 {c.status === "loading" ? "..." : c.status === "error" ? "—" : c.value}
@@ -203,15 +179,15 @@ export default function KPICards({ metrics }: Props) {
             </div>
 
             {/* Row 3: sub info */}
-            <p className="text-[10px] mt-1.5 text-txt-dim leading-tight">
+            <p className="text-[10px] mt-2 text-txt-dim leading-[1.35] min-h-[27px]">
               {c.status === "error" ? c.sub : typeof c.sub === "string" ? c.sub : c.sub}
             </p>
 
             {/* Row 4: source + freshness */}
-            <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-border-default">
-              <span className="text-[8px] text-txt-faint">{c.source}</span>
+            <div className="flex items-center justify-between mt-2.5 pt-1.5 border-t border-border-default">
+              <span className="text-[8px] text-txt-faint tracking-wide">{c.source}</span>
               {c.lastUpdated && (c.status === "live" || c.status === "stale") && (
-                <span className="text-[8px] text-txt-faint">{timeAgo(c.lastUpdated)}</span>
+                <span className="text-[8px] text-txt-faint tracking-wide">{timeAgo(c.lastUpdated)}</span>
               )}
             </div>
           </div>
