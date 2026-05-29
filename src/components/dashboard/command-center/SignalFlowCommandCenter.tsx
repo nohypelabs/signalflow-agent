@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -17,18 +17,9 @@ const pipelineSteps = [
   { number: "3", title: "Confluence V2", description: "Multi-Source Fusion\n& Alignment", icon: "fusion" },
   { number: "4", title: "AI Thesis", description: "Context, Narrative\n& Probability", icon: "brain" },
   { number: "5", title: "Trade Setup", description: "Entry, Risk, Targets\n& Execution Plan", icon: "target" },
+  { number: "6", title: "Decision Score", description: "Final Probability\n& Execution Ready", icon: "score" },
 ];
 
-const signalStream = [
-  { time: "09:41", title: "AI Thesis Updated", detail: "Bullish continuation\nprobability increased", level: "HIGH", icon: "brain" },
-  { time: "09:40", title: "Confluence V2", detail: "Alignment Score: 0.82", level: "HIGH", icon: "cube" },
-  { time: "09:39", title: "SoSoValue Data", detail: "ETF Net Flow: +$287M", level: "HIGH", icon: "database" },
-  { time: "09:39", title: "SoDEX Data", detail: "Large Buy Flow Detected\n(>$10M)", level: "HIGH", icon: "database" },
-  { time: "09:38", title: "Momentum", detail: "RSI 56.1 UP\nMACD Bullish Cross", level: "MED", icon: "trend" },
-  { time: "09:37", title: "Macro", detail: "DXY 102.31 DOWN\n10Y Yield 4.37% DOWN", level: "MED", icon: "globe" },
-  { time: "09:36", title: "Sentiment", detail: "Greed Index: 67\nSocial Volume UP", level: "LOW", icon: "chat" },
-  { time: "09:35", title: "Treasury", detail: "Exchange Reserve DOWN\nNet Outflow", level: "LOW", icon: "bank" },
-];
 
 const evidenceCards = [
   { title: "ETF FLOW", icon: "bars", rows: [["Net Flow (24H)", "+$287M"]], impact: "HIGH", spark: "up" },
@@ -58,11 +49,6 @@ function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
-function levelBadgeVariant(level: string): string {
-  if (level === "HIGH") return "buy";
-  if (level === "MED") return "warning";
-  return "muted";
-}
 
 function impactBadgeVariant(impact: string): string {
   if (impact === "HIGH") return "buy";
@@ -86,7 +72,8 @@ function TechIcon({ name, className = "" }: { name: string; className?: string }
       {name === "chat" && <path className={common} d="M6 8h20v13H12l-6 5V8Zm5 5h10M11 17h7" />}
       {name === "bank" && <path className={common} d="M5 13h22L16 6 5 13Zm3 0v11m5-11v11m6-11v11m5-11v11M5 24h22" />}
       {name === "bars" && <path className={common} d="M7 24V14m6 10V8m6 16V11m6 13V5M5 26h22" />}
-      {!["database", "cube", "fusion", "brain", "target", "trend", "globe", "chat", "bank", "bars"].includes(name) && <circle className={common} cx="16" cy="16" r="10" />}
+      {name === "score" && <g className={common}><circle cx="16" cy="16" r="10" /><path d="M11 16l3 3 7-7" /></g>}
+      {!["database", "cube", "fusion", "brain", "target", "trend", "globe", "chat", "bank", "bars", "score"].includes(name) && <circle className={common} cx="16" cy="16" r="10" />}
     </svg>
   );
 }
@@ -95,12 +82,12 @@ function TechIcon({ name, className = "" }: { name: string; className?: string }
 
 function PipelineStepCard({ step }: { step: (typeof pipelineSteps)[number] }) {
   return (
-    <Card variant="default" padding="none" className="relative flex h-[62px] items-center gap-3 rounded-xl px-3.5">
-      <span className="absolute left-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent-muted text-[9px] font-bold text-accent">{step.number}</span>
-      <TechIcon name={step.icon} className="h-7 w-7 shrink-0" />
+    <Card variant="default" padding="none" className="relative flex h-[88px] items-center gap-4 rounded-xl px-5">
+      <span className="absolute left-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent-muted text-[11px] font-bold text-accent">{step.number}</span>
+      <TechIcon name={step.icon} className="h-10 w-10 shrink-0" />
       <div>
-        <h3 className="text-xs font-semibold text-txt-primary">{step.title}</h3>
-        <p className="mt-0.5 whitespace-pre-line text-[11px] leading-snug text-txt-tertiary">{step.description}</p>
+        <h3 className="text-sm font-semibold text-txt-primary">{step.title}</h3>
+        <p className="mt-1 whitespace-pre-line text-xs leading-snug text-txt-tertiary">{step.description}</p>
       </div>
     </Card>
   );
@@ -108,21 +95,24 @@ function PipelineStepCard({ step }: { step: (typeof pipelineSteps)[number] }) {
 
 function Connector() {
   return (
-    <div className="hidden min-w-[64px] flex-1 items-center lg:flex relative overflow-hidden">
-      {/* Base layer — static lines + heartbeat */}
-      <div className="h-px flex-1 bg-accent-dim" />
+    <div className="hidden min-w-[64px] flex-1 items-center lg:flex">
+      {/* Left line — shimmer on the line itself */}
+      <div className="h-px flex-1 relative overflow-hidden">
+        <div className="absolute inset-0 bg-accent-dim" />
+        <div className="absolute inset-0 connector-line-shimmer" />
+      </div>
+      {/* Heartbeat — base + flowing dash */}
       <svg viewBox="0 0 64 26" className="h-7 w-16 shrink-0">
         <path d="M0 13h18l4-10 8 20 8-20 8 20 4-10h14" fill="none" stroke="var(--color-accent-dim)" strokeWidth="1.5" />
-      </svg>
-      <div className="h-px flex-1 bg-accent-dim" />
-      {/* Shimmer overlay — one continuous flow across entire connector */}
-      <div className="absolute inset-0 pointer-events-none connector-shimmer-line" />
-      {/* Heartbeat shimmer — flowing dash along the ECG path */}
-      <svg viewBox="0 0 64 26" className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-7 w-16 shrink-0 pointer-events-none">
         <path d="M0 13h18l4-10 8 20 8-20 8 20 4-10h14" fill="none" stroke="white" strokeWidth="1.5"
-          strokeDasharray="20 48" strokeLinecap="round" opacity="0.6"
+          strokeDasharray="20 48" strokeLinecap="round" opacity="0.5"
           className="connector-shimmer-svg" />
       </svg>
+      {/* Right line — shimmer on the line itself */}
+      <div className="h-px flex-1 relative overflow-hidden">
+        <div className="absolute inset-0 bg-accent-dim" />
+        <div className="absolute inset-0 connector-line-shimmer" />
+      </div>
     </div>
   );
 }
@@ -130,7 +120,7 @@ function Connector() {
 function PipelineFlow() {
   return (
     <Card variant="default" padding="sm" className="rounded-xl">
-      <div className="grid min-w-[1120px] grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] items-center gap-2">
+      <div className="grid min-w-[1120px] grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] items-center">
         {pipelineSteps.map((step, index) => (
           <div key={step.title} className="contents">
             <PipelineStepCard step={step} />
@@ -287,31 +277,83 @@ function DecisionPanel() {
   );
 }
 
-/* ── Signal Stream ── */
+/* ── News Feed ── */
 
-function SignalStream() {
+interface NewsItem {
+  id: number;
+  title: string;
+  content: string;
+  release_time: number;
+  source_link: string;
+  matched_currencies: Array<{ currency_id: string; symbol: string }> | null;
+  tags: Array<{ name: string }> | null;
+}
+
+interface NewsResponse {
+  list: NewsItem[];
+  sentiment: { score: number; label: string };
+  topCoins: Array<{ symbol: string; count: number }>;
+}
+
+function timeAgo(ts: number): string {
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "now";
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  return `${Math.floor(hrs / 24)}d`;
+}
+
+function sentimentVariant(label: string): string {
+  if (label === "Bullish") return "buy";
+  if (label === "Bearish") return "sell";
+  return "muted";
+}
+
+function NewsFeed() {
+  const [news, setNews] = useState<NewsResponse | null>(null);
+
+  useEffect(() => {
+    fetch("/api/news?pageSize=8")
+      .then((r) => r.json())
+      .then((data) => setNews(data))
+      .catch(() => {});
+  }, []);
+
   return (
-    <Panel title="SIGNAL STREAM" className="h-[494px]">
+    <Panel
+      title="NEWS FEED"
+      badge={news?.sentiment && (
+        <Badge variant={sentimentVariant(news.sentiment.label)} size="sm">
+          {news.sentiment.label} {news.sentiment.score}
+        </Badge>
+      )}
+      className="h-[494px]"
+    >
       <div>
-        {signalStream.map((item) => (
+        {news?.list.map((item) => (
           <div
-            key={`${item.time}-${item.title}`}
-            className="grid grid-cols-[46px_34px_1fr_44px] items-center gap-2 border-b border-border-default px-3 py-2.5 transition-colors hover:bg-elevated/30"
+            key={item.id}
+            className="border-b border-border-default px-3 py-2.5 transition-colors hover:bg-elevated/30"
           >
-            <div className="font-mono text-xs text-txt-muted">{item.time}</div>
-            <TechIcon name={item.icon} className="h-5 w-5" />
-            <div className="min-w-0">
-              <div className="text-xs font-semibold text-txt-primary">{item.title}</div>
-              <div className="whitespace-pre-line text-[11px] leading-snug text-txt-tertiary">{item.detail}</div>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[10px] text-txt-muted">{timeAgo(item.release_time)}</span>
+              {item.matched_currencies?.slice(0, 3).map((c) => (
+                <span key={c.symbol} className="rounded bg-accent-muted px-1.5 py-0.5 text-[9px] font-semibold text-accent">
+                  {c.symbol}
+                </span>
+              ))}
             </div>
-            <Badge variant={levelBadgeVariant(item.level)} size="sm" className="justify-self-start">
-              {item.level}
-            </Badge>
+            <p className="mt-1 text-xs font-medium text-txt-primary leading-snug line-clamp-2">{item.title}</p>
           </div>
         ))}
-        <button type="button" className="flex w-full items-center justify-between px-4 py-3 text-xs font-medium text-accent hover:bg-accent-muted/30 transition-colors">
-          View All Signals <span className="text-sm">›</span>
-        </button>
+        {!news && (
+          <div className="flex items-center justify-center py-12 text-xs text-txt-muted">Loading news…</div>
+        )}
+        <a href="/data-sources" className="flex w-full items-center justify-between px-4 py-3 text-xs font-medium text-accent hover:bg-accent-muted/30 transition-colors">
+          View All Sources <span className="text-sm">›</span>
+        </a>
       </div>
     </Panel>
   );
@@ -388,7 +430,7 @@ export default function SignalFlowCommandCenter() {
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,2.8fr)_minmax(280px,1.3fr)_minmax(280px,1.2fr)]">
         <MarketCanvas pair={pair} />
         <DecisionPanel />
-        <SignalStream />
+        <NewsFeed />
       </div>
       <EvidenceFlow />
     </div>

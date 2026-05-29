@@ -292,20 +292,20 @@ main::-webkit-scrollbar-thumb {
 }
 
 /* ── Connector Shimmer (Command Center pipeline) ── */
-@keyframes connector-shimmer-line {
+@keyframes connector-line-shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
-.connector-shimmer-line {
+.connector-line-shimmer {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.06) 30%,
-    rgba(255, 255, 255, 0.18) 50%,
-    rgba(255, 255, 255, 0.06) 70%,
+    rgba(255, 255, 255, 0.08) 45%,
+    rgba(255, 255, 255, 0.22) 50%,
+    rgba(255, 255, 255, 0.08) 55%,
     transparent 100%
   );
-  animation: connector-shimmer-line 3.5s linear infinite;
+  animation: connector-line-shimmer 3.5s linear infinite;
   will-change: transform;
 }
 
