@@ -158,7 +158,7 @@ function MarketCanvas({ pair }: { pair: string }) {
   const currentPrice = ticker ? parseFloat(ticker.lastPx) : null;
 
   return (
-    <Card variant="default" padding="none" className="rounded-xl overflow-hidden h-[427px] flex flex-col">
+    <Card variant="default" padding="none" className="rounded-xl overflow-hidden h-[470px] flex flex-col">
       <TradingChart
         klines={d.klines}
         symbol={pair}
@@ -195,7 +195,7 @@ function DecisionPanel() {
   };
 
   return (
-    <Panel title="CURRENT DECISION PANEL" className="h-[427px]">
+    <Panel title="CURRENT DECISION PANEL" className="h-[470px]">
       <div className="space-y-4 p-4">
         {/* Signal Selector */}
         <div>
@@ -282,7 +282,7 @@ function DecisionPanel() {
 
 function SignalStream() {
   return (
-    <Panel title="SIGNAL STREAM" className="h-[427px]">
+    <Panel title="SIGNAL STREAM" className="h-[470px]">
       <div>
         {signalStream.map((item) => (
           <div
