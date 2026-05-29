@@ -364,7 +364,7 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
                         {m.category !== "Crypto" && (
                           <span className="text-[8px] px-1.5 py-[1px] rounded bg-elevated text-txt-dim font-semibold uppercase">{m.category.slice(0, 3)}</span>
                         )}
-                        <span className="text-[8px] px-1.5 py-[1px] rounded bg-accent/10 text-accent font-bold font-mono border border-accent/15">{m.maxLev}x</span>
+                        <span className="text-[10px] px-2 py-[2px] rounded-md bg-accent/10 text-accent font-bold font-mono border border-accent/20">{m.maxLev}x</span>
                         {m.signal && <SignalBadge action={m.signal.action} confidence={m.signal.confidence} />}
                       </div>
                     </div>

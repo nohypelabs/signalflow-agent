@@ -543,7 +543,7 @@ export default function TradingChart({
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
               <span className="text-base">{pair}</span>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8px] font-bold font-mono bg-accent/10 text-accent border border-accent/20">
+              <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-bold font-mono bg-accent/10 text-accent border border-accent/20">
                 {["BTC", "ETH", "SOL"].includes(pair.split("/")[0].toUpperCase()) ? "20x" : "5x"}
               </span>
               {latestSignal && (
@@ -638,31 +638,36 @@ export default function TradingChart({
             <div className="relative">
               <button
                 onClick={(e) => { e.stopPropagation(); setShowTfDropdown(!showTfDropdown); }}
-                className="text-[10px] font-medium px-2 py-1 rounded transition-all cursor-pointer text-txt-dim hover:text-txt-secondary hover:bg-inset/60 border border-border-default flex items-center gap-1"
+                className="text-[10px] font-medium px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-txt-dim hover:text-txt-secondary border border-border-default flex items-center gap-1 hover:bg-elevated/30 hover:border-border-muted"
               >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
               </button>
               {showTfDropdown && (
-                <div className="absolute left-0 top-full mt-1 z-30 bg-card border border-border-default rounded-lg shadow-xl overflow-hidden min-w-[120px]" onClick={(e) => e.stopPropagation()}>
-                  {(Object.keys(TF_CONFIG) as Timeframe[]).map((t) => (
-                    <div key={t} className="flex items-center justify-between hover:bg-elevated/40 transition-colors">
+                <div className="absolute left-0 top-full mt-1.5 z-30 bg-card border border-border-muted rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.4)] overflow-hidden min-w-[180px]" onClick={(e) => e.stopPropagation()}>
+                  <div className="px-3 py-2 border-b border-border-default bg-inset/30">
+                    <span className="text-[9px] text-txt-muted font-medium uppercase tracking-wider">Timeframe</span>
+                  </div>
+                  {(Object.keys(TF_CONFIG) as Timeframe[]).map((t, i) => (
+                    <div key={t} className={`flex items-center justify-between transition-colors ${i < Object.keys(TF_CONFIG).length - 1 ? "border-b border-border-default/30" : ""}`}>
                       <button
                         onClick={() => { setTf(t); setShowTfDropdown(false); }}
-                        className={`flex-1 text-left px-3 py-2 text-[11px] font-mono cursor-pointer ${
-                          tf === t ? "text-accent bg-accent/5" : "text-txt-secondary hover:text-txt-primary"
+                        className={`flex-1 flex items-center gap-2 text-left px-3 py-2.5 text-[12px] font-mono cursor-pointer transition-colors ${
+                          tf === t ? "text-accent bg-accent/8 font-semibold" : "text-txt-secondary hover:text-txt-primary hover:bg-elevated/30"
                         }`}
                       >
-                        {t}
+                        {tf === t && <span className="w-1.5 h-1.5 rounded-full bg-accent" />}
+                        <span>{t}</span>
+                        {favTfs.includes(t) && <span className="text-hold text-[8px] ml-auto">★</span>}
                       </button>
                       <button
                         onClick={() => toggleFavTf(t)}
-                        className={`px-2 py-2 cursor-pointer transition-colors ${favTfs.includes(t) ? "text-hold" : "text-txt-faint hover:text-hold"}`}
+                        className={`px-3 py-2.5 cursor-pointer transition-all hover:scale-110 ${favTfs.includes(t) ? "text-hold" : "text-txt-faint/30 hover:text-hold/60"}`}
                         title={favTfs.includes(t) ? "Remove from favorites" : "Add to favorites"}
                       >
                         {favTfs.includes(t) ? (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--color-hold)" stroke="var(--color-hold)" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--color-hold)" stroke="var(--color-hold)" strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
                         ) : (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="opacity-30"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
                         )}
                       </button>
                     </div>
@@ -697,21 +702,20 @@ export default function TradingChart({
               </button>
             </div>
 
-            {/* Chart engine toggle: Native | TV */}
-            <div className="flex items-center bg-inset rounded border border-border-default overflow-hidden">
+            {/* Chart engine toggle */}
+            <div className="flex items-center bg-inset rounded-lg border border-border-default overflow-hidden">
               <button
                 onClick={() => setChartEngine("native")}
-                className={`text-[9px] px-2 py-0.5 transition-all cursor-pointer font-semibold ${
-                  chartEngine === "native" ? "text-accent bg-elevated" : "text-txt-dim hover:text-txt-secondary"
+                className={`text-[10px] px-3 py-1.5 transition-all cursor-pointer font-medium ${
+                  chartEngine === "native" ? "text-accent bg-accent/12 border-r border-accent/15" : "text-txt-dim hover:text-txt-secondary border-r border-border-default"
                 }`}
               >
                 SignalFlow
               </button>
-              <div className="w-px h-3 bg-border-default" />
               <button
                 onClick={() => setChartEngine("tradingview")}
-                className={`text-[9px] px-2 py-0.5 transition-all cursor-pointer font-semibold ${
-                  chartEngine === "tradingview" ? "text-accent bg-elevated" : "text-txt-dim hover:text-txt-secondary"
+                className={`text-[10px] px-3 py-1.5 transition-all cursor-pointer font-medium ${
+                  chartEngine === "tradingview" ? "text-accent bg-accent/12" : "text-txt-dim hover:text-txt-secondary"
                 }`}
               >
                 TradingView

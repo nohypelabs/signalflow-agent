@@ -206,17 +206,24 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
           </div>
           <div className="relative">
             <button onClick={() => setShowMarginDropdown(!showMarginDropdown)}
-              className="flex items-center gap-1 px-2 py-1 rounded-md bg-inset border border-border-default cursor-pointer hover:border-border-muted transition-colors">
-              <span className="text-[10px] text-txt-secondary font-medium">{marginMode}</span>
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-txt-dim"><path d="M19 9l-7 7-7-7" /></svg>
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-inset border border-border-default cursor-pointer hover:border-border-muted hover:bg-elevated/20 transition-all">
+              <span className="text-[11px] text-txt-secondary font-medium">{marginMode}</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-txt-dim"><path d="M19 9l-7 7-7-7" /></svg>
             </button>
             {showMarginDropdown && (
-              <div className="absolute right-0 top-full mt-1 z-30 bg-card border border-border-default rounded-lg shadow-xl overflow-hidden min-w-[100px]">
+              <div className="absolute right-0 top-full mt-1.5 z-30 bg-card border border-border-muted rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.4)] overflow-hidden min-w-[140px]">
+                <div className="px-3 py-2 border-b border-border-default bg-inset/30">
+                  <span className="text-[9px] text-txt-muted font-medium uppercase tracking-wider">Margin Mode</span>
+                </div>
                 {(["Isolated", "Cross"] as const).map((mode) => (
                   <button key={mode} onClick={() => { setMarginMode(mode); setShowMarginDropdown(false); }}
-                    className={`w-full text-left px-3 py-2 text-[10px] font-medium cursor-pointer transition-colors ${
-                      marginMode === mode ? "bg-accent/15 text-accent" : "text-txt-secondary hover:bg-elevated/40 hover:text-txt-primary"
-                    }`}>{mode}</button>
+                    className={`w-full flex items-center gap-2 text-left px-3 py-2.5 text-[12px] font-medium cursor-pointer transition-colors ${
+                      marginMode === mode ? "bg-accent/8 text-accent" : "text-txt-secondary hover:bg-elevated/30 hover:text-txt-primary"
+                    }`}>
+                    {marginMode === mode && <span className="w-1.5 h-1.5 rounded-full bg-accent" />}
+                    <span>{mode}</span>
+                    <span className="text-[9px] text-txt-faint ml-auto">{mode === "Isolated" ? "Safer" : "Flexible"}</span>
+                  </button>
                 ))}
               </div>
             )}
@@ -225,15 +232,23 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
 
         {/* Leverage settings (expandable) */}
         {showLeverageSettings && (
-          <div className="space-y-2 p-2 rounded-lg bg-inset/50 border border-border-default">
+          <div className="space-y-2.5 p-3 rounded-xl bg-inset/50 border border-border-default">
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] text-txt-dim uppercase tracking-wider">Leverage</span>
+              <span className="text-sm font-bold font-mono text-accent tabular-nums">{leverage}x</span>
+            </div>
             <input type="range" min={1} max={maxLeverage} value={leverage} onChange={(e) => setLeverage(Number(e.target.value))}
               className="w-full h-1.5 bg-elevated rounded-full appearance-none cursor-pointer accent-accent" />
-            <div className="flex gap-1">
+            <div className="flex gap-1.5">
               {leveragePresets.map((lev) => (
-                <button key={lev} onClick={() => setLeverage(lev)} className={`flex-1 text-[9px] py-1 rounded cursor-pointer transition-colors ${
-                  leverage === lev ? "bg-accent/15 text-accent border border-accent/30" : "bg-inset text-txt-muted border border-border-default hover:border-border-muted"
+                <button key={lev} onClick={() => setLeverage(lev)} className={`flex-1 text-[10px] py-1.5 rounded-lg cursor-pointer transition-all font-medium ${
+                  leverage === lev ? "bg-accent/15 text-accent border border-accent/30 shadow-[0_0_8px_rgba(0,229,168,0.1)]" : "bg-inset text-txt-dim border border-border-default hover:border-border-muted hover:text-txt-secondary"
                 }`}>{lev}x</button>
               ))}
+            </div>
+            <div className="flex items-center justify-between text-[9px] text-txt-faint">
+              <span>Max: {maxLeverage}x</span>
+              <span>Notional: ${((parseFloat(margin) || 0) * leverage).toFixed(0)}</span>
             </div>
           </div>
         )}
