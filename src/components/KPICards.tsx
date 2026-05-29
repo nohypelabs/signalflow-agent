@@ -157,7 +157,7 @@ export default function KPICards({ metrics }: Props) {
         <motion.div
           key={c.label}
           whileHover={{ y: -1.5, transition: { duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] } }}
-          className="group relative bg-card border border-border-default rounded-lg shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_1px_2px_rgba(0,0,0,0.34),0_8px_20px_rgba(0,0,0,0.2)] overflow-hidden hover:border-border-strong hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_6px_rgba(0,0,0,0.38),0_12px_26px_rgba(0,0,0,0.26)] transition-[border-color,box-shadow,transform] duration-200"
+          className="group relative bg-card border border-border-default rounded-lg overflow-hidden hover:bg-elevated/20 hover:border-border-muted transition-[background-color,border-color,transform] duration-200"
         >
           {/* Top accent stripe */}
           <div
