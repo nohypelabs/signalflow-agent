@@ -42,9 +42,13 @@ export default function WalletButton() {
   if (!isConnected) {
     return (
       <div className="flex items-center gap-2">
-        <Button variant="primary" size="sm" onClick={handleConnect} loading={connecting}>
-          Connect Wallet
-        </Button>
+        <button
+          onClick={handleConnect}
+          disabled={connecting}
+          className="px-3 py-1.5 text-xs font-bold rounded-lg bg-accent text-[#05070D] border border-accent/70 hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {connecting ? "Connecting..." : "Connect Wallet"}
+        </button>
         {error && (
           <span className="text-[10px] text-error">{error}</span>
         )}
@@ -77,10 +81,10 @@ export default function WalletButton() {
     <div className="relative">
       <button
         onClick={() => setDropdownOpen(!dropdownOpen)}
-        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-elevated border border-border-default hover:bg-elevated/80 hover:border-border-muted transition-colors"
+        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-inset border border-border-default text-txt-secondary hover:text-txt-primary hover:border-border-muted transition-colors"
       >
         <StatusDot status="live" size="sm" />
-        <span className="text-[11px] text-txt-primary font-mono font-medium">{shortAddress}</span>
+        <span className="text-[11px] font-mono font-medium">{shortAddress}</span>
         <svg
           className={`w-3 h-3 text-txt-muted transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
           viewBox="0 0 16 16"
