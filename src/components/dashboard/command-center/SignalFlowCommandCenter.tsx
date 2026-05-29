@@ -631,6 +631,87 @@ function changeArrow(pct: number): string {
   return pct > 0 ? "▲" : pct < 0 ? "▼" : "—";
 }
 
+/* Coin color map for avatars */
+const COIN_COLORS: Record<string, { bg: string; text: string }> = {
+  BTC: { bg: "#F7931A", text: "#fff" },
+  ETH: { bg: "#627EEA", text: "#fff" },
+  SOL: { bg: "#9945FF", text: "#fff" },
+  HYPE: { bg: "#00E5A8", text: "#05070D" },
+  SUI: { bg: "#4DA2FF", text: "#fff" },
+  DEFI: { bg: "#8B5CF6", text: "#fff" },
+  NVDA: { bg: "#76B900", text: "#fff" },
+};
+
+function coinColor(symbol: string): { bg: string; text: string } {
+  if (COIN_COLORS[symbol]) return COIN_COLORS[symbol];
+  // Generate a deterministic hue from the symbol
+  let hash = 0;
+  for (let i = 0; i < symbol.length; i++) hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash) % 360;
+  return { bg: `hsl(${hue}, 70%, 50%)`, text: "#fff" };
+}
+
+function CoinAvatar({ symbol, size = 24 }: { symbol: string; size?: number }) {
+  const c = coinColor(symbol);
+  return (
+    <span
+      className="inline-flex items-center justify-center rounded-full shrink-0 font-bold"
+      style={{ width: size, height: size, backgroundColor: c.bg + "22", color: c.bg, fontSize: size * 0.38 }}
+    >
+      {symbol.slice(0, 2)}
+    </span>
+  );
+}
+
+/* Win rate ring SVG */
+function WinRateRing({ value, size = 64 }: { value: number | null | undefined; size?: number }) {
+  const pct = value != null && Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : null;
+  const r = (size - 6) / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = pct != null ? circ * (1 - pct / 100) : circ;
+  const color = pct != null ? (pct >= 60 ? "var(--color-buy)" : pct >= 40 ? "var(--color-hold)" : "var(--color-sell)") : "var(--color-border-default)";
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-border-default)" strokeWidth="4" opacity="0.3" />
+        <circle
+          cx={size / 2} cy={size / 2} r={r}
+          fill="none" stroke={color} strokeWidth="4"
+          strokeDasharray={circ} strokeDashoffset={offset}
+          strokeLinecap="round"
+          className="transition-all duration-700 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="font-mono text-sm font-bold tabular-nums text-txt-primary leading-none">
+          {pct != null ? `${pct.toFixed(0)}` : "—"}
+        </span>
+        <span className="text-[8px] text-txt-muted leading-none mt-0.5">%</span>
+      </div>
+    </div>
+  );
+}
+
+/* Mini horizontal bar for change magnitude */
+function ChangeBar({ change, maxAbs }: { change: number; maxAbs: number }) {
+  const width = maxAbs > 0 ? Math.min(100, (Math.abs(change) / maxAbs) * 100) : 0;
+  const isPositive = change >= 0;
+  return (
+    <div className="h-1 w-full rounded-full bg-border-default/30 overflow-hidden mt-1">
+      <div
+        className="h-full rounded-full transition-all duration-500"
+        style={{
+          width: `${width}%`,
+          background: isPositive
+            ? "linear-gradient(90deg, var(--color-buy-muted), var(--color-buy))"
+            : "linear-gradient(90deg, var(--color-sell-muted), var(--color-sell))",
+        }}
+      />
+    </div>
+  );
+}
+
 function TopMoversCard() {
   const d = useDashboard();
   const tickers = d.tickers ?? [];
@@ -646,34 +727,74 @@ function TopMoversCard() {
 
   const top3 = parsed.slice(0, 3);
   const bottom3 = parsed.slice(-3).reverse();
+  const maxAbs = Math.max(...parsed.map((t) => Math.abs(t.change)), 1);
 
   return (
-    <Card variant="default" padding="sm" className="rounded-xl">
-      <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">Top Movers</h3>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <p className="mb-1.5 text-[9px] uppercase text-buy font-medium">Gainers</p>
-          {top3.map((t) => (
-            <div key={t.symbol} className="flex items-center justify-between py-0.5 text-xs">
-              <span className="font-medium text-txt-primary">{t.symbol}</span>
-              <span className={`font-mono tabular-nums ${changeColor(t.change)}`}>
-                {changeArrow(t.change)} {Math.abs(t.change).toFixed(2)}%
-              </span>
-            </div>
-          ))}
-          {top3.length === 0 && <p className="text-[10px] text-txt-muted">No data</p>}
+    <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">Top Movers</h3>
+        <span className="text-[9px] text-txt-dim font-mono tabular-nums">{parsed.length} pairs</span>
+      </div>
+      <div className="grid grid-cols-2 divide-x divide-border-default">
+        <div className="p-3">
+          <div className="flex items-center gap-1.5 mb-2.5">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-buy" />
+            <span className="text-[9px] uppercase text-buy font-semibold tracking-wider">Gainers</span>
+          </div>
+          <div className="space-y-2.5">
+            {top3.map((t, i) => (
+              <div key={t.symbol} className="group">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-4 text-[9px] text-txt-dim font-mono tabular-nums text-right">{i + 1}</span>
+                  <CoinAvatar symbol={t.symbol} size={22} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-txt-primary truncate">{t.symbol}</span>
+                      <span className="font-mono text-xs font-bold tabular-nums text-buy ml-2">
+                        +{Math.abs(t.change).toFixed(2)}%
+                      </span>
+                    </div>
+                    <ChangeBar change={t.change} maxAbs={maxAbs} />
+                  </div>
+                </div>
+              </div>
+            ))}
+            {top3.length === 0 && (
+              <div className="flex items-center justify-center py-4">
+                <span className="text-[10px] text-txt-muted">No data</span>
+              </div>
+            )}
+          </div>
         </div>
-        <div>
-          <p className="mb-1.5 text-[9px] uppercase text-sell font-medium">Losers</p>
-          {bottom3.map((t) => (
-            <div key={t.symbol} className="flex items-center justify-between py-0.5 text-xs">
-              <span className="font-medium text-txt-primary">{t.symbol}</span>
-              <span className={`font-mono tabular-nums ${changeColor(t.change)}`}>
-                {changeArrow(t.change)} {Math.abs(t.change).toFixed(2)}%
-              </span>
-            </div>
-          ))}
-          {bottom3.length === 0 && <p className="text-[10px] text-txt-muted">No data</p>}
+        <div className="p-3">
+          <div className="flex items-center gap-1.5 mb-2.5">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-sell" />
+            <span className="text-[9px] uppercase text-sell font-semibold tracking-wider">Losers</span>
+          </div>
+          <div className="space-y-2.5">
+            {bottom3.map((t, i) => (
+              <div key={t.symbol} className="group">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-4 text-[9px] text-txt-dim font-mono tabular-nums text-right">{i + 1}</span>
+                  <CoinAvatar symbol={t.symbol} size={22} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-txt-primary truncate">{t.symbol}</span>
+                      <span className="font-mono text-xs font-bold tabular-nums text-sell ml-2">
+                        {Math.abs(t.change).toFixed(2)}%
+                      </span>
+                    </div>
+                    <ChangeBar change={t.change} maxAbs={maxAbs} />
+                  </div>
+                </div>
+              </div>
+            ))}
+            {bottom3.length === 0 && (
+              <div className="flex items-center justify-center py-4">
+                <span className="text-[10px] text-txt-muted">No data</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </Card>
@@ -692,30 +813,63 @@ function SignalAccuracyCard() {
   const lossStreak = currentStreak?.type === "loss" ? currentStreak.count : 0;
 
   return (
-    <Card variant="default" padding="sm" className="rounded-xl">
-      <h3 className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">
-        <Target size={12} className="text-accent" /> Signal Accuracy
-      </h3>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-txt-muted">Win Rate</span>
-          <span className="font-mono text-sm font-bold tabular-nums text-accent">
-            {accuracy !== null && accuracy !== undefined ? `${accuracy.toFixed(1)}%` : "—"}
-          </span>
+    <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
+        <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">
+          <Target size={12} className="text-accent" /> Signal Accuracy
+        </h3>
+        {totalResolved > 0 && (
+          <span className="text-[9px] font-mono text-txt-dim tabular-nums">{totalResolved} resolved</span>
+        )}
+      </div>
+      <div className="p-3">
+        {/* Center ring */}
+        <div className="flex justify-center mb-3">
+          <WinRateRing value={accuracy} size={72} />
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-txt-muted">Resolved</span>
-          <span className="font-mono text-xs font-semibold text-txt-primary tabular-nums">{totalResolved}</span>
+
+        {/* Streaks row */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-lg border border-buy-dim/40 bg-buy-muted/30 px-3 py-2 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-buy/70">Win Streak</span>
+            </div>
+            <span className="font-mono text-lg font-bold tabular-nums text-buy leading-none">
+              {winStreak || "—"}
+            </span>
+          </div>
+          <div className="rounded-lg border border-sell-dim/40 bg-sell-muted/30 px-3 py-2 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-sell/70">Loss Streak</span>
+            </div>
+            <span className="font-mono text-lg font-bold tabular-nums text-sell leading-none">
+              {lossStreak || "—"}
+            </span>
+          </div>
         </div>
-        <div className="h-px bg-border-default" />
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-txt-muted">Win Streak</span>
-          <span className="font-mono text-xs font-semibold text-buy tabular-nums">{winStreak || "—"}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-txt-muted">Loss Streak</span>
-          <span className="font-mono text-xs font-semibold text-sell tabular-nums">{lossStreak || "—"}</span>
-        </div>
+
+        {/* Win rate bar */}
+        {accuracy != null && (
+          <div className="mt-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[9px] text-txt-muted uppercase tracking-wider">Win Rate</span>
+              <span className="text-[9px] font-mono text-txt-tertiary tabular-nums">{accuracy.toFixed(1)}%</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-border-default/30 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700 ease-out"
+                style={{
+                  width: `${Math.min(100, accuracy)}%`,
+                  background: accuracy >= 60
+                    ? "linear-gradient(90deg, var(--color-buy-muted), var(--color-buy))"
+                    : accuracy >= 40
+                      ? "linear-gradient(90deg, var(--color-hold-muted), var(--color-hold))"
+                      : "linear-gradient(90deg, var(--color-sell-muted), var(--color-sell))",
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </Card>
   );
@@ -725,33 +879,58 @@ function IndexCard() {
   const d = useDashboard();
   const tickers = d.tickers ?? [];
 
-  const coins = ["vBTC_vUSDC", "vETH_vUSDC", "vSOL_vUSDC"];
-  const labels: Record<string, string> = { vBTC_vUSDC: "BTC", vETH_vUSDC: "ETH", vSOL_vUSDC: "SOL" };
+  const coins = [
+    { sym: "vBTC_vUSDC", label: "BTC", full: "Bitcoin" },
+    { sym: "vETH_vUSDC", label: "ETH", full: "Ethereum" },
+    { sym: "vSOL_vUSDC", label: "SOL", full: "Solana" },
+  ];
 
   return (
-    <Card variant="default" padding="sm" className="rounded-xl">
-      <h3 className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">
-        <Layers size={12} className="text-accent" /> Index Prices
-      </h3>
-      <div className="space-y-2">
-        {coins.map((sym) => {
+    <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
+        <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">
+          <Layers size={12} className="text-accent" /> Index Prices
+        </h3>
+        <span className="text-[9px] text-txt-dim font-mono">live</span>
+      </div>
+      <div className="divide-y divide-border-default">
+        {coins.map(({ sym, label, full }) => {
           const t = tickers.find((tk) => tk.symbol === sym);
-          if (!t) return (
-            <div key={sym} className="flex items-center justify-between text-xs">
-              <span className="font-medium text-txt-primary">{labels[sym]}</span>
-              <span className="text-txt-muted">—</span>
-            </div>
-          );
-          const price = parseFloat(t.lastPx);
-          const change = typeof t.changePct === "number" ? t.changePct : parseFloat(String(t.changePct ?? "0"));
+          const price = t ? parseFloat(t.lastPx) : null;
+          const change = t
+            ? typeof t.changePct === "number"
+              ? t.changePct
+              : parseFloat(String(t.changePct ?? "0"))
+            : 0;
+          const isPositive = change >= 0;
+
           return (
-            <div key={sym} className="flex items-center justify-between text-xs">
-              <span className="font-medium text-txt-primary">{labels[sym]}</span>
-              <div className="text-right">
-                <span className="font-mono font-semibold text-txt-primary tabular-nums">{fmtUsd(price)}</span>
-                <span className={`ml-2 font-mono text-[10px] tabular-nums ${changeColor(change)}`}>
-                  {changeArrow(change)} {Math.abs(change).toFixed(2)}%
-                </span>
+            <div key={sym} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-elevated/20">
+              <CoinAvatar symbol={label} size={32} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-sm font-bold text-txt-primary">{label}</span>
+                  <span className="text-[10px] text-txt-dim">{full}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="font-mono text-sm font-bold tabular-nums text-txt-primary">
+                    {price != null ? fmtUsd(price) : "—"}
+                  </span>
+                  {price != null && (
+                    <span
+                      className={cx(
+                        "inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold font-mono tabular-nums",
+                        isPositive
+                          ? "bg-buy-muted text-buy"
+                          : change < 0
+                            ? "bg-sell-muted text-sell"
+                            : "bg-elevated text-txt-muted"
+                      )}
+                    >
+                      {changeArrow(change)} {Math.abs(change).toFixed(2)}%
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -770,29 +949,115 @@ function MarketStatsCard() {
   const activePairs = tickers.filter((t) => parseFloat(t.lastPx ?? "0") > 0).length;
   const buySignals = signals.filter((s) => s.action === "LONG").length;
   const sellSignals = signals.filter((s) => s.action === "SHORT").length;
+  const totalSignals = buySignals + sellSignals;
+
+  const stats = [
+    {
+      label: "Volume 24H",
+      value: fmtUsd(totalVolume),
+      icon: (
+        <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+          <path d="M3 14l4-4 3 3 7-9" />
+          <path d="M14 4h3v3" />
+        </svg>
+      ),
+      color: "text-accent",
+      bgColor: "bg-accent-muted",
+      large: true,
+    },
+    {
+      label: "Active Pairs",
+      value: activePairs.toString(),
+      icon: (
+        <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+          <circle cx="7" cy="10" r="4" />
+          <circle cx="13" cy="10" r="4" />
+        </svg>
+      ),
+      color: "text-info",
+      bgColor: "bg-[#00d4ff10]",
+      large: false,
+    },
+    {
+      label: "Buy Signals",
+      value: buySignals.toString(),
+      icon: (
+        <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M10 15V5M6 9l4-4 4 4" />
+        </svg>
+      ),
+      color: "text-buy",
+      bgColor: "bg-buy-muted",
+      large: false,
+    },
+    {
+      label: "Sell Signals",
+      value: sellSignals.toString(),
+      icon: (
+        <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M10 5v10M6 11l4 4 4-4" />
+        </svg>
+      ),
+      color: "text-sell",
+      bgColor: "bg-sell-muted",
+      large: false,
+    },
+  ];
 
   return (
-    <Card variant="default" padding="sm" className="rounded-xl">
-      <h3 className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">
-        <Activity size={12} className="text-accent" /> Market Stats
-      </h3>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-txt-muted">Volume 24H</span>
-          <span className="font-mono text-sm font-bold text-txt-primary tabular-nums">{fmtUsd(totalVolume)}</span>
+    <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
+        <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">
+          <Activity size={12} className="text-accent" /> Market Stats
+        </h3>
+        {totalSignals > 0 && (
+          <span className="text-[9px] font-mono text-txt-dim tabular-nums">{totalSignals} signals</span>
+        )}
+      </div>
+      <div className="grid grid-cols-2 divide-x divide-border-default">
+        {/* Left column: Volume (hero) + Active Pairs */}
+        <div className="p-3 space-y-3">
+          <div className="rounded-lg border border-accent-dim/30 bg-accent-muted/10 p-3">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className={cx("flex h-5 w-5 items-center justify-center rounded", stats[0].bgColor, stats[0].color)}>
+                {stats[0].icon}
+              </span>
+              <span className="text-[9px] font-semibold uppercase tracking-wider text-txt-muted">Volume 24H</span>
+            </div>
+            <span className="font-mono text-xl font-bold tabular-nums text-txt-primary leading-none">
+              {stats[0].value}
+            </span>
+          </div>
+          <div className="flex items-center gap-2.5 px-1">
+            <span className={cx("flex h-7 w-7 items-center justify-center rounded-lg", stats[1].bgColor, stats[1].color)}>
+              {stats[1].icon}
+            </span>
+            <div>
+              <span className="text-[9px] text-txt-muted uppercase tracking-wider block">Active Pairs</span>
+              <span className="font-mono text-base font-bold tabular-nums text-txt-primary leading-none">{stats[1].value}</span>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-txt-muted">Active Pairs</span>
-          <span className="font-mono text-xs font-semibold text-txt-primary tabular-nums">{activePairs}</span>
-        </div>
-        <div className="h-px bg-border-default" />
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-txt-muted">Buy Signals</span>
-          <span className="font-mono text-xs font-semibold text-buy tabular-nums">{buySignals}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-txt-muted">Sell Signals</span>
-          <span className="font-mono text-xs font-semibold text-sell tabular-nums">{sellSignals}</span>
+        {/* Right column: Buy + Sell signals stacked */}
+        <div className="p-3 space-y-2.5">
+          <div className="rounded-lg border border-buy-dim/30 bg-buy-muted/10 p-2.5">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className={cx("flex h-5 w-5 items-center justify-center rounded", stats[2].bgColor, stats[2].color)}>
+                {stats[2].icon}
+              </span>
+              <span className="text-[9px] font-semibold uppercase tracking-wider text-buy/70">Buy Signals</span>
+            </div>
+            <span className="font-mono text-2xl font-bold tabular-nums text-buy leading-none">{stats[2].value}</span>
+          </div>
+          <div className="rounded-lg border border-sell-dim/30 bg-sell-muted/10 p-2.5">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className={cx("flex h-5 w-5 items-center justify-center rounded", stats[3].bgColor, stats[3].color)}>
+                {stats[3].icon}
+              </span>
+              <span className="text-[9px] font-semibold uppercase tracking-wider text-sell/70">Sell Signals</span>
+            </div>
+            <span className="font-mono text-2xl font-bold tabular-nums text-sell leading-none">{stats[3].value}</span>
+          </div>
         </div>
       </div>
     </Card>
