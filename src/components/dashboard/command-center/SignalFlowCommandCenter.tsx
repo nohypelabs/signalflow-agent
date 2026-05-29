@@ -365,23 +365,32 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
     }
   };
 
-  const signalColors: Record<string, { active: string; idle: string; icon: string }> = {
-    LONG: {
-      active: "bg-buy-muted border-2 border-buy text-buy ring-1 ring-buy/30",
-      idle: "border border-border-default text-txt-muted hover:border-buy-dim hover:text-buy",
-      icon: "↑",
+  const signalLights: Array<{ action: DecisionAction; label: string; active: string; idle: string; lamp: string; glow: string }> = [
+    {
+      action: "SHORT",
+      label: "SHORT",
+      active: "border-sell-dim bg-sell-muted text-sell",
+      idle: "border-border-default bg-elevated text-txt-muted",
+      lamp: "bg-sell border-sell",
+      glow: "shadow-[0_0_16px_var(--color-sell)]",
     },
-    SHORT: {
-      active: "bg-sell-muted border-2 border-sell text-sell ring-1 ring-sell/30",
-      idle: "border border-border-default text-txt-muted hover:border-sell-dim hover:text-sell",
-      icon: "↓",
+    {
+      action: "NO TRADE",
+      label: "NO TRADE",
+      active: "border-hold-dim bg-hold-muted text-hold",
+      idle: "border-border-default bg-elevated text-txt-muted",
+      lamp: "bg-hold border-hold",
+      glow: "shadow-[0_0_16px_var(--color-hold)]",
     },
-    "NO TRADE": {
-      active: "bg-hold-muted border-2 border-hold text-hold ring-1 ring-hold/30",
-      idle: "border border-border-default text-txt-muted hover:border-hold-dim hover:text-hold",
-      icon: "⊖",
+    {
+      action: "LONG",
+      label: "LONG",
+      active: "border-buy-dim bg-buy-muted text-buy",
+      idle: "border-border-default bg-elevated text-txt-muted",
+      lamp: "bg-buy border-buy",
+      glow: "shadow-[0_0_16px_var(--color-buy)]",
     },
-  };
+  ];
 
   return (
     <Panel
@@ -390,27 +399,40 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
       className="h-[494px]"
     >
       <div className="space-y-2.5 p-3">
-        <div>
-          <div className="mb-1.5 text-[11px] font-semibold tracking-wide text-txt-tertiary uppercase">Primary Signal</div>
-          <div className="grid grid-cols-3 gap-1.5">
-            {["LONG", "SHORT", "NO TRADE"].map((item) => {
-              const isActive = decision.action === item;
-              const colors = signalColors[item];
+        <div className="rounded-xl border border-border-default bg-inset/70 px-3 py-2">
+          <div className="flex items-center gap-3">
+            <div className="flex w-9 shrink-0 flex-col items-center gap-1.5 rounded-2xl border border-border-default bg-[#050505] p-1.5 shadow-inner">
+              {signalLights.map((item) => {
+                const isActive = decision.action === item.action;
+                return (
+                  <span
+                    key={item.action}
+                    aria-label={`${item.label} ${isActive ? "active" : "inactive"}`}
+                    className={cx(
+                      "h-4 w-4 rounded-full border transition-all",
+                      isActive ? `${item.lamp} ${item.glow}` : "border-border-default bg-[#1a1a1a] opacity-45"
+                    )}
+                  />
+                );
+              })}
+            </div>
+            <div className="grid min-w-0 flex-1 grid-cols-3 gap-1.5">
+              {signalLights.map((item) => {
+                const isActive = decision.action === item.action;
               return (
-                <button
-                  key={item}
-                  type="button"
-                  aria-pressed={isActive}
+                <div
+                  key={item.action}
+                  aria-current={isActive ? "true" : undefined}
                   className={cx(
-                    "flex h-10 items-center justify-center gap-1.5 rounded-xl text-[11px] font-semibold transition-all",
-                    isActive ? colors.active : colors.idle
+                    "flex h-10 items-center justify-center rounded-xl border text-[11px] font-semibold transition-all",
+                    isActive ? `${item.active} ring-1 ring-current/25` : item.idle
                   )}
                 >
-                  <span className="text-base leading-none">{colors.icon}</span>
-                  {item}
-                </button>
+                  {item.label}
+                </div>
               );
             })}
+            </div>
           </div>
         </div>
 
