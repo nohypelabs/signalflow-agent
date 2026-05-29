@@ -28,7 +28,7 @@ export default function EvidenceFlow({ signal, liveDims }: Props) {
     <section className="bg-card border border-border-default rounded-lg overflow-hidden">
       <div className="px-4 py-3 border-b border-border-default flex items-center justify-between gap-3">
         <div>
-          <p className="text-[9px] uppercase tracking-wider text-txt-faint font-semibold">Evidence Flow</p>
+          <p className="text-[9px] uppercase tracking-wider text-txt-secondary font-semibold">Evidence Flow</p>
           <h2 className="mt-0.5 text-sm font-semibold text-txt-primary">Inputs feeding the signal engine</h2>
         </div>
         <Badge variant={signal ? "accent" : "muted"} size="sm">{signal ? "Linked to decision" : "Awaiting decision"}</Badge>
@@ -51,7 +51,7 @@ export default function EvidenceFlow({ signal, liveDims }: Props) {
               </div>
               <div className="mt-3 flex items-end justify-between gap-2">
                 <span className={`text-2xl font-semibold font-mono leading-none ${t.className}`}>{Math.round(score)}</span>
-                <span className="text-[9px] text-txt-faint">{dimension.source}</span>
+                <span className="text-[9px] text-txt-primary">{dimension.source}</span>
               </div>
               <div className="mt-3 h-1.5 rounded-full bg-background overflow-hidden">
                 <div
@@ -59,7 +59,7 @@ export default function EvidenceFlow({ signal, liveDims }: Props) {
                   style={{ width: `${Math.max(4, Math.min(100, score))}%` }}
                 />
               </div>
-              <p className="mt-2 text-[10px] leading-relaxed text-txt-dim line-clamp-2">{detail}</p>
+              <p className="mt-2 text-[10px] leading-relaxed text-txt-secondary line-clamp-2">{detail}</p>
             </div>
           );
         })}

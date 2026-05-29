@@ -22,6 +22,21 @@ Visual reference from prior session:
   - AI generator/reasoning retained as the explain layer.
 - Validation passed with `pnpm lint`, `pnpm build`, and `git diff --check`.
 
+2026-05-29 Phase 2:
+- `src/components/KPICards.tsx` was reframed from a generic KPI strip into a `Flow Summary` section.
+- Flow Summary now contains Signal Quality plus four compact cells:
+  - Live Signals
+  - Top Mover
+  - Market Breadth
+  - Data Freshness
+- Small dashboard pipeline text was raised to higher contrast by removing low-contrast `text-txt-faint`, `text-txt-dim`, and `text-txt-muted` classes from:
+  - `src/components/KPICards.tsx`
+  - `src/components/dashboard/SignalFlowRail.tsx`
+  - `src/components/dashboard/CurrentDecisionPanel.tsx`
+  - `src/components/dashboard/SignalStream.tsx`
+  - `src/components/dashboard/EvidenceFlow.tsx`
+- Validation passed with `pnpm lint`, `pnpm build`, and `git diff --check`.
+
 Remaining polish:
 - Browser screenshot review at desktop/tablet/mobile widths.
 - Fine tune panel heights once real viewport is inspected.

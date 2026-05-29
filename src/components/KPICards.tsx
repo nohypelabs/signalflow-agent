@@ -14,9 +14,9 @@ function StatusBadge({ status }: { status: MetricStatus }) {
   const styles: Record<MetricStatus, string> = {
     live: "bg-buy-muted text-buy",
     stale: "bg-hold-muted text-hold",
-    loading: "bg-[#ffffff06] text-txt-faint animate-pulse",
+    loading: "bg-[#ffffff10] text-txt-primary animate-pulse",
     error: "bg-sell-muted text-sell",
-    demo: "bg-[#ffffff06] text-txt-faint",
+    demo: "bg-[#ffffff10] text-txt-primary",
   };
   const labels: Record<MetricStatus, string> = {
     live: "LIVE",
@@ -49,7 +49,7 @@ function TrendArrow({ value, size = 10 }: { value: number; size?: number }) {
     );
   }
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="2" strokeLinecap="round">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="2" strokeLinecap="round">
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   );
@@ -154,7 +154,7 @@ function MiniKpiCard({
       className="min-w-0 h-full bg-card border border-border-default rounded-lg px-3.5 py-3 transition-[background-color,border-color,transform] duration-200 hover:bg-elevated/10 hover:border-border-muted"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[9px] uppercase font-semibold text-txt-faint truncate">
+        <span className="text-[9px] uppercase font-semibold text-txt-primary truncate">
           {label}
         </span>
         <StatusBadge status={status} />
@@ -169,13 +169,13 @@ function MiniKpiCard({
           </span>
         )}
       </div>
-      <div className="mt-2 text-[10px] text-txt-dim leading-[1.35] min-h-[27px]">
+      <div className="mt-2 text-[10px] text-txt-secondary leading-[1.35] min-h-[27px]">
         {meta}
       </div>
       <div className="mt-2">
         <MiniSparkline values={sparkline} tone={tone} />
       </div>
-      <div className="mt-2 flex items-center justify-between gap-2 text-[8px] text-txt-faint">
+      <div className="mt-2 flex items-center justify-between gap-2 text-[8px] text-txt-secondary">
         <span className="truncate">{source}</span>
         {lastUpdated && (status === "live" || status === "stale") && (
           <span className="shrink-0">{timeAgo(lastUpdated)}</span>
@@ -229,17 +229,35 @@ export default function KPICards({ metrics }: Props) {
     topMoverChange * 0.38,
     topMoverChange,
   ];
+  const freshnessSpark = [
+    metrics.activePairs.value,
+    metrics.activeSignals.value.total,
+    metrics.volume24h.value > 0 ? 1 : 0,
+    metrics.avgConfidence.value,
+    Number.isFinite(newestUpdate) ? 100 : 0,
+  ];
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1.25fr_1.75fr] gap-2.5">
+    <section className="bg-card border border-border-default rounded-lg overflow-hidden">
+      <div className="px-4 py-3 border-b border-border-default flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[9px] uppercase tracking-wider font-semibold text-txt-secondary">Flow Summary</p>
+          <h2 className="mt-0.5 text-sm font-semibold text-txt-primary">Signal quality, activity, market breadth, and freshness</h2>
+        </div>
+        <span className="hidden sm:inline text-[10px] font-semibold text-txt-primary">
+          {statusCopy(statuses)}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_1.9fr] gap-2.5 p-3">
       <motion.div
         whileHover={{ y: -1.5, transition: { duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] } }}
-        className="bg-card border border-border-default rounded-lg overflow-hidden transition-[background-color,border-color,transform] duration-200 hover:bg-elevated/10 hover:border-border-muted"
+        className="bg-inset/30 border border-border-default rounded-lg overflow-hidden transition-[background-color,border-color,transform] duration-200 hover:bg-elevated/10 hover:border-border-muted"
       >
         <div className="px-4 py-4 md:px-5 md:py-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[9px] uppercase font-semibold text-txt-faint">Priority Signal</p>
+              <p className="text-[9px] uppercase font-semibold text-txt-secondary">Priority Signal</p>
               <h2 className="mt-1 text-[15px] font-semibold text-txt-primary">Signal Quality</h2>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -260,34 +278,34 @@ export default function KPICards({ metrics }: Props) {
             }`}>
               {metricValue(metrics.avgConfidence.status, metrics.avgConfidence.formatted)}
             </span>
-            <span className="mb-1.5 text-[10px] uppercase text-txt-faint">weighted confidence</span>
+            <span className="mb-1.5 text-[10px] uppercase text-txt-primary">weighted confidence</span>
           </div>
 
-          <p className="mt-2 text-[11px] text-txt-dim leading-relaxed">{signalQualityMeta}</p>
+          <p className="mt-2 text-[11px] text-txt-primary leading-relaxed">{signalQualityMeta}</p>
 
           <div className="mt-4 grid grid-cols-3 gap-2">
             <div className="rounded-md bg-inset/40 px-2.5 py-2">
-              <p className="text-[8px] uppercase text-txt-faint">Long</p>
+              <p className="text-[8px] uppercase text-txt-primary">Long</p>
               <p className="mt-1 text-sm font-semibold font-mono text-buy tabular-nums">{signals.buy}</p>
             </div>
             <div className="rounded-md bg-inset/40 px-2.5 py-2">
-              <p className="text-[8px] uppercase text-txt-faint">No Trade</p>
+              <p className="text-[8px] uppercase text-txt-primary">No Trade</p>
               <p className="mt-1 text-sm font-semibold font-mono text-hold tabular-nums">{signals.hold}</p>
             </div>
             <div className="rounded-md bg-inset/40 px-2.5 py-2">
-              <p className="text-[8px] uppercase text-txt-faint">Short</p>
+              <p className="text-[8px] uppercase text-txt-primary">Short</p>
               <p className="mt-1 text-sm font-semibold font-mono text-sell tabular-nums">{signals.sell}</p>
             </div>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[9px] uppercase text-txt-faint">
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[9px] uppercase text-txt-primary">
             <span>{statusCopy(statuses)}</span>
             {Number.isFinite(newestUpdate) && <span>Updated {timeAgo(newestUpdate)}</span>}
           </div>
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 h-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5 h-full">
         <MiniKpiCard
           label="Live Signals"
           value={metrics.activeSignals.formatted}
@@ -314,13 +332,13 @@ export default function KPICards({ metrics }: Props) {
               <span className={topGainer.change24h >= 0 ? "text-buy font-semibold" : "text-sell font-semibold"}>
                 {formatPercent(topGainer.change24h)}
               </span>
-              <span className="text-txt-dim mx-1">/</span>
+              <span className="text-txt-primary mx-1">/</span>
               <span className="text-txt-secondary font-medium">${formatTopPrice(topGainer.price)}</span>
             </>
           ) : "No positive mover yet"}
         />
         <MiniKpiCard
-          label="24H Volume"
+          label="Market Breadth"
           value={metrics.volume24h.formatted}
           status={metrics.volume24h.status}
           source={metrics.volume24h.source}
@@ -332,7 +350,19 @@ export default function KPICards({ metrics }: Props) {
             ? "Market data unavailable"
             : `Across ${metrics.activePairs.value} active pairs`}
         />
+        <MiniKpiCard
+          label="Data Freshness"
+          value={Number.isFinite(newestUpdate) ? timeAgo(newestUpdate) : "-"}
+          status={statuses.includes("error") ? "error" : statuses.includes("loading") ? "loading" : statuses.includes("stale") ? "stale" : "live"}
+          source="SignalFlow monitor"
+          lastUpdated={Number.isFinite(newestUpdate) ? newestUpdate : null}
+          sparkline={freshnessSpark}
+          tone={statuses.includes("error") ? "sell" : statuses.includes("stale") ? "neutral" : "buy"}
+          valueClassName="text-txt-primary"
+          meta={statuses.includes("error") ? "One or more feeds need attention" : statuses.includes("stale") ? "Refresh lag detected" : "All visible feeds are current"}
+        />
       </div>
-    </div>
+      </div>
+    </section>
   );
 }

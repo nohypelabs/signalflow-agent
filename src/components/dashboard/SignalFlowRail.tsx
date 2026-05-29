@@ -29,14 +29,14 @@ function statusClass(status: RailStatus): string {
   if (status === "loading") return "bg-hold-muted text-hold border-hold-dim";
   if (status === "degraded") return "bg-hold-muted text-hold border-hold-dim";
   if (status === "error") return "bg-sell-muted text-sell border-sell-dim";
-  return "bg-txt-faint text-txt-faint border-border-default";
+  return "bg-[#ffffff10] text-txt-primary border-border-default";
 }
 
 function dotClass(status: RailStatus): string {
   if (status === "live" || status === "ready") return "bg-buy";
   if (status === "loading" || status === "degraded") return "bg-hold";
   if (status === "error") return "bg-sell";
-  return "bg-txt-faint";
+  return "bg-txt-secondary";
 }
 
 function statusLabel(status: RailStatus): string {
@@ -96,10 +96,10 @@ export default function SignalFlowRail({
     <section className="bg-card border border-border-default rounded-lg overflow-hidden">
       <div className="px-4 py-3 border-b border-border-default flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[9px] uppercase tracking-wider text-txt-faint font-semibold">SignalFlow Pipeline</p>
+          <p className="text-[9px] uppercase tracking-wider text-txt-secondary font-semibold">SignalFlow Pipeline</p>
           <h1 className="mt-0.5 text-sm md:text-base font-semibold text-txt-primary">Market data into executable signal decisions</h1>
         </div>
-        <div className="hidden md:flex items-center gap-2 text-[10px] text-txt-faint">
+        <div className="hidden md:flex items-center gap-2 text-[10px] text-txt-primary">
           <span className="w-1.5 h-1.5 rounded-full bg-buy animate-pulse" />
           <span>{metrics.activeSignals.value.total} active signals</span>
         </div>
@@ -122,7 +122,7 @@ export default function SignalFlowRail({
                     {statusLabel(node.status)}
                   </span>
                 </div>
-                <p className="mt-2 text-[11px] text-txt-muted truncate">{node.detail}</p>
+                <p className="mt-2 text-[11px] text-txt-primary truncate">{node.detail}</p>
               </div>
             </div>
           ))}

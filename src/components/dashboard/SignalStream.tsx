@@ -35,7 +35,7 @@ export default function SignalStream({ signals, selectedId, tickerMap, onSelect 
     <section className="bg-card border border-border-default rounded-lg overflow-hidden">
       <div className="px-4 py-3 border-b border-border-default flex items-center justify-between gap-3">
         <div>
-          <p className="text-[9px] uppercase tracking-wider text-txt-faint font-semibold">Signal Stream</p>
+          <p className="text-[9px] uppercase tracking-wider text-txt-secondary font-semibold">Signal Stream</p>
           <h2 className="mt-0.5 text-sm font-semibold text-txt-primary">Live engine events</h2>
         </div>
         <Badge variant={signals.length > 0 ? "live" : "muted"} size="sm">{signals.length} events</Badge>
@@ -44,8 +44,8 @@ export default function SignalStream({ signals, selectedId, tickerMap, onSelect 
       <div className="divide-y divide-border-default max-h-[248px] overflow-y-auto">
         {signals.length === 0 ? (
           <div className="px-4 py-8 text-center">
-            <p className="text-xs text-txt-muted">Waiting for signal stream</p>
-            <p className="mt-1 text-[10px] text-txt-faint">SoSoValue and SoDEX feeds are syncing.</p>
+            <p className="text-xs text-txt-primary">Waiting for signal stream</p>
+            <p className="mt-1 text-[10px] text-txt-secondary">SoSoValue and SoDEX feeds are syncing.</p>
           </div>
         ) : (
           signals.slice(0, 8).map((signal) => {
@@ -69,7 +69,7 @@ export default function SignalStream({ signals, selectedId, tickerMap, onSelect 
                       <Badge variant={variantFor(signal.action)} size="sm">{labelFor(signal.action)}</Badge>
                       {selected && <span className="text-[8px] uppercase text-accent font-bold">Active</span>}
                     </div>
-                    <p className="mt-1 text-[10px] text-txt-dim truncate">{signal.reasoning}</p>
+                    <p className="mt-1 text-[10px] text-txt-secondary truncate">{signal.reasoning}</p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-xs font-mono text-txt-primary">{fmtPrice(livePrice)}</p>

@@ -26,7 +26,7 @@ function fmtPrice(value: number | null | undefined): string {
 }
 
 function actionMeta(signal: Signal | null): { label: string; variant: string; toneClass: string; executable: boolean } {
-  if (!signal) return { label: "WAITING", variant: "muted", toneClass: "text-txt-muted", executable: false };
+  if (!signal) return { label: "WAITING", variant: "muted", toneClass: "text-txt-primary", executable: false };
   if (signal.action === "LONG") return { label: "LONG", variant: "buy", toneClass: "text-buy", executable: true };
   if (signal.action === "SHORT") return { label: "SHORT", variant: "sell", toneClass: "text-sell", executable: true };
   return { label: "NO TRADE", variant: "hold", toneClass: "text-hold", executable: false };
@@ -64,7 +64,7 @@ export default function CurrentDecisionPanel({
     <aside className="h-full bg-card border border-border-default rounded-lg overflow-hidden flex flex-col">
       <div className="px-4 py-3 border-b border-border-default flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[9px] uppercase tracking-wider font-semibold text-txt-faint">Current Decision</p>
+          <p className="text-[9px] uppercase tracking-wider font-semibold text-txt-secondary">Current Decision</p>
           <h2 className="mt-0.5 text-sm font-semibold text-txt-primary truncate">
             {signal ? signal.pair : "Waiting for qualified flow"}
           </h2>
@@ -78,7 +78,7 @@ export default function CurrentDecisionPanel({
             <div className="flex items-end justify-between gap-3">
               <div>
                 <p className={`text-[34px] font-semibold leading-none ${meta.toneClass}`}>{meta.label}</p>
-                <p className="mt-1 text-[10px] uppercase text-txt-faint">
+                <p className="mt-1 text-[10px] uppercase text-txt-primary">
                   {livePrice ? "Live SoDEX mark" : "Signal entry reference"}
                 </p>
               </div>
@@ -93,21 +93,21 @@ export default function CurrentDecisionPanel({
                 ["Risk/Reward", signal.execution.riskReward || "-", "text-txt-primary"],
               ].map(([label, value, tone]) => (
                 <div key={label} className="rounded-lg bg-inset/40 border border-border-default px-3 py-2">
-                  <p className="text-[9px] uppercase text-txt-faint">{label}</p>
+                  <p className="text-[9px] uppercase text-txt-primary">{label}</p>
                   <p className={`mt-1 text-xs font-mono font-semibold tabular-nums ${tone}`}>{value}</p>
                 </div>
               ))}
             </div>
 
             <div className="rounded-lg bg-inset/30 border border-border-default p-3">
-              <div className="flex items-center justify-between gap-3 text-[10px] text-txt-muted">
+              <div className="flex items-center justify-between gap-3 text-[10px] text-txt-primary">
                 <span>Risk to SL</span>
                 <span className="font-mono text-sell">{riskPct === null ? "-" : `${riskPct.toFixed(2)}%`}</span>
               </div>
               <div className="mt-2 h-1.5 bg-background rounded-full overflow-hidden">
                 <div className="h-full bg-sell rounded-full" style={{ width: `${Math.min(100, (riskPct ?? 0) * 8)}%` }} />
               </div>
-              <div className="mt-3 flex items-center justify-between gap-3 text-[10px] text-txt-muted">
+              <div className="mt-3 flex items-center justify-between gap-3 text-[10px] text-txt-primary">
                 <span>Reward to TP</span>
                 <span className="font-mono text-buy">{rewardPct === null ? "-" : `${rewardPct.toFixed(2)}%`}</span>
               </div>
@@ -116,7 +116,7 @@ export default function CurrentDecisionPanel({
               </div>
             </div>
 
-            <p className="text-[11px] leading-relaxed text-txt-dim line-clamp-3">{signal.reasoning}</p>
+            <p className="text-[11px] leading-relaxed text-txt-primary line-clamp-3">{signal.reasoning}</p>
 
             <div className="mt-auto grid grid-cols-2 gap-2">
               <Button
@@ -138,25 +138,25 @@ export default function CurrentDecisionPanel({
               <button
                 type="button"
                 onClick={onPinSignal}
-                className="col-span-2 rounded-lg border border-border-default px-3 py-1.5 text-xs font-semibold text-txt-muted hover:text-txt-secondary hover:border-border-muted hover:bg-elevated/25 transition-colors"
+                className="col-span-2 rounded-lg border border-border-default px-3 py-1.5 text-xs font-semibold text-txt-primary hover:text-txt-secondary hover:border-border-muted hover:bg-elevated/25 transition-colors"
               >
                 Pin as active decision
               </button>
             </div>
 
             {!isConnected && (
-              <p className="text-[10px] text-txt-faint">Wallet is not connected. Paper flow remains available from the trading desk.</p>
+              <p className="text-[10px] text-txt-secondary">Wallet is not connected. Paper flow remains available from the trading desk.</p>
             )}
           </>
         ) : (
           <div className="flex-1 flex flex-col justify-center text-center py-8">
-            <div className="mx-auto w-10 h-10 rounded-lg border border-border-default bg-inset/40 flex items-center justify-center text-txt-muted">
+            <div className="mx-auto w-10 h-10 rounded-lg border border-border-default bg-inset/40 flex items-center justify-center text-txt-primary">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M4 12h4l2-7 4 14 2-7h4" />
               </svg>
             </div>
             <h3 className="mt-4 text-sm font-semibold text-txt-primary">No active decision yet</h3>
-            <p className="mt-1 text-xs text-txt-dim max-w-[260px] mx-auto">
+            <p className="mt-1 text-xs text-txt-secondary max-w-[260px] mx-auto">
               Generate or select a live signal to turn the market feed into a trade setup.
             </p>
             <Button className="mt-5 mx-auto" size="sm" loading={analyzing} onClick={onGenerate}>
