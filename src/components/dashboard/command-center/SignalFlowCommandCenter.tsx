@@ -476,7 +476,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
 
         <div className="grid grid-cols-2 gap-3">
           <Card variant="inset" padding="sm" className="rounded-xl !p-2.5">
-            <div className={cx("mb-2 text-[11px] font-semibold uppercase tracking-wide", decision.action === "NO TRADE" ? "text-hold" : "text-buy")}>
+            <div className={cx("mb-2 text-center text-[11px] font-semibold uppercase tracking-wide", decision.action === "NO TRADE" ? "text-hold" : "text-buy")}>
               {decision.action === "NO TRADE" ? "Watch Triggers" : "Take Profit (TP)"}
             </div>
             <div className="space-y-1">
@@ -490,7 +490,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
             </div>
           </Card>
           <Card variant="inset" padding="sm" className="rounded-xl !p-2.5">
-            <div className={cx("mb-2 text-[11px] font-semibold uppercase tracking-wide", decision.action === "NO TRADE" ? "text-hold" : "text-sell")}>
+            <div className={cx("mb-2 text-center text-[11px] font-semibold uppercase tracking-wide", decision.action === "NO TRADE" ? "text-hold" : "text-sell")}>
               {decision.action === "NO TRADE" ? "Risk State" : "Stop Loss (SL)"}
             </div>
             {decision.action === "NO TRADE" ? (
