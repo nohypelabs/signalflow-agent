@@ -154,11 +154,11 @@ export default function StrategyConfig() {
             <button
               key={name}
               onClick={() => applyPreset(name)}
-              className={`px-3 py-1.5 text-xs rounded-lg border transition-all cursor-pointer capitalize ${
-                activePreset === name
-                  ? "border-accent bg-accent/10 text-accent font-semibold"
+                className={`px-3 py-1.5 text-xs rounded-lg border transition-all cursor-pointer capitalize ${
+                  activePreset === name
+                  ? "border-border-strong bg-elevated text-txt-primary font-semibold"
                   : "border-border-default bg-card text-txt-secondary hover:border-border-muted"
-              }`}
+                }`}
             >
               {name}
             </button>

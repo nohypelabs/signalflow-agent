@@ -358,7 +358,7 @@ export default function PortfolioPage({ trades, stats, balance, currentPrices, o
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-3 py-1.5 text-xs rounded transition-colors cursor-pointer capitalize ${
-              activeTab === tab ? "bg-accent/15 text-accent font-semibold" : "text-txt-dim hover:text-txt-secondary"
+              activeTab === tab ? "bg-elevated text-txt-primary font-semibold border border-border-muted" : "text-txt-dim hover:text-txt-secondary"
             }`}
           >
             {tab === "positions" ? `Open Positions (${openTrades.length})` : `History (${closedTrades.length})`}
@@ -373,7 +373,7 @@ export default function PortfolioPage({ trades, stats, balance, currentPrices, o
             <span className="text-[9px] text-txt-dim uppercase tracking-wider">Type:</span>
             <button
               onClick={() => setTypeFilter("ALL")}
-              className={`text-[10px] px-2 py-0.5 rounded cursor-pointer ${typeFilter === "ALL" ? "bg-accent/15 text-accent" : "text-txt-dim hover:text-txt-secondary"}`}
+              className={`text-[10px] px-2 py-0.5 rounded cursor-pointer ${typeFilter === "ALL" ? "bg-elevated text-txt-primary border border-border-muted" : "text-txt-dim hover:text-txt-secondary"}`}
             >
               All
             </button>
@@ -381,7 +381,7 @@ export default function PortfolioPage({ trades, stats, balance, currentPrices, o
               <button
                 key={t.id}
                 onClick={() => setTypeFilter(t.id)}
-                className={`text-[10px] px-2 py-0.5 rounded cursor-pointer ${typeFilter === t.id ? "font-semibold" : "text-txt-dim hover:text-txt-secondary"}`}
+                className={`text-[10px] px-2 py-0.5 rounded cursor-pointer ${typeFilter === t.id ? "font-semibold bg-elevated text-txt-primary border border-border-muted" : "text-txt-dim hover:text-txt-secondary"}`}
                 style={typeFilter === t.id ? { backgroundColor: `${t.color}15`, color: t.color } : undefined}
               >
                 <span className="inline-flex items-center gap-1">
@@ -414,7 +414,7 @@ export default function PortfolioPage({ trades, stats, balance, currentPrices, o
                   key={field}
                   onClick={() => toggleSort(field)}
                   className={`text-[10px] px-1.5 py-0.5 rounded cursor-pointer ${
-                    sortField === field ? "bg-accent/15 text-accent font-semibold" : "text-txt-dim hover:text-txt-secondary"
+                    sortField === field ? "bg-elevated text-txt-primary font-semibold border border-border-muted" : "text-txt-dim hover:text-txt-secondary"
                   }`}
                 >
                   {label}{sortField === field ? (sortDir === "desc" ? " ↓" : " ↑") : ""}
@@ -424,10 +424,10 @@ export default function PortfolioPage({ trades, stats, balance, currentPrices, o
             {filteredClosed.length > 0 && (
               <div className="flex items-center gap-1.5 ml-auto">
                 <span className="text-[9px] text-txt-dim uppercase tracking-wider">Export:</span>
-                <button onClick={exportCSV} className="text-[10px] px-2 py-0.5 rounded bg-inset border border-border-default text-txt-secondary hover:text-accent hover:border-accent/40 cursor-pointer transition-colors">
+                <button onClick={exportCSV} className="text-[10px] px-2 py-0.5 rounded bg-inset border border-border-default text-txt-secondary hover:text-txt-primary hover:border-border-muted cursor-pointer transition-colors">
                   CSV
                 </button>
-                <button onClick={exportJSON} className="text-[10px] px-2 py-0.5 rounded bg-inset border border-border-default text-txt-secondary hover:text-accent hover:border-accent/40 cursor-pointer transition-colors">
+                <button onClick={exportJSON} className="text-[10px] px-2 py-0.5 rounded bg-inset border border-border-default text-txt-secondary hover:text-txt-primary hover:border-border-muted cursor-pointer transition-colors">
                   { } JSON
                 </button>
               </div>

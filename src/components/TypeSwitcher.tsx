@@ -125,8 +125,8 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
                 className={`
                   w-full flex items-center gap-3 px-3 py-2 text-left transition-colors
                   ${currentType === config.id
-                    ? "bg-inset"
-                    : "hover:bg-inset/50"
+                    ? "bg-elevated/40"
+                    : "hover:bg-elevated/25"
                   }
                 `}
               >
@@ -165,7 +165,7 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
               onClick={() => handleSelect(null)}
               className={`
                 w-full flex items-center gap-3 px-3 py-2 text-left transition-colors
-                ${!currentType ? "bg-inset" : "hover:bg-inset/50"}
+                ${!currentType ? "bg-elevated/40" : "hover:bg-elevated/25"}
               `}
             >
               <span className="text-txt-secondary w-5 h-5 rounded bg-elevated/30 border border-border-default flex items-center justify-center shrink-0">
