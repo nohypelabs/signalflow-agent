@@ -56,15 +56,21 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
 
   // Type-aware leverage limits
   const typeConfig = tradingType ? TRADING_TYPES[tradingType] : null;
-  const maxLeverage = typeConfig ? typeConfig.maxLeverage : 100;
+
+  // Pair-based max leverage: BTC/ETH/SOL = 20x, others = 5x
+  const pairMaxLeverage = useMemo(() => {
+    const base = pair.split("/")[0].toUpperCase();
+    return ["BTC", "ETH", "SOL"].includes(base) ? 20 : 5;
+  }, [pair]);
+
+  const maxLeverage = typeConfig ? Math.min(typeConfig.maxLeverage, pairMaxLeverage) : pairMaxLeverage;
   const leveragePresets = useMemo(() => {
-    if (!typeConfig) return LEVERAGE_PRESETS;
-    return LEVERAGE_PRESETS.filter((l) => l <= typeConfig.maxLeverage);
-  }, [typeConfig]);
+    return LEVERAGE_PRESETS.filter((l) => l <= maxLeverage);
+  }, [maxLeverage]);
 
   useEffect(() => {
-    if (typeConfig && leverage > typeConfig.maxLeverage) setLeverage(typeConfig.defaultLeverage);
-  }, [typeConfig, leverage]);
+    if (leverage > maxLeverage) setLeverage(maxLeverage);
+  }, [maxLeverage, leverage]);
 
   // Pre-fill from signal
   useEffect(() => {
