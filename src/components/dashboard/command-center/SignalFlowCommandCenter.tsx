@@ -747,7 +747,7 @@ function TopMoversCard() {
   return (
     <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
       <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">Top Movers</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">🔥 Top Movers</h3>
         <span className="text-[9px] text-txt-dim font-mono tabular-nums">{parsed.length} pairs</span>
       </div>
       <div className="grid grid-cols-2 divide-x divide-border-default">
@@ -1003,6 +1003,12 @@ function StockAvatar({ symbol, size = 32 }: { symbol: string; size?: number }) {
   );
 }
 
+const CATEGORY_META: Record<string, { emoji: string; color: string; bg: string }> = {
+  Stocks: { emoji: "📈", color: "text-info", bg: "bg-[#00d4ff08]" },
+  Indices: { emoji: "📊", color: "text-accent", bg: "bg-accent-muted/10" },
+  Commodities: { emoji: "🪙", color: "text-hold", bg: "bg-hold-muted/10" },
+};
+
 function IndexCard() {
   const d = useDashboard();
   const tickers = d.tickers ?? [];
@@ -1011,61 +1017,80 @@ function IndexCard() {
   const assets = tickers
     .map((t) => ({
       symbol: t.symbol.replace(/^v/, "").replace(/_vUSDC$/, ""),
-      rawSymbol: t.symbol,
       price: parseFloat(t.lastPx ?? "0"),
       change: typeof t.changePct === "number" ? t.changePct : parseFloat(String(t.changePct ?? "0")),
     }))
     .filter((t) => t.price > 0 && isStockOrIndex(t.symbol));
 
+  // Group by category
+  const grouped = assets.reduce<Record<string, typeof assets>>((acc, a) => {
+    const cat = assetCategory(a.symbol) || "Other";
+    (acc[cat] ??= []).push(a);
+    return acc;
+  }, {});
+
+  const categoryOrder = ["Stocks", "Indices", "Commodities", "Other"];
+  const sortedCategories = categoryOrder.filter((c) => grouped[c]?.length);
+
   return (
     <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
       <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
         <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">
-          <Layers size={12} className="text-accent" /> Index Prices
+          <Layers size={12} className="text-accent" /> 📈 Index & Stock Prices
         </h3>
         <span className="text-[9px] text-txt-dim font-mono tabular-nums">{assets.length} assets</span>
       </div>
-      <div className="divide-y divide-border-default max-h-[280px] overflow-y-auto scrollbar-none">
-        {assets.map(({ symbol, price, change }) => {
-          const isPositive = change >= 0;
-          const category = assetCategory(symbol);
+      <div className="max-h-[280px] overflow-y-auto scrollbar-none">
+        {sortedCategories.map((cat) => {
+          const items = grouped[cat] ?? [];
+          const meta = CATEGORY_META[cat] ?? { emoji: "📋", color: "text-txt-muted", bg: "bg-elevated/10" };
 
           return (
-            <div key={symbol} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-elevated/20">
-              <StockAvatar symbol={symbol} size={30} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-txt-primary">{symbol}</span>
-                  {category && (
-                    <span className="rounded bg-elevated px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-txt-dim">
-                      {category}
-                    </span>
-                  )}
-                </div>
-                <span className="text-[10px] text-txt-dim">{assetName(symbol)}</span>
+            <div key={cat}>
+              {/* Category header */}
+              <div className={cx("flex items-center gap-1.5 px-4 py-1.5 border-y border-border-default/50", meta.bg)}>
+                <span className="text-[10px]">{meta.emoji}</span>
+                <span className={cx("text-[9px] font-bold uppercase tracking-widest", meta.color)}>{cat}</span>
+                <span className="text-[8px] text-txt-dim ml-auto tabular-nums">{items.length}</span>
               </div>
-              <div className="text-right shrink-0">
-                <span className="font-mono text-sm font-bold tabular-nums text-txt-primary block">
-                  {fmtUsd(price)}
-                </span>
-                <span
-                  className={cx(
-                    "inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold font-mono tabular-nums mt-0.5",
-                    isPositive
-                      ? "bg-buy-muted text-buy"
-                      : change < 0
-                        ? "bg-sell-muted text-sell"
-                        : "bg-elevated text-txt-muted"
-                  )}
-                >
-                  {changeArrow(change)} {Math.abs(change).toFixed(2)}%
-                </span>
-              </div>
+              {/* Asset rows */}
+              {items.map(({ symbol, price, change }) => {
+                const isPositive = change >= 0;
+                return (
+                  <div key={symbol} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-elevated/20 border-b border-border-default/30 last:border-b-0">
+                    <StockAvatar symbol={symbol} size={30} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-txt-primary">{symbol}</span>
+                      </div>
+                      <span className="text-[10px] text-txt-dim leading-tight">{assetName(symbol)}</span>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="font-mono text-sm font-bold tabular-nums text-txt-primary block leading-tight">
+                        {fmtUsd(price)}
+                      </span>
+                      <span
+                        className={cx(
+                          "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold font-mono tabular-nums mt-0.5",
+                          isPositive
+                            ? "bg-buy-muted text-buy"
+                            : change < 0
+                              ? "bg-sell-muted text-sell"
+                              : "bg-elevated text-txt-muted"
+                        )}
+                      >
+                        {changeArrow(change)} {Math.abs(change).toFixed(2)}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           );
         })}
         {assets.length === 0 && (
-          <div className="flex items-center justify-center py-8">
+          <div className="flex flex-col items-center justify-center py-8 gap-1">
+            <span className="text-lg">📋</span>
             <span className="text-[10px] text-txt-muted">No index data available</span>
           </div>
         )}
