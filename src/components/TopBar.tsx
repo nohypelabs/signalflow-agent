@@ -3,9 +3,8 @@
 import WalletButton from "./WalletButton";
 import StatusDot from "@/components/ui/StatusDot";
 import MarketTickerTape from "./MarketTickerTape";
-import FavoriteTickerBar from "@/components/layout/FavoriteTickerBar";
 import { useFavoriteTickers } from "@/lib/hooks/useFavoriteTickers";
-import { MenuIcon } from "@/components/ui/icons";
+import { ActivityIcon, MenuIcon } from "@/components/ui/icons";
 import type { SoDEXTicker } from "@/lib/sodex-types";
 
 interface Props {
@@ -25,11 +24,7 @@ export default function TopBar({
   btcChange,
   tickerMap,
 }: Props) {
-  const {
-    favoriteTickers,
-    isFavorite,
-    toggleFavorite,
-  } = useFavoriteTickers(tickerMap);
+  const { isFavorite, toggleFavorite } = useFavoriteTickers(tickerMap);
 
   const dotStatus =
     sodexStatus === "connected" ? "live" : sodexStatus === "loading" ? "warning" : "error";
@@ -77,10 +72,8 @@ export default function TopBar({
           </button>
 
           <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded bg-accent/10 border border-accent/20 flex items-center justify-center">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-              </svg>
+            <div className="w-5 h-5 rounded bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
+              <ActivityIcon size={12} />
             </div>
             <span className="font-bold text-[13px] text-txt-primary tracking-tight">SignalFlow</span>
           </div>

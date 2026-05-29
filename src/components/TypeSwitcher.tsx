@@ -5,7 +5,6 @@ import type { TradingType } from "@/lib/types/trading-type";
 import {
   TRADING_TYPES,
   TRADING_TYPE_LIST,
-  loadTradingType,
   saveTradingType,
   clearTradingType,
 } from "@/lib/types/trading-type";
@@ -18,7 +17,9 @@ interface Props {
 
 export default function TypeSwitcher({ currentType, onTypeChange, compact = false }: Props) {
   const [open, setOpen] = useState(false);
+  const [dropdownAlign, setDropdownAlign] = useState<"left" | "right">("right");
   const ref = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close on outside click
   useEffect(() => {
@@ -29,6 +30,16 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
     }
     if (open) document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !dropdownRef.current) return;
+    const rafId = window.requestAnimationFrame(() => {
+      const rect = dropdownRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setDropdownAlign(rect.left < 8 ? "left" : "right");
+    });
+    return () => window.cancelAnimationFrame(rafId);
   }, [open]);
 
   const current = currentType ? TRADING_TYPES[currentType] : null;
@@ -90,7 +101,12 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-56 rounded-xl border border-border-default bg-card shadow-2xl shadow-black/40 overflow-hidden z-50">
+        <div
+          ref={dropdownRef}
+          className={`absolute top-full mt-1 w-56 max-w-[calc(100vw-1rem)] rounded-xl border border-border-default bg-card shadow-2xl shadow-black/40 overflow-hidden z-50 ${
+            dropdownAlign === "left" ? "left-0" : "right-0"
+          }`}
+        >
           {/* Header */}
           <div className="px-3 py-2 border-b border-border-default">
             <p className="text-[10px] text-txt-dim uppercase tracking-wider font-semibold">
