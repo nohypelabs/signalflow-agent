@@ -137,12 +137,14 @@ function PipelineFlow() {
 
 function Panel({ title, badge, children, className = "" }: { title: string; badge?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
-    <Card variant="default" padding="none" className={cx("rounded-xl overflow-hidden", className)}>
-      <div className="flex items-center justify-between border-b border-border-default px-4 py-3">
+    <Card variant="default" padding="none" className={cx("rounded-xl overflow-hidden flex flex-col", className)}>
+      <div className="flex items-center justify-between border-b border-border-default px-4 py-3 shrink-0">
         <h2 className="text-sm font-semibold tracking-wide text-txt-primary">{title}</h2>
         {badge}
       </div>
-      {children}
+      <div className="flex-1 overflow-y-auto">
+        {children}
+      </div>
     </Card>
   );
 }
@@ -156,7 +158,7 @@ function MarketCanvas({ pair }: { pair: string }) {
   const currentPrice = ticker ? parseFloat(ticker.lastPx) : null;
 
   return (
-    <Card variant="default" padding="none" className="rounded-xl overflow-hidden min-h-[280px] flex flex-col">
+    <Card variant="default" padding="none" className="rounded-xl overflow-hidden h-[280px] flex flex-col">
       <TradingChart
         klines={d.klines}
         symbol={pair}
@@ -193,7 +195,7 @@ function DecisionPanel() {
   };
 
   return (
-    <Panel title="CURRENT DECISION PANEL" className="min-h-[280px]">
+    <Panel title="CURRENT DECISION PANEL" className="h-[280px]">
       <div className="space-y-4 p-4">
         {/* Signal Selector */}
         <div>
@@ -280,7 +282,7 @@ function DecisionPanel() {
 
 function SignalStream() {
   return (
-    <Panel title="SIGNAL STREAM" className="min-h-[280px]">
+    <Panel title="SIGNAL STREAM" className="h-[280px]">
       <div>
         {signalStream.map((item) => (
           <div
