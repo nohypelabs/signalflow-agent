@@ -7,6 +7,8 @@ interface HeaderProps {
   sodexStatus?: "connected" | "error" | "loading";
   tickerCount?: number;
   tickerMap?: Map<string, SoDEXTicker>;
+  selectedPair?: string;
+  onTickerClick?: (symbol: string) => void;
 }
 
 export default function Header(props: HeaderProps) {

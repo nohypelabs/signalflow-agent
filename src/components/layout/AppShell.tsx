@@ -13,6 +13,8 @@ interface AppShellProps {
   sodexStatus?: "connected" | "error" | "loading";
   tickerCount?: number;
   tickerMap?: Map<string, SoDEXTicker>;
+  selectedPair?: string;
+  onTickerClick?: (symbol: string) => void;
   // Trade form
   tradeForm?: {
     signal: Signal | null;
@@ -32,6 +34,8 @@ export default function AppShell({
   sodexStatus,
   tickerCount,
   tickerMap,
+  selectedPair,
+  onTickerClick,
   tradeForm,
   fullScreen = false,
   hideHeader = false,
@@ -43,6 +47,8 @@ export default function AppShell({
           sodexStatus={sodexStatus}
           tickerCount={tickerCount}
           tickerMap={tickerMap}
+          selectedPair={selectedPair}
+          onTickerClick={onTickerClick}
         />
       )}
       <div className="flex flex-1 min-h-0 overflow-hidden">

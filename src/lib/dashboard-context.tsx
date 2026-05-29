@@ -107,6 +107,11 @@ export interface DashboardState {
   setResolutionWindow: (w: import("./hooks/useSignalHistory").ResolutionWindow) => void;
   exportCSV: () => void;
 
+  // Selected pair (display format e.g. "BTC/USDC")
+  selectedPair: string;
+  selectedPairDisplay: string;
+  setSelectedPair: (pair: string) => void;
+
   // Selected signal
   selectedSignal: Signal | null;
   setSelectedSignal: (s: Signal | null) => void;
@@ -127,8 +132,13 @@ const DashboardContext = createContext<DashboardState | null>(null);
 export function DashboardProvider({ children }: { children: ReactNode }) {
   // ── Hooks ──
 
-  // Market
-  const { tickers, klines, loading: marketLoading, error: marketError } = useMarket(DEFAULT_PAIR);
+  // Selected pair (display format e.g. "BTC/USDC")
+  const [selectedPair, setSelectedPair] = useState("BTC/USDC");
+  const selectedPairDisplay = selectedPair;
+  const sodexSymbol = pairToSodexSymbol(selectedPair) || DEFAULT_PAIR;
+
+  // Market — klines follow selected pair, tickers always fetch all
+  const { tickers, klines, loading: marketLoading, error: marketError } = useMarket(sodexSymbol);
 
   // Signals
   const {
@@ -281,6 +291,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     marketError,
     sodexStatus,
     tickerMap,
+    selectedPair,
+    selectedPairDisplay,
+    setSelectedPair,
     signalsData,
     liveSignals,
     signalsLoading,

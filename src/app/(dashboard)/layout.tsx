@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { DashboardProvider, useDashboard } from "@/lib/dashboard-context";
 import AppShell from "@/components/layout/AppShell";
+import { pairToSodexSymbol } from "@/lib/pair-map";
 
 function ShellWithProps({ children }: { children: React.ReactNode }) {
   const d = useDashboard();
@@ -15,6 +16,11 @@ function ShellWithProps({ children }: { children: React.ReactNode }) {
       sodexStatus={d.sodexStatus}
       tickerCount={d.tickers?.length}
       tickerMap={d.tickerMap}
+      selectedPair={d.selectedPairDisplay}
+      onTickerClick={(symbol) => {
+        // symbol is display format like "BTC/USDC" from ticker tape
+        d.setSelectedPair(symbol);
+      }}
       tradeForm={
         d.showTradeForm
           ? {

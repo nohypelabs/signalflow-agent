@@ -21,14 +21,6 @@ const pipelineSteps = [
 ];
 
 
-const evidenceCards = [
-  { title: "ETF FLOW", icon: "bars", rows: [["Net Flow (24H)", "+$287M"]], impact: "HIGH", spark: "up" },
-  { title: "MACRO", icon: "globe", rows: [["DXY", "102.31 DOWN"], ["10Y", "4.37% DOWN"]], impact: "MEDIUM", spark: "down" },
-  { title: "SENTIMENT", icon: "chat", rows: [["Greed Index", "67"], ["Social Vol.", "UP 18%"]], impact: "LOW", spark: "flat" },
-  { title: "TREASURY", icon: "bank", rows: [["Exchange Reserve", "-12.4K BTC (24H)"]], impact: "MEDIUM", spark: "down" },
-  { title: "MOMENTUM", icon: "trend", rows: [["RSI (14)", "56.1"], ["MACD", "Bull Cross"]], impact: "HIGH", spark: "up" },
-];
-
 const decisionPanelData = {
   selected: "LONG",
   confidence: 78,
@@ -49,12 +41,6 @@ function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
-
-function impactBadgeVariant(impact: string): string {
-  if (impact === "HIGH") return "buy";
-  if (impact === "MEDIUM") return "warning";
-  return "muted";
-}
 
 /* ── Tech Icon (inline SVG) ── */
 
@@ -376,68 +362,204 @@ function NewsFeed() {
   );
 }
 
-/* ── Sparkline ── */
+/* ── Market Stats Bar (real data) ── */
 
-function Sparkline({ mode }: { mode: string }) {
-  const color = mode === "up" ? "var(--color-buy)" : mode === "down" ? "var(--color-sell)" : "var(--text-muted)";
-  const path = mode === "up" ? "M2 26 L10 20 L16 22 L23 12 L30 15 L38 4" : mode === "down" ? "M2 8 L11 14 L18 13 L26 22 L34 21 L42 29" : "M2 18 L10 16 L18 20 L26 15 L34 18 L42 14";
-  return (
-    <svg viewBox="0 0 44 32" className="h-9 w-16">
-      <path d={path} fill="none" stroke={color} strokeWidth="1.5" />
-      {mode === "up" && <path d="M38 4v7M38 4h-7" fill="none" stroke={color} strokeWidth="1.5" />}
-      {mode === "down" && <path d="M42 29v-7M42 29h-7" fill="none" stroke={color} strokeWidth="1.5" />}
-    </svg>
-  );
+function fmtUsd(n: number): string {
+  if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
+  if (n >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
+  if (n >= 1e3) return `$${(n / 1e3).toFixed(1)}K`;
+  return `$${n.toFixed(2)}`;
 }
 
-/* ── Evidence Card ── */
+function changeColor(pct: number): string {
+  return pct > 0 ? "text-buy" : pct < 0 ? "text-sell" : "text-txt-muted";
+}
 
-function EvidenceCard({ card }: { card: (typeof evidenceCards)[number] }) {
+function changeArrow(pct: number): string {
+  return pct > 0 ? "▲" : pct < 0 ? "▼" : "—";
+}
+
+function TopMoversCard() {
+  const d = useDashboard();
+  const tickers = d.tickers ?? [];
+
+  const parsed = tickers
+    .map((t) => ({
+      symbol: t.symbol.replace(/^v/, "").replace(/_vUSDC$/, ""),
+      change: typeof t.changePct === "number" ? t.changePct : parseFloat(String(t.changePct ?? "0")),
+      price: parseFloat(t.lastPx ?? "0"),
+    }))
+    .filter((t) => t.price > 0)
+    .sort((a, b) => b.change - a.change);
+
+  const top3 = parsed.slice(0, 3);
+  const bottom3 = parsed.slice(-3).reverse();
+
   return (
     <Card variant="default" padding="sm" className="rounded-xl">
-      <div className="mb-2.5 flex items-center gap-2">
-        <TechIcon name={card.icon} className="h-5 w-5" />
-        <h3 className="text-xs font-semibold tracking-wide text-txt-secondary uppercase">{card.title}</h3>
-      </div>
-      <div className="grid min-h-[43px] grid-cols-[1fr_auto] gap-3">
-        <div className="space-y-1">
-          {card.rows.map(([label, value]) => (
-            <div key={label} className="grid grid-cols-[1fr_auto] gap-2 text-xs">
-              <span className="text-txt-muted">{label}</span>
-              <span className="font-mono font-semibold text-txt-primary">{value}</span>
+      <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">Top Movers</h3>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="mb-1.5 text-[9px] uppercase text-buy font-medium">Gainers</p>
+          {top3.map((t) => (
+            <div key={t.symbol} className="flex items-center justify-between py-0.5 text-xs">
+              <span className="font-medium text-txt-primary">{t.symbol}</span>
+              <span className={`font-mono tabular-nums ${changeColor(t.change)}`}>
+                {changeArrow(t.change)} {Math.abs(t.change).toFixed(2)}%
+              </span>
             </div>
           ))}
+          {top3.length === 0 && <p className="text-[10px] text-txt-muted">No data</p>}
         </div>
-        <Sparkline mode={card.spark} />
-      </div>
-      <div className="mt-2.5 flex items-center gap-2 border-t border-border-default pt-2">
-        <span className="text-[11px] text-txt-muted">Impact:</span>
-        <Badge variant={impactBadgeVariant(card.impact)} size="sm">{card.impact}</Badge>
+        <div>
+          <p className="mb-1.5 text-[9px] uppercase text-sell font-medium">Losers</p>
+          {bottom3.map((t) => (
+            <div key={t.symbol} className="flex items-center justify-between py-0.5 text-xs">
+              <span className="font-medium text-txt-primary">{t.symbol}</span>
+              <span className={`font-mono tabular-nums ${changeColor(t.change)}`}>
+                {changeArrow(t.change)} {Math.abs(t.change).toFixed(2)}%
+              </span>
+            </div>
+          ))}
+          {bottom3.length === 0 && <p className="text-[10px] text-txt-muted">No data</p>}
+        </div>
       </div>
     </Card>
   );
 }
 
-/* ── Evidence Flow ── */
+function SignalAccuracyCard() {
+  const d = useDashboard();
+  const stats = d.signalStats;
+  const streaks = d.streaks;
 
-function EvidenceFlow() {
+  const accuracy = stats?.accuracy;
+  const totalResolved = stats?.totalResolved ?? 0;
+  const currentStreak = streaks?.current;
+  const winStreak = currentStreak?.type === "win" ? currentStreak.count : 0;
+  const lossStreak = currentStreak?.type === "loss" ? currentStreak.count : 0;
+
   return (
-    <Card variant="default" padding="md" className="rounded-xl">
-      <h2 className="mb-4 text-sm font-semibold tracking-wide text-txt-primary">
-        Evidence Flow <span className="ml-2 text-xs font-normal text-txt-muted">(Data → Insight → Signal)</span>
-      </h2>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-        {evidenceCards.map((card) => <EvidenceCard key={card.title} card={card} />)}
+    <Card variant="default" padding="sm" className="rounded-xl">
+      <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">Signal Accuracy</h3>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-txt-muted">Win Rate</span>
+          <span className="font-mono text-sm font-bold tabular-nums text-accent">
+            {accuracy !== null && accuracy !== undefined ? `${accuracy.toFixed(1)}%` : "—"}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-txt-muted">Resolved</span>
+          <span className="font-mono text-xs font-semibold text-txt-primary tabular-nums">{totalResolved}</span>
+        </div>
+        <div className="h-px bg-border-default" />
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-txt-muted">Win Streak</span>
+          <span className="font-mono text-xs font-semibold text-buy tabular-nums">{winStreak || "—"}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-txt-muted">Loss Streak</span>
+          <span className="font-mono text-xs font-semibold text-sell tabular-nums">{lossStreak || "—"}</span>
+        </div>
       </div>
-
     </Card>
+  );
+}
+
+function IndexCard() {
+  const d = useDashboard();
+  const tickers = d.tickers ?? [];
+
+  const coins = ["vBTC_vUSDC", "vETH_vUSDC", "vSOL_vUSDC"];
+  const labels: Record<string, string> = { vBTC_vUSDC: "BTC", vETH_vUSDC: "ETH", vSOL_vUSDC: "SOL" };
+
+  return (
+    <Card variant="default" padding="sm" className="rounded-xl">
+      <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">Index Prices</h3>
+      <div className="space-y-2">
+        {coins.map((sym) => {
+          const t = tickers.find((tk) => tk.symbol === sym);
+          if (!t) return (
+            <div key={sym} className="flex items-center justify-between text-xs">
+              <span className="font-medium text-txt-primary">{labels[sym]}</span>
+              <span className="text-txt-muted">—</span>
+            </div>
+          );
+          const price = parseFloat(t.lastPx);
+          const change = typeof t.changePct === "number" ? t.changePct : parseFloat(String(t.changePct ?? "0"));
+          return (
+            <div key={sym} className="flex items-center justify-between text-xs">
+              <span className="font-medium text-txt-primary">{labels[sym]}</span>
+              <div className="text-right">
+                <span className="font-mono font-semibold text-txt-primary tabular-nums">{fmtUsd(price)}</span>
+                <span className={`ml-2 font-mono text-[10px] tabular-nums ${changeColor(change)}`}>
+                  {changeArrow(change)} {Math.abs(change).toFixed(2)}%
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+function MarketStatsCard() {
+  const d = useDashboard();
+  const tickers = d.tickers ?? [];
+  const signals = d.liveSignals ?? [];
+
+  const totalVolume = tickers.reduce((sum, t) => sum + parseFloat(t.quoteVolume ?? "0"), 0);
+  const activePairs = tickers.filter((t) => parseFloat(t.lastPx ?? "0") > 0).length;
+  const buySignals = signals.filter((s) => s.action === "LONG").length;
+  const sellSignals = signals.filter((s) => s.action === "SHORT").length;
+
+  return (
+    <Card variant="default" padding="sm" className="rounded-xl">
+      <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">Market Stats</h3>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-txt-muted">Volume 24H</span>
+          <span className="font-mono text-sm font-bold text-txt-primary tabular-nums">{fmtUsd(totalVolume)}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-txt-muted">Active Pairs</span>
+          <span className="font-mono text-xs font-semibold text-txt-primary tabular-nums">{activePairs}</span>
+        </div>
+        <div className="h-px bg-border-default" />
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-txt-muted">Buy Signals</span>
+          <span className="font-mono text-xs font-semibold text-buy tabular-nums">{buySignals}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-txt-muted">Sell Signals</span>
+          <span className="font-mono text-xs font-semibold text-sell tabular-nums">{sellSignals}</span>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function MarketStatsBar() {
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <TopMoversCard />
+      <SignalAccuracyCard />
+      <IndexCard />
+      <MarketStatsCard />
+    </div>
   );
 }
 
 /* ── Root Component ── */
 
 export default function SignalFlowCommandCenter() {
-  const [pair] = useState("BTC/USDC");
+  const d = useDashboard();
+  const pairBase = d.selectedPair.startsWith("v")
+    ? d.selectedPair.replace(/^v/, "").replace(/_vUSDC$/, "")
+    : d.selectedPair.split("/")[0];
+  const pair = `${pairBase}/USDC`;
 
   return (
     <div className="space-y-3 px-2 lg:px-3 pt-2 lg:pt-3">
@@ -449,7 +571,7 @@ export default function SignalFlowCommandCenter() {
         <DecisionPanel />
         <NewsFeed />
       </div>
-      <EvidenceFlow />
+      <MarketStatsBar />
     </div>
   );
 }

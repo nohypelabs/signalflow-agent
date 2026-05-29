@@ -50,10 +50,16 @@ function TokenIcon({ base }: { base: string }) {
   );
 }
 
-function TickerItemChip({ item }: { item: TickerItem }) {
+function TickerItemChip({ item, onClick }: { item: TickerItem; onClick?: (symbol: string) => void }) {
   const isUp = item.changePct >= 0;
   return (
-    <span className="inline-flex items-center gap-1.5 px-3 shrink-0">
+    <button
+      type="button"
+      onClick={() => onClick?.(item.symbol)}
+      className={`inline-flex items-center gap-1.5 px-3 shrink-0 transition-colors ${
+        onClick ? "cursor-pointer hover:bg-elevated/40 rounded" : ""
+      }`}
+    >
       <TokenIcon base={item.base} />
       <span className="text-txt-secondary font-semibold text-[10px]">{item.symbol}</span>
       <span className="text-txt-primary font-mono text-[10px] tabular-nums">{item.price}</span>
@@ -63,7 +69,7 @@ function TickerItemChip({ item }: { item: TickerItem }) {
       <span className={`text-[8px] ${isUp ? "text-buy" : "text-sell"}`}>
         {isUp ? "▲" : "▼"}
       </span>
-    </span>
+    </button>
   );
 }
 
@@ -71,9 +77,11 @@ interface Props {
   tickerMap?: Map<string, SoDEXTicker>;
   /** When true, skip outer wrapper styling (bg, border) — parent provides container styles */
   embedded?: boolean;
+  /** Called when a ticker is clicked — SoDEX symbol (e.g. "BTC/USDC") */
+  onTickerClick?: (symbol: string) => void;
 }
 
-export default function MarketTickerTape({ tickerMap, embedded }: Props) {
+export default function MarketTickerTape({ tickerMap, embedded, onTickerClick }: Props) {
   const tickers = resolveTickers(tickerMap);
 
   if (tickers.length === 0) return null;
@@ -87,6 +95,7 @@ export default function MarketTickerTape({ tickerMap, embedded }: Props) {
         <TickerItemChip
           key={`${item.symbol}-${i}`}
           item={item}
+          onClick={onTickerClick}
         />
       ))}
     </div>
