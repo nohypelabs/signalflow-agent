@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { useState, useRef } from "react";
 import type { RecordedSignal, ResolutionWindow, CalibrationBucket, EquityPoint, DrawdownResult, StreakInfo, CoinAccuracy, FrequencyStats } from "@/lib/hooks/useSignalHistory";
-import type { SoDEXTicker } from "@/lib/types/trade";
 import { usePerformance } from "@/lib/hooks/usePerformance";
 import { useSignals } from "@/lib/hooks/useSignals";
-import { pairToSodexSymbol } from "@/lib/pair-map";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
@@ -203,7 +201,7 @@ export default function PerformancePage({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-txt-primary">Performance Analytics</h2>
-          <Badge variant="accent" size="md">LIVE DATA</Badge>
+          <Badge variant="muted" size="md">LIVE DATA</Badge>
         </div>
         {Array.from({ length: 3 }).map((_, i) => (
           <Card key={i} padding="lg"><Skeleton variant="table-row" /></Card>
@@ -230,9 +228,9 @@ export default function PerformancePage({
           <p className="text-xs text-txt-muted mt-0.5">Market performance, signal accuracy, and risk metrics.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="accent" size="md">LIVE DATA</Badge>
+          <Badge variant="muted" size="md">LIVE DATA</Badge>
           {exportCSV && (
-            <button onClick={exportCSV} className="text-[10px] text-accent border border-accent/20 px-2 py-1 rounded hover:bg-accent/10 transition-colors">
+            <button onClick={exportCSV} className="text-[10px] text-txt-secondary border border-border-default px-2 py-1 rounded hover:bg-elevated/30 transition-colors">
               Export CSV
             </button>
           )}
@@ -249,7 +247,7 @@ export default function PerformancePage({
             { label: "Avg Volatility", value: `${avgVolatility.toFixed(1)}%`, color: "#00E5A8" },
             { label: "Tracked", value: `${coins.length} coins`, color: "#00d4ff" },
           ].map((m) => (
-            <Card key={m.label} padding="sm" accent={m.color}>
+            <Card key={m.label} padding="sm">
               <p className="text-[10px] text-txt-muted uppercase tracking-wider">{m.label}</p>
               <p className="text-lg font-bold font-mono tabular-nums" style={{ color: m.color }}>{m.value}</p>
             </Card>
@@ -306,7 +304,7 @@ export default function PerformancePage({
                     <td className={`p-3 text-right font-semibold tabular-nums ${c.change30d >= 0 ? "text-buy" : "text-sell"}`}>{fmtPct(c.change30d)}</td>
                     <td className="p-3 text-right font-mono text-txt-secondary">{fmtPrice(c.high30d)}</td>
                     <td className="p-3 text-right font-mono text-txt-secondary">{fmtPrice(c.low30d)}</td>
-                    <td className="p-3 text-right text-accent tabular-nums">{c.volatility30d.toFixed(1)}%</td>
+                    <td className="p-3 text-right text-txt-secondary tabular-nums">{c.volatility30d.toFixed(1)}%</td>
                   </tr>
                 ))}
               </tbody>
@@ -329,7 +327,7 @@ export default function PerformancePage({
                     key={w}
                     onClick={() => setResolutionWindow?.(w)}
                     className={`text-[9px] px-2 py-0.5 rounded transition-colors ${
-                      resolutionWindow === w ? "bg-elevated text-accent" : "text-txt-dim hover:text-txt-secondary"
+                      resolutionWindow === w ? "bg-elevated text-txt-primary" : "text-txt-dim hover:text-txt-secondary"
                     }`}
                   >
                     {RES_WINDOW_LABELS[w]}
@@ -341,29 +339,29 @@ export default function PerformancePage({
 
           {/* Signal summary stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
-            <Card padding="sm" accent="#00E5A8">
+            <Card padding="sm">
               <p className="text-[10px] text-txt-muted">Tracked</p>
               <p className="text-lg font-bold font-mono text-txt-primary">{signalHistory.length}</p>
             </Card>
-            <Card padding="sm" accent="#00d4ff">
+            <Card padding="sm">
               <p className="text-[10px] text-txt-muted">Resolved</p>
               <p className="text-lg font-bold font-mono text-info">{signalStats?.totalResolved ?? 0}</p>
             </Card>
-            <Card padding="sm" accent="#00ff88">
+            <Card padding="sm">
               <p className="text-[10px] text-txt-muted">Correct</p>
               <p className="text-lg font-bold font-mono text-buy">{signalStats?.totalCorrect ?? 0}</p>
             </Card>
-            <Card padding="sm" accent={signalStats?.accuracy != null && signalStats.accuracy >= 60 ? "#00ff88" : signalStats?.accuracy != null && signalStats.accuracy >= 40 ? "#ff8800" : "#ff4444"}>
+            <Card padding="sm">
               <p className="text-[10px] text-txt-muted">Accuracy</p>
               <p className="text-lg font-bold font-mono" style={{ color: signalStats?.accuracy != null && signalStats.accuracy >= 60 ? "#00ff88" : signalStats?.accuracy != null && signalStats.accuracy >= 40 ? "#ff8800" : "#ff4444" }}>
                 {signalStats?.accuracy != null ? `${Math.round(signalStats.accuracy)}%` : "—"}
               </p>
             </Card>
-            <Card padding="sm" accent="#A78BFA">
+            <Card padding="sm">
               <p className="text-[10px] text-txt-muted">Signals/Day</p>
               <p className="text-lg font-bold font-mono text-txt-primary">{frequency?.signalsPerDay ?? 0}</p>
             </Card>
-            <Card padding="sm" accent="#22D3EE">
+            <Card padding="sm">
               <p className="text-[10px] text-txt-muted">Last 24H</p>
               <p className="text-lg font-bold font-mono text-txt-primary">{frequency?.last24h ?? 0}</p>
             </Card>
