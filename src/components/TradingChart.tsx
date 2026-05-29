@@ -503,7 +503,7 @@ export default function TradingChart({
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 bg-accent/8 text-txt-primary text-sm font-semibold font-mono px-3 py-1.5 rounded-lg border border-accent/20 cursor-pointer hover:bg-accent/15 hover:border-accent/40 transition-all"
+              className="flex items-center gap-2.5 bg-accent/8 text-txt-primary font-semibold font-mono px-3.5 py-2 rounded-lg border border-accent/20 cursor-pointer hover:bg-accent/15 hover:border-accent/40 transition-all"
             >
               <img
                 src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${pair.split("/")[0].toLowerCase()}.svg`}
@@ -513,7 +513,7 @@ export default function TradingChart({
                 className="rounded-full"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
-              <span>{pair}</span>
+              <span className="text-base">{pair}</span>
               {latestSignal && (
                 <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-wider leading-none ${
                   latestSignal.action === "LONG"
@@ -549,17 +549,6 @@ export default function TradingChart({
             )}
           </div>
           <div className="flex items-center gap-3">
-            {latestSignal && (
-              <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${
-                latestSignal.action === "LONG"
-                  ? "bg-buy-muted text-buy"
-                  : latestSignal.action === "SHORT"
-                    ? "bg-sell-muted text-sell"
-                    : "bg-hold-muted text-hold"
-              }`}>
-                {latestSignal.action} {latestSignal.confidence}%
-              </span>
-            )}
             {dataAge !== null && dataAge < 120_000 && (
               <span className="text-[9px] text-txt-faint flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-buy animate-pulse" />
@@ -575,28 +564,7 @@ export default function TradingChart({
           </div>
         </div>
 
-        {/* Row 2: Context line */}
-        <div className="flex items-center gap-2 text-[10px] text-txt-dim">
-          <span>SoDEX Klines</span>
-          <span className="text-txt-faint">·</span>
-          {lastKline && (
-            <>
-              <span>Updated {dataAge !== null ? `${Math.floor(dataAge / 1000)}s ago` : "—"}</span>
-              <span className="text-txt-faint">·</span>
-            </>
-          )}
-          {latestSignal && (
-            <span>
-              Latest Signal: <span className={
-                latestSignal.action === "LONG" ? "text-buy" :
-                latestSignal.action === "SHORT" ? "text-sell" : "text-hold"
-              }>{latestSignal.action}</span>{" "}
-              <span className="text-txt-muted">{latestSignal.confidence}% confidence</span>
-            </span>
-          )}
-        </div>
-
-        {/* Row 3: Timeframe pills + toggles */}
+        {/* Row 2: Timeframe pills + toggles */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
             {(Object.keys(TF_CONFIG) as Timeframe[]).map((t) => (
@@ -801,6 +769,7 @@ export default function TradingChart({
         onSelectMarket={(p) => { setPair(p); onPairChange?.(p); }}
         currentSymbol={pair}
         tickerMap={tickerMap}
+        liveSignals={liveSignals}
       />
     </div>
   );

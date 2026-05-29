@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import type { SoDEXTicker } from "@/lib/types/trade";
+import type { Signal } from "@/lib/types/signal";
 import { sodexSymbolToBase } from "@/lib/pair-map";
 
 /* ── Types ── */
@@ -18,6 +19,7 @@ interface Market {
   volume24h: number;
   category: Category;
   status: string;
+  signal: { action: string; confidence: number } | null;
 }
 
 interface Props {
@@ -26,6 +28,7 @@ interface Props {
   onSelectMarket: (pair: string) => void;
   currentSymbol: string;
   tickerMap?: Map<string, SoDEXTicker>;
+  liveSignals?: Signal[];
 }
 
 /* ── Category detection ── */
@@ -144,7 +147,7 @@ function MarketIcon({ base, category, size = 24 }: { base: string; category: Cat
    COMPONENT
    ══════════════════════════════════════════════════════ */
 
-export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, currentSymbol, tickerMap }: Props) {
+export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, currentSymbol, tickerMap, liveSignals = [] }: Props) {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"volume" | "change" | "price">("volume");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -167,6 +170,16 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
     }
   }, [isOpen]);
 
+  // Build signal lookup map
+  const signalMap = useMemo(() => {
+    const map = new Map<string, { action: string; confidence: number }>();
+    for (const s of liveSignals) {
+      const base = s.pair.split("/")[0];
+      if (!map.has(base)) map.set(base, { action: s.action, confidence: s.confidence });
+    }
+    return map;
+  }, [liveSignals]);
+
   // Build market list
   const markets = useMemo<Market[]>(() => {
     if (!tickerMap) return [];
@@ -183,10 +196,11 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
         symbol, displayPair: `${base}/USDC`, base, lastPrice: price,
         change24h: changePct, changeAbs, volume24h: vol,
         category: categorize(base), status: "TRADING",
+        signal: signalMap.get(base) ?? null,
       });
     }
     return list;
-  }, [tickerMap]);
+  }, [tickerMap, signalMap]);
 
   // Available categories (only those with markets)
   const availableCategories = useMemo(() => {
@@ -360,6 +374,24 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
                         <span className="text-[9px] text-txt-faint">/USDC</span>
                         {m.category !== "Crypto" && (
                           <span className="text-[7px] px-1 py-0.5 rounded bg-elevated text-txt-dim font-semibold uppercase">{m.category.slice(0, 3)}</span>
+                        )}
+                        {m.signal && (
+                          <span className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[7px] font-bold uppercase leading-none ${
+                            m.signal.action === "LONG"
+                              ? "bg-buy/15 text-buy border border-buy/25"
+                              : m.signal.action === "SHORT"
+                                ? "bg-sell/15 text-sell border border-sell/25"
+                                : "bg-hold/15 text-hold border border-hold/25"
+                          }`}>
+                            {m.signal.action === "LONG" ? (
+                              <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+                            ) : m.signal.action === "SHORT" ? (
+                              <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12l7 7 7-7" /></svg>
+                            ) : (
+                              <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M5 12h14" /></svg>
+                            )}
+                            {m.signal.action} <span className="opacity-60">{m.signal.confidence}%</span>
+                          </span>
                         )}
                       </div>
                     </div>
