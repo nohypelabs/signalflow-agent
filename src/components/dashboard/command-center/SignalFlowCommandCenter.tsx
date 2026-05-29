@@ -156,7 +156,7 @@ function MarketCanvas({ pair }: { pair: string }) {
   const currentPrice = ticker ? parseFloat(ticker.lastPx) : null;
 
   return (
-    <Card variant="default" padding="none" className="rounded-xl overflow-hidden min-h-[340px] flex flex-col">
+    <Card variant="default" padding="none" className="rounded-xl overflow-hidden min-h-[280px] flex flex-col">
       <TradingChart
         klines={d.klines}
         symbol={pair}
@@ -193,7 +193,7 @@ function DecisionPanel() {
   };
 
   return (
-    <Panel title="CURRENT DECISION PANEL" className="min-h-[340px]">
+    <Panel title="CURRENT DECISION PANEL" className="min-h-[280px]">
       <div className="space-y-4 p-4">
         {/* Signal Selector */}
         <div>
@@ -220,16 +220,16 @@ function DecisionPanel() {
           </div>
         </div>
 
-        {/* Confidence */}
+        {/* Confidence — Speedometer */}
         <div>
-          <div className="mb-2 text-xs font-semibold tracking-wide text-txt-tertiary uppercase">Confidence</div>
-          <div className="flex items-center justify-center py-2">
+          <div className="mb-2 text-xs font-semibold tracking-wide text-txt-tertiary uppercase">Signal Strength</div>
+          <div className="flex items-center justify-center py-1">
             <div className="text-center">
               <SpeedometerGauge value={decisionPanelData.confidence} size="lg" showLabel={false} />
-              <div className="mt-1 text-3xl font-bold tabular-nums" style={{ color: decisionPanelData.confidence >= 75 ? "var(--color-buy)" : decisionPanelData.confidence >= 50 ? "var(--color-hold)" : "var(--color-sell)" }}>
+              <div className="mt-1 text-4xl font-bold tabular-nums tracking-tight" style={{ color: decisionPanelData.confidence >= 75 ? "var(--color-buy)" : decisionPanelData.confidence >= 50 ? "var(--color-hold)" : "var(--color-sell)" }}>
                 {decisionPanelData.confidence}%
               </div>
-              <div className="text-sm text-txt-tertiary">{decisionPanelData.confidenceLabel}</div>
+              <div className="text-sm font-medium text-txt-tertiary">{decisionPanelData.confidenceLabel}</div>
             </div>
           </div>
         </div>
@@ -280,7 +280,7 @@ function DecisionPanel() {
 
 function SignalStream() {
   return (
-    <Panel title="SIGNAL STREAM" className="min-h-[340px]">
+    <Panel title="SIGNAL STREAM" className="min-h-[280px]">
       <div>
         {signalStream.map((item) => (
           <div
@@ -428,7 +428,7 @@ export default function SignalFlowCommandCenter() {
       <div className="overflow-x-auto">
         <PipelineFlow />
       </div>
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,2.8fr)_minmax(300px,1.6fr)_minmax(260px,1fr)]">
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,2.8fr)_minmax(280px,1.3fr)_minmax(280px,1.2fr)]">
         <MarketCanvas pair={pair} />
         <DecisionPanel />
         <SignalStream />
