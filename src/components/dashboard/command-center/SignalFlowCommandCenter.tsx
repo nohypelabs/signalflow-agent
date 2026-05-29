@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Target, Layers, Activity } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
@@ -9,32 +9,18 @@ import SpeedometerGauge from "@/components/ui/SpeedometerGauge";
 import TradingChart from "@/components/TradingChart";
 import { useDashboard } from "@/lib/dashboard-context";
 import { pairToSodexSymbol } from "@/lib/pair-map";
+import type { Signal } from "@/lib/types/signal";
 
-/* ── Mock Data ── */
+/* ── Pipeline Model ── */
 
 const pipelineSteps = [
-  { number: "1", title: "SoDEX Data", description: "On-chain DEX\nFlows & Trades", icon: "database" },
-  { number: "2", title: "SoSoValue Data", description: "Market, ETF, Index,\nOn-chain & More", icon: "cube" },
-  { number: "3", title: "Confluence V2", description: "Multi-Source Fusion\n& Alignment", icon: "fusion" },
-  { number: "4", title: "AI Thesis", description: "Context, Narrative\n& Probability", icon: "brain" },
-  { number: "5", title: "Trade Setup", description: "Entry, Risk, Targets\n& Execution Plan", icon: "target" },
-  { number: "6", title: "Decision Score", description: "Final Probability\n& Execution Ready", icon: "score" },
+  { number: "1", title: "SoDEX Data", description: "Live DEX Prices\nKlines & Volume", icon: "database" },
+  { number: "2", title: "SoSoValue Data", description: "News, ETF Flow\nMacro & Sentiment", icon: "cube" },
+  { number: "3", title: "Confluence V2", description: "TA Fusion\nSignal Alignment", icon: "fusion" },
+  { number: "4", title: "AI Thesis", description: "Narrative Context\nProbability Check", icon: "brain" },
+  { number: "5", title: "Trade Setup", description: "Entry, Risk\nTargets & Sizing", icon: "target" },
+  { number: "6", title: "Decision Score", description: "Final Bias\nExecution Readiness", icon: "score" },
 ];
-
-
-const decisionPanelData = {
-  selected: "LONG",
-  confidence: 78,
-  confidenceLabel: "High",
-  takeProfit: [
-    ["TP1", "68,850.0", "(1.5R)"],
-    ["TP2", "70,200.0", "(3.0R)"],
-    ["TP3", "72,150.0", "(5.0R)"],
-  ],
-  stopLoss: ["SL", "65,100.0", "(-1.2R)"],
-  riskReward: "1 : 2.6",
-  positionSize: "0.42 BTC",
-};
 
 /* ── Helpers ── */
 
@@ -158,9 +144,152 @@ function MarketCanvas({ pair }: { pair: string }) {
 
 /* ── Decision Panel ── */
 
-function DecisionPanel() {
-  const [signal, setSignal] = useState(decisionPanelData.selected);
-  const execute = () => console.info("SignalFlow execute setup", { signal });
+type DecisionAction = "LONG" | "SHORT" | "NO TRADE";
+
+interface DecisionSource {
+  label: string;
+  signed: number;
+  weight: number;
+  available: boolean;
+  note: string;
+}
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, n));
+}
+
+function normalizePair(pair: string): string {
+  return pair.replace(/^v/, "").replace(/_vUSDC$/, "/USDC").toUpperCase();
+}
+
+function formatPanelPrice(value?: number | null): string {
+  if (!value || !Number.isFinite(value)) return "--";
+  if (value >= 1000) return value.toLocaleString(undefined, { maximumFractionDigits: 1 });
+  if (value >= 1) return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  return value.toFixed(8).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+function signedFromSignal(signal: Signal | null): number {
+  if (!signal) return 0;
+  if (signal.action === "LONG") return signal.confidence;
+  if (signal.action === "SHORT") return -signal.confidence;
+  return 0;
+}
+
+function actionFromSigned(value: number): DecisionAction {
+  if (value > 12) return "LONG";
+  if (value < -12) return "SHORT";
+  return "NO TRADE";
+}
+
+function signedFromNews(news: NewsResponse | null): number {
+  if (!news || news.error || !news.sentiment) return 0;
+  const distance = Math.abs(news.sentiment.score - 50) * 2;
+  if (news.sentiment.label === "Bullish") return clamp(distance, 0, 100);
+  if (news.sentiment.label === "Bearish") return -clamp(distance, 0, 100);
+  return 0;
+}
+
+function confidenceLabel(value: number): string {
+  if (value >= 75) return "High";
+  if (value >= 60) return "Moderate";
+  return "Watch";
+}
+
+function sourceTone(source: DecisionSource): string {
+  if (!source.available) return "text-txt-muted";
+  if (source.signed > 12) return "text-buy";
+  if (source.signed < -12) return "text-sell";
+  return "text-hold";
+}
+
+function buildTargets(action: DecisionAction, entry: number, signal: Signal | null): Array<[string, string, string]> {
+  if (!entry || !Number.isFinite(entry)) return [["--", "--", "--"]];
+  if (action === "NO TRADE") {
+    return [
+      ["UP", formatPanelPrice(entry * 1.006), "break"],
+      ["MID", formatPanelPrice(entry), "spot"],
+      ["DN", formatPanelPrice(entry * 0.994), "break"],
+    ];
+  }
+
+  const dir = action === "LONG" ? 1 : -1;
+  const tp1 = signal?.execution.takeProfit ?? entry * (1 + dir * 0.012);
+  return [
+    ["TP1", formatPanelPrice(tp1), "(live)"],
+    ["TP2", formatPanelPrice(entry * (1 + dir * 0.024)), "(2R)"],
+    ["TP3", formatPanelPrice(entry * (1 + dir * 0.04)), "(3R)"],
+  ];
+}
+
+function buildStop(action: DecisionAction, entry: number, signal: Signal | null): [string, string, string] {
+  if (!entry || !Number.isFinite(entry)) return ["SL", "--", "--"];
+  if (action === "NO TRADE") return ["State", "WAIT", "(flat)"];
+  const dir = action === "LONG" ? -1 : 1;
+  return ["SL", formatPanelPrice(signal?.execution.stopLoss ?? entry * (1 + dir * 0.01)), "risk"];
+}
+
+function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null }) {
+  const d = useDashboard();
+  const currentSignal = d.liveSignals.find((s) => normalizePair(s.pair) === normalizePair(pair)) ?? null;
+  const aiSignal = d.aiSignal && normalizePair(d.aiSignal.pair) === normalizePair(pair) ? d.aiSignal : null;
+  const ticker = d.tickerMap.get(pairToSodexSymbol(pair));
+  const currentPrice = currentSignal?.price ?? (ticker ? parseFloat(ticker.lastPx) : 0);
+
+  const decision = useMemo(() => {
+    const sources: DecisionSource[] = [
+      {
+        label: "SoDEX TA",
+        signed: signedFromSignal(currentSignal),
+        weight: 0.55,
+        available: !!currentSignal,
+        note: currentSignal?.actionV2?.replaceAll("_", " ") ?? currentSignal?.regime ?? "Waiting for TA",
+      },
+      {
+        label: "SoSoValue News",
+        signed: signedFromNews(news),
+        weight: 0.25,
+        available: !!news && !news.error,
+        note: news?.error ? "quota limited" : news?.sentiment?.label ?? "Waiting for news",
+      },
+      {
+        label: "AI Thesis",
+        signed: signedFromSignal(aiSignal),
+        weight: 0.2,
+        available: !!aiSignal,
+        note: aiSignal ? "AI signal active" : d.analyzing ? "analyzing" : "not generated",
+      },
+    ];
+
+    const available = sources.filter((source) => source.available);
+    const weightSum = available.reduce((sum, source) => sum + source.weight, 0);
+    const signed = weightSum
+      ? available.reduce((sum, source) => sum + source.signed * source.weight, 0) / weightSum
+      : 0;
+    const action = actionFromSigned(signed);
+    const strength = Math.round(Math.abs(signed));
+    const confidence = action === "NO TRADE"
+      ? clamp(100 - strength, 50, 88)
+      : clamp(strength, 45, 95);
+    const signalForExecution = currentSignal ?? aiSignal;
+
+    return {
+      action,
+      confidence,
+      label: confidenceLabel(confidence),
+      sources,
+      targets: buildTargets(action, currentPrice, signalForExecution),
+      stop: buildStop(action, currentPrice, signalForExecution),
+      riskReward: action === "NO TRADE" ? "No setup" : signalForExecution?.execution.riskReward ?? "Live calc",
+      positionSize: action === "NO TRADE" ? "0% (wait)" : signalForExecution?.execution.positionSize ?? "1-2%",
+    };
+  }, [aiSignal, currentPrice, currentSignal, d.analyzing, news]);
+
+  const execute = () => {
+    if (currentSignal && decision.action !== "NO TRADE") {
+      d.handleExecuteSignal(currentSignal);
+    }
+  };
 
   const signalColors: Record<string, { active: string; idle: string; icon: string }> = {
     LONG: {
@@ -181,22 +310,25 @@ function DecisionPanel() {
   };
 
   return (
-    <Panel title="CURRENT DECISION SCORE" className="h-[494px]">
-      <div className="space-y-4 p-4">
-        {/* Signal Selector */}
+    <Panel
+      title="CURRENT DECISION SCORE"
+      badge={<Badge variant={decision.action === "LONG" ? "buy" : decision.action === "SHORT" ? "sell" : "hold"} size="sm">LIVE LOGIC</Badge>}
+      className="h-[494px]"
+    >
+      <div className="space-y-3 p-4">
         <div>
           <div className="mb-2 text-xs font-semibold tracking-wide text-txt-tertiary uppercase">Primary Signal</div>
           <div className="grid grid-cols-3 gap-1.5">
             {["LONG", "SHORT", "NO TRADE"].map((item) => {
-              const isActive = signal === item;
+              const isActive = decision.action === item;
               const colors = signalColors[item];
               return (
                 <button
                   key={item}
                   type="button"
-                  onClick={() => setSignal(item)}
+                  aria-pressed={isActive}
                   className={cx(
-                    "flex h-16 flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-all",
+                    "flex h-14 flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-all",
                     isActive ? colors.active : colors.idle
                   )}
                 >
@@ -208,56 +340,86 @@ function DecisionPanel() {
           </div>
         </div>
 
-        {/* Confidence — Speedometer */}
         <div>
           <div className="mb-2 text-xs font-semibold tracking-wide text-txt-tertiary uppercase">Signal Strength</div>
           <div className="flex items-center justify-center py-1">
             <div className="text-center">
-              <SpeedometerGauge value={decisionPanelData.confidence} size="lg" showLabel={false} />
-              <div className="mt-1 text-4xl font-bold tabular-nums tracking-tight" style={{ color: decisionPanelData.confidence >= 75 ? "var(--color-buy)" : decisionPanelData.confidence >= 50 ? "var(--color-hold)" : "var(--color-sell)" }}>
-                {decisionPanelData.confidence}%
+              <SpeedometerGauge value={decision.confidence} size="md" showLabel={false} />
+              <div
+                className="mt-1 text-3xl font-bold tabular-nums tracking-tight"
+                style={{
+                  color: decision.action === "LONG"
+                    ? "var(--color-buy)"
+                    : decision.action === "SHORT"
+                      ? "var(--color-sell)"
+                      : "var(--color-hold)",
+                }}
+              >
+                {decision.confidence}%
               </div>
-              <div className="text-sm font-medium text-txt-tertiary">{decisionPanelData.confidenceLabel}</div>
+              <div className="text-sm font-medium text-txt-tertiary">{decision.label}</div>
             </div>
           </div>
         </div>
 
-        {/* TP / SL Grid */}
+        <Card variant="inset" padding="sm" className="rounded-xl">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">Source Weighting</div>
+          <div className="space-y-1.5">
+            {decision.sources.map((source) => (
+              <div key={source.label} className="grid grid-cols-[96px_42px_1fr] items-center gap-2 text-xs">
+                <span className="font-medium text-txt-secondary">{source.label}</span>
+                <span className={cx("font-mono tabular-nums", sourceTone(source))}>
+                  {source.available ? `${source.signed > 0 ? "+" : ""}${Math.round(source.signed)}` : "--"}
+                </span>
+                <span className="truncate text-right text-[11px] text-txt-tertiary">{source.note}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
         <div className="grid grid-cols-2 gap-3">
           <Card variant="inset" padding="sm" className="rounded-xl">
-            <div className="mb-2 text-[11px] font-semibold text-buy uppercase tracking-wide">Take Profit (TP)</div>
+            <div className={cx("mb-2 text-[11px] font-semibold uppercase tracking-wide", decision.action === "NO TRADE" ? "text-hold" : "text-buy")}>
+              {decision.action === "NO TRADE" ? "Watch Triggers" : "Take Profit (TP)"}
+            </div>
             <div className="space-y-1.5">
-              {decisionPanelData.takeProfit.map(([label, price, risk]) => (
+              {decision.targets.map(([label, price, risk]) => (
                 <div key={label} className="grid grid-cols-[36px_1fr_54px] gap-1 font-mono text-xs">
                   <span className="text-txt-muted">{label}</span>
-                  <span className="text-buy">{price}</span>
+                  <span className={decision.action === "NO TRADE" ? "text-hold" : "text-buy"}>{price}</span>
                   <span className="text-txt-tertiary">{risk}</span>
                 </div>
               ))}
             </div>
           </Card>
           <Card variant="inset" padding="sm" className="rounded-xl">
-            <div className="mb-2 text-[11px] font-semibold text-sell uppercase tracking-wide">Stop Loss (SL)</div>
+            <div className="mb-2 text-[11px] font-semibold text-sell uppercase tracking-wide">
+              {decision.action === "NO TRADE" ? "Risk State" : "Stop Loss (SL)"}
+            </div>
             <div className="grid grid-cols-[28px_1fr_58px] gap-1 font-mono text-xs">
-              <span className="text-txt-muted">{decisionPanelData.stopLoss[0]}</span>
-              <span className="text-sell">{decisionPanelData.stopLoss[1]}</span>
-              <span className="text-txt-tertiary">{decisionPanelData.stopLoss[2]}</span>
+              <span className="text-txt-muted">{decision.stop[0]}</span>
+              <span className="text-sell">{decision.stop[1]}</span>
+              <span className="text-txt-tertiary">{decision.stop[2]}</span>
             </div>
             <div className="my-3 h-px bg-border-default" />
             <div className="text-[11px] font-semibold text-txt-tertiary uppercase tracking-wide">Risk / Reward</div>
-            <div className="mt-1 font-mono text-xl font-bold text-txt-primary">{decisionPanelData.riskReward}</div>
+            <div className="mt-1 font-mono text-xl font-bold text-txt-primary">{decision.riskReward}</div>
           </Card>
         </div>
 
-        {/* Execute */}
-        <Button variant="primary" size="lg" onClick={execute} className="w-full h-12 rounded-xl text-sm">
-          <span className="text-lg">▶</span> Execute Setup
+        <Button
+          variant="primary"
+          size="lg"
+          onClick={execute}
+          disabled={!currentSignal || decision.action === "NO TRADE"}
+          className="w-full h-11 rounded-xl text-sm"
+        >
+          <span className="text-lg">▶</span> {decision.action === "NO TRADE" ? "Wait For Setup" : "Execute Setup"}
         </Button>
 
-        {/* Position Size */}
         <div className="flex justify-between text-sm">
           <span className="text-txt-tertiary">Position Size (Risk 1%):</span>
-          <span className="font-mono font-semibold text-txt-primary">{decisionPanelData.positionSize}</span>
+          <span className="font-mono font-semibold text-txt-primary">{decision.positionSize}</span>
         </div>
       </div>
     </Panel>
@@ -299,20 +461,7 @@ function sentimentVariant(label: string): string {
   return "muted";
 }
 
-function NewsFeed() {
-  const [news, setNews] = useState<NewsResponse | null>(null);
-  const [fetchError, setFetchError] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/news?pageSize=8")
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then((data) => setNews(data))
-      .catch(() => setFetchError(true));
-  }, []);
-
+function NewsFeed({ news, fetchError }: { news: NewsResponse | null; fetchError: boolean }) {
   const apiError = news?.error;
   const hasData = news && news.list.length > 0;
 
@@ -563,10 +712,25 @@ function MarketStatsBar() {
 
 export default function SignalFlowCommandCenter() {
   const d = useDashboard();
+  const [news, setNews] = useState<NewsResponse | null>(null);
+  const [newsFetchError, setNewsFetchError] = useState(false);
   const pairBase = d.selectedPair.startsWith("v")
     ? d.selectedPair.replace(/^v/, "").replace(/_vUSDC$/, "")
     : d.selectedPair.split("/")[0];
   const pair = `${pairBase}/USDC`;
+
+  useEffect(() => {
+    fetch("/api/news?pageSize=8")
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((data: NewsResponse) => {
+        setNews(data);
+        setNewsFetchError(false);
+      })
+      .catch(() => setNewsFetchError(true));
+  }, []);
 
   return (
     <div className="space-y-3 px-2 lg:px-3 pt-2 lg:pt-3">
@@ -575,8 +739,8 @@ export default function SignalFlowCommandCenter() {
       </div>
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,2.8fr)_minmax(280px,1.3fr)_minmax(280px,1.2fr)]">
         <MarketCanvas pair={pair} />
-        <DecisionPanel />
-        <NewsFeed />
+        <DecisionPanel pair={pair} news={news} />
+        <NewsFeed news={news} fetchError={newsFetchError} />
       </div>
       <MarketStatsBar />
     </div>
