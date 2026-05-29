@@ -9,6 +9,7 @@ import {
   clearTradingType,
 } from "@/lib/types/trading-type";
 import TradingTypeIcon from "@/components/TradingTypeIcon";
+import { DataSourceIcon } from "@/components/ui/icons";
 
 interface Props {
   currentType: TradingType | null;
@@ -167,7 +168,9 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
                 ${!currentType ? "bg-inset" : "hover:bg-inset/50"}
               `}
             >
-              <span className="text-lg w-7 text-center">🌐</span>
+              <span className="text-txt-secondary w-7 h-7 rounded-md bg-elevated/30 border border-border-default flex items-center justify-center shrink-0">
+                <DataSourceIcon size={13} />
+              </span>
               <div className="flex-1">
                 <span className="text-xs font-semibold text-txt-secondary">All Types</span>
                 <p className="text-[10px] text-txt-faint">Show all signals unfiltered</p>

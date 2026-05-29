@@ -6,16 +6,25 @@ import type { AIError } from "@/lib/ai/providerErrors";
 import type { AIConfig } from "@/lib/types/datasource";
 import Button from "@/components/ui/Button";
 import ConfidenceGauge from "@/components/ui/ConfidenceGauge";
+import { BarChartIcon, DataSourceIcon, DocumentIcon, TrendUpIcon } from "@/components/ui/icons";
 
 /* ── Dimension config ── */
 
-const dimLabels: { key: keyof Signal["dimensions"]; label: string; color: string; icon: string }[] = [
-  { key: "etfFlow", label: "ETF Flow", color: "#00d4ff", icon: "📊" },
-  { key: "sentiment", label: "Sentiment", color: "#8B5CF6", icon: "📰" },
-  { key: "macro", label: "Macro", color: "#00ff88", icon: "🌐" },
-  { key: "momentum", label: "Momentum", color: "#ff8800", icon: "📈" },
-  { key: "treasury", label: "Treasury", color: "#ff4488", icon: "🏛" },
+const dimLabels: { key: keyof Signal["dimensions"]; label: string; color: string; icon: "etf" | "sentiment" | "macro" | "momentum" | "treasury" }[] = [
+  { key: "etfFlow", label: "ETF Flow", color: "#00d4ff", icon: "etf" },
+  { key: "sentiment", label: "Sentiment", color: "#8B5CF6", icon: "sentiment" },
+  { key: "macro", label: "Macro", color: "#00ff88", icon: "macro" },
+  { key: "momentum", label: "Momentum", color: "#ff8800", icon: "momentum" },
+  { key: "treasury", label: "Treasury", color: "#ff4488", icon: "treasury" },
 ];
+
+function DimIcon({ icon }: { icon: (typeof dimLabels)[number]["icon"] }) {
+  if (icon === "etf") return <BarChartIcon size={12} />;
+  if (icon === "sentiment") return <DocumentIcon size={12} />;
+  if (icon === "macro") return <DataSourceIcon size={12} />;
+  if (icon === "momentum") return <TrendUpIcon size={12} />;
+  return <DocumentIcon size={12} />;
+}
 
 const actionAccent: Record<string, string> = {
   BUY: "#00E676",
@@ -317,7 +326,7 @@ export default function AISignalGenerator({
                 const detail = aiThesis?.dimensionDetails?.[d.key]?.detail ?? displaySignal.dimensionDetails?.[d.key]?.detail;
                 return (
                   <div key={d.key} className="bg-elevated/30 rounded-lg p-2 text-center">
-                    <span className="text-xs block mb-1">{d.icon}</span>
+                    <span className="text-txt-secondary inline-flex mb-1"><DimIcon icon={d.icon} /></span>
                     <span className="text-[9px] font-semibold block mb-1" style={{ color: d.color }}>{d.label}</span>
                     <span className="text-sm font-bold font-mono block" style={{ color: d.color }}>{score}</span>
                     <MiniBar value={score} color={d.color} />

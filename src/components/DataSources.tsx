@@ -7,6 +7,7 @@ import { getProvider } from "@/lib/ai-providers";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
+import { ActivityIcon, BarChartIcon, DataSourceIcon } from "@/components/ui/icons";
 
 /* ── Status config ── */
 
@@ -21,7 +22,7 @@ const statusConfig: Record<string, { label: string; color: string; dot: string }
 
 interface SourceGroup {
   name: string;
-  icon: string;
+  icon: "market" | "trade";
   color: string;
   modules: string[];
   description: string;
@@ -30,14 +31,14 @@ interface SourceGroup {
 const GROUPS: SourceGroup[] = [
   {
     name: "SoSoValue",
-    icon: "📊",
+    icon: "market",
     color: "#00d4ff",
     modules: ["Currency & Pairs", "ETF Data", "ETF Flow Analytics", "News Feeds", "News Sentiment", "Macro Events", "Macro Calendar", "Macro Event History", "BTC Treasuries", "Treasury Activity", "Crypto Stocks", "SoSoValue Index", "Index Snapshots"],
     description: "ETF flows, news sentiment, macro calendar, BTC treasuries, index tracking, market snapshots",
   },
   {
     name: "SoDEX",
-    icon: "⚡",
+    icon: "trade",
     color: "#00E5A8",
     modules: ["SoDEX Market", "SoDEX Symbols", "Orderbook Depth", "Signal History"],
     description: "Live trading pairs, klines, orderbook depth, order execution, signal backtest",
@@ -99,7 +100,7 @@ export default function DataSources() {
     ...groupStatuses,
     {
       name: aiProvider?.name ?? "AI Model",
-      icon: "🧠",
+      icon: "market",
       color: "#A78BFA",
       modules: [],
       description: `Signal analysis via ${aiProvider?.name ?? "AI"} (${aiProvider?.defaultModel ?? "default model"})`,
@@ -140,7 +141,9 @@ export default function DataSources() {
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-base">{g.icon}</span>
+                    <span className="w-5 h-5 rounded bg-elevated/30 border border-border-default flex items-center justify-center text-txt-secondary">
+                      {g.name === "SoDEX" ? <ActivityIcon size={12} /> : g.name === "AI Model" || g.name === aiProvider?.name ? <DataSourceIcon size={12} /> : <BarChartIcon size={12} />}
+                    </span>
                     <span className="text-sm font-semibold text-txt-primary">{g.name}</span>
                   </div>
                   <Badge variant={g.status === "live" ? "live" : g.status === "degraded" ? "warning" : g.status === "offline" ? "error" : "muted"} size="sm">

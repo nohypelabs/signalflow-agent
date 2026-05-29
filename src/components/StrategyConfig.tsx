@@ -6,6 +6,7 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import ProgressBar from "@/components/ui/ProgressBar";
 import { TRADING_TYPE_LIST } from "@/lib/types/trading-type";
+import { BarChartIcon, DataSourceIcon, DocumentIcon, TrendUpIcon } from "@/components/ui/icons";
 
 const STORAGE_KEY = "signalflow-strategy-config";
 
@@ -58,12 +59,20 @@ function saveConfig(config: StrategyConfig) {
 }
 
 const dimSliders = [
-  { key: "etfFlow" as const, label: "ETF Flow", color: "#00d4ff", icon: "📊", desc: "Institutional capital via BTC/ETH ETF net flows" },
-  { key: "sentiment" as const, label: "Sentiment", color: "#8B5CF6", icon: "📰", desc: "News headline NLP — bullish/bearish keyword ratio" },
-  { key: "macro" as const, label: "Macro", color: "#00ff88", icon: "🌐", desc: "Fed calendar, CPI releases, yield curve signals" },
-  { key: "momentum" as const, label: "Momentum", color: "#ff8800", icon: "📈", desc: "RSI, MACD, Bollinger Bands, EMA crossover" },
-  { key: "treasury" as const, label: "Treasury", color: "#ff4488", icon: "🏛", desc: "Public company BTC holdings, institutional adoption" },
+  { key: "etfFlow" as const, label: "ETF Flow", color: "#00d4ff", icon: "etf" as const, desc: "Institutional capital via BTC/ETH ETF net flows" },
+  { key: "sentiment" as const, label: "Sentiment", color: "#8B5CF6", icon: "sentiment" as const, desc: "News headline NLP — bullish/bearish keyword ratio" },
+  { key: "macro" as const, label: "Macro", color: "#00ff88", icon: "macro" as const, desc: "Fed calendar, CPI releases, yield curve signals" },
+  { key: "momentum" as const, label: "Momentum", color: "#ff8800", icon: "momentum" as const, desc: "RSI, MACD, Bollinger Bands, EMA crossover" },
+  { key: "treasury" as const, label: "Treasury", color: "#ff4488", icon: "treasury" as const, desc: "Public company BTC holdings, institutional adoption" },
 ];
+
+function DimIcon({ icon }: { icon: (typeof dimSliders)[number]["icon"] }) {
+  if (icon === "etf") return <BarChartIcon size={12} />;
+  if (icon === "sentiment") return <DocumentIcon size={12} />;
+  if (icon === "macro") return <DataSourceIcon size={12} />;
+  if (icon === "momentum") return <TrendUpIcon size={12} />;
+  return <DocumentIcon size={12} />;
+}
 
 export default function StrategyConfig() {
   const [config, setConfig] = useState<StrategyConfig>(DEFAULT_CONFIG);
@@ -141,7 +150,7 @@ export default function StrategyConfig() {
       <div className="flex items-center gap-3">
         <span className="text-[10px] text-txt-dim uppercase tracking-wider">Presets:</span>
         <div className="flex items-center gap-1.5">
-          {Object.entries(PRESETS).map(([name, preset]) => (
+          {Object.entries(PRESETS).map(([name]) => (
             <button
               key={name}
               onClick={() => applyPreset(name)}
@@ -175,7 +184,7 @@ export default function StrategyConfig() {
               return (
                 <div key={d.key}>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm">{d.icon}</span>
+                    <span className="text-txt-secondary inline-flex"><DimIcon icon={d.icon} /></span>
                     <span className="text-xs font-semibold w-20 shrink-0" style={{ color: d.color }}>{d.label}</span>
                     <div className="flex-1">
                       <ProgressBar value={liveScore ?? 0} color={d.color} height="sm" />

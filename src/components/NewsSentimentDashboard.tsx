@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
+import { DocumentIcon } from "@/components/ui/icons";
 
 interface NewsItem {
   id: number;
@@ -78,9 +79,9 @@ function SentimentGauge({ score, bullish, bearish, neutral }: { score: number; b
 
       {/* Labels */}
       <div className="flex justify-between text-[9px]">
-        <span className="text-[#00ff88]">🟢 Bullish {bullish}</span>
-        <span className="text-txt-faint">⚪ Neutral {neutral}</span>
-        <span className="text-[#ff4444]">🔴 Bearish {bearish}</span>
+        <span className="text-[#00ff88]">Bullish {bullish}</span>
+        <span className="text-txt-faint">Neutral {neutral}</span>
+        <span className="text-[#ff4444]">Bearish {bearish}</span>
       </div>
     </div>
   );
@@ -134,7 +135,7 @@ export default function NewsSentimentDashboard() {
       <Card padding="none" className="overflow-hidden">
         <div className="px-4 py-3 border-b border-border-default">
           <div className="flex items-center gap-2">
-            <span className="text-base">📰</span>
+            <span className="text-txt-secondary"><DocumentIcon size={16} /></span>
             <h3 className="text-sm font-semibold text-txt-primary">News Sentiment</h3>
           </div>
         </div>
@@ -152,7 +153,7 @@ export default function NewsSentimentDashboard() {
       <div className="px-4 py-3 border-b border-border-default">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-base">📰</span>
+            <span className="text-txt-secondary"><DocumentIcon size={16} /></span>
             <h3 className="text-sm font-semibold text-txt-primary">News Sentiment</h3>
           </div>
           <Badge variant={data.sentiment.score > 60 ? "live" : data.sentiment.score < 40 ? "error" : "warning"} size="sm">
