@@ -107,12 +107,13 @@ export default function TradeHistory({
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-inset rounded-lg p-1 w-fit">
+      <div className="overflow-x-auto scrollbar-none">
+      <div className="flex gap-1 bg-inset rounded-lg p-1 w-max min-w-full sm:min-w-0 sm:w-fit">
         {(["paper", "open", "filled", "signals"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-3 py-1.5 text-xs rounded-md font-medium ${
+            className={`px-3 py-1.5 text-xs rounded-md font-medium whitespace-nowrap ${
               tab === t
                 ? "bg-accent text-white"
                 : "text-txt-muted hover:text-txt-secondary"
@@ -127,6 +128,7 @@ export default function TradeHistory({
                   : `Signals (${liveSignals.length})`}
           </button>
         ))}
+      </div>
       </div>
 
       {/* Content */}

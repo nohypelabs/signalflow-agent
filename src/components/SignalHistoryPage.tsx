@@ -52,7 +52,7 @@ function BacktestPanel({ stats }: { stats: BacktestStats }) {
       <div className="px-4 py-3 border-b border-border-default">
         <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider">Backtest Performance</h3>
       </div>
-      <div className="p-4 grid grid-cols-4 gap-3">
+      <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: "Win Rate", value: `${stats.winRate.toFixed(1)}%`, color: stats.winRate > 55 ? "#00ff88" : stats.winRate > 45 ? "#ff8800" : "#ff4444" },
           { label: "Avg PnL", value: `${stats.avgPnl > 0 ? "+" : ""}${stats.avgPnl.toFixed(2)}%`, color: stats.avgPnl > 0 ? "#00ff88" : "#ff4444" },
@@ -65,7 +65,7 @@ function BacktestPanel({ stats }: { stats: BacktestStats }) {
           </div>
         ))}
       </div>
-      <div className="px-4 pb-4 grid grid-cols-3 gap-3">
+      <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-3 gap-2">
         {[
           { label: "Total Signals", value: stats.totalSignals.toString() },
           { label: "Best Trade", value: `+${stats.bestTrade.toFixed(1)}%`, color: "#00ff88" },
@@ -271,8 +271,8 @@ export default function SignalHistoryPage() {
 
       {/* Filters */}
       <Card padding="sm">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[9px] text-txt-faint uppercase tracking-wider">Signal:</span>
             {(["all", "BUY", "SELL", "HOLD"] as const).map((f) => (
               <button
@@ -288,7 +288,7 @@ export default function SignalHistoryPage() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[9px] text-txt-faint uppercase tracking-wider">Outcome:</span>
             {(["all", "win", "loss", "pending"] as const).map((f) => (
               <button
@@ -309,7 +309,7 @@ export default function SignalHistoryPage() {
 
       {/* Signal List */}
       <Card padding="none" className="overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-border-default flex items-center gap-3">
+        <div className="hidden md:flex px-4 py-2.5 border-b border-border-default items-center gap-3">
           <span className="text-[9px] text-txt-faint uppercase tracking-wider min-w-[40px]">Type</span>
           <span className="text-[9px] text-txt-faint uppercase tracking-wider min-w-[80px]">Pair</span>
           <span className="text-[9px] text-txt-faint uppercase tracking-wider min-w-[50px]">Confidence</span>
@@ -318,9 +318,31 @@ export default function SignalHistoryPage() {
           <span className="text-[9px] text-txt-faint uppercase tracking-wider ml-auto">Time</span>
         </div>
         <div className="divide-y divide-border-default max-h-[500px] overflow-y-auto">
-          {filteredSignals.slice(0, 50).map((s) => (
-            <SignalRow key={s.id} signal={s} />
-          ))}
+          <div className="md:hidden">
+            {filteredSignals.slice(0, 50).map((s) => (
+              <div key={s.id} className="px-3 py-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                      s.action === "LONG" ? "bg-[#00ff88]/15 text-[#00ff88]" : s.action === "SHORT" ? "bg-[#ff4444]/15 text-[#ff4444]" : "bg-[#ff8800]/15 text-[#ff8800]"
+                    }`}>{s.action}</span>
+                    <span className="text-xs font-semibold text-txt-primary">{s.pair}</span>
+                  </div>
+                  <span className="text-[9px] text-txt-faint">{fmtTimeAgo(s.timestamp)}</span>
+                </div>
+                <div className="mt-1.5 grid grid-cols-3 gap-2 text-[10px]">
+                  <div><span className="text-txt-faint">Conf</span><p className="font-mono text-txt-secondary">{s.confidence}%</p></div>
+                  <div><span className="text-txt-faint">Price</span><p className="font-mono text-txt-secondary">{fmtPrice(s.price)}</p></div>
+                  <div><span className="text-txt-faint">PnL</span><p className={`font-mono ${(s.pnlPercent ?? 0) >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>{s.pnlPercent !== undefined ? `${s.pnlPercent >= 0 ? "+" : ""}${s.pnlPercent.toFixed(2)}%` : "—"}</p></div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="hidden md:block">
+            {filteredSignals.slice(0, 50).map((s) => (
+              <SignalRow key={s.id} signal={s} />
+            ))}
+          </div>
         </div>
         {filteredSignals.length === 0 && (
           <div className="px-4 py-8 text-center">

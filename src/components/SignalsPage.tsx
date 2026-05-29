@@ -331,32 +331,50 @@ export default function SignalsPage({ tickers, liveSignals = [], liveDims, overa
           </div>
         ) : (
           /* Compact view */
-          <div className="space-y-1.5">
-            {/* Table header */}
-            <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] gap-3 items-center px-4 py-2 text-[9px] text-txt-dim uppercase tracking-wider font-semibold">
-              <span>Pair</span>
-              <span>Confidence</span>
-              <span>Price</span>
-              <span>24H</span>
-              <span>Score</span>
-              <span>Updated</span>
-              <span>Action</span>
+          <>
+            <div className="hidden md:block space-y-1.5">
+              <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] gap-3 items-center px-4 py-2 text-[9px] text-txt-dim uppercase tracking-wider font-semibold">
+                <span>Pair</span>
+                <span>Confidence</span>
+                <span>Price</span>
+                <span>24H</span>
+                <span>Score</span>
+                <span>Updated</span>
+                <span>Action</span>
+              </div>
+              {filteredSignals.map((s) => {
+                const { liveDims: coinDims, overallScore, coinWeights, coinCapped } = getCoinData(s);
+                return (
+                  <SignalCompactRow
+                    key={s.id}
+                    signal={s}
+                    ticker={getTicker(s)}
+                    liveDims={coinDims}
+                    overallScore={overallScore}
+                    weights={coinWeights}
+                    cappedDims={coinCapped}
+                  />
+                );
+              })}
             </div>
-            {filteredSignals.map((s) => {
-              const { liveDims: coinDims, overallScore, coinWeights, coinCapped } = getCoinData(s);
-              return (
-                <SignalCompactRow
-                  key={s.id}
-                  signal={s}
-                  ticker={getTicker(s)}
-                  liveDims={coinDims}
-                  overallScore={overallScore}
-                  weights={coinWeights}
-                  cappedDims={coinCapped}
-                />
-              );
-            })}
-          </div>
+            <div className="md:hidden grid grid-cols-1 gap-3">
+              {filteredSignals.map((s) => {
+                const { liveDims: coinDims, overallScore, coinWeights, coinCapped } = getCoinData(s);
+                return (
+                  <SignalCard
+                    key={s.id}
+                    signal={s}
+                    ticker={getTicker(s)}
+                    liveDims={coinDims}
+                    overallScore={overallScore}
+                    weights={coinWeights}
+                    cappedDims={coinCapped}
+                    tradingType={tradingType}
+                  />
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </>

@@ -162,6 +162,7 @@ export default function TradingPageContent() {
   const [pendingAction, setPendingAction] = useState<PendingTradeAction | null>(null);
   const [bottomTab, setBottomTab] = useState<BottomTab>("orders");
   const [bookTab, setBookTab] = useState<BookTab>("book");
+  const [isMobile, setIsMobile] = useState(false);
   const paper = usePaperTrading();
   const checkPaperTpSl = paper.checkTpSl;
 
@@ -272,6 +273,14 @@ export default function TradingPageContent() {
 
   const handleConfirm = () => { const a = pendingAction; if (!a) return; setPendingAction(null); if (a.kind === "open") executeConfirmedOpen(a); else executeConfirmedClose(a); };
 
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   const tabCfg: { id: BottomTab; label: string; icon: React.ReactNode; count: number }[] = [
     { id: "orders", label: "Open Orders", icon: <ClipboardIcon size={13} />, count: d.openOrders.length },
     { id: "trades", label: "Trades", icon: <BarChartIcon size={13} />, count: 0 },
@@ -284,7 +293,93 @@ export default function TradingPageContent() {
       {notice && <TradeExecutionModal notice={notice} onClose={() => setNotice(null)} />}
       {pendingAction && <TradeConfirmationModal action={pendingAction} onCancel={() => setPendingAction(null)} onConfirm={handleConfirm} />}
 
-      {/* ═══ THREE-COLUMN BODY ═══ */}
+      {isMobile ? (
+        <div className="md:hidden flex-1 overflow-y-auto p-2 pb-20 space-y-2">
+          <div className="h-[50vh] min-h-[320px] bg-card border border-border-default rounded-lg overflow-hidden">
+            <ErrorBoundary name="Trading Chart">
+              <TradingChart
+                klines={d.klines}
+                symbol={pair}
+                currentPrice={currentPrice}
+                liveSignals={d.liveSignals}
+                tickerMap={d.tickerMap}
+                tradeMode={tradeMode}
+                onModeChange={setTradeMode}
+                onPairChange={setPair}
+                compact
+              />
+            </ErrorBoundary>
+          </div>
+
+          <div className="bg-card border border-border-default rounded-lg overflow-hidden">
+            <div className="flex items-center gap-0.5 bg-inset/30 border-b border-border-default p-1 overflow-x-auto scrollbar-none">
+              <button onClick={() => setBookTab("book")} className={`text-[10px] px-2.5 py-1 rounded-md whitespace-nowrap ${bookTab === "book" ? "bg-accent/15 text-accent" : "text-txt-dim"}`}>Order Book</button>
+              <button onClick={() => setBookTab("trades")} className={`text-[10px] px-2.5 py-1 rounded-md whitespace-nowrap ${bookTab === "trades" ? "bg-accent/15 text-accent" : "text-txt-dim"}`}>Recent Trades</button>
+            </div>
+            <div className="max-h-[220px] overflow-y-auto">
+              {bookTab === "book" ? (
+                <ErrorBoundary name="Orderbook">
+                  <OrderbookDepth symbol={sodexSymbol || "vBTC_vUSDC"} coin={coin} />
+                </ErrorBoundary>
+              ) : (
+                <ErrorBoundary name="Recent Trades">
+                  <RecentTrades orders={d.orders} loading={d.ordersLoading} paperTrades={paper.trades} />
+                </ErrorBoundary>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-card border border-border-default rounded-lg overflow-hidden">
+            <ErrorBoundary name="Order Form">
+              <OrderForm
+                pair={pair}
+                coin={coin}
+                currentPrice={currentPrice}
+                signal={signalContext}
+                isConnected={d.isConnected}
+                paperBalance={paper.balance.available}
+                mode={tradeMode}
+                tradingType={tradingType}
+                error={tradeError}
+                onModeChange={setTradeMode}
+                onExecute={handleExecute}
+              />
+            </ErrorBoundary>
+          </div>
+
+          <div className="bg-card/70 border border-border-default rounded-lg overflow-hidden">
+            <div className="flex items-center gap-0.5 px-2 py-1 border-b border-border-default bg-inset/30 overflow-x-auto scrollbar-none">
+              {tabCfg.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setBottomTab(tab.id)}
+                  className={`text-[10px] whitespace-nowrap px-2 py-1 rounded-md ${bottomTab === tab.id ? "bg-accent/15 text-accent" : "text-txt-dim"}`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div className="max-h-[260px] overflow-y-auto">
+              {bottomTab === "orders" && <ErrorBoundary name="Open Orders"><OpenOrders orders={d.orders} loading={d.ordersLoading} error={d.ordersError} onCancel={d.cancelOrder} /></ErrorBoundary>}
+              {bottomTab === "trades" && <ErrorBoundary name="Recent Trades"><RecentTrades orders={d.orders} loading={d.ordersLoading} paperTrades={paper.trades} /></ErrorBoundary>}
+              {bottomTab === "positions" && (
+                <ErrorBoundary name="Open Paper Positions">
+                  {tradeMode === "paper" && paper.loaded ? (
+                    openPaperTrades.length > 0 ? (
+                      <div className="divide-y divide-border-default">
+                        {openPaperTrades.map((t) => { const b = t.pair.split("/")[0]; const mp = currentPrices.get(b) ?? currentPrices.get(t.pair) ?? t.entryPrice; return <PosRow key={t.id} trade={t} mp={mp} active={t.pair === pair} onSel={setPair} onClose={handleClosePaperTrade} />; })}
+                      </div>
+                    ) : <div className="flex items-center justify-center h-28"><p className="text-xs text-txt-muted">No open positions</p></div>
+                  ) : <div className="flex items-center justify-center h-28"><p className="text-xs text-txt-dim">Switch to Paper mode</p></div>}
+                </ErrorBoundary>
+              )}
+              {bottomTab === "stats" && <ErrorBoundary name="Paper Stats">{paper.loaded ? <PaperTradingStats stats={paper.stats} balance={paper.balance} trades={paper.trades} onReset={paper.reset} /> : <div className="flex items-center justify-center h-28"><p className="text-xs text-txt-dim">Loading…</p></div>}</ErrorBoundary>}
+            </div>
+          </div>
+        </div>
+      ) : (
+      /* ═══ THREE-COLUMN BODY ═══ */
+      <>
       <div ref={containerRef} className="flex-1 min-h-[500px] flex overflow-hidden">
         {/* Column A: Chart */}
         <div className="min-w-0 flex flex-col" style={{ width: `${widths.chart}%` }}>
@@ -349,6 +444,8 @@ export default function TradingPageContent() {
           {bottomTab === "stats" && <ErrorBoundary name="Paper Stats">{paper.loaded ? <PaperTradingStats stats={paper.stats} balance={paper.balance} trades={paper.trades} onReset={paper.reset} /> : <div className="flex items-center justify-center h-full"><p className="text-xs text-txt-dim">Loading…</p></div>}</ErrorBoundary>}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

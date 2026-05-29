@@ -224,7 +224,7 @@ export default function PortfolioPage({ trades, stats, balance, currentPrices, o
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
           <h2 className="text-lg font-bold text-txt-primary tracking-tight">Paper Portfolio</h2>
           <p className="text-xs text-txt-muted mt-0.5">Track your paper futures trading performance</p>
@@ -459,7 +459,8 @@ export default function PortfolioPage({ trades, stats, balance, currentPrices, o
               <p className="text-[10px] text-txt-faint mt-1">Trades will appear here after TP, SL, liquidation, or manual close</p>
             </div>
           ) : (
-            <div>
+            <div className="overflow-x-auto">
+              <div className="min-w-[720px]">
               {/* Table header */}
               <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto_auto] gap-3 items-center px-4 py-2 text-[9px] text-txt-dim uppercase tracking-wider font-semibold border-b border-border-default">
                 <span>Side</span>
@@ -474,6 +475,7 @@ export default function PortfolioPage({ trades, stats, balance, currentPrices, o
               {filteredClosed.map((t) => (
                 <HistoryRow key={t.id} trade={t} signalMap={signalMap} />
               ))}
+              </div>
             </div>
           )}
         </Card>
@@ -526,8 +528,8 @@ function PositionRow({ trade, currentPrice, onClose }: { trade: PaperTrade; curr
 
   return (
     <div className="px-4 py-3 border-b border-border-default hover:bg-elevated/20 transition-colors">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
             trade.side === "LONG" ? "bg-[#00ff88]/15 text-[#00ff88]" : "bg-[#ff4444]/15 text-[#ff4444]"
           }`}>
@@ -550,8 +552,8 @@ function PositionRow({ trade, currentPrice, onClose }: { trade: PaperTrade; curr
           </span>
         </div>
       </div>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4 text-[9px] text-txt-dim font-mono">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex items-center gap-3 flex-wrap text-[9px] text-txt-dim font-mono">
           <span>Entry: ${fmtPrice(trade.entryPrice)}</span>
           <span>Current: ${fmtPrice(currentPrice)}</span>
           <span>Margin: {fmtUSD(trade.margin)}</span>
