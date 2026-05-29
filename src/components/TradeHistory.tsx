@@ -74,25 +74,25 @@ export default function TradeHistory({
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Trade History" badge={{ variant: "accent", label: "PAPER + LIVE" }} />
+      <PageHeader title="Trade History" badge={{ variant: "muted", label: "PAPER + LIVE" }} />
 
       {/* Summary bar */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <Card padding="sm" accent="var(--accent-primary)">
+        <Card padding="sm">
           <p className="text-[10px] text-txt-muted uppercase tracking-wider">Paper Closed</p>
-          <p className="text-xl font-bold font-mono text-accent">{closedPaperTrades.length}</p>
+          <p className="text-xl font-bold font-mono text-txt-primary">{closedPaperTrades.length}</p>
         </Card>
-        <Card padding="sm" accent={paperPnl >= 0 ? "var(--color-buy)" : "var(--color-sell)"}>
+        <Card padding="sm">
           <p className="text-[10px] text-txt-muted uppercase tracking-wider">Paper P&L</p>
           <p className={`text-xl font-bold font-mono ${paperPnl >= 0 ? "text-buy" : "text-sell"}`}>
             {paperPnl >= 0 ? "+" : ""}{fmtUsd(paperPnl)}
           </p>
         </Card>
-        <Card padding="sm" accent="var(--color-info)">
+        <Card padding="sm">
           <p className="text-[10px] text-txt-muted uppercase tracking-wider">Open Orders</p>
           <p className="text-xl font-bold font-mono text-info">{openOrders.length}</p>
         </Card>
-        <Card padding="sm" accent="var(--color-buy)">
+        <Card padding="sm">
           <p className="text-[10px] text-txt-muted uppercase tracking-wider">Filled</p>
           <p className="text-xl font-bold font-mono text-buy">{filledOrders.length}</p>
         </Card>
@@ -102,7 +102,7 @@ export default function TradeHistory({
         </Card>
         <Card padding="sm">
           <p className="text-[10px] text-txt-muted uppercase tracking-wider">Signals</p>
-          <p className="text-xl font-bold font-mono text-accent">{liveSignals.length}</p>
+          <p className="text-xl font-bold font-mono text-txt-primary">{liveSignals.length}</p>
         </Card>
       </div>
 
@@ -115,7 +115,7 @@ export default function TradeHistory({
             onClick={() => setTab(t)}
             className={`px-3 py-1.5 text-xs rounded-md font-medium whitespace-nowrap ${
               tab === t
-                ? "bg-accent text-white"
+                ? "bg-elevated text-txt-primary"
                 : "text-txt-muted hover:text-txt-secondary"
             }`}
           >
@@ -366,7 +366,7 @@ function PaperTradeHistoryRow({ trade }: { trade: PaperTrade }) {
       <td className="p-3">
         <Badge variant={trade.side === "LONG" ? "buy" : "sell"} size="sm">{trade.side}</Badge>
       </td>
-      <td className="p-3 text-right text-accent font-mono">{trade.leverage}x</td>
+      <td className="p-3 text-right text-txt-secondary font-mono">{trade.leverage}x</td>
       <td className="p-3 text-right text-txt-secondary font-mono">{fmtUsd(trade.margin)}</td>
       <td className="p-3 text-right text-txt-secondary font-mono">${fmtPrice(trade.entryPrice)}</td>
       <td className="p-3 text-right text-txt-secondary font-mono">
