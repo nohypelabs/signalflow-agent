@@ -631,34 +631,77 @@ function changeArrow(pct: number): string {
   return pct > 0 ? "▲" : pct < 0 ? "▼" : "—";
 }
 
-/* Coin color map for avatars */
-const COIN_COLORS: Record<string, { bg: string; text: string }> = {
-  BTC: { bg: "#F7931A", text: "#fff" },
-  ETH: { bg: "#627EEA", text: "#fff" },
-  SOL: { bg: "#9945FF", text: "#fff" },
-  HYPE: { bg: "#00E5A8", text: "#05070D" },
-  SUI: { bg: "#4DA2FF", text: "#fff" },
-  DEFI: { bg: "#8B5CF6", text: "#fff" },
-  NVDA: { bg: "#76B900", text: "#fff" },
+/* Coin colors + SVG icons */
+const COIN_META: Record<string, { bg: string; icon: string }> = {
+  BTC: {
+    bg: "#F7931A",
+    icon: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.5 14.5h-1v1.5h-1.5v-1.5H9.5v-1.5h1.5V13h-1v-1.5h1V10h1.5v1.5h1V13h-1v1.5h1v1.5zm1.5-5.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-4 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z",
+  },
+  ETH: {
+    bg: "#627EEA",
+    icon: "M12 1.75l-6.25 10.5L12 16l6.25-3.75L12 1.75zM5.75 13.5L12 22.25l6.25-8.75L12 17.25 5.75 13.5z",
+  },
+  SOL: {
+    bg: "#9945FF",
+    icon: "M4.5 16.5h11.25l3.75-3.75H15.75L12 16.5H4.5zm0-4.5h11.25L12 15.75 8.25 12H4.5zm11.25-4.5H4.5L8.25 12 12 8.25l3.75-3.75z",
+  },
+  HYPE: {
+    bg: "#00E5A8",
+    icon: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
+  },
+  SUI: {
+    bg: "#4DA2FF",
+    icon: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15.5v-3.09c-1.67-.36-3-1.77-3-3.49 0-1.93 1.57-3.5 3.5-3.5.95 0 1.82.38 2.45 1.01l1.42-1.42A5.46 5.46 0 0011 7.92 5.5 5.5 0 005.5 13.42c0 2.58 1.79 4.74 4.17 5.34V21h1.33v-2.24z",
+  },
+  DEFI: {
+    bg: "#8B5CF6",
+    icon: "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
+  },
+  NVDA: {
+    bg: "#76B900",
+    icon: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.28-.02-.12.03-2.02 1.28-5.69 3.77-.54.37-1.03.55-1.47.54-.48-.01-1.4-.27-2.09-.49-.84-.28-1.51-.42-1.45-.89.03-.24.37-.49 1.03-.75 4.04-1.76 6.74-2.93 8.1-3.49 3.85-1.58 4.64-1.86 5.17-1.87.11 0 .37.03.54.17.14.12.18.28.2.47-.01.06.01.24 0 .38z",
+  },
 };
 
-function coinColor(symbol: string): { bg: string; text: string } {
-  if (COIN_COLORS[symbol]) return COIN_COLORS[symbol];
-  // Generate a deterministic hue from the symbol
+function coinColor(symbol: string): string {
+  if (COIN_META[symbol]) return COIN_META[symbol].bg;
   let hash = 0;
   for (let i = 0; i < symbol.length; i++) hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
-  const hue = Math.abs(hash) % 360;
-  return { bg: `hsl(${hue}, 70%, 50%)`, text: "#fff" };
+  return `hsl(${Math.abs(hash) % 360}, 70%, 50%)`;
 }
 
 function CoinAvatar({ symbol, size = 24 }: { symbol: string; size?: number }) {
-  const c = coinColor(symbol);
+  const meta = COIN_META[symbol];
+  const color = coinColor(symbol);
+  const iconPath = meta?.icon;
+
   return (
     <span
-      className="inline-flex items-center justify-center rounded-full shrink-0 font-bold"
-      style={{ width: size, height: size, backgroundColor: c.bg + "22", color: c.bg, fontSize: size * 0.38 }}
+      className="inline-flex items-center justify-center rounded-full shrink-0"
+      style={{ width: size, height: size, backgroundColor: color + "20" }}
     >
-      {symbol.slice(0, 2)}
+      <svg
+        width={size * 0.6}
+        height={size * 0.6}
+        viewBox="0 0 24 24"
+        fill={symbol === "ETH" ? "none" : color}
+        stroke={symbol === "ETH" ? color : "none"}
+        strokeWidth={symbol === "ETH" ? 1.5 : 0}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {iconPath ? (
+          <path d={iconPath} />
+        ) : (
+          /* Fallback: first letter in a circle */
+          <>
+            <circle cx="12" cy="12" r="10" fill="none" stroke={color} strokeWidth="1.5" />
+            <text x="12" y="16" textAnchor="middle" fill={color} fontSize="11" fontWeight="bold" fontFamily="sans-serif">
+              {symbol.charAt(0)}
+            </text>
+          </>
+        )}
+      </svg>
     </span>
   );
 }
