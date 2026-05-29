@@ -21,9 +21,9 @@ function truncate(s: string, max: number): string {
 /* ── Action config ── */
 
 const actionConfig: Record<string, { color: string; bg: string; border: string; glow: string }> = {
-  BUY: { color: "text-buy", bg: "bg-buy-muted", border: "border-l-buy", glow: "" },
-  SELL: { color: "text-sell", bg: "bg-sell-muted", border: "border-l-sell", glow: "" },
-  HOLD: { color: "text-hold", bg: "bg-hold-muted", border: "border-l-hold", glow: "" },
+  BUY: { color: "text-buy", bg: "bg-buy-muted", border: "border-l-border-default", glow: "" },
+  SELL: { color: "text-sell", bg: "bg-sell-muted", border: "border-l-border-default", glow: "" },
+  HOLD: { color: "text-hold", bg: "bg-hold-muted", border: "border-l-border-default", glow: "" },
 };
 
 /* ── Props ── */
@@ -97,7 +97,7 @@ export default function SignalList({ onSelect, selected, tickers, liveSignals, c
               className={`
                 text-left w-full px-4 py-3 cursor-pointer transition-all duration-200 border-l-2 ${cfg.border}
                 ${isSelected
-                  ? `bg-elevated/80 ring-1 ring-inset ring-accent-dim ${cfg.glow}`
+                  ? `bg-elevated/80 ring-1 ring-inset ring-border-muted ${cfg.glow}`
                   : isTop
                     ? `bg-elevated/30 ${cfg.glow}`
                     : "bg-transparent hover:bg-elevated/20"
@@ -112,7 +112,7 @@ export default function SignalList({ onSelect, selected, tickers, liveSignals, c
                     {s.action}
                   </span>
                   {isTop && (
-                    <span className="text-[8px] uppercase tracking-wider font-bold px-1 py-0.5 rounded bg-accent-muted text-accent">
+                    <span className="text-[8px] uppercase tracking-wider font-bold px-1 py-0.5 rounded bg-elevated text-txt-secondary">
                       TOP
                     </span>
                   )}
@@ -141,7 +141,7 @@ export default function SignalList({ onSelect, selected, tickers, liveSignals, c
               <div className="flex items-center justify-between">
                 {s.execution.entry > 0 && (
                   <div className="flex items-center gap-2 text-[9px] font-mono text-txt-faint">
-                    <span>Entry <span className="text-accent">{fmtPrice(s.execution.entry)}</span></span>
+                    <span>Entry <span className="text-txt-secondary">{fmtPrice(s.execution.entry)}</span></span>
                     <span>TP <span className="text-buy">{fmtPrice(s.execution.takeProfit)}</span></span>
                     <span>SL <span className="text-sell">{fmtPrice(s.execution.stopLoss)}</span></span>
                   </div>

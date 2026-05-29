@@ -26,12 +26,6 @@ function DimIcon({ icon }: { icon: (typeof dimLabels)[number]["icon"] }) {
   return <BriefcaseIcon size={12} />;
 }
 
-const actionAccent: Record<string, string> = {
-  BUY: "#00E676",
-  SELL: "#EF4444",
-  HOLD: "#F59E0B",
-};
-
 /* ── Helpers ── */
 
 function fmtPrice(p: number): string {
@@ -106,20 +100,16 @@ export default function AISignalGenerator({
   onExecuteSignal,
 }: Props) {
   const displaySignal = baseSignal;
-  const accent = displaySignal ? (actionAccent[displaySignal.action] ?? "#00E5A8") : "#00E5A8";
   const hasResult = displaySignal && !analyzing;
 
   return (
-    <div
-      className="bg-card border border-border-default rounded-lg overflow-hidden"
-      style={{ borderLeft: `3px solid ${accent}` }}
-    >
+    <div className="bg-card border border-border-default rounded-lg overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-border-default">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded bg-accent/10 flex items-center justify-center">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round">
+            <div className="w-6 h-6 rounded bg-elevated/30 border border-border-default flex items-center justify-center">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-txt-secondary" strokeWidth="2" strokeLinecap="round">
                 <path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z" />
                 <line x1="10" y1="18" x2="14" y2="18" /><line x1="10" y1="22" x2="14" y2="22" />
               </svg>
@@ -136,7 +126,7 @@ export default function AISignalGenerator({
             <select
               value={aiCoin}
               onChange={(e) => onCoinChange(e.target.value)}
-              className="bg-elevated border border-border-default rounded px-2 py-1 text-xs text-txt-primary font-mono focus:border-accent/50 outline-none cursor-pointer appearance-none pr-6"
+              className="bg-elevated border border-border-default rounded px-2 py-1 text-xs text-txt-primary font-mono focus:border-border-muted outline-none cursor-pointer appearance-none pr-6"
               style={{
                 backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2364748B' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
                 backgroundRepeat: "no-repeat",
@@ -163,7 +153,7 @@ export default function AISignalGenerator({
               onClick={() => onIncludeAIChange(!includeAI)}
               className={`
                 relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out
-                ${includeAI ? "bg-accent" : "bg-border-default"}
+                ${includeAI ? "bg-txt-secondary" : "bg-border-default"}
               `}
             >
               <span
@@ -181,7 +171,7 @@ export default function AISignalGenerator({
             </div>
           </div>
           <span className={`text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded ${
-            includeAI ? "bg-accent-muted text-accent" : "bg-elevated text-txt-faint"
+            includeAI ? "bg-elevated text-txt-primary" : "bg-elevated text-txt-faint"
           }`}>
             {includeAI ? "ON" : "OFF"}
           </span>
@@ -215,13 +205,13 @@ export default function AISignalGenerator({
       {/* Loading state — phase-aware */}
       {analyzing && (
         <div className="px-4 py-8 text-center">
-          <div className="w-10 h-10 rounded-full bg-accent/10 mx-auto mb-3 flex items-center justify-center animate-pulse">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round">
+          <div className="w-10 h-10 rounded-full bg-elevated mx-auto mb-3 flex items-center justify-center animate-pulse">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-txt-secondary" strokeWidth="2" strokeLinecap="round">
               <path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H14c0-3 2-4 2-6a4 4 0 0 0-4-4z" />
               <line x1="10" y1="18" x2="14" y2="18" /><line x1="10" y1="22" x2="14" y2="22" />
             </svg>
           </div>
-          <p className="text-xs text-accent animate-pulse">{phaseMessage(phase, aiCoin)}</p>
+          <p className="text-xs text-txt-secondary animate-pulse">{phaseMessage(phase, aiCoin)}</p>
           <p className="text-[10px] text-txt-faint mt-1">ETF Flows · Sentiment · Macro · Momentum · Treasury</p>
         </div>
       )}
@@ -254,7 +244,7 @@ export default function AISignalGenerator({
             <p className="text-[10px] text-hold">{aiError.message}</p>
             <span className="text-[10px] text-txt-faint">Showing base signal.</span>
             {aiError.retryable && (
-              <button onClick={onGenerate} className="text-[10px] text-accent hover:underline cursor-pointer ml-auto">
+              <button onClick={onGenerate} className="text-[10px] text-txt-secondary hover:underline cursor-pointer ml-auto">
                 Retry AI
               </button>
             )}
