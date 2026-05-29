@@ -7,7 +7,6 @@ import type { SoDEXTicker } from "@/lib/types/trade";
 import type { LiveSignalDimensions } from "@/lib/types/signal";
 import type { TradingType } from "@/lib/types/trading-type";
 import { TRADING_TYPES } from "@/lib/types/trading-type";
-import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import SignalTypeBadge from "./SignalTypeBadge";
 import ConfidenceBadge from "./ConfidenceBadge";
@@ -49,9 +48,9 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
   return (
     <div className="bg-card border border-border-default rounded-xl overflow-hidden transition-colors hover:border-border-muted">
       {/* Card header */}
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
+      <div className="p-3.5 sm:p-4">
+        <div className="flex flex-col gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
             <span className="text-base font-bold text-txt-primary">{signal.pair}</span>
             <SignalTypeBadge action={signal.actionV2 ?? signal.action} size="md" />
             {ticker && <Badge variant="live" size="sm">LIVE</Badge>}
@@ -90,7 +89,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {signal.confluence != null && (
               <span className="text-[9px] text-txt-muted">
                 Confluence: <span className="text-accent font-bold">{signal.confluence}</span>
@@ -100,7 +99,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
           </div>
         </div>
 
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 mb-3">
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold font-mono text-txt-primary">
               ${formatPrice(price, coin)}
@@ -131,7 +130,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
         {/* Type-specific TP/SL preview */}
         {typeConfig && typeTP && typeSL && (
           <div
-            className="mt-3 p-2.5 rounded-lg border flex items-center gap-4"
+            className="mt-3 p-2.5 rounded-lg border flex flex-wrap items-center gap-2.5 sm:gap-4"
             style={{
               borderColor: `${typeConfig.color}20`,
               backgroundColor: `${typeConfig.color}06`,
@@ -140,7 +139,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
             <span className="text-[9px] text-txt-dim uppercase tracking-wider shrink-0">
               {typeConfig.label} Targets
             </span>
-            <div className="flex items-center gap-3 text-[10px] font-mono">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-mono">
               <span className="text-buy">
                 TP: ${formatPrice(typeTP, coin)}
               </span>
@@ -177,7 +176,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
       </div>
 
       {/* Footer */}
-      <div className="border-t border-border-default px-4 py-2.5 flex items-center justify-between">
+      <div className="border-t border-border-default px-3.5 sm:px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
           <span className="text-[9px] text-txt-dim shrink-0">Sources:</span>
           {signal.sources.slice(0, 4).map((src) => (
@@ -187,7 +186,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
             <span className="text-[9px] text-txt-dim">+{signal.sources.length - 4}</span>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0 ml-2">
+        <div className="flex items-center gap-2 shrink-0 sm:ml-2 self-end sm:self-auto">
           <button
             onClick={() => setDrawerOpen(!drawerOpen)}
             className="text-[10px] text-accent font-semibold hover:opacity-80"

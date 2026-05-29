@@ -5,7 +5,7 @@ import type { Signal, SignalAction } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/types/trade";
 import type { LiveSignalDimensions } from "@/lib/types/signal";
 import type { TradingType } from "@/lib/types/trading-type";
-import { loadTradingType, saveTradingType, TRADING_TYPES, getRecommendedType } from "@/lib/types/trading-type";
+import { loadTradingType, TRADING_TYPES, getRecommendedType } from "@/lib/types/trading-type";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import Skeleton from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
@@ -199,18 +199,18 @@ export default function SignalsPage({ tickers, liveSignals = [], liveDims, overa
         {/* Active type indicator */}
         {tradingType && (
           <div
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl border"
+            className="flex flex-wrap items-center gap-2.5 px-3.5 sm:px-4 py-2.5 rounded-xl border"
             style={{
               borderColor: `${TRADING_TYPES[tradingType].color}25`,
               backgroundColor: `${TRADING_TYPES[tradingType].color}08`,
             }}
           >
             <span className="text-lg">{TRADING_TYPES[tradingType].icon}</span>
-            <div className="flex-1">
+            <div className="flex-1 min-w-[220px]">
               <span className="text-xs font-semibold" style={{ color: TRADING_TYPES[tradingType].color }}>
                 {TRADING_TYPES[tradingType].label} Mode
               </span>
-              <span className="text-[10px] text-txt-dim ml-2">
+              <span className="text-[10px] text-txt-dim block sm:inline sm:ml-2">
                 Showing signals with ≥{TRADING_TYPES[tradingType].minConfidence}% confidence
               </span>
             </div>
@@ -233,7 +233,7 @@ export default function SignalsPage({ tickers, liveSignals = [], liveDims, overa
           const recConfig = TRADING_TYPES[recommended];
           return (
             <div
-              className="flex items-center gap-3 px-4 py-2.5 rounded-xl border cursor-pointer hover:opacity-80 transition-opacity"
+              className="flex flex-wrap items-center gap-2.5 px-3.5 sm:px-4 py-2.5 rounded-xl border cursor-pointer hover:opacity-80 transition-opacity"
               style={{
                 borderColor: `${recConfig.color}25`,
                 backgroundColor: `${recConfig.color}06`,
@@ -241,9 +241,9 @@ export default function SignalsPage({ tickers, liveSignals = [], liveDims, overa
               onClick={() => handleTypeSelect(recommended)}
             >
               <span className="text-lg">{recConfig.icon}</span>
-              <div className="flex-1">
+              <div className="flex-1 min-w-[220px]">
                 <span className="text-[10px] text-txt-dim">Market regime: {dominantRegime.replace("_", " ")}</span>
-                <span className="text-xs font-semibold ml-2" style={{ color: recConfig.color }}>
+                <span className="text-xs font-semibold block sm:inline sm:ml-2" style={{ color: recConfig.color }}>
                   Recommended: {recConfig.label}
                 </span>
               </div>
