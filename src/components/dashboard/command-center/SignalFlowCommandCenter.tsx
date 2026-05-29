@@ -186,7 +186,7 @@ function MarketCanvas({ pair }: { pair: string }) {
   const currentPrice = ticker ? parseFloat(ticker.lastPx) : null;
 
   return (
-    <Card variant="default" padding="none" className="rounded-xl overflow-hidden h-[494px] flex flex-col">
+    <Card variant="default" padding="none" className="rounded-xl overflow-hidden h-[544px] flex flex-col">
       <TradingChart
         klines={d.klines}
         symbol={pair}
@@ -396,7 +396,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
     <Panel
       title="CURRENT DECISION SCORE"
       badge={<Badge variant={decision.action === "LONG" ? "buy" : decision.action === "SHORT" ? "sell" : "hold"} size="sm">LIVE LOGIC</Badge>}
-      className="h-[494px]"
+      className="h-[544px]"
     >
       <div className="space-y-2.5 p-3">
         <div className="rounded-xl border border-border-default bg-inset/70 px-3 py-2">
@@ -565,7 +565,7 @@ function NewsFeed({ news, fetchError }: { news: NewsResponse | null; fetchError:
           {news.sentiment.label} {news.sentiment.score}
         </Badge>
       )}
-      className="h-[494px]"
+      className="h-[544px]"
     >
       <div>
         {hasData && news?.list.map((item) => (
