@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
+import { ActivityIcon, BarChartIcon, BriefcaseIcon, ChartBarIcon, DataSourceIcon, DocumentIcon } from "@/components/ui/icons";
 
 interface MacroDay {
   date: string;
@@ -25,16 +26,27 @@ function importanceColor(events: string[]): string {
   return "#64748b";
 }
 
-function eventIcon(event: string): string {
+function eventIcon(event: string): "finance" | "momentum" | "gdp" | "jobs" | "retail" | "energy" | "treasury" | "calendar" {
   const t = event.toLowerCase();
-  if (t.includes("fed") || t.includes("fomc")) return "🏦";
-  if (t.includes("cpi") || t.includes("inflation")) return "📈";
-  if (t.includes("gdp")) return "📊";
-  if (t.includes("employment") || t.includes("nonfarm") || t.includes("job")) return "👷";
-  if (t.includes("retail")) return "🛒";
-  if (t.includes("oil") || t.includes("crude")) return "🛢";
-  if (t.includes("treasury") || t.includes("bond")) return "🏛";
-  return "📅";
+  if (t.includes("fed") || t.includes("fomc")) return "finance";
+  if (t.includes("cpi") || t.includes("inflation")) return "momentum";
+  if (t.includes("gdp")) return "gdp";
+  if (t.includes("employment") || t.includes("nonfarm") || t.includes("job")) return "jobs";
+  if (t.includes("retail")) return "retail";
+  if (t.includes("oil") || t.includes("crude")) return "energy";
+  if (t.includes("treasury") || t.includes("bond")) return "treasury";
+  return "calendar";
+}
+
+function EventIcon({ type }: { type: ReturnType<typeof eventIcon> }) {
+  if (type === "finance") return <BriefcaseIcon size={13} />;
+  if (type === "momentum") return <ChartBarIcon size={13} />;
+  if (type === "gdp") return <BarChartIcon size={13} />;
+  if (type === "jobs") return <DocumentIcon size={13} />;
+  if (type === "retail") return <DataSourceIcon size={13} />;
+  if (type === "energy") return <ActivityIcon size={13} />;
+  if (type === "treasury") return <BriefcaseIcon size={13} />;
+  return <DocumentIcon size={13} />;
 }
 
 function fmtDate(dateStr: string): string {
@@ -107,7 +119,7 @@ export default function MacroCalendar() {
       <Card padding="none" className="overflow-hidden">
         <div className="px-4 py-3 border-b border-border-default">
           <div className="flex items-center gap-2">
-            <span className="text-base">🌐</span>
+            <span className="text-txt-secondary"><DocumentIcon size={16} /></span>
             <h3 className="text-sm font-semibold text-txt-primary">Macro Calendar</h3>
           </div>
         </div>
@@ -127,7 +139,7 @@ export default function MacroCalendar() {
       <div className="px-4 py-3 border-b border-border-default">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-base">🌐</span>
+            <span className="text-txt-secondary"><DocumentIcon size={16} /></span>
             <h3 className="text-sm font-semibold text-txt-primary">Macro Calendar</h3>
           </div>
           <div className="flex items-center gap-2">
@@ -161,7 +173,7 @@ export default function MacroCalendar() {
               <div className="flex-1 space-y-1">
                 {day.events.map((event, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="text-xs">{eventIcon(event)}</span>
+                    <span className="text-txt-secondary"><EventIcon type={eventIcon(event)} /></span>
                     <span className="text-[11px] text-txt-secondary leading-tight">{event}</span>
                     <div
                       className="w-1.5 h-1.5 rounded-full flex-shrink-0"

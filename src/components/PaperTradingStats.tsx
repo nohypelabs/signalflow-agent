@@ -2,6 +2,8 @@
 
 import Card from "@/components/ui/Card";
 import type { PaperStats, PaperBalance, PaperTrade } from "@/lib/hooks/usePaperTrading";
+import TradingTypeIcon from "@/components/TradingTypeIcon";
+import { ClipboardIcon } from "@/components/ui/icons";
 
 interface Props {
   stats: PaperStats;
@@ -130,7 +132,7 @@ export default function PaperTradingStats({ stats, balance, trades, currentPrice
       <div className="px-4 py-3 border-b border-border-default">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-base">📝</span>
+            <span className="text-txt-secondary"><ClipboardIcon size={16} /></span>
             <h3 className="text-sm font-semibold text-txt-primary">Paper Futures</h3>
             <span className="text-[8px] px-1.5 py-0.5 rounded bg-accent/15 text-accent font-bold">DEMO</span>
           </div>
@@ -209,11 +211,14 @@ export default function PaperTradingStats({ stats, balance, trades, currentPrice
           <p className="text-[9px] text-txt-faint uppercase tracking-wider mb-2">By Trading Type</p>
           <div className="grid grid-cols-2 gap-2">
             {Object.entries(stats.perType).map(([type, typeStats]) => {
-              const icons: Record<string, string> = { scalping: "⚡", intraday: "📊", swing: "📈", position: "🏦" };
               const colors: Record<string, string> = { scalping: "#F59E0B", intraday: "#3B82F6", swing: "#10B981", position: "#8B5CF6" };
+              const isTradingType = (value: string): value is "scalping" | "intraday" | "swing" | "position" =>
+                value === "scalping" || value === "intraday" || value === "swing" || value === "position";
               return (
                 <div key={type} className="flex items-center gap-2 p-2 rounded-lg bg-elevated/20">
-                  <span className="text-sm">{icons[type] ?? "📊"}</span>
+                  <span className="w-5 h-5 rounded bg-inset border border-border-default flex items-center justify-center text-txt-secondary">
+                    <TradingTypeIcon type={isTradingType(type) ? type : "intraday"} size={11} />
+                  </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1">
                       <span className="text-[10px] font-semibold capitalize" style={{ color: colors[type] }}>{type}</span>

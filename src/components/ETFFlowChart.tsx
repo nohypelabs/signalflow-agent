@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import Skeleton from "@/components/ui/Skeleton";
+import { BarChartIcon } from "@/components/ui/icons";
 
 interface ETFDayData {
   date: string;
@@ -124,7 +125,7 @@ export default function ETFFlowChart({ symbol = "BTC" }: { symbol?: string }) {
       <Card padding="none" className="overflow-hidden">
         <div className="px-4 py-3 border-b border-border-default">
           <div className="flex items-center gap-2">
-            <span className="text-base">📊</span>
+            <span className="text-txt-secondary"><BarChartIcon size={16} /></span>
             <h3 className="text-sm font-semibold text-txt-primary">{symbol} ETF Flows</h3>
           </div>
         </div>
@@ -145,7 +146,7 @@ export default function ETFFlowChart({ symbol = "BTC" }: { symbol?: string }) {
       <div className="px-4 py-3 border-b border-border-default">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-base">📊</span>
+            <span className="text-txt-secondary"><BarChartIcon size={16} /></span>
             <h3 className="text-sm font-semibold text-txt-primary">{symbol} ETF Flows</h3>
           </div>
           <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
