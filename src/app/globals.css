@@ -251,7 +251,7 @@ main::-webkit-scrollbar-thumb {
   100% { transform: translateX(-50%); }
 }
 .ticker-tape-scroll {
-  animation: ticker-scroll 72s linear infinite;
+  animation: ticker-scroll 75.5s linear infinite;
   will-change: transform;
 }
 .ticker-tape-scroll:hover {

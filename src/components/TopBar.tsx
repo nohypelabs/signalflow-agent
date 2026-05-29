@@ -199,7 +199,7 @@ export default function TopBar({
         </div>
 
         {/* Center: scrolling ticker tape (desktop only) */}
-        <div className="hidden lg:flex w-[45%] min-w-0 mx-4 overflow-hidden rounded-md bg-[#060810]">
+        <div className="hidden lg:flex w-[49.5%] min-w-0 mx-4 overflow-hidden rounded-md bg-[#060810]">
           <MarketTickerTape
             tickerMap={tickerMap}
             isFavorite={isFavorite}
