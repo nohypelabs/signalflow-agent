@@ -207,6 +207,7 @@ function MarketCanvas({ pair }: { pair: string }) {
         currentPrice={currentPrice}
         liveSignals={d.liveSignals}
         tickerMap={d.tickerMap}
+        onPairChange={d.setSelectedPair}
       />
     </Card>
   );
