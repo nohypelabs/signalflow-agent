@@ -620,14 +620,14 @@ export default function TradingChart({
           {/* Market info compact */}
           {displayPrice != null && currentTicker && (
             <div className="hidden md:flex items-center gap-3 text-[11px] font-mono text-txt-muted">
-              <span>M <span className="text-txt-secondary font-semibold">{fmtPrice(displayPrice)}</span></span>
-              <span>V <span className="text-txt-secondary font-semibold">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span></span>
+              <span>Mark <span className="text-txt-secondary font-semibold">{fmtPrice(displayPrice)}</span></span>
+              <span>Vol <span className="text-txt-secondary font-semibold">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span></span>
             </div>
           )}
           {/* Funding rate */}
           {fundingData && (
             <div className="hidden md:flex items-center gap-1.5 text-[11px] font-mono">
-              <span className="text-txt-muted">F</span>
+              <span className="text-txt-muted">Funding</span>
               <span className={`font-semibold tabular-nums ${
                 fundingData.fundingRate > 0 ? "text-buy" : fundingData.fundingRate < 0 ? "text-sell" : "text-txt-muted"
               }`}>
@@ -638,9 +638,9 @@ export default function TradingChart({
           {/* Trade plan compact */}
           {showTradePlan && latestSignal?.execution && !compact && (
             <div className="hidden lg:flex items-center gap-2.5 text-[11px] font-mono text-txt-muted">
-              <span>E <span className="text-accent font-semibold">{fmtPrice(latestSignal.execution.entry)}</span></span>
-              <span>TP <span className="text-buy font-semibold">{fmtPrice(latestSignal.execution.takeProfit)}</span></span>
-              <span>SL <span className="text-sell font-semibold">{fmtPrice(latestSignal.execution.stopLoss)}</span></span>
+              <span>Entry <span className="text-accent font-semibold">{fmtPrice(latestSignal.execution.entry)}</span></span>
+              <span>Take Profit <span className="text-buy font-semibold">{fmtPrice(latestSignal.execution.takeProfit)}</span></span>
+              <span>Stop Loss <span className="text-sell font-semibold">{fmtPrice(latestSignal.execution.stopLoss)}</span></span>
             </div>
           )}
           <div className="w-px h-4 bg-border-default" />
