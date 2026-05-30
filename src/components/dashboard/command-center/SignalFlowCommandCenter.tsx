@@ -1223,34 +1223,63 @@ const CATEGORY_META: Record<string, { color: string; bg: string }> = {
   Commodities: { color: "text-hold", bg: "bg-hold-muted/10" },
 };
 
+type MarketTickerLike = NonNullable<ReturnType<typeof useDashboard>["tickers"]>[number];
+
+function normalizeMarketTickers(payload: unknown): MarketTickerLike[] {
+  if (Array.isArray(payload)) return payload as MarketTickerLike[];
+  if (payload && typeof payload === "object") {
+    const source = payload as { data?: unknown; tickers?: unknown; markets?: unknown };
+    if (Array.isArray(source.data)) return source.data as MarketTickerLike[];
+    if (Array.isArray(source.tickers)) return source.tickers as MarketTickerLike[];
+    if (Array.isArray(source.markets)) return source.markets as MarketTickerLike[];
+  }
+  return [];
+}
+
 function IndexCard() {
   const d = useDashboard();
   const [fallbackTickers, setFallbackTickers] = useState<typeof d.tickers>(null);
   const [fallbackError, setFallbackError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (d.tickers && d.tickers.length > 0) return;
+    if (d.tickers && d.tickers.length > 0) {
+      setFallbackError(null);
+      return;
+    }
     let cancelled = false;
 
-    fetch("/api/market/tickers", { cache: "no-store" })
-      .then((r) => {
-        if (!r.ok) throw new Error(`Market tickers ${r.status}`);
-        return r.json();
-      })
-      .then((data) => {
-        if (!cancelled) {
-          setFallbackTickers(Array.isArray(data) ? data : []);
-          setFallbackError(null);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) setFallbackError(err instanceof Error ? err.message : "Market tickers unavailable");
-      });
+    const loadFallbackTickers = () => {
+      fetch("/api/market/tickers", { cache: "no-store" })
+        .then((r) => {
+          if (!r.ok) throw new Error(`Market tickers ${r.status}`);
+          return r.json();
+        })
+        .then((data) => {
+          if (!cancelled) {
+            const normalized = normalizeMarketTickers(data);
+            setFallbackTickers(normalized);
+            setFallbackError(normalized.length > 0 ? null : "Market tickers returned empty");
+          }
+        })
+        .catch((err) => {
+          if (!cancelled) setFallbackError(err instanceof Error ? err.message : "Market tickers unavailable");
+        });
+    };
 
-    return () => { cancelled = true; };
+    loadFallbackTickers();
+    const interval = window.setInterval(loadFallbackTickers, 60_000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
   }, [d.tickers]);
 
-  const tickers = d.tickers && d.tickers.length > 0 ? d.tickers : fallbackTickers ?? [];
+  const tickers = d.tickers && d.tickers.length > 0
+    ? d.tickers
+    : fallbackTickers && fallbackTickers.length > 0
+      ? fallbackTickers
+      : Array.from(d.tickerMap.values());
 
   const assets = tickers
     .map((t) => ({
