@@ -616,8 +616,35 @@ export default function TradingChart({
             )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {tradeMode && onModeChange && (
+          <div className="flex items-center gap-3 shrink-0">
+          {/* Market info compact */}
+          {displayPrice != null && currentTicker && (
+            <div className="hidden md:flex items-center gap-3 text-[11px] font-mono text-txt-muted">
+              <span>M <span className="text-txt-secondary font-semibold">{fmtPrice(displayPrice)}</span></span>
+              <span>V <span className="text-txt-secondary font-semibold">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span></span>
+            </div>
+          )}
+          {/* Funding rate */}
+          {fundingData && (
+            <div className="hidden md:flex items-center gap-1.5 text-[11px] font-mono">
+              <span className="text-txt-muted">F</span>
+              <span className={`font-semibold tabular-nums ${
+                fundingData.fundingRate > 0 ? "text-buy" : fundingData.fundingRate < 0 ? "text-sell" : "text-txt-muted"
+              }`}>
+                {fundingData.fundingRate > 0 ? "+" : ""}{(fundingData.fundingRate * 100).toFixed(4)}%
+              </span>
+            </div>
+          )}
+          {/* Trade plan compact */}
+          {showTradePlan && latestSignal?.execution && !compact && (
+            <div className="hidden lg:flex items-center gap-2.5 text-[11px] font-mono text-txt-muted">
+              <span>E <span className="text-accent font-semibold">{fmtPrice(latestSignal.execution.entry)}</span></span>
+              <span>TP <span className="text-buy font-semibold">{fmtPrice(latestSignal.execution.takeProfit)}</span></span>
+              <span>SL <span className="text-sell font-semibold">{fmtPrice(latestSignal.execution.stopLoss)}</span></span>
+            </div>
+          )}
+          <div className="w-px h-4 bg-border-default" />
+          {tradeMode && onModeChange && (
               <div className="flex items-center gap-0.5 bg-inset rounded-md p-0.5 border border-border-default">
                 <button onClick={() => onModeChange("paper")} className={`text-[9px] px-1.5 py-0.5 rounded cursor-pointer font-semibold transition-colors ${tradeMode === "paper" ? "bg-accent/15 text-accent border border-accent/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Paper</button>
                 <button onClick={() => onModeChange("live")} className={`text-[9px] px-1.5 py-0.5 rounded cursor-pointer font-semibold transition-colors ${tradeMode === "live" ? "bg-sell/15 text-sell border border-sell/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Live</button>
@@ -649,36 +676,8 @@ export default function TradingChart({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Market info compact */}
-            {displayPrice != null && currentTicker && (
-              <div className="hidden md:flex items-center gap-2.5 text-[10px] font-mono text-txt-muted">
-                <span>M <span className="text-txt-secondary">{fmtPrice(displayPrice)}</span></span>
-                <span>V <span className="text-txt-secondary">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span></span>
-              </div>
-            )}
-            {/* Funding rate */}
-            {fundingData && (
-              <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono">
-                <span className="text-txt-muted">F</span>
-                <span className={`font-semibold tabular-nums ${
-                  fundingData.fundingRate > 0 ? "text-buy" : fundingData.fundingRate < 0 ? "text-sell" : "text-txt-muted"
-                }`}>
-                  {fundingData.fundingRate > 0 ? "+" : ""}{(fundingData.fundingRate * 100).toFixed(4)}%
-                </span>
-              </div>
-            )}
-            {/* Trade plan compact */}
-            {/* Trade plan compact */}
-            {showTradePlan && latestSignal?.execution && !compact && (
-              <div className="hidden lg:flex items-center gap-2 text-[9px] font-mono text-txt-faint">
-                <span>E <span className="text-accent">{fmtPrice(latestSignal.execution.entry)}</span></span>
-                <span>TP <span className="text-buy">{fmtPrice(latestSignal.execution.takeProfit)}</span></span>
-                <span>SL <span className="text-sell">{fmtPrice(latestSignal.execution.stopLoss)}</span></span>
-              </div>
-            )}
-
             <div className="w-px h-4 bg-border-default" />
-
+            {/* Chart type toggle */}
             {/* Chart type toggle */}
             <div className="flex items-center bg-inset rounded-md border border-border-default overflow-hidden">
               {(["area", "candles", "line"] as const).map((type) => (
