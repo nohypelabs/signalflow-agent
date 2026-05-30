@@ -1,7 +1,6 @@
 "use client";
 
 import Header from "./Header";
-import DashboardIntroGate from "./DashboardIntroGate";
 import TradeForm from "@/components/TradeForm";
 import { AmbientGrid } from "@/components/ui/Polish";
 import type { Signal } from "@/lib/types/signal";
@@ -97,7 +96,6 @@ export default function AppShell({
           </footer>
         </main>
       </div>
-      <DashboardIntroGate />
       {tradeForm && (
         <TradeForm
           signal={tradeForm.signal}
