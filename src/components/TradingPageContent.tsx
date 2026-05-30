@@ -385,7 +385,7 @@ export default function TradingPageContent() {
       ) : (
       /* ═══ THREE-COLUMN BODY ═══ */
       <>
-      <div ref={containerRef} className="h-[430px] min-h-[430px] shrink-0 flex overflow-hidden">
+      <div ref={containerRef} className="h-[580px] min-h-[580px] shrink-0 flex overflow-hidden">
         {/* Column A: Chart */}
         <div className="min-w-0 flex flex-col" style={{ width: `${widths.chart}%` }}>
           <ErrorBoundary name="Trading Chart">
