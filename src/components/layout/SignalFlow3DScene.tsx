@@ -1,192 +1,134 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-// ── Config ───────────────────────────────────────────────────
-const PARTICLE_COUNT = 50;
-const CYCLE_DURATION = 7;
-const CENTER = new THREE.Vector3(0, 0, 0);
-
-const SOURCES = [
-  { label: "FUNDAMENTALS", pos: new THREE.Vector3(-4.2,  2.4, 0), color: new THREE.Color("#00d4ff") },
-  { label: "TECHNICALS",   pos: new THREE.Vector3( 4.2,  2.2, 0), color: new THREE.Color("#00ff88") },
-  { label: "ORDERBOOK",    pos: new THREE.Vector3(-3.8, -2.2, 0), color: new THREE.Color("#4a6fff") },
-  { label: "STRUCTURE",    pos: new THREE.Vector3( 3.8, -2.4, 0), color: new THREE.Color("#a855f7") },
-  { label: "AI REASONING", pos: new THREE.Vector3( 0,    3.2, 0), color: new THREE.Color("#f5c842") },
+const SIGNAL_ROWS = [
+  { y: 1.9, color: "#00d4ff", label: "SODEX TAPE" },
+  { y: 1.15, color: "#ff8800", label: "CATALYSTS" },
+  { y: 0.4, color: "#00e5a8", label: "TECHNICALS" },
+  { y: -0.35, color: "#5f7cff", label: "RISK" },
+  { y: -1.1, color: "#f6c85f", label: "AI THESIS" },
 ];
 
-// ── Holographic Grid (simplified) ───────────────────────────
-function HoloGrid() {
-  const ref = useRef<THREE.Group>(null);
+function makeLine(points: THREE.Vector3[], color: string, opacity = 0.45) {
+  const geometry = new THREE.BufferGeometry().setFromPoints(points);
+  const material = new THREE.LineBasicMaterial({
+    color,
+    transparent: true,
+    opacity,
+  });
+  return new THREE.Line(geometry, material);
+}
+
+function TerminalFloor() {
+  const group = useRef<THREE.Group>(null);
 
   const lines = useMemo(() => {
-    const arr: THREE.Line[] = [];
-    const mat = new THREE.LineBasicMaterial({ color: "#0a2a4a", transparent: true, opacity: 0.12 });
-    const size = 10;
-    const step = 1.2;
-    for (let i = -size; i <= size; i += step) {
-      arr.push(new THREE.Line(new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(i, 0, -size), new THREE.Vector3(i, 0, size)
-      ]), mat));
-      arr.push(new THREE.Line(new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(-size, 0, i), new THREE.Vector3(size, 0, i)
-      ]), mat));
+    const output: THREE.Line[] = [];
+    for (let i = -8; i <= 8; i += 1) {
+      output.push(makeLine([
+        new THREE.Vector3(i, -2.25, -4),
+        new THREE.Vector3(i, -2.25, 4),
+      ], "#17314b", 0.2));
+      output.push(makeLine([
+        new THREE.Vector3(-8, -2.25, i / 2),
+        new THREE.Vector3(8, -2.25, i / 2),
+      ], "#17314b", 0.16));
     }
-    return arr;
+    return output;
   }, []);
 
   useFrame(({ clock }) => {
-    if (!ref.current) return;
-    ref.current.position.y = -3.5 + Math.sin(clock.getElapsedTime() * 0.4) * 0.1;
-    ref.current.rotation.x = -Math.PI * 0.42;
+    if (!group.current) return;
+    group.current.position.z = ((clock.getElapsedTime() * 0.18) % 1) * -0.2;
   });
 
   return (
-    <group ref={ref}>
-      {lines.map((line, i) => <primitive key={i} object={line} />)}
+    <group ref={group} rotation={[-0.72, 0, 0]}>
+      {lines.map((line, index) => <primitive key={index} object={line} />)}
     </group>
   );
 }
 
-// ── Orbital Rings ────────────────────────────────────────────
-function OrbitalRings() {
-  const ring1Ref = useRef<THREE.Mesh>(null);
-  const ring2Ref = useRef<THREE.Mesh>(null);
-
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    if (ring1Ref.current) {
-      ring1Ref.current.rotation.x = Math.PI * 0.5;
-      ring1Ref.current.rotation.z = t * 0.4;
-    }
-    if (ring2Ref.current) {
-      ring2Ref.current.rotation.x = Math.PI * 0.35;
-      ring2Ref.current.rotation.z = -t * 0.25;
-    }
-  });
-
-  return (
-    <group>
-      <mesh ref={ring1Ref}>
-        <torusGeometry args={[1.4, 0.01, 6, 64]} />
-        <meshBasicMaterial color="#00e5a8" transparent opacity={0.22} />
-      </mesh>
-      <mesh ref={ring2Ref}>
-        <torusGeometry args={[1.9, 0.007, 6, 64]} />
-        <meshBasicMaterial color="#00d4ff" transparent opacity={0.14} />
-      </mesh>
-    </group>
-  );
-}
-
-// ── Source Orb ───────────────────────────────────────────────
-function SourceOrb({ position, color }: { position: THREE.Vector3; color: THREE.Color }) {
-  const coreRef = useRef<THREE.Mesh>(null);
-  const ringRef = useRef<THREE.Mesh>(null);
-
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    if (coreRef.current) coreRef.current.scale.setScalar(1 + Math.sin(t * 2.5) * 0.15);
-    if (ringRef.current) {
-      ringRef.current.rotation.z = t * 0.6;
-      ringRef.current.scale.setScalar(1.4 + Math.sin(t * 1.5) * 0.15);
-    }
-  });
-
-  return (
-    <group position={position}>
-      <mesh ref={coreRef}>
-        <sphereGeometry args={[0.16, 20, 20]} />
-        <meshBasicMaterial color={color} transparent opacity={0.9} />
-      </mesh>
-      <mesh>
-        <sphereGeometry args={[0.32, 16, 16]} />
-        <meshBasicMaterial color={color} transparent opacity={0.08} blending={THREE.AdditiveBlending} />
-      </mesh>
-      <mesh ref={ringRef}>
-        <ringGeometry args={[0.4, 0.44, 40]} />
-        <meshBasicMaterial color={color} transparent opacity={0.25} side={THREE.DoubleSide} />
-      </mesh>
-    </group>
-  );
-}
-
-// ── Convergence Core ─────────────────────────────────────────
-function ConvergenceCore() {
-  const coreRef = useRef<THREE.Mesh>(null);
-  const wireRef = useRef<THREE.Mesh>(null);
-
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    if (coreRef.current) {
-      const pulse = 0.22 + Math.sin(t * 3) * 0.06;
-      coreRef.current.scale.setScalar(pulse / 0.22);
-      (coreRef.current.material as THREE.MeshBasicMaterial).opacity = 0.85 + Math.sin(t * 5) * 0.15;
-    }
-    if (wireRef.current) {
-      wireRef.current.rotation.z = t * 0.4;
-      wireRef.current.scale.setScalar(1 + Math.sin(t * 2) * 0.1);
-    }
-  });
-
-  return (
-    <group>
-      <mesh ref={coreRef}>
-        <sphereGeometry args={[0.22, 24, 24]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.9} />
-      </mesh>
-      <mesh>
-        <sphereGeometry args={[0.45, 24, 24]} />
-        <meshBasicMaterial color="#00e5a8" transparent opacity={0.2} blending={THREE.AdditiveBlending} />
-      </mesh>
-      <mesh ref={wireRef}>
-        <sphereGeometry args={[0.7, 16, 16]} />
-        <meshBasicMaterial color="#00d4ff" transparent opacity={0.06} wireframe />
-      </mesh>
-    </group>
-  );
-}
-
-// ── Data Streams (tubes from sources to center) ─────────────
-function DataStreams() {
-  const groupRef = useRef<THREE.Group>(null);
-
-  const streamData = useMemo(() => {
-    return SOURCES.map((source) => {
-      const mid = new THREE.Vector3().addVectors(source.pos, CENTER).multiplyScalar(0.5);
-      const dir = new THREE.Vector3().subVectors(CENTER, source.pos).normalize();
-      const perp = new THREE.Vector3(-dir.y, dir.x, 0).multiplyScalar(0.6);
-      const curve = new THREE.CatmullRomCurve3([source.pos.clone(), mid.clone().add(perp), CENTER.clone()]);
+function MarketTapeWall() {
+  const group = useRef<THREE.Group>(null);
+  const bars = useMemo(() => {
+    return Array.from({ length: 56 }, (_, index) => {
+      const column = index % 14;
+      const row = Math.floor(index / 14);
+      const positive = (index * 7 + row) % 5 !== 0;
       return {
-        geo: new THREE.TubeGeometry(curve, 32, 0.02, 6, false),
-        glowGeo: new THREE.TubeGeometry(curve, 32, 0.07, 6, false),
-        color: source.color,
+        x: -4.9 + column * 0.34,
+        y: 2.35 - row * 0.32,
+        width: 0.12 + ((index * 13) % 9) * 0.025,
+        positive,
+        delay: index * 0.07,
       };
     });
   }, []);
 
   useFrame(({ clock }) => {
-    if (!groupRef.current) return;
+    if (!group.current) return;
     const t = clock.getElapsedTime();
-    groupRef.current.children.forEach((child, i) => {
-      if (child instanceof THREE.Mesh) {
-        const base = i % 2 === 0 ? 0.15 : 0.04;
-        (child.material as THREE.MeshBasicMaterial).opacity = base + Math.sin(t * 2 + i * 1.3) * 0.06;
-      }
+    group.current.children.forEach((child, index) => {
+      if (!(child instanceof THREE.Mesh)) return;
+      const mesh = child;
+      const pulse = 0.65 + Math.sin(t * 1.2 + bars[index].delay) * 0.25;
+      mesh.scale.x = pulse;
+      (mesh.material as THREE.MeshBasicMaterial).opacity = 0.32 + pulse * 0.28;
     });
   });
 
   return (
-    <group ref={groupRef}>
-      {streamData.map((stream, i) => (
-        <group key={i}>
-          <mesh geometry={stream.geo}>
-            <meshBasicMaterial color={stream.color} transparent opacity={0.15} />
-          </mesh>
-          <mesh geometry={stream.glowGeo}>
-            <meshBasicMaterial color={stream.color} transparent opacity={0.04} blending={THREE.AdditiveBlending} />
+    <group ref={group} position={[0, 0, -1.4]} rotation={[0, -0.08, 0]}>
+      {bars.map((bar, index) => (
+        <mesh key={index} position={[bar.x, bar.y, 0]}>
+          <boxGeometry args={[bar.width, 0.08, 0.01]} />
+          <meshBasicMaterial
+            color={bar.positive ? "#00e5a8" : "#ff4d5e"}
+            transparent
+            opacity={0.42}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function SignalRails() {
+  const group = useRef<THREE.Group>(null);
+  const pulses = useMemo(() => SIGNAL_ROWS.map((row) => ({
+    row,
+    curve: new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-4.7, row.y, 0),
+      new THREE.Vector3(-2.4, row.y * 0.82, 0.25),
+      new THREE.Vector3(-0.72, row.y * 0.34, 0.1),
+    ]),
+  })), []);
+
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    const t = clock.getElapsedTime();
+    group.current.children.forEach((child, index) => {
+      if (!(child instanceof THREE.Group)) return;
+      const marker = child.children[1] as THREE.Mesh;
+      const progress = (t * 0.12 + index * 0.18) % 1;
+      const point = pulses[index].curve.getPoint(progress);
+      marker.position.copy(point);
+      (marker.material as THREE.MeshBasicMaterial).opacity = 0.25 + Math.sin(progress * Math.PI) * 0.55;
+    });
+  });
+
+  return (
+    <group ref={group}>
+      {pulses.map(({ row, curve }) => (
+        <group key={row.label}>
+          <primitive object={makeLine(curve.getPoints(64), row.color, 0.34)} />
+          <mesh>
+            <boxGeometry args={[0.14, 0.14, 0.02]} />
+            <meshBasicMaterial color={row.color} transparent opacity={0.65} />
           </mesh>
         </group>
       ))}
@@ -194,217 +136,128 @@ function DataStreams() {
   );
 }
 
-// ── Flow Particles ───────────────────────────────────────────
-function FlowParticles() {
-  const pointsRef = useRef<THREE.Points>(null);
-  const total = PARTICLE_COUNT * SOURCES.length;
-
-  const { positions, colors, offsets, sourceIndices } = useMemo(() => {
-    const pos = new Float32Array(total * 3);
-    const col = new Float32Array(total * 3);
-    const off = new Float32Array(total);
-    const src = new Int32Array(total);
-
-    for (let s = 0; s < SOURCES.length; s++) {
-      const source = SOURCES[s];
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
-        const idx = s * PARTICLE_COUNT + i;
-        pos[idx * 3]     = source.pos.x + (Math.random() - 0.5) * 0.3;
-        pos[idx * 3 + 1] = source.pos.y + (Math.random() - 0.5) * 0.3;
-        pos[idx * 3 + 2] = (Math.random() - 0.5) * 0.4;
-        col[idx * 3]     = source.color.r;
-        col[idx * 3 + 1] = source.color.g;
-        col[idx * 3 + 2] = source.color.b;
-        off[idx] = i / PARTICLE_COUNT;
-        src[idx] = s;
-      }
-    }
-    return { positions: pos, colors: col, offsets: off, sourceIndices: src };
-  }, []);
-
-  const controlPoints = useMemo(() => {
-    return SOURCES.map((source) => {
-      const mid = new THREE.Vector3().addVectors(source.pos, CENTER).multiplyScalar(0.5);
-      const dir = new THREE.Vector3().subVectors(CENTER, source.pos).normalize();
-      const perp = new THREE.Vector3(-dir.y, dir.x, 0).multiplyScalar(0.7);
-      return { p0: source.pos.clone(), p1: mid.clone().add(perp), p2: CENTER.clone() };
+function DecisionEngine() {
+  const core = useRef<THREE.Group>(null);
+  const needles = useMemo(() => {
+    return Array.from({ length: 18 }, (_, index) => {
+      const angle = (index / 18) * Math.PI * 2;
+      return {
+        x: Math.cos(angle) * 0.85,
+        y: Math.sin(angle) * 0.5,
+        angle,
+      };
     });
   }, []);
 
   useFrame(({ clock }) => {
-    if (!pointsRef.current) return;
-    const posAttr = pointsRef.current.geometry.getAttribute("position") as THREE.BufferAttribute;
-    const colAttr = pointsRef.current.geometry.getAttribute("color") as THREE.BufferAttribute;
+    if (!core.current) return;
     const t = clock.getElapsedTime();
-    const cycle = (t % CYCLE_DURATION) / CYCLE_DURATION;
-
-    for (let i = 0; i < total; i++) {
-      const srcIdx = sourceIndices[i];
-      const cp = controlPoints[srcIdx];
-      const source = SOURCES[srcIdx];
-      const progress = (cycle + offsets[i]) % 1;
-      const inv = 1 - progress;
-      const x = inv * inv * cp.p0.x + 2 * inv * progress * cp.p1.x + progress * progress * cp.p2.x;
-      const y = inv * inv * cp.p0.y + 2 * inv * progress * cp.p1.y + progress * progress * cp.p2.y;
-      const spiral = Math.sin(progress * Math.PI * 4 + t * 2 + i) * 0.06 * (1 - progress);
-      const z = Math.sin(progress * Math.PI * 3 + i * 0.5) * 0.2 * (1 - progress * 0.7);
-
-      posAttr.setXYZ(i, x + spiral * 0.4, y + spiral, z);
-
-      const fade = progress < 0.1 ? progress / 0.1 : progress > 0.85 ? (1 - progress) / 0.15 : 0.5 + Math.sin(progress * Math.PI) * 0.3;
-      colAttr.setXYZ(i, source.color.r * fade, source.color.g * fade, source.color.b * fade);
-    }
-    posAttr.needsUpdate = true;
-    colAttr.needsUpdate = true;
-  });
-
-  const bufferGeo = useMemo(() => {
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    return geo;
-  }, [positions, colors]);
-
-  return (
-    <points ref={pointsRef} geometry={bufferGeo}>
-      <pointsMaterial size={0.06} vertexColors transparent opacity={0.9} blending={THREE.AdditiveBlending} depthWrite={false} sizeAttenuation />
-    </points>
-  );
-}
-
-// ── Signal Beam ──────────────────────────────────────────────
-function SignalBeam() {
-  const beamRef = useRef<THREE.Mesh>(null);
-  const glowRef = useRef<THREE.Mesh>(null);
-
-  const curve = useMemo(() => new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0.3, 0, 0),
-    new THREE.Vector3(2.5, 0.06, 0),
-    new THREE.Vector3(4.5, -0.03, 0),
-    new THREE.Vector3(6.5, 0, 0),
-  ]), []);
-
-  const tubeGeo = useMemo(() => new THREE.TubeGeometry(curve, 32, 0.035, 6, false), [curve]);
-  const glowTubeGeo = useMemo(() => new THREE.TubeGeometry(curve, 32, 0.12, 6, false), [curve]);
-
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    const cycle = (t % CYCLE_DURATION) / CYCLE_DURATION;
-    const beamProgress = Math.max(0, (cycle - 0.45) / 0.35);
-    const beamOpacity = beamProgress > 0 ? Math.min(1, beamProgress * 2.5) * (1 - Math.max(0, (beamProgress - 0.7) / 0.3)) : 0;
-    const scaleX = 0.4 + beamProgress * 0.6;
-
-    if (beamRef.current) {
-      (beamRef.current.material as THREE.MeshBasicMaterial).opacity = beamOpacity * 0.9;
-      beamRef.current.scale.set(scaleX, 1, 1);
-    }
-    if (glowRef.current) {
-      (glowRef.current.material as THREE.MeshBasicMaterial).opacity = beamOpacity * 0.1;
-      glowRef.current.scale.set(scaleX, 1.5, 1);
-    }
-  });
-
-  return (
-    <group>
-      <mesh ref={beamRef} geometry={tubeGeo}>
-        <meshBasicMaterial color="#00e5a8" transparent opacity={0} />
-      </mesh>
-      <mesh ref={glowRef} geometry={glowTubeGeo}>
-        <meshBasicMaterial color="#00e5a8" transparent opacity={0} blending={THREE.AdditiveBlending} />
-      </mesh>
-      <mesh position={[6.6, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
-        <coneGeometry args={[0.1, 0.3, 6]} />
-        <meshBasicMaterial color="#00ff88" transparent opacity={0.85} />
-      </mesh>
-    </group>
-  );
-}
-
-// ── Ambient Stars ────────────────────────────────────────────
-function AmbientStars() {
-  const ref = useRef<THREE.Points>(null);
-
-  const geo = useMemo(() => {
-    const count = 150;
-    const positions = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      positions[i * 3]     = (Math.random() - 0.5) * 16;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 10;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 5 - 2;
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    return g;
-  }, []);
-
-  useFrame(({ clock }) => {
-    if (ref.current) ref.current.rotation.z = clock.getElapsedTime() * 0.008;
-  });
-
-  return (
-    <points ref={ref} geometry={geo}>
-      <pointsMaterial size={0.025} color="#2a5a8a" transparent opacity={0.45} sizeAttenuation />
-    </points>
-  );
-}
-
-// ── Pulse Rings ──────────────────────────────────────────────
-function PulseRings() {
-  const groupRef = useRef<THREE.Group>(null);
-
-  useFrame(({ clock }) => {
-    if (!groupRef.current) return;
-    const t = clock.getElapsedTime();
-    groupRef.current.children.forEach((child, i) => {
-      if (child instanceof THREE.Mesh) {
-        const phase = ((t * 0.35 + i * 0.33) % 1);
-        child.scale.setScalar(0.2 + phase * 2.2);
-        (child.material as THREE.MeshBasicMaterial).opacity = (1 - phase) * 0.07;
-      }
+    core.current.rotation.y = Math.sin(t * 0.18) * 0.12;
+    core.current.rotation.x = Math.sin(t * 0.14) * 0.05;
+    core.current.children.forEach((child, index) => {
+      if (!(child instanceof THREE.Mesh) || index < 2) return;
+      (child.material as THREE.MeshBasicMaterial).opacity = 0.2 + Math.sin(t * 1.4 + index * 0.4) * 0.12;
     });
   });
 
   return (
-    <group ref={groupRef} rotation={[Math.PI * 0.5, 0, 0]}>
-      {[0, 1, 2].map((i) => (
-        <mesh key={i}>
-          <ringGeometry args={[0.95, 1, 48]} />
-          <meshBasicMaterial color="#00e5a8" transparent opacity={0.07} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+    <group ref={core} position={[0, 0.05, 0]}>
+      <mesh>
+        <boxGeometry args={[1.35, 1.35, 0.08]} />
+        <meshBasicMaterial color="#08111d" transparent opacity={0.92} />
+      </mesh>
+      <mesh position={[0, 0, 0.045]}>
+        <boxGeometry args={[1.16, 1.16, 0.04]} />
+        <meshBasicMaterial color="#ff8800" transparent opacity={0.16} />
+      </mesh>
+      {needles.map((needle, index) => (
+        <mesh key={index} position={[needle.x, needle.y, 0.08]} rotation={[0, 0, needle.angle]}>
+          <boxGeometry args={[0.32, 0.012, 0.02]} />
+          <meshBasicMaterial color={index % 3 === 0 ? "#ff8800" : "#00d4ff"} transparent opacity={0.25} />
         </mesh>
       ))}
     </group>
   );
 }
 
-// ── Scene ────────────────────────────────────────────────────
+function ExecutionPath() {
+  const group = useRef<THREE.Group>(null);
+  const curve = useMemo(() => new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0.82, 0.02, 0),
+    new THREE.Vector3(1.8, 0.08, 0.18),
+    new THREE.Vector3(3.0, -0.1, 0.1),
+    new THREE.Vector3(4.6, 0.08, 0),
+  ]), []);
+
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    const t = clock.getElapsedTime();
+    const marker = group.current.children[1] as THREE.Mesh;
+    const progress = (t * 0.16) % 1;
+    marker.position.copy(curve.getPoint(progress));
+    marker.scale.setScalar(0.8 + Math.sin(progress * Math.PI) * 0.5);
+  });
+
+  return (
+    <group ref={group}>
+      <primitive object={makeLine(curve.getPoints(72), "#ff8800", 0.52)} />
+      <mesh>
+        <coneGeometry args={[0.1, 0.26, 4]} />
+        <meshBasicMaterial color="#ff8800" transparent opacity={0.86} />
+      </mesh>
+      <mesh position={[4.8, 0.1, 0]}>
+        <boxGeometry args={[0.78, 0.42, 0.04]} />
+        <meshBasicMaterial color="#00e5a8" transparent opacity={0.18} />
+      </mesh>
+    </group>
+  );
+}
+
+function DataPanels() {
+  return (
+    <group position={[0, -1.55, 0.15]}>
+      {[
+        ["LIVE TAPE", "-1.8", "#00d4ff"],
+        ["RISK GATE", "0", "#ff8800"],
+        ["ORDER READY", "1.8", "#00e5a8"],
+      ].map(([label, x, color]) => (
+        <group key={label} position={[Number(x), 0, 0]}>
+          <mesh>
+            <boxGeometry args={[1.32, 0.34, 0.025]} />
+            <meshBasicMaterial color={color} transparent opacity={0.1} />
+          </mesh>
+          <mesh position={[0, -0.19, 0.01]}>
+            <boxGeometry args={[0.92, 0.018, 0.01]} />
+            <meshBasicMaterial color={color} transparent opacity={0.42} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
 function Scene() {
   return (
     <>
-      <color attach="background" args={["#030810"]} />
-      <AmbientStars />
-      <HoloGrid />
-      <DataStreams />
-      <FlowParticles />
-      {SOURCES.map((source, i) => (
-        <SourceOrb key={i} position={source.pos} color={source.color} />
-      ))}
-      <ConvergenceCore />
-      <OrbitalRings />
-      <PulseRings />
-      <SignalBeam />
+      <color attach="background" args={["#030712"]} />
+      <TerminalFloor />
+      <MarketTapeWall />
+      <SignalRails />
+      <DecisionEngine />
+      <ExecutionPath />
+      <DataPanels />
     </>
   );
 }
 
-// ── Export ────────────────────────────────────────────────────
 export default function SignalFlow3DScene() {
   return (
     <div className="absolute inset-0 z-0">
       <Canvas
-        camera={{ position: [0, 0.5, 8], fov: 48 }}
+        camera={{ position: [0, 0.15, 7.5], fov: 42 }}
         dpr={[1, 1.5]}
         gl={{ antialias: true, alpha: false }}
-        style={{ background: "#030810" }}
+        style={{ background: "#030712" }}
       >
         <Scene />
       </Canvas>
