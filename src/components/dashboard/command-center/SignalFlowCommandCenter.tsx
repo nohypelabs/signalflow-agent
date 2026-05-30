@@ -4,6 +4,9 @@ import { useMemo, useState, useEffect } from "react";
 import { Target, Layers, Activity, Play } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+import IndexROIDashboard from "@/components/IndexROIDashboard";
+import BTCTreasuryDashboard from "@/components/BTCTreasuryDashboard";
+import MacroSurprise from "@/components/MacroSurprise";
 import SpeedometerGauge from "@/components/ui/SpeedometerGauge";
 import TradingChart from "@/components/TradingChart";
 import { useDashboard } from "@/lib/dashboard-context";
@@ -229,14 +232,24 @@ function formatPanelPrice(value?: number | null): string {
 
 function signedFromSignal(signal: Signal | null): number {
   if (!signal) return 0;
-  if (signal.action === "LONG") return signal.confidence;
-  if (signal.action === "SHORT") return -signal.confidence;
+  // Use actionV2 for granular scoring — boost/penalize based on strength
+  const v2: string = signal.actionV2 ?? signal.action;
+  const base = signal.confidence;
+  if (v2 === "STRONG_LONG") return Math.min(100, base + 15);
+  if (v2 === "LONG") return base;
+  if (v2 === "WEAK_LONG") return Math.max(0, base - 10);
+  if (v2 === "STRONG_SHORT") return -Math.min(100, base + 15);
+  if (v2 === "SHORT") return -base;
+  if (v2 === "WEAK_SHORT") return -Math.max(0, base - 10);
+  // Legacy fallback
+  if (signal.action === "LONG") return base;
+  if (signal.action === "SHORT") return -base;
   return 0;
 }
 
 function actionFromSigned(value: number): DecisionAction {
-  if (value > 12) return "LONG";
-  if (value < -12) return "SHORT";
+  if (value > 8) return "LONG";
+  if (value < -8) return "SHORT";
   return "NO TRADE";
 }
 
@@ -1283,6 +1296,11 @@ export default function SignalFlowCommandCenter() {
         <NewsFeed news={news} fetchError={newsFetchError} />
       </div>
       <MarketStatsBar />
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <IndexROIDashboard />
+        <BTCTreasuryDashboard />
+        <MacroSurprise />
+      </div>
     </div>
   );
 }

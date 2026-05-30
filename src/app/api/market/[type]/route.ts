@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getTickers, getKlines, getSymbols, getOrderbook } from "@/lib/sodex";
+import { getTickers, getKlines, getSymbols, getOrderbook, getRecentTrades } from "@/lib/sodex";
 import { jsonNoCache } from "@/lib/api/no-cache";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +39,13 @@ export async function GET(
         if (!symbol) return jsonNoCache({ error: "symbol required" }, { status: 400 });
         const limit = q.get("limit") ? Number(q.get("limit")) : undefined;
         const data = await getOrderbook(symbol, limit);
+        return jsonNoCache(data);
+      }
+      case "trades": {
+        const symbol = q.get("symbol");
+        if (!symbol) return jsonNoCache({ error: "symbol required" }, { status: 400 });
+        const limit = q.get("limit") ? Number(q.get("limit")) : undefined;
+        const data = await getRecentTrades(symbol, limit);
         return jsonNoCache(data);
       }
       default:

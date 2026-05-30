@@ -11,4 +11,5 @@ export type {
   SoDEXOrder,
   SoDEXBalance,
   SoDEXAccountState,
+  SoDEXTrade,
 } from "./types/trade";

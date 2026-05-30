@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import type { DashboardMetrics, MetricStatus } from "@/lib/hooks/useDashboardMetrics";
 import { formatPercent } from "@/lib/api/dashboard-metrics";
 
@@ -193,11 +193,13 @@ function MiniKpiCard({
 export default function KPICards({ metrics }: Props) {
   const signals = metrics.activeSignals.value;
   const topGainer = metrics.topGainer.value;
+  const topLoser = metrics.topLoser.value;
   const statuses = [
     metrics.avgConfidence.status,
     metrics.activeSignals.status,
     metrics.volume24h.status,
     metrics.topGainer.status,
+    metrics.topLoser.status,
   ];
   const newestUpdate = Math.max(
     ...[
@@ -205,6 +207,7 @@ export default function KPICards({ metrics }: Props) {
       metrics.activeSignals.lastUpdated,
       metrics.volume24h.lastUpdated,
       metrics.topGainer.lastUpdated,
+      metrics.topLoser.lastUpdated,
     ].filter((ts): ts is number => typeof ts === "number")
   );
   const signalQualityMeta = signals.total > 0
@@ -233,12 +236,13 @@ export default function KPICards({ metrics }: Props) {
     topMoverChange * 0.38,
     topMoverChange,
   ];
-  const freshnessSpark = [
-    metrics.activePairs.value,
-    metrics.activeSignals.value.total,
-    metrics.volume24h.value > 0 ? 1 : 0,
-    metrics.avgConfidence.value,
-    Number.isFinite(newestUpdate) ? 100 : 0,
+  const topLoserChange = topLoser?.change24h ?? 0;
+  const loserSpark = [
+    topLoserChange,
+    topLoserChange * 0.38,
+    topLoserChange * 0.52,
+    topLoserChange * 0.24,
+    0,
   ];
 
   return (
@@ -356,15 +360,25 @@ export default function KPICards({ metrics }: Props) {
             : `Across ${metrics.activePairs.value} active pairs`}
         />
         <MiniKpiCard
-          label="Data Freshness"
-          value={Number.isFinite(newestUpdate) ? timeAgo(newestUpdate) : "-"}
-          status={statuses.includes("error") ? "error" : statuses.includes("loading") ? "loading" : statuses.includes("stale") ? "stale" : "live"}
-          source="SignalFlow monitor"
-          lastUpdated={Number.isFinite(newestUpdate) ? newestUpdate : null}
-          sparkline={freshnessSpark}
-          tone={statuses.includes("error") ? "sell" : statuses.includes("stale") ? "neutral" : "buy"}
+          label="Top Loser"
+          icon={<TrendingDown size={10} className="text-sell shrink-0" />}
+          value={topLoser?.pair ?? "-"}
+          status={metrics.topLoser.status}
+          source={metrics.topLoser.source}
+          lastUpdated={metrics.topLoser.lastUpdated}
+          sparkline={loserSpark}
+          tone="sell"
+          trend={topLoser ? topLoser.change24h : null}
           valueClassName="text-txt-primary"
-          meta={statuses.includes("error") ? "One or more feeds need attention" : statuses.includes("stale") ? "Refresh lag detected" : "All visible feeds are current"}
+          meta={topLoser ? (
+            <>
+              <span className="text-sell font-semibold">
+                {formatPercent(topLoser.change24h)}
+              </span>
+              <span className="text-txt-primary mx-1">/</span>
+              <span className="text-txt-secondary font-medium">${formatTopPrice(topLoser.price)}</span>
+            </>
+          ) : "No negative mover yet"}
         />
       </div>
       </div>

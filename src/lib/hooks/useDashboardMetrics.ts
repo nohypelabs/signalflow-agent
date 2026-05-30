@@ -8,6 +8,7 @@ import {
   computeActivePairs,
   computeSignalBreakdown,
   computeTopGainer,
+  computeTopLoser,
   formatUsd,
   isFresh,
   logKPI,
@@ -28,6 +29,7 @@ export interface DashboardMetrics {
   activePairs: MetricField<number>;
   activeSignals: MetricField<import("../api/dashboard-metrics").SignalBreakdown>;
   topGainer: MetricField<import("../api/dashboard-metrics").TopGainerResult | null>;
+  topLoser: MetricField<import("../api/dashboard-metrics").TopGainerResult | null>;
   avgConfidence: MetricField<number>;
 }
 
@@ -51,11 +53,13 @@ export function useDashboardMetrics(
     const pairs = computeActivePairs(tickers ?? null);
     const sigs = computeSignalBreakdown(signals);
     const gainer = computeTopGainer(tickers ?? null);
+    const loser = computeTopLoser(tickers ?? null);
 
     logKPI("24H Volume", vol);
     logKPI("Active Pairs", pairs);
     logKPI("Signal Breakdown", sigs, `avg=${sigs.value.avgConfidence.toFixed(1)}%`);
     logKPI("Top Gainer", gainer);
+    logKPI("Top Loser", loser);
 
     const hasTickers = !!tickers && tickers.length > 0;
     const hasSignals = !!signals && signals.length > 0;
@@ -88,6 +92,13 @@ export function useDashboardMetrics(
         source: gainer.source,
         lastUpdated: gainer.computedAt,
         status: getStatus(gainer.computedAt, hasTickers, !!marketError),
+      },
+      topLoser: {
+        value: loser.value,
+        formatted: loser.value ? loser.value.pair : "—",
+        source: loser.source,
+        lastUpdated: loser.computedAt,
+        status: getStatus(loser.computedAt, hasTickers, !!marketError),
       },
       avgConfidence: {
         value: sigs.value.avgConfidence,

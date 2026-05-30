@@ -13,12 +13,16 @@ interface CoinPerf {
   change30d: number;
   high30d: number;
   low30d: number;
+  volatility7d: number;
   volatility30d: number;
+  maxDrawdown: number;
+  sharpeRatio: number;
   klines: { t: number; c: number }[];
 }
 
 function computeReturns(klines: KlineItem[]) {
-  if (klines.length < 2) return { change7d: 0, change30d: 0, high30d: 0, low30d: 0, volatility30d: 0 };
+  const empty = { change7d: 0, change30d: 0, high30d: 0, low30d: 0, volatility7d: 0, volatility30d: 0, maxDrawdown: 0, sharpeRatio: 0 };
+  if (klines.length < 2) return empty;
 
   const closes = klines.map((k) => k.close);
   const current = closes[closes.length - 1];
@@ -30,13 +34,34 @@ function computeReturns(klines: KlineItem[]) {
   const high30d = Math.max(...closes);
   const low30d = Math.min(...closes);
 
-  // Volatility = stdev of daily returns
+  // Daily returns
   const dailyReturns = closes.slice(1).map((c, i) => (c - closes[i]) / closes[i]);
   const mean = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
   const variance = dailyReturns.reduce((a, r) => a + (r - mean) ** 2, 0) / dailyReturns.length;
   const volatility30d = Math.sqrt(variance) * 100;
 
-  return { change7d, change30d, high30d, low30d, volatility30d };
+  // 7-day volatility
+  const recent7 = dailyReturns.slice(-7);
+  const mean7 = recent7.length > 0 ? recent7.reduce((a, b) => a + b, 0) / recent7.length : 0;
+  const var7 = recent7.length > 0 ? recent7.reduce((a, r) => a + (r - mean7) ** 2, 0) / recent7.length : 0;
+  const volatility7d = Math.sqrt(var7) * 100;
+
+  // Max drawdown
+  let peak = closes[0];
+  let maxDrawdown = 0;
+  for (const c of closes) {
+    if (c > peak) peak = c;
+    const dd = (peak - c) / peak;
+    if (dd > maxDrawdown) maxDrawdown = dd;
+  }
+  maxDrawdown = maxDrawdown * 100;
+
+  // Sharpe ratio (annualized, risk-free = 0)
+  const annualizedReturn = mean * 365;
+  const annualizedVol = Math.sqrt(variance) * Math.sqrt(365);
+  const sharpeRatio = annualizedVol > 0 ? annualizedReturn / annualizedVol : 0;
+
+  return { change7d, change30d, high30d, low30d, volatility7d, volatility30d, maxDrawdown, sharpeRatio };
 }
 
 let cache: { data: CoinPerf[]; ts: number } | null = null;
@@ -68,7 +93,7 @@ export async function GET() {
       const price = ticker ? parseFloat(ticker.lastPx) : snapshot?.price ?? 0;
       const change24h = ticker ? ticker.changePct : snapshot?.change_pct_24h ?? 0;
 
-      const { change7d, change30d, high30d, low30d, volatility30d } = computeReturns(klines);
+      const { change7d, change30d, high30d, low30d, volatility7d, volatility30d, maxDrawdown, sharpeRatio } = computeReturns(klines);
 
       coins.push({
         symbol: sym.toUpperCase(),
@@ -78,7 +103,10 @@ export async function GET() {
         change30d,
         high30d,
         low30d,
+        volatility7d,
         volatility30d,
+        maxDrawdown,
+        sharpeRatio,
         klines: klines.map((k) => ({ t: k.timestamp, c: k.close })),
       });
     }

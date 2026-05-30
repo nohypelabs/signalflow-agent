@@ -4,49 +4,65 @@ import type { SignalAction, SignalActionV2 } from "@/lib/types/signal";
 
 type AnyAction = SignalAction | SignalActionV2;
 
+const strongLong = {
+  bg: "bg-[#00ff88]/20",
+  border: "border-[#00ff88]/40",
+  text: "text-[#00ff88]",
+  label: "STRONG LONG",
+};
+const long = {
+  bg: "bg-buy-muted",
+  border: "border-buy-dim",
+  text: "text-buy",
+  label: "LONG",
+};
+const weakLong = {
+  bg: "bg-[#00ff88]/10",
+  border: "border-[#00ff88]/20",
+  text: "text-[#00ff88]/70",
+  label: "WEAK LONG",
+};
+const hold = {
+  bg: "bg-hold-muted",
+  border: "border-hold-dim",
+  text: "text-hold",
+  label: "NO TRADE",
+};
+const weakShort = {
+  bg: "bg-[#ff4444]/10",
+  border: "border-[#ff4444]/20",
+  text: "text-[#ff4444]/70",
+  label: "WEAK SHORT",
+};
+const shortStyle = {
+  bg: "bg-sell-muted",
+  border: "border-sell-dim",
+  text: "text-sell",
+  label: "SHORT",
+};
+const strongShort = {
+  bg: "bg-[#ff4444]/20",
+  border: "border-[#ff4444]/40",
+  text: "text-[#ff4444]",
+  label: "STRONG SHORT",
+};
+
 const actionStyles: Record<string, { bg: string; border: string; text: string; label: string }> = {
-  STRONG_BUY: {
-    bg: "bg-[#00ff88]/20",
-    border: "border-[#00ff88]/40",
-    text: "text-[#00ff88]",
-    label: "STRONG BUY",
-  },
-  BUY: {
-    bg: "bg-buy-muted",
-    border: "border-buy-dim",
-    text: "text-buy",
-    label: "BUY",
-  },
-  WEAK_BUY: {
-    bg: "bg-[#00ff88]/10",
-    border: "border-[#00ff88]/20",
-    text: "text-[#00ff88]/70",
-    label: "WEAK BUY",
-  },
-  HOLD: {
-    bg: "bg-hold-muted",
-    border: "border-hold-dim",
-    text: "text-hold",
-    label: "NO TRADE",
-  },
-  WEAK_SELL: {
-    bg: "bg-[#ff4444]/10",
-    border: "border-[#ff4444]/20",
-    text: "text-[#ff4444]/70",
-    label: "WEAK SELL",
-  },
-  SELL: {
-    bg: "bg-sell-muted",
-    border: "border-sell-dim",
-    text: "text-sell",
-    label: "SELL",
-  },
-  STRONG_SELL: {
-    bg: "bg-[#ff4444]/20",
-    border: "border-[#ff4444]/40",
-    text: "text-[#ff4444]",
-    label: "STRONG SELL",
-  },
+  // V2 engine keys (LONG/SHORT)
+  STRONG_LONG: strongLong,
+  LONG: long,
+  WEAK_LONG: weakLong,
+  HOLD: hold,
+  WEAK_SHORT: weakShort,
+  SHORT: shortStyle,
+  STRONG_SHORT: strongShort,
+  // Legacy keys (BUY/SELL) — backward compat
+  STRONG_BUY: strongLong,
+  BUY: long,
+  WEAK_BUY: weakLong,
+  WEAK_SELL: weakShort,
+  SELL: shortStyle,
+  STRONG_SELL: strongShort,
 };
 
 interface Props {

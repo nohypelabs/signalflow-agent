@@ -75,3 +75,12 @@ export interface SoDEXBalance {
 export interface SoDEXAccountState {
   balances: SoDEXBalance[];
 }
+
+export interface SoDEXTrade {
+  t: number;   // trade id
+  T: number;   // timestamp
+  s: string;   // symbol
+  S: string;   // side: BUY | SELL
+  p: string;   // price
+  q: string;   // quantity
+}

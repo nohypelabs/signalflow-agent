@@ -33,6 +33,7 @@ const navGroups = {
   overview: [
     { href: "/dashboard", label: "Dashboard", Icon: HomeIcon },
     { href: "/signals", label: "Signals", Icon: SignalIcon },
+    { href: "/screener", label: "Screener", Icon: ActivityIcon },
     { href: "/signal-history", label: "Signal History", Icon: HistoryIcon },
     { href: "/performance", label: "Performance", Icon: PerformanceIcon },
   ],

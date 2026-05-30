@@ -57,18 +57,6 @@ export interface ETFInfo {
   exchange: string;
 }
 
-export interface ETFSnapshot {
-  date: number;
-  ticker: string;
-  net_inflow: number;
-  cum_inflow: number;
-  net_assets: number;
-  mkt_price: number;
-  prem_dsc: number;
-  value_traded: number;
-  volume: number;
-}
-
 export interface MacroEvent {
   date: string;
   events: string[];

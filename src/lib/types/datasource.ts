@@ -21,7 +21,10 @@ export interface CoinPerf {
   change30d: number;
   high30d: number;
   low30d: number;
+  volatility7d: number;
   volatility30d: number;
+  maxDrawdown: number;
+  sharpeRatio: number;
   klines: { t: number; c: number }[];
 }
 

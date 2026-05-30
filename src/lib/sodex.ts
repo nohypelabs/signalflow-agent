@@ -43,6 +43,7 @@ import type {
   SoDEXOrder,
   SoDEXBalance,
   SoDEXAccountState,
+  SoDEXTrade,
 } from "./sodex-types";
 export type {
   SoDEXTicker,
@@ -52,6 +53,7 @@ export type {
   SoDEXNewOrderRequest,
   SoDEXOrder,
   SoDEXBalance,
+  SoDEXTrade,
 };
 
 // ── Public endpoints ───────────────────────────────────
@@ -85,8 +87,10 @@ export function getOrderbook(symbol: string, limit?: number) {
   });
 }
 
-export function getAccountState(userAddress: string) {
-  return sodexFetch<Record<string, unknown>>(`/accounts/${userAddress}/state`);
+export function getRecentTrades(symbol: string, limit?: number) {
+  return sodexFetch<SoDEXTrade[]>(`/markets/${symbol}/trades`, {
+    ...(limit && { limit: String(limit) }),
+  });
 }
 
 // ── Authenticated trading endpoints ─────────────────────

@@ -201,6 +201,48 @@ export function computeTopGainer(tickers: SoDEXTicker[] | null): KPIResult<TopGa
 }
 
 /* ──────────────────────────────────────────────
+   Top Loser
+   ────────────────────────────────────────────── */
+
+/** Find top negative 24h mover */
+export function computeTopLoser(tickers: SoDEXTicker[] | null): KPIResult<TopGainerResult | null> {
+  const now = Date.now();
+  if (!tickers || tickers.length === 0) {
+    return { value: null, source: "No data", computedAt: now, rawCount: 0 };
+  }
+
+  const valid = tickers
+    .filter(isValidTicker)
+    .map((t) => ({
+      t,
+      change: getTickerChangePct(t),
+      price: parseFloat(t.lastPx),
+      volume: parseFloat(t.quoteVolume || "0"),
+    }))
+    .filter((x) => x.change !== null && x.change < 0);
+
+  if (valid.length === 0) {
+    return { value: null, source: "SoDEX live", computedAt: now, rawCount: tickers.length };
+  }
+
+  valid.sort((a, b) => (a.change as number) - (b.change as number));
+  const worst = valid[0];
+
+  return {
+    value: {
+      pair: `${symbolToBase(worst.t.symbol)}/USDC`,
+      base: symbolToBase(worst.t.symbol),
+      price: worst.price,
+      change24h: worst.change as number,
+      volume24h: worst.volume,
+    },
+    source: "SoDEX live",
+    computedAt: now,
+    rawCount: tickers.length,
+  };
+}
+
+/* ──────────────────────────────────────────────
    Debug Logging (dev only)
    ────────────────────────────────────────────── */
 

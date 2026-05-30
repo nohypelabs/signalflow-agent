@@ -10,7 +10,10 @@ import OrderForm from "@/components/OrderForm";
 import OrderbookDepth from "@/components/OrderbookDepth";
 import OpenOrders from "@/components/OpenOrders";
 import RecentTrades from "@/components/RecentTrades";
+import RecentTradesList from "@/components/RecentTradesList";
 import PaperTradingStats from "@/components/PaperTradingStats";
+import SpreadIndicator from "@/components/SpreadIndicator";
+import HighLowRange from "@/components/HighLowRange";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { ClipboardIcon, BarChartIcon, BriefcaseIcon, DocumentIcon } from "@/components/ui/icons";
 import { usePaperTrading } from "@/lib/hooks/usePaperTrading";
@@ -23,7 +26,7 @@ type PendingTradeAction =
   | { kind: "open"; mode: "paper" | "live"; pair: string; order: TradeOrderInput; entryPrice: number; takeProfit: number; stopLoss: number; liquidationPrice: number }
   | { kind: "close"; trade: PaperTrade; markPrice: number; pnl: number; roi: number };
 type BookTab = "book" | "trades";
-type BottomTab = "orders" | "trades" | "positions" | "stats";
+type BottomTab = "orders" | "trades" | "positions" | "stats" | "live";
 
 /* ── Helpers ── */
 function formatPrice(price: number): string { if (price >= 10000) return price.toLocaleString("en-US", { maximumFractionDigits: 0 }); if (price >= 100) return price.toFixed(2); if (price >= 1) return price.toFixed(3); return price.toFixed(5); }
@@ -286,6 +289,7 @@ export default function TradingPageContent() {
     { id: "trades", label: "Trades", icon: <BarChartIcon size={13} />, count: 0 },
     { id: "positions", label: "Positions", icon: <BriefcaseIcon size={13} />, count: openPaperTrades.length },
     { id: "stats", label: "Paper Stats", icon: <DocumentIcon size={13} />, count: paper.stats.totalTrades },
+    { id: "live", label: "Live Trades", icon: <BarChartIcon size={13} />, count: 0 },
   ];
 
   return (
@@ -374,6 +378,7 @@ export default function TradingPageContent() {
                 </ErrorBoundary>
               )}
               {bottomTab === "stats" && <ErrorBoundary name="Paper Stats">{paper.loaded ? <PaperTradingStats stats={paper.stats} balance={paper.balance} trades={paper.trades} onReset={paper.reset} /> : <div className="flex items-center justify-center h-28"><p className="text-xs text-txt-dim">Loading…</p></div>}</ErrorBoundary>}
+              {bottomTab === "live" && <ErrorBoundary name="Live Trades"><RecentTradesList symbol={sodexSymbol} limit={50} /></ErrorBoundary>}
             </div>
           </div>
         </div>
@@ -393,6 +398,11 @@ export default function TradingPageContent() {
 
         {/* Column B: Orderbook + Trades */}
         <div className="min-w-0 flex flex-col" style={{ width: `${widths.book}%` }}>
+          {/* Spread + Range */}
+          <div className="shrink-0 px-2 py-1.5 border-b border-border-default bg-inset/30 space-y-1">
+            <SpreadIndicator ticker={ticker} />
+            <HighLowRange ticker={ticker} />
+          </div>
           <div className="shrink-0 flex items-center border-b border-border-default bg-inset/30">
             <button onClick={() => setBookTab("book")} className={`flex-1 text-[11px] py-2 font-medium cursor-pointer transition-colors border-b-2 ${bookTab === "book" ? "text-accent border-accent bg-accent/5" : "text-txt-dim border-transparent hover:text-txt-secondary"}`}>Order Book</button>
             <button onClick={() => setBookTab("trades")} className={`flex-1 text-[11px] py-2 font-medium cursor-pointer transition-colors border-b-2 ${bookTab === "trades" ? "text-accent border-accent bg-accent/5" : "text-txt-dim border-transparent hover:text-txt-secondary"}`}>Trades</button>
@@ -442,6 +452,7 @@ export default function TradingPageContent() {
             </ErrorBoundary>
           )}
           {bottomTab === "stats" && <ErrorBoundary name="Paper Stats">{paper.loaded ? <PaperTradingStats stats={paper.stats} balance={paper.balance} trades={paper.trades} onReset={paper.reset} /> : <div className="flex items-center justify-center h-full"><p className="text-xs text-txt-dim">Loading…</p></div>}</ErrorBoundary>}
+          {bottomTab === "live" && <ErrorBoundary name="Live Trades"><RecentTradesList symbol={sodexSymbol} limit={50} /></ErrorBoundary>}
         </div>
       </div>
       </>
