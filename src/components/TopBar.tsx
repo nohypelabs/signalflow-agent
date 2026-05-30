@@ -54,7 +54,6 @@ const systemItems = [
 const directNavItems = [
   { href: "/signals", label: "Signal", Icon: SignalIcon },
   { href: "/trading", label: "Trading", Icon: TradeIcon },
-  { href: "/strategy-config", label: "Strategy Config", Icon: StrategyIcon },
 ];
 
 const directNavHrefs = new Set(directNavItems.map((item) => item.href));
@@ -193,15 +192,22 @@ export default function TopBar({
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex items-center gap-2">
             {pagesMenuButton()}
-            <Image
-              src="/icons/signalflow-logo.png"
-              alt="SignalFlow logo"
-              width={36}
-              height={36}
-              className="h-9 w-9 object-contain"
-              priority
-            />
-            <span className="font-bold text-[13px] text-txt-primary tracking-tight">SignalFlow</span>
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard")}
+              className="flex cursor-pointer items-center gap-2 rounded-lg pr-1 transition-opacity hover:opacity-85"
+              aria-label="Go to dashboard"
+            >
+              <Image
+                src="/icons/signalflow-logo.png"
+                alt="SignalFlow logo"
+                width={36}
+                height={36}
+                className="h-9 w-9 object-contain"
+                priority
+              />
+              <span className="font-bold text-[13px] text-txt-primary tracking-tight">SignalFlow</span>
+            </button>
             <div
               className="hidden lg:flex items-center gap-1.5 rounded border border-border-default bg-elevated/25 px-1.5 py-0.5"
               title={
