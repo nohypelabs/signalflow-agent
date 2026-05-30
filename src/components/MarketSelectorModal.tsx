@@ -260,14 +260,14 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-2 md:pt-[4vh] bg-black/75 backdrop-blur-md" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-3 md:pt-[7vh] bg-transparent" onClick={onClose}>
       <div
-        className="w-[calc(100%-12px)] md:w-full max-w-5xl max-h-[94vh] md:max-h-[88vh] flex flex-col rounded-xl md:rounded-2xl border border-border-muted bg-card overflow-hidden"
+        className="w-[calc(100%-20px)] md:w-full max-w-3xl max-h-[82vh] md:max-h-[72vh] flex flex-col rounded-xl border border-border-muted bg-card/98 overflow-hidden shadow-[0_24px_90px_rgba(0,0,0,0.42)] backdrop-blur-xl animate-[market-selector-in_180ms_cubic-bezier(0.22,1,0.36,1)] will-change-transform"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
         {/* ═══ Search Bar ═══ */}
-        <div className="shrink-0 flex items-center gap-2 md:gap-3 px-3 md:px-5 py-2.5 md:py-3.5 border-b border-border-default bg-inset/40">
+        <div className="shrink-0 flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 border-b border-border-default bg-inset/40">
           <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 border border-accent/20">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
           </div>
@@ -283,7 +283,7 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
         </div>
 
         {/* ═══ Filter Tabs ═══ */}
-        <div className="shrink-0 flex flex-col md:flex-row md:items-center md:justify-between gap-2 px-3 md:px-5 py-2.5 border-b border-border-default">
+        <div className="shrink-0 flex flex-col md:flex-row md:items-center md:justify-between gap-2 px-3 md:px-4 py-2 border-b border-border-default">
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
             {[
               { id: "all" as const, label: "All Markets", icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg> },
@@ -308,7 +308,7 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
 
         {/* ═══ Category Sub-tabs ═══ */}
         {hasMultipleCategories && (
-          <div className="shrink-0 flex items-center gap-1.5 px-3 md:px-5 py-2 border-b border-border-default bg-inset/20 overflow-x-auto scrollbar-none">
+          <div className="shrink-0 flex items-center gap-1.5 px-3 md:px-4 py-1.5 border-b border-border-default bg-inset/20 overflow-x-auto scrollbar-none">
             {availableCategories.map((cat) => (
               <button key={cat} onClick={() => { setActiveCategory(cat); setHighlightIdx(0); }}
                 className={`flex items-center gap-1.5 text-[10px] px-3 py-1.5 rounded-lg font-medium cursor-pointer transition-all shrink-0 ${
@@ -325,7 +325,7 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
         )}
 
         {/* ═══ Table Header ═══ */}
-        <div className="hidden md:grid shrink-0 grid-cols-[1fr_120px_90px_90px_40px] gap-3 px-5 py-2.5 border-b border-border-default bg-inset/30 text-[10px] text-txt-muted font-medium">
+        <div className="hidden md:grid shrink-0 grid-cols-[1fr_108px_82px_82px_34px] gap-3 px-4 py-2 border-b border-border-default bg-inset/30 text-[10px] text-txt-muted font-medium">
           <span className="tracking-wide">Market</span>
           <span className="text-right cursor-pointer hover:text-txt-secondary transition-colors" onClick={() => toggleSort("price")}>Last Price{renderSortArrow("price")}</span>
           <span className="text-right cursor-pointer hover:text-txt-secondary transition-colors" onClick={() => toggleSort("change")}>24h Change{renderSortArrow("change")}</span>
@@ -354,7 +354,7 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
               return (
                 <div key={m.symbol} data-idx={idx}>
                 <div
-                  className={`hidden md:grid grid-cols-[1fr_120px_90px_90px_40px] gap-3 px-5 py-3 cursor-pointer transition-all items-center border-b border-border-default/50 ${
+                  className={`hidden md:grid grid-cols-[1fr_108px_82px_82px_34px] gap-3 px-4 py-2.5 cursor-pointer transition-all items-center border-b border-border-default/50 ${
                     isHighlighted ? "bg-elevated/50" : "hover:bg-elevated/30"
                   } ${isActive ? "bg-accent/8 border-l-2 border-l-accent" : ""}`}
                   onClick={() => { onSelectMarket(m.displayPair); onClose(); }}
@@ -443,7 +443,7 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
         </div>
 
         {/* ═══ Footer ═══ */}
-        <div className="hidden md:flex shrink-0 items-center justify-between px-5 py-2.5 border-t border-border-default bg-inset/30">
+        <div className="hidden md:flex shrink-0 items-center justify-between px-4 py-2 border-t border-border-default bg-inset/30">
           <div className="flex items-center gap-3 text-[10px] text-txt-faint">
             <span className="font-mono">{filtered.length} markets</span>
             <span className="text-border-default">·</span>

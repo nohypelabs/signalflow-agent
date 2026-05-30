@@ -28,12 +28,12 @@ function makeLine(points: THREE.Vector3[], color: string, opacity = 0.45) {
 function TerminalBootWall() {
   const group = useRef<THREE.Group>(null);
   const bars = useMemo(() => {
-    return Array.from({ length: 144 }, (_, index) => {
-      const column = index % 18;
-      const row = Math.floor(index / 18);
+    return Array.from({ length: 112 }, (_, index) => {
+      const column = index % 16;
+      const row = Math.floor(index / 16);
       const color = TERMINAL_ROWS[(row + column) % TERMINAL_ROWS.length];
       return {
-        x: -5.2 + column * 0.62,
+        x: -4.9 + column * 0.65,
         y: 2.55 - row * 0.34,
         width: 0.16 + ((index * 17) % 10) * 0.035,
         color,
@@ -104,10 +104,10 @@ function TerminalGrid() {
 function SignalTunnel() {
   const group = useRef<THREE.Group>(null);
   const streams = useMemo(() => {
-    return Array.from({ length: 34 }, (_, index) => {
+    return Array.from({ length: 24 }, (_, index) => {
       const side = index % 2 === 0 ? -1 : 1;
       const lane = Math.floor(index / 2);
-      const y = -1.75 + (lane % 17) * 0.22;
+      const y = -1.45 + (lane % 12) * 0.26;
       const color = TERMINAL_ROWS[index % TERMINAL_ROWS.length];
       const z = -0.45 + ((index * 7) % 12) * 0.055;
       const curve = new THREE.CatmullRomCurve3([
@@ -204,7 +204,7 @@ function DecisionCore() {
 function DepthParticles() {
   const group = useRef<THREE.Group>(null);
   const particles = useMemo(() => {
-    return Array.from({ length: 96 }, (_, index) => ({
+    return Array.from({ length: 64 }, (_, index) => ({
       x: -5.8 + ((index * 37) % 116) / 10,
       y: -2.55 + ((index * 19) % 52) / 10,
       z: -2.2 + ((index * 29) % 42) / 10,
@@ -255,8 +255,8 @@ export default function SignalFlow3DScene() {
     <div className="absolute inset-0 z-0">
       <Canvas
         camera={{ position: [0, 0.08, 7.1], fov: 41 }}
-        dpr={[1, 1.5]}
-        gl={{ antialias: true, alpha: false }}
+        dpr={[1, 1.25]}
+        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
         style={{ background: "#030712" }}
       >
         <Scene />
