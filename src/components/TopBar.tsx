@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import WalletButton from "./WalletButton";
@@ -178,8 +179,15 @@ export default function TopBar({
         {/* Left: brand + primary navigation */}
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
-              <ActivityIcon size={13} />
+            <div className="w-6 h-6 rounded-lg bg-black border border-accent/20 flex items-center justify-center overflow-hidden">
+              <Image
+                src="/icons/signalflow-logo.png"
+                alt="SignalFlow logo"
+                width={24}
+                height={24}
+                className="h-full w-full object-cover"
+                priority
+              />
             </div>
             <span className="font-bold text-[13px] text-txt-primary tracking-tight">SignalFlow</span>
           </div>

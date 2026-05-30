@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -213,10 +214,14 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
             >
               <div className="flex items-center justify-between px-5 py-3 border-b border-border-default">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                    </svg>
+                  <div className="w-6 h-6 rounded-lg bg-black border border-accent/20 flex items-center justify-center overflow-hidden">
+                    <Image
+                      src="/icons/signalflow-logo.png"
+                      alt="SignalFlow logo"
+                      width={24}
+                      height={24}
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                   <span className="text-sm font-bold text-txt-primary">SignalFlow</span>
                 </div>
