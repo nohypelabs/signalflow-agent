@@ -11,7 +11,7 @@ import {
 import type { ETFSummaryItem, MarketSnapshot, NewsItem, MacroEvent, BTCPurchaseHistory } from "@/lib/sosovalue";
 import { getKlines as getSodexKlines } from "@/lib/sodex";
 import type { SoDEXKline } from "@/lib/sodex-types";
-import { pairToSodexSymbol } from "@/lib/pair-map";
+import { pairToSodexSymbol, SUPPORTED_SIGNAL_PAIRS } from "@/lib/pair-map";
 import { generateSignalsV2 } from "@/lib/strategy/signal-engine-v2";
 import {
   scoreETF,
@@ -29,13 +29,7 @@ export const dynamic = "force-dynamic";
 
 // ── Pairs to generate signals for ────────────────────────
 
-const SIGNAL_PAIRS = [
-  "BTC/USDC",
-  "ETH/USDC",
-  "SOL/USDC",
-  "AVAX/USDC",
-  "LINK/USDC",
-];
+const SIGNAL_PAIRS = SUPPORTED_SIGNAL_PAIRS;
 
 // ── In-memory cache ──────────────────────────────────────
 
