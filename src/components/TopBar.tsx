@@ -190,6 +190,10 @@ export default function TopBar({
               priority
             />
             <span className="font-bold text-[13px] text-txt-primary tracking-tight">SignalFlow</span>
+            <div className="hidden lg:flex items-center gap-1.5 rounded-full border border-border-default bg-elevated/25 px-2 py-1">
+              <StatusDot status={dotStatus} pulse size="sm" />
+              <span className="text-[10px] font-semibold text-txt-secondary">{statusLabel}</span>
+            </div>
           </div>
 
           <div className="h-5 w-px bg-border-default" />
@@ -202,10 +206,6 @@ export default function TopBar({
             {menuButton("trading", "Trading")}
           </nav>
 
-          <div className="hidden lg:flex items-center gap-1.5 ml-1">
-            <StatusDot status={dotStatus} pulse size="sm" />
-            <span className="text-[10px] font-semibold text-txt-secondary">{statusLabel}</span>
-          </div>
         </div>
 
         {/* Center: scrolling ticker tape (desktop only) */}
