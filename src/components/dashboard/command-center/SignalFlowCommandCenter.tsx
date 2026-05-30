@@ -1572,10 +1572,22 @@ function MarketStatsCard() {
   const selectedSymbol = pairToSodexSymbol(d.selectedPair) ?? d.selectedPair;
   const selectedTicker = tickers.find((t) => t.symbol === selectedSymbol || t.symbol === d.selectedPair);
   const selectedVolume = toFiniteNumber(selectedTicker?.quoteVolume);
+  const selectedPrice = toFiniteNumber(selectedTicker?.lastPx);
+  const selectedBid = toFiniteNumber(selectedTicker?.bidPx);
+  const selectedAsk = toFiniteNumber(selectedTicker?.askPx);
+  const selectedBidSize = toFiniteNumber(selectedTicker?.bidSz);
+  const selectedAskSize = toFiniteNumber(selectedTicker?.askSz);
+  const selectedSpreadBps = selectedBid > 0 && selectedAsk > selectedBid
+    ? ((selectedAsk - selectedBid) / selectedPrice) * 10000
+    : null;
+  const selectedDepth = selectedBidSize + selectedAskSize;
   const coverage = activePairs > 0 ? Math.min(100, Math.round((signals.length / activePairs) * 100)) : 0;
-  const readinessScore = Math.min(100, Math.round((coverage * 0.55) + (selectedVolume > 0 ? 25 : 0) + (totalSignals > 0 ? 20 : 0)));
+  const spreadBonus = selectedSpreadBps == null ? 0 : selectedSpreadBps <= 8 ? 15 : selectedSpreadBps <= 20 ? 10 : 4;
+  const depthBonus = selectedDepth > 0 ? 10 : 0;
+  const readinessScore = Math.min(100, Math.round((coverage * 0.45) + (selectedVolume > 0 ? 20 : 0) + (totalSignals > 0 ? 15 : 0) + spreadBonus + depthBonus));
   const longShare = totalSignals > 0 ? Math.round((buySignals / totalSignals) * 100) : 0;
   const shortShare = totalSignals > 0 ? Math.round((sellSignals / totalSignals) * 100) : 0;
+  const holdSignals = Math.max(0, signals.length - totalSignals);
   const statusTone = d.marketLoading
     ? "text-hold"
     : d.marketError || d.sodexStatus === "error"
@@ -1628,6 +1640,21 @@ function MarketStatsCard() {
           </div>
         </div>
 
+        <div className="mt-2 grid grid-cols-3 gap-1.5 text-center">
+          <div className="rounded-lg border border-border-default bg-elevated/20 px-2 py-1.5">
+            <p className="font-mono text-xs font-bold text-txt-primary tabular-nums">{selectedPrice > 0 ? formatAssetPrice(selectedPrice) : "--"}</p>
+            <p className="text-[8px] uppercase text-txt-muted">mark</p>
+          </div>
+          <div className="rounded-lg border border-accent-dim/30 bg-accent-muted/10 px-2 py-1.5">
+            <p className="font-mono text-xs font-bold text-accent tabular-nums">{selectedSpreadBps == null ? "--" : selectedSpreadBps.toFixed(1)}</p>
+            <p className="text-[8px] uppercase text-txt-muted">spread bps</p>
+          </div>
+          <div className="rounded-lg border border-border-default bg-elevated/20 px-2 py-1.5">
+            <p className="font-mono text-xs font-bold text-txt-primary tabular-nums">{selectedDepth > 0 ? selectedDepth.toFixed(2) : "--"}</p>
+            <p className="text-[8px] uppercase text-txt-muted">top depth</p>
+          </div>
+        </div>
+
         <div className="mt-3 rounded-lg border border-border-default bg-inset/50 p-2.5">
           <div className="mb-1.5 flex items-center justify-between text-[9px]">
             <span className="font-semibold text-buy">LONG {buySignals}</span>
@@ -1639,7 +1666,7 @@ function MarketStatsCard() {
             <div className="bg-sell transition-all duration-700" style={{ width: `${shortShare}%` }} />
           </div>
           <p className="mt-2 text-[9px] leading-snug text-txt-muted">
-            {d.marketError ?? `Total 24H tape volume ${fmtUsd(totalVolume)} across ${activePairs} active instruments.`}
+            {d.marketError ?? `24H tape ${fmtUsd(totalVolume)} across ${activePairs} active instruments; ${holdSignals} neutral engine reads.`}
           </p>
         </div>
       </div>
@@ -1668,7 +1695,13 @@ function MarketBreadthCard() {
   const shortSignals = signals.filter((signal) => signal.action === "SHORT").length;
   const holdSignals = Math.max(0, signals.length - longSignals - shortSignals);
   const strongestMove = [...validTickers].sort((a, b) => Math.abs(b.change) - Math.abs(a.change))[0];
+  const topAdvancer = [...validTickers].sort((a, b) => b.change - a.change)[0];
+  const topDecliner = [...validTickers].sort((a, b) => a.change - b.change)[0];
   const highestVolume = [...validTickers].sort((a, b) => b.volume - a.volume)[0];
+  const medianChange = validTickers.length > 0
+    ? [...validTickers].sort((a, b) => a.change - b.change)[Math.floor(validTickers.length / 2)]?.change ?? 0
+    : 0;
+  const participation = validTickers.length > 0 ? Math.round(((advancers + decliners) / validTickers.length) * 100) : 0;
   const tone = breadthScore > 10 ? "text-buy" : breadthScore < -10 ? "text-sell" : "text-hold";
   const tapeLabel = breadthScore > 10 ? "risk-on" : breadthScore < -10 ? "risk-off" : "mixed";
   const longShare = signals.length > 0 ? Math.round((longSignals / signals.length) * 100) : 0;
@@ -1711,6 +1744,21 @@ function MarketBreadthCard() {
           </div>
         </div>
 
+        <div className="mt-2 grid grid-cols-3 gap-1.5 text-center">
+          <div className="rounded-lg border border-accent-dim/30 bg-accent-muted/10 px-2 py-1.5">
+            <p className="font-mono text-xs font-bold text-accent tabular-nums">{participation}%</p>
+            <p className="text-[8px] uppercase text-txt-muted">active tape</p>
+          </div>
+          <div className="rounded-lg border border-border-default bg-elevated/20 px-2 py-1.5">
+            <p className="font-mono text-xs font-bold text-txt-primary tabular-nums">{medianChange > 0 ? "+" : ""}{medianChange.toFixed(2)}%</p>
+            <p className="text-[8px] uppercase text-txt-muted">median</p>
+          </div>
+          <div className="rounded-lg border border-hold-dim/30 bg-hold-muted/10 px-2 py-1.5">
+            <p className="font-mono text-xs font-bold text-hold tabular-nums">{holdSignals}</p>
+            <p className="text-[8px] uppercase text-txt-muted">holds</p>
+          </div>
+        </div>
+
         <div className="mt-3 rounded-lg border border-border-default bg-inset/50 p-2.5">
           <div className="mb-1.5 flex items-center justify-between text-[9px]">
             <span className="font-semibold text-buy">LONG {longSignals}</span>
@@ -1726,8 +1774,28 @@ function MarketBreadthCard() {
               Lead move: {strongestMove ? `${strongestMove.symbol} ${strongestMove.change > 0 ? "+" : ""}${strongestMove.change.toFixed(2)}%` : "waiting"}
             </span>
             <span className="shrink-0 font-mono tabular-nums">
-              {highestVolume ? fmtUsd(highestVolume.volume) : holdSignals > 0 ? `${holdSignals} HOLD` : "sync"}
+              {highestVolume ? fmtUsd(highestVolume.volume) : "sync"}
             </span>
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-2 text-[9px]">
+            <div className="min-w-0 rounded-md border border-buy-dim/25 bg-buy-muted/10 px-2 py-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate text-txt-muted">Top bid</span>
+                <span className="font-mono font-bold text-buy tabular-nums">
+                  {topAdvancer ? `+${Math.abs(topAdvancer.change).toFixed(2)}%` : "--"}
+                </span>
+              </div>
+              <p className="mt-0.5 truncate font-semibold text-txt-secondary">{topAdvancer?.symbol ?? "waiting"}</p>
+            </div>
+            <div className="min-w-0 rounded-md border border-sell-dim/25 bg-sell-muted/10 px-2 py-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate text-txt-muted">Top offer</span>
+                <span className="font-mono font-bold text-sell tabular-nums">
+                  {topDecliner ? `${topDecliner.change.toFixed(2)}%` : "--"}
+                </span>
+              </div>
+              <p className="mt-0.5 truncate font-semibold text-txt-secondary">{topDecliner?.symbol ?? "waiting"}</p>
+            </div>
           </div>
         </div>
       </div>
