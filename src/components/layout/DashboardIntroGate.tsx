@@ -82,6 +82,13 @@ export default function DashboardIntroGate() {
         {/* Center content */}
         <div className="mx-auto w-full max-w-4xl">
           <div className="mb-10 text-center">
+            <div className="mx-auto mb-7 flex justify-center">
+              <img
+                src="/icons/signalflow-banner.jpg"
+                alt="SignalFlow Agent"
+                className="h-auto w-[min(78vw,520px)] object-contain opacity-95"
+              />
+            </div>
             <p className="text-[10px] uppercase tracking-[0.4em] text-[#ff8800]">SignalFlow Agent</p>
             <h1 className="mt-4 text-4xl font-light tracking-[-0.04em] text-[#f8f3e4] sm:text-6xl lg:text-7xl">
               Market tape in. Decision out.
