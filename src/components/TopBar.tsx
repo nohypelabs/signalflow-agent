@@ -75,11 +75,7 @@ export default function TopBar({
     sodexStatus === "connected" ? "live" : sodexStatus === "loading" ? "warning" : "error";
 
   const statusLabel =
-    sodexStatus === "connected"
-      ? "SoDEX Live"
-      : sodexStatus === "loading"
-        ? "Connecting..."
-        : "SoDEX Offline";
+    sodexStatus === "connected" ? "SODEX" : sodexStatus === "loading" ? "SODEX..." : "SODEX OFF";
 
   const timeStr = new Date().toLocaleTimeString("en-US", {
     hour12: false,
@@ -206,9 +202,18 @@ export default function TopBar({
               priority
             />
             <span className="font-bold text-[13px] text-txt-primary tracking-tight">SignalFlow</span>
-            <div className="hidden lg:flex items-center gap-1.5 rounded-full border border-border-default bg-elevated/25 px-2 py-1">
+            <div
+              className="hidden lg:flex items-center gap-1.5 rounded border border-border-default bg-elevated/25 px-1.5 py-0.5"
+              title={
+                sodexStatus === "connected"
+                  ? "SoDEX live"
+                  : sodexStatus === "loading"
+                    ? "Connecting to SoDEX"
+                    : "SoDEX offline"
+              }
+            >
               <StatusDot status={dotStatus} pulse size="sm" />
-              <span className="text-[10px] font-semibold text-txt-secondary">{statusLabel}</span>
+              <span className="font-mono text-[9px] font-semibold text-txt-muted">{statusLabel}</span>
             </div>
           </div>
 
