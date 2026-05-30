@@ -55,7 +55,7 @@ export default function WelcomeExperience({
         <img
           src="/icons/signalflow-banner.png"
           alt="SignalFlow Agent"
-          className="h-auto w-[min(46vw,260px)] object-contain opacity-95"
+          className="h-auto w-[min(46vw,260px)] translate-y-[20%] object-contain opacity-95"
         />
       </div>
 
