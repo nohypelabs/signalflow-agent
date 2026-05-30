@@ -1216,6 +1216,14 @@ function IndexCard() {
       change: toFiniteNumber(t.changePct),
     }))
     .filter((t) => t.price > 0 && isStockOrIndex(t.symbol));
+  const riskProxies = tickers
+    .map((t) => ({
+      symbol: t.symbol.replace(/^v/, "").replace(/_vUSDC$/, ""),
+      price: toFiniteNumber(t.lastPx),
+      change: toFiniteNumber(t.changePct),
+    }))
+    .filter((t) => t.price > 0 && !isStockOrIndex(t.symbol))
+    .sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
 
   // Group by category
   const grouped = assets.reduce<Record<string, typeof assets>>((acc, a) => {
@@ -1226,7 +1234,7 @@ function IndexCard() {
 
   const categoryOrder = ["Stocks", "Indices", "Commodities", "Other"];
   const sortedCategories = categoryOrder.filter((c) => grouped[c]?.length);
-  const leadingAsset = [...assets].sort((a, b) => Math.abs(b.change) - Math.abs(a.change))[0];
+  const leadingAsset = [...assets].sort((a, b) => Math.abs(b.change) - Math.abs(a.change))[0] ?? riskProxies[0];
 
   return (
     <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
@@ -1283,11 +1291,48 @@ function IndexCard() {
             </div>
           );
         })}
-        {assets.length === 0 && (
+        {assets.length === 0 && riskProxies.length > 0 && (
+          <div>
+            <div className="flex items-center gap-1.5 border-y border-border-default/50 bg-elevated/10 px-4 py-1">
+              <span className="text-[9px] font-semibold tracking-wide text-accent">Risk Proxies</span>
+              <span className="ml-auto text-[8px] text-txt-dim tabular-nums">SoDEX</span>
+            </div>
+            {riskProxies.slice(0, 5).map(({ symbol, price, change }) => {
+              const isPositive = change >= 0;
+              return (
+                <div key={symbol} className="flex items-center gap-2.5 border-b border-border-default/30 px-4 py-2 transition-colors last:border-b-0 hover:bg-elevated/20">
+                  <CoinAvatar symbol={symbol} size={26} />
+                  <div className="min-w-0 flex-1">
+                    <span className="block text-xs font-semibold leading-tight text-txt-primary">{symbol}</span>
+                    <span className="text-[10px] leading-tight text-txt-muted">Crypto macro proxy</span>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className="block font-mono text-xs font-semibold leading-tight tabular-nums text-txt-primary">
+                      {formatAssetPrice(price)}
+                    </span>
+                    <span
+                      className={cx(
+                        "mt-0.5 inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold tabular-nums",
+                        isPositive
+                          ? "bg-buy-muted text-buy"
+                          : change < 0
+                            ? "bg-sell-muted text-sell"
+                            : "bg-elevated text-txt-muted"
+                      )}
+                    >
+                      {changeArrow(change)} {Math.abs(change).toFixed(2)}%
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {assets.length === 0 && riskProxies.length === 0 && (
           <EvidenceEmptyState
             icon={<Layers size={18} />}
-            title="Macro tape unavailable"
-            detail="Index, stock, and commodity instruments are not present in the current ticker feed."
+            title={d.marketLoading ? "Loading macro tape" : "Macro tape degraded"}
+            detail={d.marketError ?? "No index, commodity, stock, or crypto proxy instruments are available from the current feed."}
           />
         )}
       </div>

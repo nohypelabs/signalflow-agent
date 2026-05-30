@@ -12,7 +12,12 @@ export async function GET(req: Request) {
 
   if (includeHistory && eventName) {
     const history = await getMacroEventHistory(eventName, 30).catch(() => []);
-    return jsonNoCache({ events, history, eventName });
+    const today = new Date();
+    const next7 = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const todayStr = today.toISOString().slice(0, 10);
+    const next7Str = next7.toISOString().slice(0, 10);
+    const upcoming = events.filter((e: MacroEvent) => e.date >= todayStr && e.date <= next7Str);
+    return jsonNoCache({ events, upcoming, history, eventName });
   }
 
   const today = new Date();

@@ -95,6 +95,18 @@ export default function BTCTreasuryDashboard() {
       </div>
 
       <div className="px-4 py-3 space-y-3">
+        {history.length === 0 && (
+          <div className="rounded-lg border border-hold-dim bg-hold-muted/20 px-3 py-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-hold">Holdings layer degraded</span>
+              <Badge variant="hold" size="sm">SoSoValue</Badge>
+            </div>
+            <p className="mt-1 text-[10px] leading-snug text-txt-secondary">
+              Purchase history is unavailable right now. Showing company coverage when treasury metadata is available.
+            </p>
+          </div>
+        )}
+
         {/* Summary stats */}
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-elevated/30 rounded-lg p-2">
@@ -116,6 +128,29 @@ export default function BTCTreasuryDashboard() {
             </p>
           </div>
         </div>
+
+        {history.length === 0 && treasuries.length > 0 && (
+          <div>
+            <p className="text-[9px] text-txt-muted uppercase tracking-wider mb-2">Tracked Companies</p>
+            <div className="grid grid-cols-2 gap-2">
+              {treasuries.slice(0, 6).map((company) => (
+                <div key={company.ticker} className="rounded-lg bg-elevated/20 px-2 py-1.5">
+                  <div className="text-[10px] font-semibold text-txt-primary">{company.ticker}</div>
+                  <div className="truncate text-[9px] text-txt-muted">{company.name}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {history.length === 0 && treasuries.length === 0 && (
+          <div className="rounded-lg border border-border-default bg-elevated/20 px-3 py-4 text-center">
+            <p className="text-xs font-semibold text-txt-secondary">BTC treasury data unavailable</p>
+            <p className="mt-1 text-[10px] leading-snug text-txt-muted">
+              The dashboard keeps running from live SoDEX signals while the treasury module is degraded.
+            </p>
+          </div>
+        )}
 
         {/* Recent purchases */}
         {recentPurchases.length > 0 && (

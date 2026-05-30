@@ -12,23 +12,30 @@ interface MacroEventItem {
   previous: string;
 }
 
+interface MacroCalendarDay {
+  date: string;
+  events?: string[];
+}
+
 interface Props {
   eventName?: string;
 }
 
 export default function MacroSurprise({ eventName = "Federal Funds Rate" }: Props) {
   const [data, setData] = useState<MacroEventItem[]>([]);
+  const [upcoming, setUpcoming] = useState<MacroCalendarDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetch(`/api/macro?event=${encodeURIComponent(eventName)}`, { cache: "no-store" })
+    fetch(`/api/macro?history=true&event=${encodeURIComponent(eventName)}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;
         setData(d.history ?? []);
+        setUpcoming(d.upcoming ?? d.events ?? []);
       })
       .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : "Failed"); })
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -65,7 +72,28 @@ export default function MacroSurprise({ eventName = "Federal Funds Rate" }: Prop
 
       <div className="divide-y divide-border-default">
         {data.length === 0 ? (
-          <div className="p-4 text-center text-xs text-txt-muted">No history data</div>
+          <div className="p-4">
+            <div className="rounded-lg border border-hold-dim bg-hold-muted/20 px-3 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-hold">History pending</span>
+                <Badge variant="hold" size="sm">Calendar</Badge>
+              </div>
+              <p className="mt-1 text-[10px] leading-snug text-txt-secondary">
+                SoSoValue did not return surprise history for {eventName}. Showing upcoming macro calendar instead.
+              </p>
+            </div>
+            <div className="mt-3 space-y-1">
+              {upcoming.flatMap((day) => (day.events ?? []).map((event) => ({ date: day.date, event }))).slice(0, 5).map((item, i) => (
+                <div key={`${item.date}-${item.event}-${i}`} className="flex items-center gap-3 rounded px-2 py-1.5 hover:bg-elevated/20">
+                  <span className="min-w-[70px] font-mono text-[10px] text-txt-faint">{item.date}</span>
+                  <span className="text-[11px] font-medium text-txt-primary">{item.event}</span>
+                </div>
+              ))}
+              {upcoming.length === 0 && (
+                <p className="px-2 py-2 text-center text-xs text-txt-muted">Macro calendar unavailable</p>
+              )}
+            </div>
+          </div>
         ) : (
           data.slice(0, 8).map((item, i) => {
             const actual = parseFloat(item.actual);
