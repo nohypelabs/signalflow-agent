@@ -10,7 +10,6 @@ import { useDashboard } from "@/lib/dashboard-context";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import { getCoinIcon } from "@/lib/coin-icons";
 import { getStockIcon } from "@/lib/stock-icons";
-import { useFundingRate } from "@/lib/hooks/useFundingRate";
 import type { Signal } from "@/lib/types/signal";
 
 /* ── Pipeline Model ── */
@@ -295,8 +294,6 @@ function buildStop(action: DecisionAction, entry: number, signal: Signal | null)
 
 function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null }) {
   const d = useDashboard();
-  const sodexSymbol = pairToSodexSymbol(pair);
-  const { data: fundingData } = useFundingRate(sodexSymbol);
   const currentSignal = d.liveSignals.find((s) => normalizePair(s.pair) === normalizePair(pair)) ?? null;
   const aiSignal = d.aiSignal && normalizePair(d.aiSignal.pair) === normalizePair(pair) ? d.aiSignal : null;
   const ticker = d.tickerMap.get(pairToSodexSymbol(pair));
@@ -446,71 +443,8 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
             </div>
           </div>
         </div>
-          {/* Funding Rate */}
-          {fundingData && (
-            <div className="rounded-xl border border-border-default bg-inset/70 px-3 py-2.5">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <svg viewBox="0 0 16 16" className="h-3 w-3 text-accent" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M2 14h12M4 10l4-4 3 3 5-6" />
-                  </svg>
-                  <span className="text-[10px] font-semibold text-txt-secondary">Funding Rate (8h)</span>
-                </div>
-                <span className={`font-mono text-[11px] font-bold tabular-nums ${
-                  fundingData.fundingRate > 0 ? "text-buy" : fundingData.fundingRate < 0 ? "text-sell" : "text-txt-muted"
-                }`}>
-                  {fundingData.fundingRate > 0 ? "+" : ""}{(fundingData.fundingRate * 100).toFixed(4)}%
-                </span>
-              </div>
 
-              {/* Bar Chart */}
-              <div className="relative h-2 bg-border-default/30 rounded-full overflow-hidden">
-                {/* Center line (0%) */}
-                <div className="absolute left-1/2 top-0 bottom-0 w-px bg-txt-muted/30" />
-                {/* Funding rate bar */}
-                {(() => {
-                  const rate = fundingData.fundingRate * 100; // Convert to percentage
-                  const maxRange = 0.1; // Max range for display (0.1%)
-                  const clampedRate = Math.max(-maxRange, Math.min(maxRange, rate));
-                  const isPositive = clampedRate >= 0;
-                  const width = Math.abs(clampedRate / maxRange) * 50; // 50% = max range
-
-                  return (
-                    <div
-                      className={`absolute top-0 bottom-0 rounded-full transition-all duration-500 ${
-                        isPositive ? "bg-buy" : "bg-sell"
-                      }`}
-                      style={{
-                        left: isPositive ? "50%" : `${50 - width}%`,
-                        width: `${width}%`,
-                      }}
-                    />
-                  );
-                })()}
-              </div>
-
-              {/* Scale labels */}
-              <div className="flex justify-between mt-1">
-                <span className="text-[8px] text-txt-dim font-mono">-0.1%</span>
-                <span className="text-[8px] text-txt-dim font-mono">0%</span>
-                <span className="text-[8px] text-txt-dim font-mono">+0.1%</span>
-              </div>
-
-              {/* Open Interest */}
-              <div className="flex items-center justify-between mt-2 pt-2 border-t border-border-default/50">
-                <span className="text-[9px] text-txt-muted">Open Interest</span>
-                <span className="font-mono text-[10px] text-txt-tertiary tabular-nums">
-                  {fundingData.openInterest >= 1_000_000
-                    ? `${(fundingData.openInterest / 1_000_000).toFixed(2)}M`
-                    : fundingData.openInterest >= 1_000
-                      ? `${(fundingData.openInterest / 1_000).toFixed(1)}K`
-                      : fundingData.openInterest.toFixed(0)}
-                </span>
-              </div>
-            </div>
-          )}
-          <div className="rounded-xl border border-border-default bg-inset/70 px-2 py-2 text-center">
+        <div className="rounded-xl border border-border-default bg-inset/70 px-2 py-2 text-center">
           <div className="mb-1 text-[11px] font-semibold tracking-wide text-txt-tertiary uppercase">SignalFlow Final Score</div>
           <SpeedometerGauge value={decision.confidence} size="lg" showLabel={false} />
           <div className="-mt-2 grid grid-cols-[44px_auto_44px] items-center justify-center gap-3">

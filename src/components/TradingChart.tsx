@@ -19,6 +19,7 @@ import type { Signal } from "@/lib/types/signal";
 import { fetchKlines } from "@/lib/api/datasources";
 import { useChartDrawings } from "@/lib/hooks/useChartDrawings";
 import { getCoinIcon } from "@/lib/coin-icons";
+import { useFundingRate } from "@/lib/hooks/useFundingRate";
 import ChartDrawingToolbar from "./charts/ChartDrawingToolbar";
 import ChartDrawingOverlay from "./charts/ChartDrawingOverlay";
 import MarketSelectorModal from "./MarketSelectorModal";
@@ -184,10 +185,15 @@ export default function TradingChart({
   const [fullscreen, setFullscreen] = useState(false);
   const [showTfDropdown, setShowTfDropdown] = useState(false);
   const [showCompactControls, setShowCompactControls] = useState(false);
+
   const [favTfs, setFavTfs] = useState<Timeframe[]>(() => {
     if (typeof window === "undefined") return ["1h", "4h", "1D"];
     try { return JSON.parse(localStorage.getItem("sf-fav-tfs") || "[\"1h\",\"4h\",\"1D\"]"); } catch { return ["1h", "4h", "1D"]; }
   });
+
+  // Funding rate for current pair
+  const { data: fundingData } = useFundingRate(pair);
+  // Derived
   const [showSignals, setShowSignals] = useState(true);
   const [showTradePlan, setShowTradePlan] = useState(true);
   const [showVolume, setShowVolume] = useState(true);
@@ -650,7 +656,18 @@ export default function TradingChart({
                 <span>V <span className="text-txt-secondary">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span></span>
               </div>
             )}
-
+            {/* Funding rate */}
+            {fundingData && (
+              <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono">
+                <span className="text-txt-muted">F</span>
+                <span className={`font-semibold tabular-nums ${
+                  fundingData.fundingRate > 0 ? "text-buy" : fundingData.fundingRate < 0 ? "text-sell" : "text-txt-muted"
+                }`}>
+                  {fundingData.fundingRate > 0 ? "+" : ""}{(fundingData.fundingRate * 100).toFixed(4)}%
+                </span>
+              </div>
+            )}
+            {/* Trade plan compact */}
             {/* Trade plan compact */}
             {showTradePlan && latestSignal?.execution && !compact && (
               <div className="hidden lg:flex items-center gap-2 text-[9px] font-mono text-txt-faint">
