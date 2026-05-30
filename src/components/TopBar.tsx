@@ -10,10 +10,10 @@ import MarketTickerTape from "./MarketTickerTape";
 import {
   ActivityIcon,
   ChartIcon,
-  ChevronDownIcon,
   DocsIcon,
   HistoryIcon,
   HomeIcon,
+  MenuIcon,
   PerformanceIcon,
   SettingsIcon,
   SignalIcon,
@@ -51,6 +51,14 @@ const systemItems = [
   { href: "/docs", label: "Docs", Icon: DocsIcon, description: "In-app documentation" },
 ];
 
+const directNavItems = [
+  { href: "/signals", label: "Signal", Icon: SignalIcon },
+  { href: "/trading", label: "Trading", Icon: TradeIcon },
+  { href: "/strategy-config", label: "Strategy Config", Icon: StrategyIcon },
+];
+
+const directNavHrefs = new Set(directNavItems.map((item) => item.href));
+
 export default function TopBar({
   sodexStatus = "loading",
   tickerCount,
@@ -80,7 +88,7 @@ export default function TopBar({
     timeZone: "Asia/Jakarta",
   });
   const activePage = Object.values(navGroups).flat().find((item) => pathname === item.href);
-  const ActivePageIcon = activePage?.Icon;
+  const moreMenuActive = Boolean(activePage && !directNavHrefs.has(activePage.href));
 
   useEffect(() => {
     Object.values(navGroups).flat().forEach((item) => router.prefetch(item.href));
@@ -120,17 +128,16 @@ export default function TopBar({
         <button
           type="button"
           onClick={() => setPagesOpen(!pagesOpen)}
-          aria-label="Pages menu"
+          aria-label="More pages menu"
           aria-expanded={pagesOpen}
-          className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors ${
-            activePage
+          className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border text-xs font-semibold transition-colors ${
+            moreMenuActive
               ? "border-accent/35 bg-accent/10 text-accent"
               : "border-border-default bg-elevated/45 text-txt-primary hover:border-accent/30 hover:bg-accent/10"
           }`}
+          title="More pages"
         >
-          {ActivePageIcon && <ActivePageIcon size={14} />}
-          {activePage?.label ?? "Pages"}
-          <ChevronDownIcon size={11} className={`transition-transform ${pagesOpen ? "rotate-180" : ""}`} />
+          <MenuIcon size={15} />
         </button>
         <AnimatePresence>
           {pagesOpen && (
@@ -147,7 +154,7 @@ export default function TopBar({
                   <div className="px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-txt-faint">
                     {groupKey === "overview" ? "Overview" : "Trading"}
                   </div>
-                  {navGroups[groupKey].map(({ href, label: itemLabel, Icon }) => {
+                  {navGroups[groupKey].filter(({ href }) => !directNavHrefs.has(href)).map(({ href, label: itemLabel, Icon }) => {
                     const itemActive = pathname === href;
                     return (
                       <button
@@ -210,14 +217,40 @@ export default function TopBar({
             <span className="hidden xl:inline-flex px-1.5 text-[10px] font-bold uppercase tracking-wider text-txt-secondary">
               Pages
             </span>
+            {directNavItems.map(({ href, label, Icon }) => {
+              const itemActive = pathname === href;
+              return (
+                <button
+                  key={href}
+                  type="button"
+                  onClick={() => navigate(href)}
+                  className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors ${
+                    itemActive
+                      ? "border-accent/35 bg-accent/10 text-accent"
+                      : "border-transparent text-txt-secondary hover:border-accent/25 hover:bg-accent/10 hover:text-txt-primary"
+                  }`}
+                >
+                  <Icon size={13} />
+                  <span className="hidden xl:inline">{label}</span>
+                </button>
+              );
+            })}
             {pagesMenuButton()}
           </nav>
 
         </div>
 
         {/* Center: scrolling ticker tape (desktop only) */}
-        <div className="hidden lg:flex w-[49.5%] min-w-0 mx-4 overflow-hidden rounded-md bg-[#060810]">
+        <div
+          className="relative hidden lg:flex flex-1 min-w-0 mx-0 overflow-hidden rounded-md bg-[#060810]"
+          style={{
+            maskImage: "linear-gradient(90deg, transparent 0, black 28px, black calc(100% - 28px), transparent 100%)",
+            WebkitMaskImage: "linear-gradient(90deg, transparent 0, black 28px, black calc(100% - 28px), transparent 100%)",
+          }}
+        >
           <MarketTickerTape tickerMap={tickerMap} embedded onTickerClick={onTickerClick} />
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-surface via-surface/70 to-transparent backdrop-blur-sm" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-surface via-surface/70 to-transparent backdrop-blur-sm" />
         </div>
 
         {/* Right: system modal + wallet */}
@@ -226,6 +259,16 @@ export default function TopBar({
             <StatusDot status={dotStatus} pulse size="sm" />
           </div>
 
+          {tickerCount !== undefined && tickerCount > 0 && (
+            <span className="hidden xl:inline-flex text-[10px] font-mono font-semibold text-txt-muted">
+              {tickerCount} PAIRS
+            </span>
+          )}
+          <span className="hidden lg:inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold text-txt-muted">
+            {timeStr}
+            <span className="text-txt-dim">UTC+7</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+          </span>
           {/* Gear icon → System modal */}
           <div className="relative" ref={settingsRef}>
             <button
@@ -247,7 +290,7 @@ export default function TopBar({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -4, scale: 0.98 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-10 z-50 w-64 rounded-xl border border-border-default bg-card shadow-2xl shadow-black/50 overflow-hidden"
+                  className="absolute right-0 top-10 z-50 w-64 overflow-hidden rounded-xl border border-border-default bg-card shadow-2xl shadow-black/50"
                 >
                   <div className="px-4 py-3 border-b border-border-default">
                     <div className="flex items-center justify-between">
@@ -271,9 +314,7 @@ export default function TopBar({
                           type="button"
                           onClick={() => navigate(href)}
                           className={`flex w-full cursor-pointer items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
-                            itemActive
-                              ? "bg-accent-muted"
-                              : "hover:bg-elevated"
+                            itemActive ? "bg-accent-muted" : "hover:bg-elevated"
                           }`}
                         >
                           <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
@@ -298,17 +339,6 @@ export default function TopBar({
               )}
             </AnimatePresence>
           </div>
-
-          {tickerCount !== undefined && tickerCount > 0 && (
-            <span className="hidden xl:inline-flex text-[10px] font-mono font-semibold text-txt-muted">
-              {tickerCount} PAIRS
-            </span>
-          )}
-          <span className="hidden lg:inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold text-txt-muted">
-            {timeStr}
-            <span className="text-txt-dim">UTC+7</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-          </span>
           <WalletButton />
         </div>
       </header>

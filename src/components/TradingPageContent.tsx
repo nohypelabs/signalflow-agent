@@ -163,7 +163,7 @@ export default function TradingPageContent() {
   const [tradeError, setTradeError] = useState<string | null>(null);
   const [notice, setNotice] = useState<TradeNotice | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingTradeAction | null>(null);
-  const [bottomTab, setBottomTab] = useState<BottomTab>("orders");
+  const [bottomTab, setBottomTab] = useState<BottomTab>("positions");
   const [bookTab, setBookTab] = useState<BookTab>("book");
   const [isMobile, setIsMobile] = useState(false);
   const paper = usePaperTrading();
