@@ -121,14 +121,16 @@ export default function TopBar({
         <button
           type="button"
           onClick={() => setOpenMenu(openMenu === key ? null : key)}
+          aria-label={`${label} pages menu`}
+          aria-expanded={openMenu === key}
           className={`flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors ${
             active
               ? "border-accent/35 bg-accent/10 text-accent"
-              : "border-border-default bg-elevated/35 text-txt-secondary hover:text-txt-primary hover:border-border-muted"
+              : "border-border-default bg-elevated/45 text-txt-primary hover:border-accent/30 hover:bg-accent/10"
           }`}
         >
           {label}
-          <ChevronDownIcon size={11} />
+          <ChevronDownIcon size={11} className={`transition-transform ${openMenu === key ? "rotate-180" : ""}`} />
         </button>
         <AnimatePresence>
           {openMenu === key && (
@@ -179,12 +181,12 @@ export default function TopBar({
         {/* Left: brand + primary navigation */}
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-black border border-accent/20 flex items-center justify-center overflow-hidden">
+            <div className="w-7 h-7 rounded-lg bg-black border border-accent/20 flex items-center justify-center overflow-hidden">
               <Image
                 src="/icons/signalflow-logo.png"
                 alt="SignalFlow logo"
-                width={24}
-                height={24}
+                width={28}
+                height={28}
                 className="h-full w-full object-cover"
                 priority
               />
@@ -194,7 +196,10 @@ export default function TopBar({
 
           <div className="h-5 w-px bg-border-default" />
 
-          <nav className="flex items-center gap-1">
+          <nav className="flex items-center gap-1 rounded-xl border border-border-default bg-elevated/20 px-1.5 py-1">
+            <span className="hidden xl:inline-flex px-1.5 text-[10px] font-bold uppercase tracking-wider text-txt-secondary">
+              Pages
+            </span>
             {menuButton("overview", "Overview")}
             {menuButton("trading", "Trading")}
           </nav>
@@ -223,8 +228,8 @@ export default function TopBar({
               onClick={() => setSettingsOpen(!settingsOpen)}
               className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
                 settingsOpen || isSystemActive
-                  ? "border-accent/35 bg-accent/10 text-accent"
-                  : "border-accent/10 bg-accent/5 text-txt-muted hover:text-accent hover:bg-accent/10 hover:border-accent/25"
+                  ? "border-accent/50 bg-accent/15 text-accent shadow-[0_0_18px_rgba(0,229,168,0.35)]"
+                  : "border-accent/30 bg-accent/10 text-accent shadow-[0_0_14px_rgba(0,229,168,0.22)] hover:bg-accent/15 hover:border-accent/50 hover:shadow-[0_0_20px_rgba(0,229,168,0.4)]"
               }`}
               title="System settings"
             >
