@@ -84,7 +84,7 @@ export default function DashboardIntroGate() {
           <div className="mb-8 text-center">
             <div className="mx-auto mb-5 flex justify-center">
               <img
-                src="/icons/signalflow-banner.jpg"
+                src="/icons/signalflow-banner.png"
                 alt="SignalFlow Agent"
                 className="h-auto w-[min(46vw,260px)] object-contain opacity-95"
               />
