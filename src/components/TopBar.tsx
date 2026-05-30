@@ -196,6 +196,7 @@ export default function TopBar({
         {/* Left: brand + primary navigation */}
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex items-center gap-2">
+            {pagesMenuButton()}
             <Image
               src="/icons/signalflow-logo.png"
               alt="SignalFlow logo"
@@ -214,9 +215,6 @@ export default function TopBar({
           <div className="h-5 w-px bg-border-default" />
 
           <nav className="flex items-center gap-1 rounded-xl border border-border-default bg-elevated/20 px-1.5 py-1">
-            <span className="hidden xl:inline-flex px-1.5 text-[10px] font-bold uppercase tracking-wider text-txt-secondary">
-              Pages
-            </span>
             {directNavItems.map(({ href, label, Icon }) => {
               const itemActive = pathname === href;
               return (
@@ -235,7 +233,6 @@ export default function TopBar({
                 </button>
               );
             })}
-            {pagesMenuButton()}
           </nav>
 
         </div>
@@ -249,8 +246,8 @@ export default function TopBar({
           }}
         >
           <MarketTickerTape tickerMap={tickerMap} embedded onTickerClick={onTickerClick} />
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-surface via-surface/70 to-transparent backdrop-blur-sm" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-surface via-surface/70 to-transparent backdrop-blur-sm" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-surface/80 to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-surface/80 to-transparent" />
         </div>
 
         {/* Right: system modal + wallet */}
@@ -269,6 +266,7 @@ export default function TopBar({
             <span className="text-txt-dim">UTC+7</span>
             <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
           </span>
+          <WalletButton />
           {/* Gear icon → System modal */}
           <div className="relative" ref={settingsRef}>
             <button
@@ -339,7 +337,6 @@ export default function TopBar({
               )}
             </AnimatePresence>
           </div>
-          <WalletButton />
         </div>
       </header>
     </div>
