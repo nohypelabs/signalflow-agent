@@ -1,0 +1,51 @@
+"use client";
+
+import { useState, useEffect } from "react";
+
+export interface FundingRateData {
+  symbol: string;
+  fundingRate: number;
+  openInterest: number;
+  markPrice: number;
+}
+
+export function useFundingRate(symbol: string) {
+  const [data, setData] = useState<FundingRateData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Extract base symbol from SoDEX format (vBTC_vUSDC -> BTC)
+  const base = symbol.replace(/^v/, "").replace(/_vUSDC$/, "").split("/")[0].toUpperCase();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchFunding() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const res = await fetch("/api/funding");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        if (!cancelled) {
+          setData(data[base] ?? null);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to fetch");
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchFunding();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchFunding, 30_000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [base]);
+
+  return { data, loading, error };
+}
