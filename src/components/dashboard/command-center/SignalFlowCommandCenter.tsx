@@ -1062,9 +1062,21 @@ function SignalAccuracyCard() {
 
   const accuracy = stats?.accuracy;
   const totalResolved = stats?.totalResolved ?? 0;
+  const totalCorrect = stats?.totalCorrect ?? 0;
+  const totalMissed = Math.max(0, totalResolved - totalCorrect);
   const currentStreak = streaks?.current;
   const winStreak = currentStreak?.type === "win" ? currentStreak.count : 0;
   const lossStreak = currentStreak?.type === "loss" ? currentStreak.count : 0;
+  const missRate = accuracy == null ? null : Math.max(0, 100 - accuracy);
+  const reliabilityTone = totalResolved === 0
+    ? "text-txt-muted"
+    : accuracy == null
+      ? "text-txt-muted"
+      : accuracy >= 60
+        ? "text-buy"
+        : accuracy >= 45
+          ? "text-hold"
+          : "text-sell";
   const reliabilityLabel = totalResolved === 0
     ? "collecting"
     : accuracy == null
@@ -1081,35 +1093,68 @@ function SignalAccuracyCard() {
         <h3 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-txt-secondary">
           <Target size={12} className="text-accent" /> Signal Reliability
         </h3>
-        <span className="text-[9px] font-mono text-txt-muted tabular-nums">{reliabilityLabel}</span>
+        <span className={cx("text-[9px] font-mono uppercase tabular-nums", reliabilityTone)}>{reliabilityLabel}</span>
       </div>
       <div className="p-3">
-        <div className="flex justify-center mb-3">
-          <WinRateRing value={accuracy} size={72} />
+        <div className="grid grid-cols-[92px_1fr] gap-3">
+          <div className="flex items-center justify-center rounded-xl border border-border-default bg-inset/60 p-2">
+            <WinRateRing value={accuracy} size={76} />
+          </div>
+          <div className="min-w-0 rounded-xl border border-border-default bg-elevated/20 p-2.5">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className={cx("font-mono text-3xl font-bold leading-none tabular-nums", reliabilityTone)}>
+                  {accuracy == null ? "--" : accuracy.toFixed(1)}
+                  {accuracy != null && <span className="text-base">%</span>}
+                </p>
+                <p className="mt-1 text-[9px] uppercase tracking-wide text-txt-muted">Hit rate</p>
+              </div>
+              <div className="text-right">
+                <p className="font-mono text-sm font-bold text-txt-primary tabular-nums">{totalResolved}</p>
+                <p className="mt-0.5 text-[9px] text-txt-muted">resolved</p>
+              </div>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              <div className="rounded-lg border border-buy-dim/30 bg-buy-muted/10 px-2 py-1.5">
+                <p className="font-mono text-sm font-bold text-buy tabular-nums">{totalCorrect}</p>
+                <p className="text-[8px] uppercase text-txt-muted">wins</p>
+              </div>
+              <div className="rounded-lg border border-sell-dim/30 bg-sell-muted/10 px-2 py-1.5">
+                <p className="font-mono text-sm font-bold text-sell tabular-nums">{totalMissed}</p>
+                <p className="text-[8px] uppercase text-txt-muted">misses</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <div className="rounded-lg border border-buy-dim/40 bg-buy-muted/30 px-2.5 py-2 text-center">
-            <span className="text-[9px] font-semibold text-buy/70 block mb-0.5">Win Streak</span>
-            <span className="font-mono text-lg font-bold tabular-nums text-buy leading-none">
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="rounded-lg border border-buy-dim/40 bg-buy-muted/20 px-2.5 py-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[9px] font-semibold text-buy/80">Win streak</span>
+              <span className="text-[8px] uppercase text-txt-muted">current</span>
+            </div>
+            <span className="mt-1 block font-mono text-xl font-bold tabular-nums text-buy leading-none">
               {winStreak || "—"}
             </span>
           </div>
-          <div className="rounded-lg border border-sell-dim/40 bg-sell-muted/30 px-2.5 py-2 text-center">
-            <span className="text-[9px] font-semibold text-sell/70 block mb-0.5">Loss Streak</span>
-            <span className="font-mono text-lg font-bold tabular-nums text-sell leading-none">
+          <div className="rounded-lg border border-sell-dim/40 bg-sell-muted/20 px-2.5 py-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[9px] font-semibold text-sell/80">Loss streak</span>
+              <span className="text-[8px] uppercase text-txt-muted">current</span>
+            </div>
+            <span className="mt-1 block font-mono text-xl font-bold tabular-nums text-sell leading-none">
               {lossStreak || "—"}
             </span>
           </div>
         </div>
 
         {accuracy != null ? (
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[9px] text-txt-muted">{totalResolved} resolved signals</span>
-              <span className="text-[9px] font-mono text-txt-secondary tabular-nums">{accuracy.toFixed(1)}%</span>
+          <div className="mt-3 rounded-lg border border-border-default bg-inset/50 p-2.5">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="text-[9px] font-semibold uppercase tracking-wide text-txt-muted">Resolution tape</span>
+              <span className="font-mono text-[9px] text-txt-secondary tabular-nums">{missRate?.toFixed(1)}% miss</span>
             </div>
-            <div className="h-1.5 w-full rounded-full bg-border-default/30 overflow-hidden">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-border-default/30">
               <div
                 className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{
@@ -1122,9 +1167,33 @@ function SignalAccuracyCard() {
                 }}
               />
             </div>
+            <div className="mt-2 grid grid-cols-2 gap-2 text-[9px]">
+              <div className="flex items-center justify-between rounded-md border border-border-default bg-elevated/20 px-2 py-1.5">
+                <span className="text-txt-muted">Best win run</span>
+                <span className="font-mono font-bold text-buy tabular-nums">{streaks?.bestWinStreak ?? 0}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-md border border-border-default bg-elevated/20 px-2 py-1.5">
+                <span className="text-txt-muted">Worst loss run</span>
+                <span className="font-mono font-bold text-sell tabular-nums">{streaks?.worstLossStreak ?? 0}</span>
+              </div>
+            </div>
+            <div className="mt-2 flex gap-1">
+              {(streaks?.last10 ?? []).map((result, i) => (
+                <span
+                  key={`${result}-${i}`}
+                  className={cx(
+                    "h-1.5 flex-1 rounded-full",
+                    result === "win" ? "bg-buy" : "bg-sell",
+                  )}
+                />
+              ))}
+              {Array.from({ length: Math.max(0, 10 - (streaks?.last10.length ?? 0)) }).map((_, i) => (
+                <span key={`empty-${i}`} className="h-1.5 flex-1 rounded-full bg-border-default/40" />
+              ))}
+            </div>
           </div>
         ) : (
-          <div className="rounded-lg border border-border-default bg-elevated/20 px-3 py-2 text-center">
+          <div className="mt-3 rounded-lg border border-border-default bg-elevated/20 px-3 py-2 text-center">
             <p className="text-[10px] font-semibold text-txt-secondary">
               {d.historyHydrated ? "Awaiting resolved outcomes" : "Loading history"}
             </p>
