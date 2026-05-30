@@ -165,14 +165,26 @@ function PipelineFlow() {
 
 /* ── Section Panel (using design system Card) ── */
 
-function Panel({ title, badge, children, className = "" }: { title: string; badge?: React.ReactNode; children: React.ReactNode; className?: string }) {
+function Panel({
+  title,
+  badge,
+  children,
+  className = "",
+  bodyClassName = "flex-1 overflow-y-auto",
+}: {
+  title: string;
+  badge?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+  bodyClassName?: string;
+}) {
   return (
     <Card variant="default" padding="none" className={cx("rounded-xl overflow-hidden flex flex-col", className)}>
       <div className="flex items-center justify-between border-b border-border-default px-4 py-3 shrink-0">
         <h2 className="text-sm font-semibold tracking-wide text-txt-primary">{title}</h2>
         {badge}
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className={bodyClassName}>
         {children}
       </div>
     </Card>
@@ -409,11 +421,12 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
 
   return (
     <Panel
-      title="CURRENT DECISION SCORE"
+      title="LIVE DECISION SCORE"
       badge={<Badge variant={decision.action === "LONG" ? "buy" : decision.action === "SHORT" ? "sell" : "hold"} size="sm">LIVE LOGIC</Badge>}
       className="h-[544px]"
+      bodyClassName="flex-1 overflow-hidden"
     >
-      <div className="space-y-2.5 p-3">
+      <div className="flex h-full min-w-0 flex-col gap-2.5 overflow-hidden p-3">
         <div className="rounded-xl border border-border-default bg-inset/70 px-3 py-2">
           <div className="flex items-center gap-3">
             <div className="flex w-9 shrink-0 flex-col items-center gap-1.5 rounded-2xl border border-border-default bg-[#050505] p-1.5 shadow-inner">
@@ -629,7 +642,7 @@ function CatalystMonitor({ news, fetchError }: { news: NewsResponse | null; fetc
       time: now,
       type: "SIGNAL",
       title: `${selectedSignal.pair} ${selectedSignal.action} ${selectedSignal.confidence}%`,
-      detail: selectedSignal.reasoning || "Selected pair signal is driving Current Decision Score.",
+      detail: selectedSignal.reasoning || "Selected pair signal is driving Live Decision Score.",
       tone: signalTone(selectedSignal.action),
     });
   } else {
