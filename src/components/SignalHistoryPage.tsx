@@ -54,23 +54,23 @@ function SignalRow({ signal }: { signal: SignalRecord }) {
   const outcomeColor = signal.outcome === "win" ? "#00ff88" : signal.outcome === "loss" ? "#ff4444" : "#64748b";
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-elevated/20 transition-colors">
+    <div className="flex items-center gap-2 px-3 py-1.5 hover:bg-elevated/20 transition-colors">
       {/* Action badge */}
       <span
-        className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded min-w-[40px] text-center"
+        className="min-w-[36px] rounded px-1.5 py-0.5 text-center text-[8px] font-bold uppercase tracking-wider"
         style={{ backgroundColor: `${actionColor}15`, color: actionColor, border: `1px solid ${actionColor}30` }}
       >
         {signal.action}
       </span>
 
       {/* Pair + price */}
-      <div className="min-w-[80px]">
+      <div className="min-w-[68px]">
         <p className="text-xs font-semibold text-txt-primary">{signal.pair}</p>
         <p className="text-[10px] text-txt-muted font-mono">{fmtPrice(signal.price)}</p>
       </div>
 
       {/* Confidence */}
-      <div className="min-w-[50px]">
+      <div className="min-w-[44px]">
         <div className="flex items-center gap-1">
           <div className="flex-1 h-1 bg-elevated rounded-full overflow-hidden">
             <div
@@ -86,7 +86,7 @@ function SignalRow({ signal }: { signal: SignalRecord }) {
       </div>
 
       {/* PnL */}
-      <div className="min-w-[60px] text-right">
+      <div className="min-w-[52px] text-right">
         {signal.pnlPercent !== undefined ? (
           <span className={`text-[10px] font-mono font-semibold ${signal.pnlPercent >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
             {signal.pnlPercent >= 0 ? "+" : ""}{signal.pnlPercent.toFixed(2)}%
@@ -97,7 +97,7 @@ function SignalRow({ signal }: { signal: SignalRecord }) {
       </div>
 
       {/* Outcome */}
-      <div className="min-w-[50px]">
+      <div className="min-w-[44px]">
         <span
           className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded"
           style={{ backgroundColor: `${outcomeColor}15`, color: outcomeColor }}
@@ -330,18 +330,18 @@ export default function SignalHistoryPage() {
 
       {/* Signal List */}
       <Card padding="none" className="overflow-hidden">
-        <div className="hidden md:flex px-4 py-2.5 border-b border-border-default items-center gap-3">
-          <span className="text-[9px] text-txt-faint uppercase tracking-wider min-w-[40px]">Type</span>
-          <span className="text-[9px] text-txt-faint uppercase tracking-wider min-w-[80px]">Pair</span>
-          <span className="text-[9px] text-txt-faint uppercase tracking-wider min-w-[50px]">Confidence</span>
-          <span className="text-[9px] text-txt-faint uppercase tracking-wider min-w-[60px] text-right">PnL</span>
-          <span className="text-[9px] text-txt-faint uppercase tracking-wider min-w-[50px]">Status</span>
+        <div className="hidden md:flex px-3 py-1.5 border-b border-border-default items-center gap-2">
+          <span className="text-[9px] text-txt-faint uppercase tracking-wider min-w-[36px]">Type</span>
+          <span className="text-[9px] text-txt-faint uppercase tracking-wider min-w-[68px]">Pair</span>
+          <span className="text-[9px] text-txt-faint uppercase tracking-wider min-w-[44px]">Confidence</span>
+          <span className="text-[9px] text-txt-faint uppercase tracking-wider min-w-[52px] text-right">PnL</span>
+          <span className="text-[9px] text-txt-faint uppercase tracking-wider min-w-[44px]">Status</span>
           <span className="text-[9px] text-txt-faint uppercase tracking-wider ml-auto">Time</span>
         </div>
         <div className="divide-y divide-border-default max-h-[500px] overflow-y-auto">
           <div className="md:hidden">
             {filteredSignals.slice(0, 50).map((s) => (
-              <div key={s.id} className="px-3 py-2.5">
+              <div key={s.id} className="px-3 py-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
@@ -351,7 +351,7 @@ export default function SignalHistoryPage() {
                   </div>
                   <span className="text-[9px] text-txt-faint">{fmtTimeAgo(s.timestamp)}</span>
                 </div>
-                <div className="mt-1.5 grid grid-cols-3 gap-2 text-[10px]">
+                <div className="mt-1 grid grid-cols-3 gap-1.5 text-[10px]">
                   <div><span className="text-txt-faint">Conf</span><p className="font-mono text-txt-secondary">{s.confidence}%</p></div>
                   <div><span className="text-txt-faint">Price</span><p className="font-mono text-txt-secondary">{fmtPrice(s.price)}</p></div>
                   <div><span className="text-txt-faint">PnL</span><p className={`font-mono ${(s.pnlPercent ?? 0) >= 0 ? "text-[#00ff88]" : "text-[#ff4444]"}`}>{s.pnlPercent !== undefined ? `${s.pnlPercent >= 0 ? "+" : ""}${s.pnlPercent.toFixed(2)}%` : "—"}</p></div>

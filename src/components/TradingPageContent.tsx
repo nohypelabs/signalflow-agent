@@ -299,7 +299,7 @@ export default function TradingPageContent() {
 
       {isMobile ? (
         <div className="md:hidden flex-1 overflow-y-auto p-2 pb-20 space-y-2">
-          <div className="h-[50vh] min-h-[320px] bg-card border border-border-default rounded-lg overflow-hidden">
+          <div className="h-[38vh] min-h-[240px] bg-card border border-border-default rounded-lg overflow-hidden">
             <ErrorBoundary name="Trading Chart">
               <TradingChart
                 klines={d.klines}
@@ -385,7 +385,7 @@ export default function TradingPageContent() {
       ) : (
       /* ═══ THREE-COLUMN BODY ═══ */
       <>
-      <div ref={containerRef} className="flex-1 min-h-[500px] flex overflow-hidden">
+      <div ref={containerRef} className="h-[375px] min-h-[375px] shrink-0 flex overflow-hidden">
         {/* Column A: Chart */}
         <div className="min-w-0 flex flex-col" style={{ width: `${widths.chart}%` }}>
           <ErrorBoundary name="Trading Chart">

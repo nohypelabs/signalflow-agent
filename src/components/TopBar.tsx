@@ -51,8 +51,6 @@ const systemItems = [
   { href: "/docs", label: "Docs", Icon: DocsIcon, description: "In-app documentation" },
 ];
 
-type MenuKey = keyof typeof navGroups;
-
 export default function TopBar({
   sodexStatus = "loading",
   tickerCount,
@@ -61,7 +59,7 @@ export default function TopBar({
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
-  const [openMenu, setOpenMenu] = useState<MenuKey | null>(null);
+  const [pagesOpen, setPagesOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -81,6 +79,8 @@ export default function TopBar({
     minute: "2-digit",
     timeZone: "Asia/Jakarta",
   });
+  const activePage = Object.values(navGroups).flat().find((item) => pathname === item.href);
+  const ActivePageIcon = activePage?.Icon;
 
   useEffect(() => {
     Object.values(navGroups).flat().forEach((item) => router.prefetch(item.href));
@@ -102,63 +102,71 @@ export default function TopBar({
   // Close settings modal on route change
   useEffect(() => {
     setSettingsOpen(false);
-    setOpenMenu(null);
+    setPagesOpen(false);
   }, [pathname]);
 
   const navigate = (href: string) => {
     router.push(href);
-    setOpenMenu(null);
+    setPagesOpen(false);
     setSettingsOpen(false);
   };
 
   // Check if any system page is active
   const isSystemActive = systemItems.some((item) => pathname === item.href);
 
-  const menuButton = (key: MenuKey, label: string) => {
-    const active = navGroups[key].some((item) => pathname === item.href);
+  const pagesMenuButton = () => {
     return (
       <div className="relative">
         <button
           type="button"
-          onClick={() => setOpenMenu(openMenu === key ? null : key)}
-          aria-label={`${label} pages menu`}
-          aria-expanded={openMenu === key}
+          onClick={() => setPagesOpen(!pagesOpen)}
+          aria-label="Pages menu"
+          aria-expanded={pagesOpen}
           className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors ${
-            active
+            activePage
               ? "border-accent/35 bg-accent/10 text-accent"
               : "border-border-default bg-elevated/45 text-txt-primary hover:border-accent/30 hover:bg-accent/10"
           }`}
         >
-          {label}
-          <ChevronDownIcon size={11} className={`transition-transform ${openMenu === key ? "rotate-180" : ""}`} />
+          {ActivePageIcon && <ActivePageIcon size={14} />}
+          {activePage?.label ?? "Pages"}
+          <ChevronDownIcon size={11} className={`transition-transform ${pagesOpen ? "rotate-180" : ""}`} />
         </button>
         <AnimatePresence>
-          {openMenu === key && (
+          {pagesOpen && (
             <motion.div
               initial={{ opacity: 0, y: -4, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -4, scale: 0.98 }}
               transition={{ duration: 0.15 }}
-              className="absolute left-0 top-10 z-50 w-52 rounded-xl border border-border-default bg-card p-1.5 shadow-2xl shadow-black/50"
+              className="absolute left-0 top-10 z-50 w-56 rounded-xl border border-border-default bg-card p-1.5 shadow-2xl shadow-black/50"
             >
-              {navGroups[key].map(({ href, label: itemLabel, Icon }) => {
-                const itemActive = pathname === href;
-                return (
-                  <button
-                    key={href}
-                    type="button"
-                    onClick={() => navigate(href)}
-                    className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
-                      itemActive
-                        ? "bg-accent-muted text-accent"
-                        : "text-txt-secondary hover:bg-elevated hover:text-txt-primary"
-                    }`}
-                  >
-                    <Icon size={14} className={itemActive ? "text-accent" : "text-txt-muted"} />
-                    {itemLabel}
-                  </button>
-                );
-              })}
+              {(["overview", "trading"] as const).map((groupKey, index) => (
+                <div key={groupKey}>
+                  {index > 0 && <div className="my-1 h-px bg-border-default" />}
+                  <div className="px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-txt-faint">
+                    {groupKey === "overview" ? "Overview" : "Trading"}
+                  </div>
+                  {navGroups[groupKey].map(({ href, label: itemLabel, Icon }) => {
+                    const itemActive = pathname === href;
+                    return (
+                      <button
+                        key={href}
+                        type="button"
+                        onClick={() => navigate(href)}
+                        className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
+                          itemActive
+                            ? "bg-accent-muted text-accent"
+                            : "text-txt-secondary hover:bg-elevated hover:text-txt-primary"
+                        }`}
+                      >
+                        <Icon size={14} className={itemActive ? "text-accent" : "text-txt-muted"} />
+                        {itemLabel}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
             </motion.div>
           )}
         </AnimatePresence>
@@ -202,8 +210,7 @@ export default function TopBar({
             <span className="hidden xl:inline-flex px-1.5 text-[10px] font-bold uppercase tracking-wider text-txt-secondary">
               Pages
             </span>
-            {menuButton("overview", "Overview")}
-            {menuButton("trading", "Trading")}
+            {pagesMenuButton()}
           </nav>
 
         </div>
