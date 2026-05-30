@@ -71,6 +71,14 @@ export default function DashboardIntroGate() {
         </span>
       </div>
 
+      <div className="pointer-events-none absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 justify-center sm:bottom-4">
+        <img
+          src="/icons/signalflow-banner.png"
+          alt="SignalFlow Agent"
+          className="h-auto w-[min(46vw,260px)] object-contain opacity-95"
+        />
+      </div>
+
       {/* Content overlay */}
       <div className="relative z-20 flex h-full flex-col justify-between px-5 py-5 sm:px-8 sm:py-8">
         {/* Top bar */}
@@ -116,14 +124,7 @@ export default function DashboardIntroGate() {
         </div>
 
         {/* Bottom bar */}
-        <div className="relative flex items-end justify-between text-[11px] text-white/50">
-          <div className="pointer-events-none absolute bottom-0 left-1/2 flex -translate-x-1/2 justify-center">
-            <img
-              src="/icons/signalflow-banner.png"
-              alt="SignalFlow Agent"
-              className="h-auto w-[min(46vw,260px)] object-contain opacity-95"
-            />
-          </div>
+        <div className="flex items-end justify-between text-[11px] text-white/50">
           <p className="max-w-sm font-mono leading-5">
             AI-driven signals. Multi-timeframe confluence. Paper-first execution.
           </p>
