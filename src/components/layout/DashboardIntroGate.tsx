@@ -124,10 +124,10 @@ export default function DashboardIntroGate() {
           <div className="mb-10 text-center">
             <p className="text-[10px] uppercase tracking-[0.4em] text-[#00e5a8]">SignalFlow Agent</p>
             <h1 className="mt-4 text-4xl font-light tracking-[-0.04em] text-[#f8f3e4] sm:text-6xl lg:text-7xl">
-              Trade with structure.
+              From signal to execution. Zero emotion.
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-white/60 sm:text-base">
-              Start in paper futures, validate the signal flow, then move into live execution only when you are ready.
+              AI-powered confluence engine scores every opportunity across 5 dimensions. Start in paper futures, validate the flow, then execute when the data says go.
             </p>
           </div>
 
@@ -157,7 +157,7 @@ export default function DashboardIntroGate() {
 
         <div className="flex items-end justify-between text-[11px] text-white/50">
           <p className="max-w-sm font-mono leading-5">
-            Built for signal validation, execution review, and controlled entry into live trading.
+            AI-driven signals. Multi-timeframe confluence. Paper-first execution.
           </p>
           <button
             type="button"
