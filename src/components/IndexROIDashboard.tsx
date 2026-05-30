@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
+import { LineChart } from "lucide-react";
 
 interface IndexData {
   ticker: string;
@@ -86,7 +87,7 @@ export default function IndexROIDashboard() {
     <Card padding="none" className="overflow-hidden">
       <div className="px-4 py-3 border-b border-border-default">
         <div className="flex items-center gap-2">
-          <span className="text-xs">📈</span>
+          <LineChart size={14} className="text-info" aria-hidden="true" />
           <h3 className="text-sm font-semibold text-txt-primary">Index Performance</h3>
           <Badge variant="info" size="sm">Live</Badge>
         </div>

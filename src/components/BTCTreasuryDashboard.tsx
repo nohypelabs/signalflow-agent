@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
+import { Landmark } from "lucide-react";
 
 interface BTCTreasury {
   ticker: string;
@@ -88,7 +89,7 @@ export default function BTCTreasuryDashboard() {
     <Card padding="none" className="overflow-hidden">
       <div className="px-4 py-3 border-b border-border-default">
         <div className="flex items-center gap-2">
-          <span className="text-xs">🏦</span>
+          <Landmark size={14} className="text-info" aria-hidden="true" />
           <h3 className="text-sm font-semibold text-txt-primary">BTC Treasuries</h3>
           <Badge variant="info" size="sm">{treasuries.length} companies</Badge>
         </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
+import { Activity } from "lucide-react";
 
 interface MacroEventItem {
   date: string;
@@ -65,7 +66,7 @@ export default function MacroSurprise({ eventName = "Federal Funds Rate" }: Prop
     <Card padding="none" className="overflow-hidden">
       <div className="px-4 py-3 border-b border-border-default">
         <div className="flex items-center gap-2">
-          <span className="text-xs">📊</span>
+          <Activity size={14} className="text-info" aria-hidden="true" />
           <h3 className="text-sm font-semibold text-txt-primary">Macro Surprises</h3>
         </div>
       </div>
