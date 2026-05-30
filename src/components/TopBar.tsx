@@ -181,16 +181,14 @@ export default function TopBar({
         {/* Left: brand + primary navigation */}
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-black border border-accent/20 flex items-center justify-center overflow-hidden">
-              <Image
-                src="/icons/signalflow-logo.png"
-                alt="SignalFlow logo"
-                width={28}
-                height={28}
-                className="h-full w-full object-cover"
-                priority
-              />
-            </div>
+            <Image
+              src="/icons/signalflow-logo.png"
+              alt="SignalFlow logo"
+              width={36}
+              height={36}
+              className="h-9 w-9 object-contain"
+              priority
+            />
             <span className="font-bold text-[13px] text-txt-primary tracking-tight">SignalFlow</span>
           </div>
 
