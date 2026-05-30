@@ -34,7 +34,6 @@ function fmtPrice(p: number, coin: string): string {
 }
 
 const LEVERAGE_PRESETS = [1, 2, 3, 5, 10];
-const MARGIN_PRESETS = [100, 250, 500, 1000];
 
 export default function OrderForm({ pair, coin, currentPrice, signal, isConnected, paperBalance, mode = "paper", tradingType, error, onExecute }: Props) {
   const [side, setSide] = useState<"LONG" | "SHORT">("LONG");
@@ -162,7 +161,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
   const displayedError = error ?? (marginNum > 0 ? validationError : null);
 
   return (
-    <div className="flex h-full flex-col bg-surface">
+    <div className="flex h-full flex-col bg-card">
       {/* ═══ [1] Long / Short Tabs ═══ */}
       <div className="flex border-b border-border-default">
         <button onClick={() => setSide("LONG")} className={`flex-1 py-2.5 text-sm font-bold cursor-pointer transition-all border-b-2 ${
@@ -275,15 +274,6 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
             <input type="number" value={margin} onChange={(e) => { setMargin(e.target.value); setSliderPct(0); }} placeholder="0.00"
               className="flex-1 bg-transparent text-sm font-mono text-txt-primary outline-none placeholder:text-txt-faint" />
             <span className="text-[10px] text-txt-muted font-semibold shrink-0">USDC</span>
-          </div>
-          {/* Quick amounts */}
-          <div className="flex gap-1.5 mt-2">
-            {MARGIN_PRESETS.filter((m) => !paperBalance || m <= paperBalance).map((m) => (
-              <button key={m} onClick={() => { setMargin(m.toString()); setSliderPct(paperBalance ? (m / paperBalance) * 100 : 0); }}
-                className="flex-1 text-[9px] py-1 rounded border border-border-default text-txt-dim hover:text-txt-secondary hover:border-border-muted transition-colors cursor-pointer">
-                ${m}
-              </button>
-            ))}
           </div>
         </div>
 

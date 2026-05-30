@@ -333,7 +333,7 @@ export default function TradingPageContent() {
             </div>
           </div>
 
-          <div className="bg-surface border border-border-default rounded-lg overflow-hidden">
+          <div className="bg-card border border-border-default rounded-lg overflow-hidden">
             <ErrorBoundary name="Order Form">
               <OrderForm
                 pair={pair}
@@ -417,7 +417,7 @@ export default function TradingPageContent() {
         <ResizeHandle onDrag={(dx) => handleResize("book", dx)} onDoubleClick={resetWidths} />
 
         {/* Column C: Order Form */}
-        <div className="min-w-0 flex flex-col overflow-y-auto scrollbar-none bg-surface" style={{ width: `${widths.form}%` }}>
+        <div className="min-w-0 flex flex-col overflow-y-auto scrollbar-none bg-card" style={{ width: `${widths.form}%` }}>
           <ErrorBoundary name="Order Form">
             <OrderForm pair={pair} coin={coin} currentPrice={currentPrice} signal={signalContext} isConnected={d.isConnected} paperBalance={paper.balance.available} mode={tradeMode} tradingType={tradingType} error={tradeError} onModeChange={setTradeMode} onExecute={handleExecute} />
           </ErrorBoundary>
