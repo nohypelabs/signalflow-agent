@@ -18,6 +18,7 @@ import type { SoDEXKline, SoDEXTicker } from "@/lib/types/trade";
 import type { Signal } from "@/lib/types/signal";
 import { fetchKlines } from "@/lib/api/datasources";
 import { useChartDrawings } from "@/lib/hooks/useChartDrawings";
+import { getCoinIcon } from "@/lib/coin-icons";
 import ChartDrawingToolbar from "./charts/ChartDrawingToolbar";
 import ChartDrawingOverlay from "./charts/ChartDrawingOverlay";
 import MarketSelectorModal from "./MarketSelectorModal";
@@ -563,15 +564,22 @@ export default function TradingChart({
               className="group flex items-center gap-2 min-w-0 rounded-lg border border-border-default bg-inset/40 px-2 py-1 text-txt-primary hover:border-border-muted hover:bg-elevated/25 transition-colors cursor-pointer"
             >
               <div className="relative shrink-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${pair.split("/")[0].toLowerCase()}.svg`}
-                  alt={pair.split("/")[0]}
-                  width={20}
-                  height={20}
-                  className="rounded-full"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                />
+                {(() => {
+                  const base = pair.split("/")[0];
+                  const icon = getCoinIcon(base);
+                  if (!icon) return null;
+                  return (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={icon}
+                      alt={base}
+                      width={20}
+                      height={20}
+                      className="rounded-full"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                  );
+                })()}
                 {dataAge !== null && dataAge < 120_000 && (
                   <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-buy border-[1.5px] border-card" />
                 )}

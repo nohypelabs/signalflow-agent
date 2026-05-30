@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import type { SoDEXTicker } from "@/lib/types/trade";
 import type { Signal } from "@/lib/types/signal";
 import { sodexSymbolToBase } from "@/lib/pair-map";
+import { getCoinIcon } from "@/lib/coin-icons";
 
 /* ── Types ── */
 
@@ -116,13 +117,14 @@ function saveWatchlist(list: string[]) {
 
 function MarketIcon({ base, category, size = 26 }: { base: string; category: Category; size?: number }) {
   const [errored, setErrored] = useState(false);
+  const realIcon = getCoinIcon(base);
 
-  if (category === "Crypto" && !errored) {
+  if (category === "Crypto" && !errored && realIcon) {
     return (
       // Dynamic external crypto icons are intentionally rendered as plain images.
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${base.toLowerCase()}.svg`}
+        src={realIcon}
         alt={base} width={size} height={size}
         className="shrink-0 rounded-full"
         onError={() => setErrored(true)}
