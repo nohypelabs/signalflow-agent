@@ -537,7 +537,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
   );
 }
 
-/* ── News Feed ── */
+/* ── Catalyst Monitor ── */
 
 interface NewsItem {
   id: number;
@@ -572,52 +572,183 @@ function sentimentVariant(label: string): string {
   return "muted";
 }
 
-function NewsFeed({ news, fetchError }: { news: NewsResponse | null; fetchError: boolean }) {
+interface CatalystEvent {
+  id: string;
+  time: number;
+  type: "SIGNAL" | "MARKET" | "RISK" | "DATA" | "NEWS";
+  title: string;
+  detail: string;
+  tone: "buy" | "sell" | "hold" | "accent" | "muted";
+}
+
+function catalystToneClasses(tone: CatalystEvent["tone"]): string {
+  if (tone === "buy") return "border-buy-dim bg-buy-muted text-buy";
+  if (tone === "sell") return "border-sell-dim bg-sell-muted text-sell";
+  if (tone === "hold") return "border-hold-dim bg-hold-muted text-hold";
+  if (tone === "accent") return "border-accent-dim bg-accent-muted text-accent";
+  return "border-border-default bg-elevated text-txt-secondary";
+}
+
+function signalTone(action: Signal["action"]): CatalystEvent["tone"] {
+  if (action === "LONG") return "buy";
+  if (action === "SHORT") return "sell";
+  return "hold";
+}
+
+function CatalystMonitor({ news, fetchError }: { news: NewsResponse | null; fetchError: boolean }) {
+  const d = useDashboard();
   const apiError = news?.error;
   const hasData = news && news.list.length > 0;
+  const now = Date.now();
+  const selectedBase = d.selectedPair.split("/")[0].replace(/^v/, "").replace(/_vUSDC$/, "");
+  const selectedSignal = d.liveSignals.find((s) => normalizePair(s.pair) === normalizePair(d.selectedPair)) ?? null;
+  const activeTickers = (d.tickers ?? [])
+    .map((t) => ({
+      symbol: t.symbol.replace(/^v/, "").replace(/_vUSDC$/, ""),
+      price: toFiniteNumber(t.lastPx),
+      change: toFiniteNumber(t.changePct),
+      volume: toFiniteNumber(t.quoteVolume),
+    }))
+    .filter((t) => t.price > 0);
+  const cryptoTickers = activeTickers.filter((t) => !isStockOrIndex(t.symbol));
+  const topMover = [...cryptoTickers].sort((a, b) => Math.abs(b.change) - Math.abs(a.change))[0];
+  const volumeLeader = [...cryptoTickers].sort((a, b) => b.volume - a.volume)[0];
+  const advancing = cryptoTickers.filter((t) => t.change > 0).length;
+  const declining = cryptoTickers.filter((t) => t.change < 0).length;
+  const topSignals = [...d.liveSignals].sort((a, b) => b.confidence - a.confidence).slice(0, 4);
+
+  const events: CatalystEvent[] = [];
+
+  if (selectedSignal) {
+    events.push({
+      id: `selected-${selectedSignal.pair}`,
+      time: now,
+      type: "SIGNAL",
+      title: `${selectedSignal.pair} ${selectedSignal.action} ${selectedSignal.confidence}%`,
+      detail: selectedSignal.reasoning || "Selected pair signal is driving Current Decision Score.",
+      tone: signalTone(selectedSignal.action),
+    });
+  } else {
+    events.push({
+      id: "selected-waiting",
+      time: now,
+      type: "RISK",
+      title: `${selectedBase}/USDC no executable signal`,
+      detail: d.signalsLoading ? "Signal engine is syncing selected pair." : "Current pair is waiting for confirmation.",
+      tone: "hold",
+    });
+  }
+
+  topSignals
+    .filter((s) => !selectedSignal || normalizePair(s.pair) !== normalizePair(selectedSignal.pair))
+    .slice(0, 2)
+    .forEach((signal, index) => {
+      events.push({
+        id: `signal-${signal.pair}-${index}`,
+        time: now - (index + 1) * 45000,
+        type: "SIGNAL",
+        title: `${signal.pair} ${signal.action} ${signal.confidence}%`,
+        detail: signal.actionV2?.replaceAll("_", " ") ?? signal.regime ?? "Signal engine update.",
+        tone: signalTone(signal.action),
+      });
+    });
+
+  if (topMover) {
+    events.push({
+      id: `mover-${topMover.symbol}`,
+      time: now - 120000,
+      type: "MARKET",
+      title: `${topMover.symbol} ${changeArrow(topMover.change)} ${Math.abs(topMover.change).toFixed(2)}%`,
+      detail: `Largest live crypto move. Breadth ${advancing} advancing / ${declining} declining.`,
+      tone: topMover.change > 0 ? "buy" : topMover.change < 0 ? "sell" : "muted",
+    });
+  }
+
+  if (volumeLeader) {
+    events.push({
+      id: `volume-${volumeLeader.symbol}`,
+      time: now - 180000,
+      type: "MARKET",
+      title: `${volumeLeader.symbol} liquidity leader`,
+      detail: `${fmtUsd(volumeLeader.volume)} 24H quote volume on the current tape.`,
+      tone: "accent",
+    });
+  }
+
+  events.push({
+    id: "data-sodex",
+    time: now - 240000,
+    type: "DATA",
+    title: `SoDEX ${d.sodexStatus}`,
+    detail: d.marketError ?? `${activeTickers.length} instruments streaming into SignalFlow.`,
+    tone: d.sodexStatus === "connected" ? "buy" : d.sodexStatus === "loading" ? "hold" : "sell",
+  });
+
+  if (fetchError || apiError) {
+    events.push({
+      id: "data-news-degraded",
+      time: now - 300000,
+      type: "DATA",
+      title: "SoSoValue news layer degraded",
+      detail: apiError ?? "News endpoint unreachable. Signal tape remains live from market and engine data.",
+      tone: "hold",
+    });
+  } else if (hasData && news?.sentiment) {
+    events.push({
+      id: "news-sentiment",
+      time: now - 300000,
+      type: "NEWS",
+      title: `${news.sentiment.label} news sentiment ${news.sentiment.score}`,
+      detail: `${news.list.length} SoSoValue stories available for narrative context.`,
+      tone: sentimentVariant(news.sentiment.label) as CatalystEvent["tone"],
+    });
+  } else {
+    events.push({
+      id: "data-news-waiting",
+      time: now - 300000,
+      type: "DATA",
+      title: "News layer waiting",
+      detail: "Market and signal catalysts stay active while narrative data loads.",
+      tone: "muted",
+    });
+  }
 
   return (
     <Panel
-      title="NEWS FEED"
-      badge={hasData && news?.sentiment && (
-        <Badge variant={sentimentVariant(news.sentiment.label)} size="sm">
-          {news.sentiment.label} {news.sentiment.score}
-        </Badge>
-      )}
+      title="CATALYST MONITOR"
+      badge={<Badge variant={apiError || fetchError ? "hold" : "buy"} size="sm">{events.length} LIVE</Badge>}
       className="h-[544px]"
     >
-      <div>
-        {hasData && news?.list.map((item) => (
+      <div className="divide-y divide-border-default">
+        {events.map((event) => (
           <div
-            key={item.id}
-            className="border-b border-border-default px-3 py-2.5 transition-colors hover:bg-elevated/30"
+            key={event.id}
+            className="px-3 py-2.5 transition-colors hover:bg-elevated/30"
           >
             <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] text-txt-muted">{timeAgo(item.release_time)}</span>
-              {item.matched_currencies?.slice(0, 3).map((c) => (
-                <span key={c.symbol} className="rounded bg-accent-muted px-1.5 py-0.5 text-[9px] font-semibold text-accent">
+              <span className="w-9 font-mono text-[10px] text-txt-muted">{timeAgo(event.time)}</span>
+              <span className={cx("rounded border px-1.5 py-0.5 text-[9px] font-bold", catalystToneClasses(event.tone))}>
+                {event.type}
+              </span>
+            </div>
+            <p className="mt-1 text-xs font-semibold text-txt-primary leading-snug">{event.title}</p>
+            <p className="mt-0.5 text-[10px] leading-snug text-txt-tertiary line-clamp-2">{event.detail}</p>
+          </div>
+        ))}
+        {hasData && news?.list.slice(0, 2).map((item) => (
+          <div key={`news-${item.id}`} className="px-3 py-2.5 transition-colors hover:bg-elevated/30">
+            <div className="flex items-center gap-2">
+              <span className="w-9 font-mono text-[10px] text-txt-muted">{timeAgo(item.release_time)}</span>
+              <span className="rounded border border-accent-dim bg-accent-muted px-1.5 py-0.5 text-[9px] font-bold text-accent">NEWS</span>
+              {item.matched_currencies?.slice(0, 2).map((c) => (
+                <span key={c.symbol} className="rounded bg-elevated px-1.5 py-0.5 text-[9px] font-semibold text-txt-secondary">
                   {c.symbol}
                 </span>
               ))}
             </div>
-            <p className="mt-1 text-xs font-medium text-txt-primary leading-snug line-clamp-2">{item.title}</p>
+            <p className="mt-1 text-xs font-semibold text-txt-primary leading-snug line-clamp-2">{item.title}</p>
           </div>
         ))}
-        {fetchError && (
-          <div className="flex flex-col items-center justify-center py-8 gap-2">
-            <span className="text-xs font-semibold text-sell">Connection Failed</span>
-            <span className="text-[11px] text-txt-tertiary">Unable to reach news API</span>
-          </div>
-        )}
-        {!news && !fetchError && (
-          <div className="flex items-center justify-center py-12 text-xs text-txt-muted">Loading news…</div>
-        )}
-        {apiError && !hasData && !fetchError && (
-          <div className="flex flex-col items-center justify-center py-8 gap-2">
-            <span className="text-xs font-semibold text-hold">API Quota Exceeded</span>
-            <span className="text-[11px] text-txt-tertiary text-center px-4">SoSoValue monthly limit reached. Resumes after quota reset.</span>
-          </div>
-        )}
       </div>
     </Panel>
   );
@@ -1279,7 +1410,7 @@ export default function SignalFlowCommandCenter() {
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,2.8fr)_minmax(280px,1.3fr)_minmax(280px,1.2fr)]">
         <MarketCanvas pair={pair} />
         <DecisionPanel pair={pair} news={news} />
-        <NewsFeed news={news} fetchError={newsFetchError} />
+        <CatalystMonitor news={news} fetchError={newsFetchError} />
       </div>
       <MarketStatsBar />
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
