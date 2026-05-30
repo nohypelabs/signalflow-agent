@@ -162,11 +162,11 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
   const displayedError = error ?? (marginNum > 0 ? validationError : null);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex h-full flex-col bg-surface">
       {/* ═══ [1] Long / Short Tabs ═══ */}
       <div className="flex border-b border-border-default">
         <button onClick={() => setSide("LONG")} className={`flex-1 py-2.5 text-sm font-bold cursor-pointer transition-all border-b-2 ${
-          side === "LONG" ? "text-buy border-buy bg-buy/5" : "text-txt-dim border-transparent hover:text-txt-secondary"
+          side === "LONG" ? "text-hold border-hold bg-hold/8" : "text-txt-dim border-transparent hover:text-txt-secondary"
         }`}>Long</button>
         <button onClick={() => setSide("SHORT")} className={`flex-1 py-2.5 text-sm font-bold cursor-pointer transition-all border-b-2 ${
           side === "SHORT" ? "text-sell border-sell bg-sell/5" : "text-txt-dim border-transparent hover:text-txt-secondary"
@@ -177,10 +177,10 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
         {/* ═══ [2] Order Type Selector ═══ */}
         <div className="flex items-center gap-0.5 bg-inset rounded-lg p-0.5 border border-border-default">
           <button onClick={() => setOrderType("Market")} className={`flex-1 text-[10px] py-1.5 rounded-md font-semibold cursor-pointer transition-colors ${
-            orderType === "Market" ? "bg-elevated text-accent border border-accent/20" : "text-txt-dim hover:text-txt-muted border border-transparent"
+            orderType === "Market" ? "bg-elevated text-hold border border-hold/25" : "text-txt-dim hover:text-txt-muted border border-transparent"
           }`}>Market</button>
           <button onClick={() => setOrderType("Limit")} className={`flex-1 text-[10px] py-1.5 rounded-md font-semibold cursor-pointer transition-colors ${
-            orderType === "Limit" ? "bg-elevated text-accent border border-accent/20" : "text-txt-dim hover:text-txt-muted border border-transparent"
+            orderType === "Limit" ? "bg-elevated text-hold border border-hold/25" : "text-txt-dim hover:text-txt-muted border border-transparent"
           }`}>Limit</button>
         </div>
 
@@ -189,7 +189,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
           <div className="flex items-center gap-2">
             <span className="text-[9px] text-txt-faint uppercase tracking-wider shrink-0">Price</span>
             <input type="number" value={limitPrice} onChange={(e) => setLimitPrice(e.target.value)} placeholder={currentPrice ? fmtPrice(currentPrice, coin) : "0.00"}
-              className="flex-1 bg-inset border border-border-default rounded-lg px-2.5 py-1.5 text-xs font-mono text-txt-primary outline-none focus:border-accent/50" />
+              className="flex-1 bg-inset border border-border-default rounded-lg px-2.5 py-1.5 text-xs font-mono text-txt-primary outline-none focus:border-hold/50" />
           </div>
         )}
 
@@ -199,7 +199,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
             <span className="text-[9px] text-txt-faint uppercase tracking-wider">Leverage</span>
             <button onClick={() => setShowLeverageSettings(!showLeverageSettings)}
               className="flex items-center gap-1 px-2 py-1 rounded-md bg-inset border border-border-default cursor-pointer hover:border-border-muted transition-colors">
-              <span className="text-xs font-bold font-mono text-accent">{leverage}x</span>
+              <span className="text-xs font-bold font-mono text-hold">{leverage}x</span>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-txt-dim"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" /></svg>
             </button>
           </div>
@@ -217,9 +217,9 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
                 {(["Isolated", "Cross"] as const).map((mode) => (
                   <button key={mode} onClick={() => { setMarginMode(mode); setShowMarginDropdown(false); }}
                     className={`w-full flex items-center gap-2 text-left px-3 py-2.5 text-[12px] font-medium cursor-pointer transition-colors ${
-                      marginMode === mode ? "bg-accent/8 text-accent" : "text-txt-secondary hover:bg-elevated/30 hover:text-txt-primary"
+                      marginMode === mode ? "bg-hold/10 text-hold" : "text-txt-secondary hover:bg-elevated/30 hover:text-txt-primary"
                     }`}>
-                    {marginMode === mode && <span className="w-1.5 h-1.5 rounded-full bg-accent" />}
+                    {marginMode === mode && <span className="w-1.5 h-1.5 rounded-full bg-hold" />}
                     <span>{mode}</span>
                     <span className="text-[9px] text-txt-faint ml-auto">{mode === "Isolated" ? "Safer" : "Flexible"}</span>
                   </button>
@@ -234,14 +234,14 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
           <div className="space-y-2.5 p-3 rounded-xl bg-inset/50 border border-border-default">
             <div className="flex items-center justify-between">
               <span className="text-[9px] text-txt-dim uppercase tracking-wider">Leverage</span>
-              <span className="text-sm font-bold font-mono text-accent tabular-nums">{leverage}x</span>
+              <span className="text-sm font-bold font-mono text-hold tabular-nums">{leverage}x</span>
             </div>
             <input type="range" min={1} max={maxLeverage} value={leverage} onChange={(e) => setLeverage(Number(e.target.value))}
-              className="w-full h-1.5 bg-elevated rounded-full appearance-none cursor-pointer accent-accent" />
+              className="w-full h-1.5 bg-elevated rounded-full appearance-none cursor-pointer accent-hold" />
             <div className="flex gap-1.5">
               {leveragePresets.map((lev) => (
                 <button key={lev} onClick={() => setLeverage(lev)} className={`flex-1 text-[10px] py-1.5 rounded-lg cursor-pointer transition-all font-medium ${
-                  leverage === lev ? "bg-accent/15 text-accent border border-accent/30" : "bg-inset text-txt-dim border border-border-default hover:border-border-muted hover:text-txt-secondary"
+                  leverage === lev ? "bg-hold/15 text-hold border border-hold/35" : "bg-inset text-txt-dim border border-border-default hover:border-border-muted hover:text-txt-secondary"
                 }`}>{lev}x</button>
               ))}
             </div>
@@ -267,11 +267,11 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
               <span className="text-[9px] text-txt-faint uppercase tracking-wider">Amount</span>
               {paperBalance && paperBalance > 0 && (
                 <button onClick={() => { setMargin(paperBalance.toFixed(2)); setSliderPct(100); }}
-                  className="text-[8px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-bold cursor-pointer hover:bg-accent/15 transition-colors">MAX</button>
+                  className="text-[8px] px-1.5 py-0.5 rounded bg-hold/10 text-hold font-bold cursor-pointer hover:bg-hold/15 transition-colors">MAX</button>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2 bg-inset border border-border-default rounded-lg px-2.5 py-2 focus-within:border-accent/50 transition-colors">
+          <div className="flex items-center gap-2 bg-inset border border-border-default rounded-lg px-2.5 py-2 focus-within:border-hold/50 transition-colors">
             <input type="number" value={margin} onChange={(e) => { setMargin(e.target.value); setSliderPct(0); }} placeholder="0.00"
               className="flex-1 bg-transparent text-sm font-mono text-txt-primary outline-none placeholder:text-txt-faint" />
             <span className="text-[10px] text-txt-muted font-semibold shrink-0">USDC</span>
@@ -290,8 +290,8 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
         {/* ═══ [6] Percentage Slider ═══ */}
         <div className="flex items-center gap-2">
           <input type="range" min={0} max={100} step={5} value={sliderPct} onChange={(e) => setSliderPct(Number(e.target.value))}
-            className="flex-1 h-1 bg-elevated rounded-full appearance-none cursor-pointer accent-accent" />
-          <span className="text-[10px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded-md min-w-[40px] text-center tabular-nums">{sliderPct}%</span>
+            className="flex-1 h-1 bg-elevated rounded-full appearance-none cursor-pointer accent-hold" />
+          <span className="text-[10px] font-mono text-hold bg-hold/10 px-2 py-0.5 rounded-md min-w-[40px] text-center tabular-nums">{sliderPct}%</span>
         </div>
 
         {/* Position summary (when margin entered) */}
@@ -307,12 +307,12 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
         <div className="space-y-2">
           <label className="flex items-center gap-2 cursor-pointer group">
             <input type="checkbox" checked={reduceOnly} onChange={(e) => setReduceOnly(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border border-border-default bg-inset accent-accent cursor-pointer" />
+              className="w-3.5 h-3.5 rounded border border-border-default bg-inset accent-hold cursor-pointer" />
             <span className="text-[10px] text-txt-secondary group-hover:text-txt-primary transition-colors">Reduce Only</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer group">
             <input type="checkbox" checked={showTpSl} onChange={(e) => setShowTpSl(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border border-border-default bg-inset accent-accent cursor-pointer" />
+              className="w-3.5 h-3.5 rounded border border-border-default bg-inset accent-hold cursor-pointer" />
             <span className="text-[10px] text-txt-secondary group-hover:text-txt-primary transition-colors">Take Profit / Stop Loss</span>
           </label>
         </div>
@@ -324,29 +324,19 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-[8px] text-txt-faint uppercase tracking-wider">
-                  Take Profit {tpPercent && <span className="text-buy">({tpPercent}%)</span>}
+                  Take Profit {tpPercent && <span className="text-hold">({tpPercent}%)</span>}
                 </label>
                 {currentPrice && takeProfit && (
-                  <span className="text-[9px] font-mono text-buy/70 tabular-nums">
+                  <span className="text-[9px] font-mono text-hold/80 tabular-nums">
                     ${fmtPrice(parseFloat(takeProfit), coin)}
                   </span>
                 )}
               </div>
               <div className="flex gap-1">
                 <input type="number" value={takeProfit} onChange={(e) => { setTakeProfit(e.target.value); setTpPercent(""); }} placeholder="Price"
-                  className="flex-1 bg-inset border border-border-default rounded px-2 py-1.5 text-[10px] font-mono text-txt-primary outline-none focus:border-buy/50" />
+                  className="flex-1 bg-inset border border-border-default rounded px-2 py-1.5 text-[10px] font-mono text-txt-primary outline-none focus:border-hold/50" />
                 <input type="number" value={tpPercent} onChange={(e) => setTpPercent(e.target.value)} placeholder="%"
-                  className="w-12 bg-inset border border-border-default rounded px-1.5 py-1.5 text-[10px] font-mono text-txt-primary outline-none focus:border-buy/50" />
-              </div>
-              <div className="flex gap-1 mt-1.5">
-                {[1, 2, 3, 5, 10, 25].map((pct) => (
-                  <button key={pct} onClick={() => setTpPercent(pct.toString())}
-                    className={`flex-1 text-[8px] py-1 rounded border cursor-pointer transition-colors ${
-                      tpPercent === pct.toString()
-                        ? "bg-buy/15 text-buy border-buy/30"
-                        : "border-border-default text-txt-dim hover:text-buy hover:border-buy/20"
-                    }`}>{pct}%</button>
-                ))}
+                  className="w-12 bg-inset border border-border-default rounded px-1.5 py-1.5 text-[10px] font-mono text-txt-primary outline-none focus:border-hold/50" />
               </div>
             </div>
 
@@ -368,16 +358,6 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
                 <input type="number" value={slPercent} onChange={(e) => setSlPercent(e.target.value)} placeholder="%"
                   className="w-12 bg-inset border border-border-default rounded px-1.5 py-1.5 text-[10px] font-mono text-txt-primary outline-none focus:border-sell/50" />
               </div>
-              <div className="flex gap-1 mt-1.5">
-                {[1, 2, 3, 5, 10, 25].map((pct) => (
-                  <button key={pct} onClick={() => setSlPercent(pct.toString())}
-                    className={`flex-1 text-[8px] py-1 rounded border cursor-pointer transition-colors ${
-                      slPercent === pct.toString()
-                        ? "bg-sell/15 text-sell border-sell/30"
-                        : "border-border-default text-txt-dim hover:text-sell hover:border-sell/20"
-                    }`}>{pct}%</button>
-                ))}
-              </div>
             </div>
           </div>
         )}
@@ -386,7 +366,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
         {riskReward && showTpSl && (
           <div className="flex items-center justify-between px-2 py-1.5 bg-elevated/30 rounded-lg">
             <span className="text-[8px] text-txt-faint uppercase tracking-wider">Risk/Reward</span>
-            <span className={`text-xs font-bold font-mono tabular-nums ${parseFloat(riskReward) >= 2 ? "text-buy" : parseFloat(riskReward) >= 1 ? "text-hold" : "text-sell"}`}>{riskReward}:1</span>
+            <span className={`text-xs font-bold font-mono tabular-nums ${parseFloat(riskReward) >= 1 ? "text-hold" : "text-sell"}`}>{riskReward}:1</span>
           </div>
         )}
 
@@ -403,7 +383,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
               : !marginNum || !currentPrice || validationError
                 ? "bg-inset text-txt-dim cursor-not-allowed"
                 : side === "LONG"
-                  ? "bg-buy/10 text-buy border border-buy/30 hover:bg-buy/20 hover:border-buy/50 active:scale-[0.98]"
+                  ? "bg-hold/10 text-hold border border-hold/30 hover:bg-hold/20 hover:border-hold/50 active:scale-[0.98]"
                   : "bg-sell/10 text-sell border border-sell/30 hover:bg-sell/20 hover:border-sell/50 active:scale-[0.98]"
           }`}>
           {(mode === "live" && !isConnected)
