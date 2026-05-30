@@ -11,11 +11,11 @@ const SignalFlow3DScene = dynamic(() => import("./SignalFlow3DScene"), {
 const STORAGE_KEY = "signalflow-dashboard-intro-dismissed";
 
 const SOURCE_LABELS = [
-  { label: "MACRO",     x: "14%",  y: "22%", color: "#00d4ff" },
-  { label: "PRICE",     x: "80%",  y: "24%", color: "#00ff88" },
-  { label: "ORDERFLOW",  x: "12%",  y: "72%", color: "#4a6fff" },
-  { label: "ORDERBOOK", x: "78%",  y: "74%", color: "#a855f7" },
-  { label: "AI",        x: "48%",  y: "12%", color: "#f5c842" },
+  { label: "FUNDAMENTALS", x: "14%",  y: "22%", color: "#00d4ff" },
+  { label: "TECHNICALS",   x: "80%",  y: "24%", color: "#00ff88" },
+  { label: "ORDERBOOK",    x: "12%",  y: "72%", color: "#4a6fff" },
+  { label: "STRUCTURE",    x: "78%",  y: "74%", color: "#a855f7" },
+  { label: "AI REASONING", x: "48%",  y: "12%", color: "#f5c842" },
 ];
 
 export default function DashboardIntroGate() {
