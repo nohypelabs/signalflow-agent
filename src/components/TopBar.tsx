@@ -73,8 +73,12 @@ export default function TopBar({
         ? "Connecting..."
         : "SoDEX Offline";
 
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" });
+  const timeStr = new Date().toLocaleTimeString("en-US", {
+    hour12: false,
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Jakarta",
+  });
 
   useEffect(() => {
     Object.values(navGroups).flat().forEach((item) => router.prefetch(item.href));
@@ -283,6 +287,7 @@ export default function TopBar({
           )}
           <span className="hidden lg:inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold text-txt-muted">
             {timeStr}
+            <span className="text-txt-dim">UTC+7</span>
             <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
           </span>
           <WalletButton />

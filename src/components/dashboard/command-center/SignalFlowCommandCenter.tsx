@@ -8,6 +8,7 @@ import SpeedometerGauge from "@/components/ui/SpeedometerGauge";
 import TradingChart from "@/components/TradingChart";
 import { useDashboard } from "@/lib/dashboard-context";
 import { pairToSodexSymbol } from "@/lib/pair-map";
+import { getCoinIcon } from "@/lib/coin-icons";
 import type { Signal } from "@/lib/types/signal";
 
 /* ── Pipeline Model ── */
@@ -652,15 +653,18 @@ function coinColor(symbol: string): string {
 function CoinAvatar({ symbol, size = 24 }: { symbol: string; size?: number }) {
   const [errored, setErrored] = useState(false);
   const color = coinColor(symbol);
-  const iconUrl = `https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${symbol.toLowerCase()}.svg`;
+  const realIcon = getCoinIcon(symbol);
 
-  if (errored) {
+  // If we have a real CoinGecko icon, use it; otherwise fallback to CDN
+  const iconUrl = realIcon ?? `https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${symbol.toLowerCase()}.svg`;
+
+  if (errored || !iconUrl) {
     return (
       <span
-        className="inline-flex items-center justify-center rounded-full shrink-0 font-bold"
-        style={{ width: size, height: size, backgroundColor: color + "22", color, fontSize: size * 0.38 }}
+        className="inline-flex items-center justify-center rounded-full shrink-0"
+        style={{ width: size, height: size, backgroundColor: color + "18", border: `1px solid ${color}30`, fontSize: size * 0.36 }}
       >
-        {symbol.slice(0, 2)}
+        <span className="font-bold" style={{ color, fontSize: size * 0.36 }}>{symbol.slice(0, 2)}</span>
       </span>
     );
   }
@@ -747,29 +751,39 @@ function TopMoversCard() {
   return (
     <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
       <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">🔥 Top Movers</h3>
+        <h3 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-txt-secondary">
+          <svg viewBox="0 0 16 16" className="h-3 w-3 text-buy" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 14h12M4 10l4-4 3 3 5-6" />
+          </svg>
+          Top Movers
+        </h3>
         <span className="text-[9px] text-txt-dim font-mono tabular-nums">{parsed.length} pairs</span>
       </div>
       <div className="grid grid-cols-2 divide-x divide-border-default">
         <div className="p-3">
-          <div className="flex items-center gap-1.5 mb-2.5">
+          <div className="flex items-center gap-1.5 mb-2">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-buy" />
-            <span className="text-[9px] uppercase text-buy font-semibold tracking-wider">Gainers</span>
+            <span className="text-[9px] font-semibold text-buy tracking-wide">Gainers</span>
           </div>
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {top3.map((t, i) => (
               <div key={t.symbol} className="group">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2">
                   <span className="w-4 text-[9px] text-txt-dim font-mono tabular-nums text-right">{i + 1}</span>
-                  <CoinAvatar symbol={t.symbol} size={22} />
+                  <CoinAvatar symbol={t.symbol} size={20} />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-baseline justify-between gap-2">
                       <span className="text-xs font-semibold text-txt-primary truncate">{t.symbol}</span>
-                      <span className="font-mono text-xs font-bold tabular-nums text-buy ml-2">
+                      <span className="font-mono text-[10px] text-txt-muted tabular-nums shrink-0">
+                        {t.price >= 1000 ? t.price.toLocaleString(undefined, { maximumFractionDigits: 1 }) : t.price >= 1 ? t.price.toFixed(2) : t.price.toFixed(4)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-0.5">
+                      <ChangeBar change={t.change} maxAbs={maxAbs} />
+                      <span className="font-mono text-[10px] font-bold tabular-nums text-buy ml-2 shrink-0">
                         +{Math.abs(t.change).toFixed(2)}%
                       </span>
                     </div>
-                    <ChangeBar change={t.change} maxAbs={maxAbs} />
                   </div>
                 </div>
               </div>
@@ -782,24 +796,29 @@ function TopMoversCard() {
           </div>
         </div>
         <div className="p-3">
-          <div className="flex items-center gap-1.5 mb-2.5">
+          <div className="flex items-center gap-1.5 mb-2">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-sell" />
-            <span className="text-[9px] uppercase text-sell font-semibold tracking-wider">Losers</span>
+            <span className="text-[9px] font-semibold text-sell tracking-wide">Losers</span>
           </div>
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {bottom3.map((t, i) => (
               <div key={t.symbol} className="group">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2">
                   <span className="w-4 text-[9px] text-txt-dim font-mono tabular-nums text-right">{i + 1}</span>
-                  <CoinAvatar symbol={t.symbol} size={22} />
+                  <CoinAvatar symbol={t.symbol} size={20} />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-baseline justify-between gap-2">
                       <span className="text-xs font-semibold text-txt-primary truncate">{t.symbol}</span>
-                      <span className="font-mono text-xs font-bold tabular-nums text-sell ml-2">
+                      <span className="font-mono text-[10px] text-txt-muted tabular-nums shrink-0">
+                        {t.price >= 1000 ? t.price.toLocaleString(undefined, { maximumFractionDigits: 1 }) : t.price >= 1 ? t.price.toFixed(2) : t.price.toFixed(4)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-0.5">
+                      <ChangeBar change={t.change} maxAbs={maxAbs} />
+                      <span className="font-mono text-[10px] font-bold tabular-nums text-sell ml-2 shrink-0">
                         {Math.abs(t.change).toFixed(2)}%
                       </span>
                     </div>
-                    <ChangeBar change={t.change} maxAbs={maxAbs} />
                   </div>
                 </div>
               </div>
@@ -830,7 +849,7 @@ function SignalAccuracyCard() {
   return (
     <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
       <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
-        <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">
+        <h3 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-txt-secondary">
           <Target size={12} className="text-accent" /> Signal Accuracy
         </h3>
         {totalResolved > 0 && (
@@ -838,36 +857,29 @@ function SignalAccuracyCard() {
         )}
       </div>
       <div className="p-3">
-        {/* Center ring */}
         <div className="flex justify-center mb-3">
           <WinRateRing value={accuracy} size={72} />
         </div>
 
-        {/* Streaks row */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-lg border border-buy-dim/40 bg-buy-muted/30 px-3 py-2 text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-buy/70">Win Streak</span>
-            </div>
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="rounded-lg border border-buy-dim/40 bg-buy-muted/30 px-2.5 py-2 text-center">
+            <span className="text-[9px] font-semibold text-buy/70 block mb-0.5">Win Streak</span>
             <span className="font-mono text-lg font-bold tabular-nums text-buy leading-none">
               {winStreak || "—"}
             </span>
           </div>
-          <div className="rounded-lg border border-sell-dim/40 bg-sell-muted/30 px-3 py-2 text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-sell/70">Loss Streak</span>
-            </div>
+          <div className="rounded-lg border border-sell-dim/40 bg-sell-muted/30 px-2.5 py-2 text-center">
+            <span className="text-[9px] font-semibold text-sell/70 block mb-0.5">Loss Streak</span>
             <span className="font-mono text-lg font-bold tabular-nums text-sell leading-none">
               {lossStreak || "—"}
             </span>
           </div>
         </div>
 
-        {/* Win rate bar */}
         {accuracy != null && (
-          <div className="mt-3">
+          <div>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[9px] text-txt-muted uppercase tracking-wider">Win Rate</span>
+              <span className="text-[9px] text-txt-muted">Win Rate</span>
               <span className="text-[9px] font-mono text-txt-tertiary tabular-nums">{accuracy.toFixed(1)}%</span>
             </div>
             <div className="h-1.5 w-full rounded-full bg-border-default/30 overflow-hidden">
@@ -1003,10 +1015,10 @@ function StockAvatar({ symbol, size = 32 }: { symbol: string; size?: number }) {
   );
 }
 
-const CATEGORY_META: Record<string, { emoji: string; color: string; bg: string }> = {
-  Stocks: { emoji: "📈", color: "text-info", bg: "bg-[#00d4ff08]" },
-  Indices: { emoji: "📊", color: "text-accent", bg: "bg-accent-muted/10" },
-  Commodities: { emoji: "🪙", color: "text-hold", bg: "bg-hold-muted/10" },
+const CATEGORY_META: Record<string, { color: string; bg: string }> = {
+  Stocks: { color: "text-info", bg: "bg-[#00d4ff08]" },
+  Indices: { color: "text-accent", bg: "bg-accent-muted/10" },
+  Commodities: { color: "text-hold", bg: "bg-hold-muted/10" },
 };
 
 function IndexCard() {
@@ -1035,38 +1047,35 @@ function IndexCard() {
   return (
     <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
       <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
-        <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">
-          <Layers size={12} className="text-accent" /> 📈 Index & Stock Prices
+        <h3 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-txt-secondary">
+          <Layers size={12} className="text-accent" /> Index & Stock Prices
         </h3>
         <span className="text-[9px] text-txt-dim font-mono tabular-nums">{assets.length} assets</span>
       </div>
       <div className="max-h-[280px] overflow-y-auto scrollbar-none">
         {sortedCategories.map((cat) => {
           const items = grouped[cat] ?? [];
-          const meta = CATEGORY_META[cat] ?? { emoji: "📋", color: "text-txt-muted", bg: "bg-elevated/10" };
+          const meta = CATEGORY_META[cat] ?? { color: "text-txt-muted", bg: "bg-elevated/10" };
 
           return (
             <div key={cat}>
               {/* Category header */}
-              <div className={cx("flex items-center gap-1.5 px-4 py-1.5 border-y border-border-default/50", meta.bg)}>
-                <span className="text-[10px]">{meta.emoji}</span>
-                <span className={cx("text-[9px] font-bold uppercase tracking-widest", meta.color)}>{cat}</span>
+              <div className={cx("flex items-center gap-1.5 px-4 py-1 border-y border-border-default/50", meta.bg)}>
+                <span className={cx("text-[9px] font-semibold tracking-wide", meta.color)}>{cat}</span>
                 <span className="text-[8px] text-txt-dim ml-auto tabular-nums">{items.length}</span>
               </div>
               {/* Asset rows */}
               {items.map(({ symbol, price, change }) => {
                 const isPositive = change >= 0;
                 return (
-                  <div key={symbol} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-elevated/20 border-b border-border-default/30 last:border-b-0">
-                    <StockAvatar symbol={symbol} size={30} />
+                  <div key={symbol} className="flex items-center gap-2.5 px-4 py-2 transition-colors hover:bg-elevated/20 border-b border-border-default/30 last:border-b-0">
+                    <StockAvatar symbol={symbol} size={26} />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-txt-primary">{symbol}</span>
-                      </div>
-                      <span className="text-[10px] text-txt-dim leading-tight">{assetName(symbol)}</span>
+                      <span className="text-xs font-semibold text-txt-primary block leading-tight">{symbol}</span>
+                      <span className="text-[10px] text-txt-muted leading-tight">{assetName(symbol)}</span>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className="font-mono text-sm font-bold tabular-nums text-txt-primary block leading-tight">
+                      <span className="font-mono text-xs font-semibold tabular-nums text-txt-primary block leading-tight">
                         {fmtUsd(price)}
                       </span>
                       <span
@@ -1090,8 +1099,8 @@ function IndexCard() {
         })}
         {assets.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 gap-1">
-            <span className="text-lg">📋</span>
-            <span className="text-[10px] text-txt-muted">No index data available</span>
+            <Layers size={20} className="text-txt-dim" />
+            <span className="text-[10px] text-txt-muted">No index data</span>
           </div>
         )}
       </div>
@@ -1166,7 +1175,7 @@ function MarketStatsCard() {
   return (
     <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
       <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
-        <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-txt-secondary">
+        <h3 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-txt-secondary">
           <Activity size={12} className="text-accent" /> Market Stats
         </h3>
         {totalSignals > 0 && (
@@ -1176,46 +1185,50 @@ function MarketStatsCard() {
       <div className="grid grid-cols-2 divide-x divide-border-default">
         {/* Left column: Volume (hero) + Active Pairs */}
         <div className="p-3 space-y-3">
-          <div className="rounded-lg border border-accent-dim/30 bg-accent-muted/10 p-3">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <span className={cx("flex h-5 w-5 items-center justify-center rounded", stats[0].bgColor, stats[0].color)}>
+          <div className="rounded-lg border border-accent-dim/30 bg-accent-muted/10 p-2.5">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className={cx("flex h-4 w-4 items-center justify-center rounded", stats[0].bgColor, stats[0].color)}>
                 {stats[0].icon}
               </span>
-              <span className="text-[9px] font-semibold uppercase tracking-wider text-txt-muted">Volume 24H</span>
+              <span className="text-[9px] font-semibold text-txt-muted">Volume 24H</span>
             </div>
-            <span className="font-mono text-xl font-bold tabular-nums text-txt-primary leading-none">
+            <span className="font-mono text-lg font-bold tabular-nums text-txt-primary leading-none">
               {stats[0].value}
             </span>
           </div>
-          <div className="flex items-center gap-2.5 px-1">
-            <span className={cx("flex h-7 w-7 items-center justify-center rounded-lg", stats[1].bgColor, stats[1].color)}>
+          <div className="flex items-center gap-2 px-1">
+            <span className={cx("flex h-6 w-6 items-center justify-center rounded", stats[1].bgColor, stats[1].color)}>
               {stats[1].icon}
             </span>
             <div>
-              <span className="text-[9px] text-txt-muted uppercase tracking-wider block">Active Pairs</span>
-              <span className="font-mono text-base font-bold tabular-nums text-txt-primary leading-none">{stats[1].value}</span>
+              <span className="text-[9px] text-txt-muted block">Active Pairs</span>
+              <span className="font-mono text-sm font-bold tabular-nums text-txt-primary leading-none">{stats[1].value}</span>
             </div>
           </div>
         </div>
         {/* Right column: Buy + Sell signals stacked */}
-        <div className="p-3 space-y-2.5">
+        <div className="p-3 space-y-3">
           <div className="rounded-lg border border-buy-dim/30 bg-buy-muted/10 p-2.5">
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className={cx("flex h-5 w-5 items-center justify-center rounded", stats[2].bgColor, stats[2].color)}>
-                {stats[2].icon}
-              </span>
-              <span className="text-[9px] font-semibold uppercase tracking-wider text-buy/70">Buy Signals</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className={cx("flex h-4 w-4 items-center justify-center rounded", stats[2].bgColor, stats[2].color)}>
+                  {stats[2].icon}
+                </span>
+                <span className="text-[9px] font-semibold text-buy/70">Buy Signals</span>
+              </div>
+              <span className="font-mono text-lg font-bold tabular-nums text-buy leading-none">{stats[2].value}</span>
             </div>
-            <span className="font-mono text-2xl font-bold tabular-nums text-buy leading-none">{stats[2].value}</span>
           </div>
           <div className="rounded-lg border border-sell-dim/30 bg-sell-muted/10 p-2.5">
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className={cx("flex h-5 w-5 items-center justify-center rounded", stats[3].bgColor, stats[3].color)}>
-                {stats[3].icon}
-              </span>
-              <span className="text-[9px] font-semibold uppercase tracking-wider text-sell/70">Sell Signals</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className={cx("flex h-4 w-4 items-center justify-center rounded", stats[3].bgColor, stats[3].color)}>
+                  {stats[3].icon}
+                </span>
+                <span className="text-[9px] font-semibold text-sell/70">Sell Signals</span>
+              </div>
+              <span className="font-mono text-lg font-bold tabular-nums text-sell leading-none">{stats[3].value}</span>
             </div>
-            <span className="font-mono text-2xl font-bold tabular-nums text-sell leading-none">{stats[3].value}</span>
           </div>
         </div>
       </div>
