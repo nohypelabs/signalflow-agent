@@ -1528,12 +1528,100 @@ function MarketStatsCard() {
   );
 }
 
+function MarketBreadthCard() {
+  const d = useDashboard();
+  const tickers = d.tickers && d.tickers.length > 0 ? d.tickers : Array.from(d.tickerMap.values());
+  const validTickers = tickers
+    .map((ticker) => ({
+      symbol: ticker.symbol.replace(/^v/, "").replace(/_vUSDC$/, ""),
+      price: toFiniteNumber(ticker.lastPx),
+      change: toFiniteNumber(ticker.changePct),
+      volume: toFiniteNumber(ticker.quoteVolume),
+    }))
+    .filter((ticker) => ticker.price > 0);
+  const signals = d.liveSignals ?? [];
+  const advancers = validTickers.filter((ticker) => ticker.change > 0).length;
+  const decliners = validTickers.filter((ticker) => ticker.change < 0).length;
+  const unchanged = Math.max(0, validTickers.length - advancers - decliners);
+  const breadthTotal = Math.max(1, advancers + decliners + unchanged);
+  const breadthScore = Math.round(((advancers - decliners) / breadthTotal) * 100);
+  const longSignals = signals.filter((signal) => signal.action === "LONG").length;
+  const shortSignals = signals.filter((signal) => signal.action === "SHORT").length;
+  const holdSignals = Math.max(0, signals.length - longSignals - shortSignals);
+  const strongestMove = [...validTickers].sort((a, b) => Math.abs(b.change) - Math.abs(a.change))[0];
+  const highestVolume = [...validTickers].sort((a, b) => b.volume - a.volume)[0];
+  const tone = breadthScore > 10 ? "text-buy" : breadthScore < -10 ? "text-sell" : "text-hold";
+  const tapeLabel = breadthScore > 10 ? "risk-on" : breadthScore < -10 ? "risk-off" : "mixed";
+  const longShare = signals.length > 0 ? Math.round((longSignals / signals.length) * 100) : 0;
+  const shortShare = signals.length > 0 ? Math.round((shortSignals / signals.length) * 100) : 0;
+
+  return (
+    <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
+        <h3 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-txt-secondary">
+          <Layers size={12} className="text-accent" /> Market Breadth
+        </h3>
+        <span className={cx("text-[9px] font-mono uppercase tabular-nums", tone)}>{tapeLabel}</span>
+      </div>
+      <div className="p-3">
+        <div className="grid grid-cols-[1fr_auto] gap-3">
+          <div>
+            <p className={cx("font-mono text-3xl font-bold leading-none tabular-nums", tone)}>
+              {breadthScore > 0 ? "+" : ""}{breadthScore}
+            </p>
+            <p className="mt-1 text-[9px] uppercase tracking-wide text-txt-muted">Breadth impulse</p>
+          </div>
+          <div className="min-w-[92px] rounded-lg border border-border-default bg-elevated/20 p-2 text-right">
+            <p className="font-mono text-sm font-bold text-txt-primary tabular-nums">{validTickers.length}</p>
+            <p className="text-[9px] text-txt-muted">live markets</p>
+          </div>
+        </div>
+
+        <div className="mt-3 grid grid-cols-3 gap-1.5 text-center">
+          <div className="rounded-lg border border-buy-dim/30 bg-buy-muted/10 px-2 py-1.5">
+            <p className="font-mono text-sm font-bold text-buy tabular-nums">{advancers}</p>
+            <p className="text-[8px] uppercase text-txt-muted">adv</p>
+          </div>
+          <div className="rounded-lg border border-border-default bg-elevated/20 px-2 py-1.5">
+            <p className="font-mono text-sm font-bold text-txt-secondary tabular-nums">{unchanged}</p>
+            <p className="text-[8px] uppercase text-txt-muted">flat</p>
+          </div>
+          <div className="rounded-lg border border-sell-dim/30 bg-sell-muted/10 px-2 py-1.5">
+            <p className="font-mono text-sm font-bold text-sell tabular-nums">{decliners}</p>
+            <p className="text-[8px] uppercase text-txt-muted">dec</p>
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-lg border border-border-default bg-inset/50 p-2.5">
+          <div className="mb-1.5 flex items-center justify-between text-[9px]">
+            <span className="font-semibold text-buy">LONG {longSignals}</span>
+            <span className="font-mono text-txt-muted tabular-nums">{signals.length} engine signals</span>
+            <span className="font-semibold text-sell">SHORT {shortSignals}</span>
+          </div>
+          <div className="flex h-1.5 overflow-hidden rounded-full bg-hold-muted">
+            <div className="bg-buy transition-all duration-700" style={{ width: `${longShare}%` }} />
+            <div className="bg-sell transition-all duration-700" style={{ width: `${shortShare}%` }} />
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-2 text-[9px] text-txt-muted">
+            <span className="truncate">
+              Lead move: {strongestMove ? `${strongestMove.symbol} ${strongestMove.change > 0 ? "+" : ""}${strongestMove.change.toFixed(2)}%` : "waiting"}
+            </span>
+            <span className="shrink-0 font-mono tabular-nums">
+              {highestVolume ? fmtUsd(highestVolume.volume) : holdSignals > 0 ? `${holdSignals} HOLD` : "sync"}
+            </span>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function MarketStatsBar() {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <TopMoversCard />
       <SignalAccuracyCard />
-      <IndexCard />
+      <MarketBreadthCard />
       <MarketStatsCard />
     </div>
   );
