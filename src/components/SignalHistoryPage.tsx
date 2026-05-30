@@ -30,6 +30,10 @@ interface BacktestStats {
   profitFactor: number;
 }
 
+function cx(...classes: Array<string | false | null | undefined>): string {
+  return classes.filter(Boolean).join(" ");
+}
+
 function fmtPrice(p: number): string {
   if (p >= 10000) return `$${p.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   if (p >= 100) return `$${p.toFixed(2)}`;
@@ -43,41 +47,6 @@ function fmtTimeAgo(ts: number): string {
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h ago`;
   return `${Math.floor(hours / 24)}d ago`;
-}
-
-function BacktestPanel({ stats }: { stats: BacktestStats }) {
-  return (
-    <Card padding="none" className="overflow-hidden">
-      <div className="px-4 py-3 border-b border-border-default">
-        <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider">Backtest Performance</h3>
-      </div>
-      <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: "Win Rate", value: `${stats.winRate.toFixed(1)}%`, color: stats.winRate > 55 ? "#00ff88" : stats.winRate > 45 ? "#ff8800" : "#ff4444" },
-          { label: "Avg PnL", value: `${stats.avgPnl > 0 ? "+" : ""}${stats.avgPnl.toFixed(2)}%`, color: stats.avgPnl > 0 ? "#00ff88" : "#ff4444" },
-          { label: "Sharpe", value: stats.sharpeRatio.toFixed(2), color: stats.sharpeRatio > 1 ? "#00ff88" : stats.sharpeRatio > 0.5 ? "#ff8800" : "#ff4444" },
-          { label: "Profit Factor", value: stats.profitFactor.toFixed(2), color: stats.profitFactor > 1.5 ? "#00ff88" : stats.profitFactor > 1 ? "#ff8800" : "#ff4444" },
-        ].map((item) => (
-          <div key={item.label} className="bg-elevated/30 rounded-lg p-3 text-center">
-            <p className="text-[9px] text-txt-faint uppercase tracking-wider">{item.label}</p>
-            <p className="text-lg font-bold font-mono mt-1" style={{ color: item.color }}>{item.value}</p>
-          </div>
-        ))}
-      </div>
-      <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-3 gap-2">
-        {[
-          { label: "Total Signals", value: stats.totalSignals.toString() },
-          { label: "Best Trade", value: `+${stats.bestTrade.toFixed(1)}%`, color: "#00ff88" },
-          { label: "Worst Trade", value: `${stats.worstTrade.toFixed(1)}%`, color: "#ff4444" },
-        ].map((item) => (
-          <div key={item.label} className="flex items-center justify-between px-2 py-1.5 bg-elevated/20 rounded">
-            <span className="text-[9px] text-txt-faint">{item.label}</span>
-            <span className="text-[10px] font-mono font-semibold" style={{ color: item.color ?? "var(--text-secondary)" }}>{item.value}</span>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
 }
 
 function SignalRow({ signal }: { signal: SignalRecord }) {
@@ -140,6 +109,95 @@ function SignalRow({ signal }: { signal: SignalRecord }) {
       {/* Time */}
       <span className="text-[9px] text-txt-faint ml-auto">{fmtTimeAgo(signal.timestamp)}</span>
     </div>
+  );
+}
+
+function SignalHistoryHero({
+  stats,
+  visibleCount,
+  filter,
+  setFilter,
+  outcomeFilter,
+  setOutcomeFilter,
+}: {
+  stats: BacktestStats;
+  visibleCount: number;
+  filter: "all" | "LONG" | "SHORT" | "HOLD";
+  setFilter: (value: "all" | "LONG" | "SHORT" | "HOLD") => void;
+  outcomeFilter: "all" | "win" | "loss" | "pending";
+  setOutcomeFilter: (value: "all" | "win" | "loss" | "pending") => void;
+}) {
+  const winTone = stats.winRate >= 55 ? "text-buy" : stats.winRate >= 45 ? "text-hold" : "text-sell";
+  const pnlTone = stats.avgPnl >= 0 ? "text-buy" : "text-sell";
+
+  return (
+    <section className="rounded-xl border border-border-default bg-inset/70 p-4">
+      <div className="grid gap-4 lg:grid-cols-[1.1fr_1.4fr] lg:items-end">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-txt-secondary">Signal History</p>
+          <div className="mt-1 flex items-end gap-3">
+            <div className={cx("font-mono text-5xl font-bold leading-none tracking-tight", winTone)}>
+              {stats.winRate.toFixed(1)}%
+            </div>
+            <div className="pb-1">
+              <div className="text-sm font-semibold text-txt-primary">resolved win rate</div>
+              <div className="text-[11px] text-txt-tertiary">
+                {visibleCount} visible / {stats.totalSignals} total signals
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[
+            { label: "Avg PnL", value: `${stats.avgPnl >= 0 ? "+" : ""}${stats.avgPnl.toFixed(2)}%`, tone: pnlTone },
+            { label: "Profit Factor", value: stats.profitFactor === Infinity ? "∞" : stats.profitFactor.toFixed(2), tone: "text-info" },
+            { label: "Sharpe", value: stats.sharpeRatio.toFixed(2), tone: stats.sharpeRatio >= 1 ? "text-buy" : "text-txt-primary" },
+            { label: "Best / Worst", value: `+${stats.bestTrade.toFixed(1)} / ${stats.worstTrade.toFixed(1)}%`, tone: "text-txt-primary" },
+          ].map((item) => (
+            <div key={item.label} className="border-l border-border-default px-3">
+              <div className="text-[9px] font-semibold uppercase tracking-wider text-txt-faint">{item.label}</div>
+              <div className={cx("mt-1 font-mono text-sm font-bold", item.tone)}>{item.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-col gap-2 border-t border-border-default pt-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[9px] text-txt-faint uppercase tracking-wider">Signal</span>
+          {(["all", "LONG", "SHORT", "HOLD"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`cursor-pointer rounded px-2 py-1 text-[10px] transition-colors ${
+                filter === f
+                  ? "border border-accent/30 bg-accent/15 text-accent"
+                  : "text-txt-muted hover:text-txt-secondary"
+              }`}
+            >
+              {f === "all" ? "All" : f === "HOLD" ? "NO TRADE" : f}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[9px] text-txt-faint uppercase tracking-wider">Outcome</span>
+          {(["all", "win", "loss", "pending"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setOutcomeFilter(f)}
+              className={`cursor-pointer rounded px-2 py-1 text-[10px] capitalize transition-colors ${
+                outcomeFilter === f
+                  ? "border border-accent/30 bg-accent/15 text-accent"
+                  : "text-txt-muted hover:text-txt-secondary"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -261,50 +319,14 @@ export default function SignalHistoryPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        title="Signal History"
+      <SignalHistoryHero
+        stats={backtestStats}
+        visibleCount={filteredSignals.length}
+        filter={filter}
+        setFilter={setFilter}
+        outcomeFilter={outcomeFilter}
+        setOutcomeFilter={setOutcomeFilter}
       />
-
-      {/* Backtest Panel */}
-      <BacktestPanel stats={backtestStats} />
-
-      {/* Filters */}
-      <Card padding="sm">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[9px] text-txt-faint uppercase tracking-wider">Signal:</span>
-            {(["all", "LONG", "SHORT", "HOLD"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`text-[10px] px-2 py-1 rounded cursor-pointer transition-colors ${
-                  filter === f
-                    ? "bg-accent/15 text-accent border border-accent/30"
-                    : "text-txt-muted hover:text-txt-secondary"
-                }`}
-              >
-                {f === "all" ? "All" : f === "HOLD" ? "NO TRADE" : f}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[9px] text-txt-faint uppercase tracking-wider">Outcome:</span>
-            {(["all", "win", "loss", "pending"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setOutcomeFilter(f)}
-                className={`text-[10px] px-2 py-1 rounded cursor-pointer transition-colors ${
-                  outcomeFilter === f
-                    ? "bg-accent/15 text-accent border border-accent/30"
-                    : "text-txt-muted hover:text-txt-secondary"
-                }`}
-              >
-                {f === "all" ? "All" : f}
-              </button>
-            ))}
-          </div>
-        </div>
-      </Card>
 
       {/* Signal List */}
       <Card padding="none" className="overflow-hidden">

@@ -9,7 +9,6 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Skeleton from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
-import PageHeader from "@/components/ui/PageHeader";
 
 interface Props {
   orders: SoDEXOrder[];
@@ -74,37 +73,38 @@ export default function TradeHistory({
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Trade History" badge={{ variant: "muted", label: "PAPER + LIVE" }} />
-
-      {/* Summary bar */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <Card padding="sm">
-          <p className="text-[10px] text-txt-muted uppercase tracking-wider">Paper Closed</p>
-          <p className="text-xl font-bold font-mono text-txt-primary">{closedPaperTrades.length}</p>
-        </Card>
-        <Card padding="sm">
-          <p className="text-[10px] text-txt-muted uppercase tracking-wider">Paper P&L</p>
-          <p className={`text-xl font-bold font-mono ${paperPnl >= 0 ? "text-buy" : "text-sell"}`}>
-            {paperPnl >= 0 ? "+" : ""}{fmtUsd(paperPnl)}
-          </p>
-        </Card>
-        <Card padding="sm">
-          <p className="text-[10px] text-txt-muted uppercase tracking-wider">Open Orders</p>
-          <p className="text-xl font-bold font-mono text-info">{openOrders.length}</p>
-        </Card>
-        <Card padding="sm">
-          <p className="text-[10px] text-txt-muted uppercase tracking-wider">Filled</p>
-          <p className="text-xl font-bold font-mono text-buy">{filledOrders.length}</p>
-        </Card>
-        <Card padding="sm">
-          <p className="text-[10px] text-txt-muted uppercase tracking-wider">Total Orders</p>
-          <p className="text-xl font-bold font-mono text-txt-primary">{orders.length}</p>
-        </Card>
-        <Card padding="sm">
-          <p className="text-[10px] text-txt-muted uppercase tracking-wider">Signals</p>
-          <p className="text-xl font-bold font-mono text-txt-primary">{liveSignals.length}</p>
-        </Card>
-      </div>
+      <section className="rounded-xl border border-border-default bg-inset/70 p-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-txt-secondary">Trade History</p>
+              <Badge variant="muted" size="sm">PAPER + LIVE</Badge>
+            </div>
+            <div className="mt-1 flex items-end gap-3">
+              <div className={`font-mono text-5xl font-bold leading-none tracking-tight ${paperPnl >= 0 ? "text-buy" : "text-sell"}`}>
+                {paperPnl >= 0 ? "+" : ""}{fmtUsd(paperPnl)}
+              </div>
+              <div className="pb-1">
+                <div className="text-sm font-semibold text-txt-primary">closed paper P&L</div>
+                <div className="text-[11px] text-txt-tertiary">{closedPaperTrades.length} closed paper trades · {orders.length} live orders</div>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[520px]">
+            {[
+              { label: "Open Orders", value: `${openOrders.length}`, tone: "text-info" },
+              { label: "Filled / History", value: `${filledOrders.length} / ${historyOrders.length}`, tone: "text-buy" },
+              { label: "Live Signals", value: `${liveSignals.length}`, tone: "text-txt-primary" },
+              { label: "Paper WR", value: paperStats ? `${paperStats.winRate.toFixed(1)}%` : "—", tone: paperStats && paperStats.winRate >= 50 ? "text-buy" : "text-hold" },
+            ].map((item) => (
+              <div key={item.label} className="border-l border-border-default px-3">
+                <div className="text-[9px] font-semibold uppercase tracking-wider text-txt-faint">{item.label}</div>
+                <div className={`mt-1 font-mono text-sm font-bold ${item.tone}`}>{item.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Tabs */}
       <div className="overflow-x-auto scrollbar-none">

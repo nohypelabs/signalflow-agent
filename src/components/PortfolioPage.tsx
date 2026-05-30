@@ -224,37 +224,49 @@ export default function PortfolioPage({ trades, stats, balance, currentPrices, o
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div>
-          <h2 className="text-lg font-bold text-txt-primary tracking-tight">Paper Portfolio</h2>
-          <p className="text-xs text-txt-muted mt-0.5">Track your paper futures trading performance</p>
+      <section className="rounded-xl border border-border-default bg-inset/70 p-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-txt-secondary">Paper Portfolio</p>
+              <Badge variant="accent" size="sm">DEMO</Badge>
+            </div>
+            <div className="mt-1 flex items-end gap-3">
+              <div
+                className="font-mono text-5xl font-bold leading-none tracking-tight"
+                style={{ color: balance.total >= balance.initialBalance ? "#00E5A8" : "#EF4444" }}
+              >
+                {fmtUSD(balance.total)}
+              </div>
+              <div className="pb-1">
+                <div className="text-sm font-semibold text-txt-primary">total paper balance</div>
+                <div className={stats.totalPnl >= 0 ? "text-[11px] text-buy" : "text-[11px] text-sell"}>
+                  {stats.totalPnl >= 0 ? "+" : ""}{fmtUSD(stats.totalPnl)} ({stats.totalPnlPercent >= 0 ? "+" : ""}{stats.totalPnlPercent.toFixed(2)}%)
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[560px]">
+            {[
+              { label: "Available", value: fmtUSD(balance.available), tone: "text-info" },
+              { label: "Margin Used", value: fmtUSD(balance.marginUsed), tone: "text-hold" },
+              { label: "Win Rate", value: `${stats.winRate.toFixed(1)}%`, tone: stats.winRate >= 55 ? "text-buy" : stats.winRate >= 45 ? "text-hold" : "text-sell" },
+              { label: "Trades / PF", value: `${stats.totalTrades} / ${stats.profitFactor === Infinity ? "∞" : stats.profitFactor.toFixed(2)}`, tone: "text-txt-primary" },
+            ].map((item) => (
+              <div key={item.label} className="border-l border-border-default px-3">
+                <div className="text-[9px] font-semibold uppercase tracking-wider text-txt-faint">{item.label}</div>
+                <div className={`mt-1 font-mono text-sm font-bold ${item.tone}`}>{item.value}</div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="accent" size="sm">DEMO</Badge>
-          <button onClick={onReset} className="text-[9px] text-txt-faint hover:text-sell transition-colors cursor-pointer">
+        <div className="mt-3 flex items-center justify-between border-t border-border-default pt-3 text-[10px] text-txt-tertiary">
+          <span>Best {fmtUSD(stats.bestTrade)} · Worst {fmtUSD(stats.worstTrade)} · Avg lev {stats.avgLeverage.toFixed(1)}x</span>
+          <button onClick={onReset} className="cursor-pointer text-txt-faint transition-colors hover:text-sell">
             Reset All
           </button>
         </div>
-      </div>
-
-      {/* Balance Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <BalanceCard label="Total Balance" value={fmtUSD(balance.total)} color={balance.total >= balance.initialBalance ? "#00E5A8" : "#EF4444"} />
-        <BalanceCard label="Available" value={fmtUSD(balance.available)} color="#3B82F6" />
-        <BalanceCard label="Margin Used" value={fmtUSD(balance.marginUsed)} color="#F59E0B" />
-        <BalanceCard label="Total P&L" value={`${stats.totalPnl >= 0 ? "+" : ""}${fmtUSD(stats.totalPnl)}`} color={stats.totalPnl >= 0 ? "#00E5A8" : "#EF4444"} sub={`${stats.totalPnlPercent >= 0 ? "+" : ""}${stats.totalPnlPercent.toFixed(2)}%`} />
-      </div>
-
-      {/* Key Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        <MetricCard label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} color={stats.winRate >= 55 ? "#00E5A8" : stats.winRate >= 45 ? "#F59E0B" : "#EF4444"} />
-        <MetricCard label="Trades" value={`${stats.totalTrades}`} color="#94A3B8" />
-        <MetricCard label="Profit Factor" value={stats.profitFactor === Infinity ? "∞" : stats.profitFactor.toFixed(2)} color={stats.profitFactor >= 1.5 ? "#00E5A8" : stats.profitFactor >= 1 ? "#F59E0B" : "#EF4444"} />
-        <MetricCard label="Avg Leverage" value={`${stats.avgLeverage.toFixed(1)}x`} color="#94A3B8" />
-        <MetricCard label="Best Trade" value={`+${fmtUSD(stats.bestTrade)}`} color="#00E5A8" />
-        <MetricCard label="Worst Trade" value={fmtUSD(stats.worstTrade)} color="#EF4444" />
-      </div>
+      </section>
 
       {/* Per-Type Breakdown */}
       {stats.perType && Object.keys(stats.perType).length > 0 && (
@@ -512,29 +524,6 @@ export default function PortfolioPage({ trades, stats, balance, currentPrices, o
           )}
         </Card>
       )}
-    </div>
-  );
-}
-
-// ── Balance Card ────────────────────────────────────────────
-
-function BalanceCard({ label, value, color, sub }: { label: string; value: string; color: string; sub?: string }) {
-  return (
-    <Card padding="md">
-      <p className="text-[8px] text-txt-faint uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-lg font-bold font-mono" style={{ color }}>{value}</p>
-      {sub && <p className="text-[10px] font-mono mt-0.5" style={{ color }}>{sub}</p>}
-    </Card>
-  );
-}
-
-// ── Metric Card ────────────────────────────────────────────
-
-function MetricCard({ label, value, color }: { label: string; value: string; color: string }) {
-  return (
-    <div className="p-2.5 rounded-lg bg-inset/30 border border-border-default text-center">
-      <p className="text-[8px] text-txt-faint uppercase tracking-wider">{label}</p>
-      <p className="text-sm font-bold font-mono mt-0.5" style={{ color }}>{value}</p>
     </div>
   );
 }

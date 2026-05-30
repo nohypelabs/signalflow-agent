@@ -221,39 +221,48 @@ export default function PerformancePage({
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div>
-          <h2 className="text-lg font-bold text-txt-primary tracking-tight">Performance Analytics</h2>
-          <p className="text-xs text-txt-muted mt-0.5">Market performance, signal accuracy, and risk metrics.</p>
+      <section className="rounded-xl border border-border-default bg-inset/70 p-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-txt-secondary">Performance Analytics</p>
+              <Badge variant="muted" size="sm">LIVE DATA</Badge>
+            </div>
+            <div className="mt-1 flex items-end gap-3">
+              <div className={`font-mono text-5xl font-bold leading-none tracking-tight ${avgChange30d >= 0 ? "text-buy" : "text-sell"}`}>
+                {fmtPct(avgChange30d)}
+              </div>
+              <div className="pb-1">
+                <div className="text-sm font-semibold text-txt-primary">30-day market basket</div>
+                <div className="text-[11px] text-txt-tertiary">{coins.length} assets tracked across live market and signal layers</div>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[520px]">
+            {[
+              { label: "Avg 24H", value: fmtPct(avgChange24h), tone: avgChange24h >= 0 ? "text-buy" : "text-sell" },
+              { label: "Volatility", value: `${avgVolatility.toFixed(1)}%`, tone: "text-info" },
+              { label: "Accuracy", value: signalStats?.accuracy != null ? `${Math.round(signalStats.accuracy)}%` : "—", tone: signalStats?.accuracy != null && signalStats.accuracy >= 60 ? "text-buy" : "text-hold" },
+              { label: "Resolved", value: `${signalStats?.totalResolved ?? 0}`, tone: "text-txt-primary" },
+            ].map((item) => (
+              <div key={item.label} className="border-l border-border-default px-3">
+                <div className="text-[9px] font-semibold uppercase tracking-wider text-txt-faint">{item.label}</div>
+                <div className={`mt-1 font-mono text-sm font-bold ${item.tone}`}>{item.value}</div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="muted" size="md">LIVE DATA</Badge>
-          {exportCSV && (
-            <button onClick={exportCSV} className="text-[10px] text-txt-secondary border border-border-default px-2 py-1 rounded hover:bg-elevated/30 transition-colors">
+        {exportCSV && (
+          <div className="mt-3 border-t border-border-default pt-3 text-right">
+            <button onClick={exportCSV} className="cursor-pointer rounded border border-border-default px-2 py-1 text-[10px] text-txt-secondary transition-colors hover:bg-elevated/30 hover:text-txt-primary">
               Export CSV
             </button>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
+      </section>
 
       {/* ── Section 1: Market Performance ── */}
       <div>
-        <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider mb-3">Market Performance</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-          {[
-            { label: "Avg 24H", value: fmtPct(avgChange24h), color: avgChange24h >= 0 ? "#00ff88" : "#ff4444" },
-            { label: "Avg 30D", value: fmtPct(avgChange30d), color: avgChange30d >= 0 ? "#00ff88" : "#ff4444" },
-            { label: "Avg Volatility", value: `${avgVolatility.toFixed(1)}%`, color: "#00E5A8" },
-            { label: "Tracked", value: `${coins.length} coins`, color: "#00d4ff" },
-          ].map((m) => (
-            <Card key={m.label} padding="sm">
-              <p className="text-[10px] text-txt-muted uppercase tracking-wider">{m.label}</p>
-              <p className="text-lg font-bold font-mono tabular-nums" style={{ color: m.color }}>{m.value}</p>
-            </Card>
-          ))}
-        </div>
-
         {/* 30D returns bar chart */}
         <Card padding="lg">
           <h4 className="text-xs font-semibold text-txt-secondary mb-3">30-Day Returns</h4>
