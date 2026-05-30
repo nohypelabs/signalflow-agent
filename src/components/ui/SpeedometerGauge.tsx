@@ -7,6 +7,7 @@ interface Props {
   size?: "sm" | "md" | "lg";
   showLabel?: boolean;
   label?: string;
+  sweeping?: boolean;
 }
 
 // True semicircle: 180° arc, left → right
@@ -42,7 +43,7 @@ function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: nu
   return `M ${start.x} ${start.y} A ${r} ${r} 0 ${large} 1 ${end.x} ${end.y}`;
 }
 
-export default function SpeedometerGauge({ value, size = "md", showLabel = true, label }: Props) {
+export default function SpeedometerGauge({ value, size = "md", showLabel = true, label, sweeping = false }: Props) {
   const { w, h, cx, cy, r, sw, needleLen, tickLen, labelSize, subSize } = sizes[size];
   const clamped = Math.max(0, Math.min(100, value));
   const color = getColor(clamped);
@@ -52,6 +53,7 @@ export default function SpeedometerGauge({ value, size = "md", showLabel = true,
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
+    if (sweeping) return;
     const target = valueToAngle(clamped);
     const start = displayAngle;
     const startTime = performance.now();
@@ -68,7 +70,31 @@ export default function SpeedometerGauge({ value, size = "md", showLabel = true,
     rafRef.current = requestAnimationFrame(animate);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clamped]);
+  }, [clamped, sweeping]);
+
+  useEffect(() => {
+    if (!sweeping) return;
+    let direction = 1;
+    let current = displayAngle;
+
+    function animate() {
+      current += direction * 3.8;
+      if (current >= -18) {
+        current = -18;
+        direction = -1;
+      }
+      if (current <= -162) {
+        current = -162;
+        direction = 1;
+      }
+      setDisplayAngle(current);
+      rafRef.current = requestAnimationFrame(animate);
+    }
+
+    rafRef.current = requestAnimationFrame(animate);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sweeping]);
 
   const needleAngle = displayAngle;
   const needleTip = polar(cx, cy, needleLen, needleAngle);

@@ -81,9 +81,15 @@ function IconControlButton({
           children
         )}
       </button>
-      <div className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-20 w-56 -translate-x-1/2 rounded-lg border border-border-default bg-panel px-3 py-2 text-left opacity-0 shadow-xl transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-        <div className="text-xs font-bold text-txt-primary">{label}</div>
-        <div className="mt-0.5 text-[11px] leading-snug text-txt-tertiary">{detail}</div>
+      <div className="pointer-events-none absolute bottom-[calc(100%+10px)] left-1/2 z-20 w-64 -translate-x-1/2 rounded-xl border border-accent/35 bg-[#050914] px-3.5 py-3 text-left opacity-0 shadow-[0_18px_44px_rgba(0,0,0,0.55),0_0_22px_rgba(255,136,0,0.12)] ring-1 ring-white/8 transition-all duration-150 group-hover:-translate-y-0.5 group-hover:opacity-100 group-focus-within:-translate-y-0.5 group-focus-within:opacity-100">
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-[11px] font-bold uppercase tracking-wide text-txt-primary">{label}</div>
+          <span className="rounded-md border border-accent/30 bg-accent-muted px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-accent">
+            Live
+          </span>
+        </div>
+        <div className="mt-1.5 text-[11px] font-medium leading-snug text-txt-secondary">{detail}</div>
+        <div className="absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-accent/35 bg-[#050914]" />
       </div>
     </div>
   );
@@ -325,10 +331,10 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
   const coin = pair.split("/")[0];
   const fullEngineReady = hasExternalSignalLayers(d.signalsData?.sources) && !news?.error;
   const generateTooltip = d.analyzing
-    ? "Scoring the latest market layers."
+    ? "SignalFlow is recalculating the latest SoDEX tape, signal engine output, and AI thesis before locking the next score."
     : fullEngineReady
-      ? "Push the pedal to generate a fresh SignalFlow signal."
-      : "Push the pedal to generate from the live data currently available.";
+      ? "Generate a fresh SignalFlow decision from live SoDEX market data, SoSoValue layers, and AI reasoning."
+      : "Generate a fresh decision from the live data currently available while external layers recover.";
 
   const generateSignal = async () => {
     d.setAiCoin(coin);
@@ -467,7 +473,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
 
         <div className="rounded-xl border border-border-default bg-inset/70 px-2 py-2 text-center">
           <div className="mb-1 text-[11px] font-semibold tracking-wide text-txt-tertiary uppercase">SignalFlow Final Score</div>
-          <SpeedometerGauge value={decision.confidence} size="lg" showLabel={false} />
+          <SpeedometerGauge value={decision.confidence} size="lg" showLabel={false} sweeping={d.analyzing} />
           <div className="relative -mt-2 flex min-h-[52px] items-center justify-center px-14">
             <div className="absolute left-2 top-1/2 -translate-y-1/2">
               <IconControlButton
@@ -928,7 +934,13 @@ function TopMoversCard() {
   const maxAbs = Math.max(...parsed.map((t) => Math.abs(t.change)), 1);
   const advancing = parsed.filter((t) => t.change > 0).length;
   const declining = parsed.filter((t) => t.change < 0).length;
+  const unchanged = Math.max(0, parsed.length - advancing - declining);
   const breadth = parsed.length > 0 ? Math.round((advancing / parsed.length) * 100) : null;
+  const pressureScore = parsed.length > 0 ? Math.round(((advancing - declining) / parsed.length) * 100) : 0;
+  const pressureTone = pressureScore > 10 ? "text-buy" : pressureScore < -10 ? "text-sell" : "text-hold";
+  const pressureLabel = pressureScore > 10 ? "bid-led" : pressureScore < -10 ? "offer-led" : "balanced";
+  const leadGainer = top3[0] ?? null;
+  const leadLoser = bottom3[0] ?? null;
 
   return (
     <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
@@ -937,8 +949,8 @@ function TopMoversCard() {
           <TrendingUp size={12} className="text-buy" />
           Market Pressure
         </h3>
-        <span className="text-[9px] text-txt-muted font-mono tabular-nums">
-          {breadth == null ? "waiting" : `${breadth}% advancing`}
+        <span className={cx("text-[9px] font-mono uppercase tabular-nums", parsed.length > 0 ? pressureTone : "text-txt-muted")}>
+          {parsed.length === 0 ? "waiting" : pressureLabel}
         </span>
       </div>
       {parsed.length === 0 ? (
@@ -948,71 +960,93 @@ function TopMoversCard() {
           detail={d.marketError ?? "Waiting for tradable pair prices before ranking pressure."}
         />
       ) : (
-      <div className="grid grid-cols-2 divide-x divide-border-default">
-        <div className="p-3">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-buy" />
-            <span className="text-[9px] font-semibold text-buy tracking-wide">Gainers</span>
-            </div>
-            <span className="text-[9px] font-mono text-txt-muted tabular-nums">{advancing}</span>
+      <div className="p-3">
+        <div className="grid grid-cols-[1fr_auto] gap-3">
+          <div>
+            <p className={cx("font-mono text-3xl font-bold leading-none tabular-nums", pressureTone)}>
+              {pressureScore > 0 ? "+" : ""}{pressureScore}
+            </p>
+            <p className="mt-1 text-[9px] uppercase tracking-wide text-txt-muted">Pressure impulse</p>
           </div>
-          <div className="space-y-2">
-            {top3.map((t, i) => (
-              <div key={t.symbol} className="group">
-                <div className="flex items-center gap-2">
-                  <span className="w-4 text-[9px] text-txt-dim font-mono tabular-nums text-right">{i + 1}</span>
-                  <CoinAvatar symbol={t.symbol} size={20} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-xs font-semibold text-txt-primary truncate">{t.symbol}</span>
-                      <span className="font-mono text-[10px] text-txt-muted tabular-nums shrink-0">
-                        {formatAssetPrice(t.price)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between mt-0.5">
-                      <ChangeBar change={t.change} maxAbs={maxAbs} />
-                      <span className="font-mono text-[10px] font-bold tabular-nums text-buy ml-2 shrink-0">
-                        +{Math.abs(t.change).toFixed(2)}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="min-w-[104px] rounded-lg border border-buy-dim/30 bg-buy-muted/10 p-2 text-right">
+            <p className="font-mono text-sm font-bold text-txt-primary tabular-nums">{breadth ?? 0}%</p>
+            <p className="mt-0.5 text-[9px] text-txt-muted">advancing</p>
           </div>
         </div>
-        <div className="p-3">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-sell" />
-            <span className="text-[9px] font-semibold text-sell tracking-wide">Losers</span>
-            </div>
-            <span className="text-[9px] font-mono text-txt-muted tabular-nums">{declining}</span>
+
+        <div className="mt-3 grid grid-cols-3 gap-1.5 text-center">
+          <div className="rounded-lg border border-buy-dim/30 bg-buy-muted/10 px-2 py-1.5">
+            <p className="font-mono text-sm font-bold text-buy tabular-nums">{advancing}</p>
+            <p className="text-[8px] uppercase text-txt-muted">adv</p>
           </div>
-          <div className="space-y-2">
-            {bottom3.map((t, i) => (
-              <div key={t.symbol} className="group">
-                <div className="flex items-center gap-2">
-                  <span className="w-4 text-[9px] text-txt-dim font-mono tabular-nums text-right">{i + 1}</span>
-                  <CoinAvatar symbol={t.symbol} size={20} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-xs font-semibold text-txt-primary truncate">{t.symbol}</span>
-                      <span className="font-mono text-[10px] text-txt-muted tabular-nums shrink-0">
-                        {formatAssetPrice(t.price)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between mt-0.5">
+          <div className="rounded-lg border border-border-default bg-elevated/20 px-2 py-1.5">
+            <p className="font-mono text-sm font-bold text-txt-secondary tabular-nums">{unchanged}</p>
+            <p className="text-[8px] uppercase text-txt-muted">flat</p>
+          </div>
+          <div className="rounded-lg border border-sell-dim/30 bg-sell-muted/10 px-2 py-1.5">
+            <p className="font-mono text-sm font-bold text-sell tabular-nums">{declining}</p>
+            <p className="text-[8px] uppercase text-txt-muted">dec</p>
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-lg border border-border-default bg-inset/50 p-2.5">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-[9px] font-semibold uppercase tracking-wide text-txt-muted">Tape Leaders</span>
+            <span className="font-mono text-[9px] text-txt-muted tabular-nums">{parsed.length} pairs</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-buy" />
+                  <span className="text-[9px] font-semibold text-buy tracking-wide">Bid</span>
+                </div>
+                <span className="font-mono text-[9px] text-buy tabular-nums">
+                  {leadGainer ? `+${Math.abs(leadGainer.change).toFixed(2)}%` : "--"}
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                {top3.slice(0, 2).map((t, i) => (
+                  <div key={t.symbol} className="flex items-center gap-2">
+                    <span className="w-4 text-right font-mono text-[9px] text-txt-dim tabular-nums">{i + 1}</span>
+                    <CoinAvatar symbol={t.symbol} size={18} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-[10px] font-semibold text-txt-primary">{t.symbol}</span>
+                        <span className="shrink-0 font-mono text-[9px] font-bold tabular-nums text-buy">+{Math.abs(t.change).toFixed(2)}%</span>
+                      </div>
                       <ChangeBar change={t.change} maxAbs={maxAbs} />
-                      <span className="font-mono text-[10px] font-bold tabular-nums text-sell ml-2 shrink-0">
-                        {Math.abs(t.change).toFixed(2)}%
-                      </span>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
-            ))}
+            </div>
+            <div>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-sell" />
+                  <span className="text-[9px] font-semibold text-sell tracking-wide">Offer</span>
+                </div>
+                <span className="font-mono text-[9px] text-sell tabular-nums">
+                  {leadLoser ? `${leadLoser.change.toFixed(2)}%` : "--"}
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                {bottom3.slice(0, 2).map((t, i) => (
+                  <div key={t.symbol} className="flex items-center gap-2">
+                    <span className="w-4 text-right font-mono text-[9px] text-txt-dim tabular-nums">{i + 1}</span>
+                    <CoinAvatar symbol={t.symbol} size={18} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-[10px] font-semibold text-txt-primary">{t.symbol}</span>
+                        <span className="shrink-0 font-mono text-[9px] font-bold tabular-nums text-sell">{Math.abs(t.change).toFixed(2)}%</span>
+                      </div>
+                      <ChangeBar change={t.change} maxAbs={maxAbs} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
