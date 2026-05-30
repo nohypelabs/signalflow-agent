@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { DashboardMetrics, MetricStatus } from "@/lib/hooks/useDashboardMetrics";
 import { formatPercent } from "@/lib/api/dashboard-metrics";
 
@@ -36,24 +36,12 @@ function StatusBadge({ status }: { status: MetricStatus }) {
 /* ── Trend Arrow ── */
 function TrendArrow({ value, size = 10 }: { value: number; size?: number }) {
   if (value > 0) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--color-buy)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="17 7 7 17" /><polyline points="7 7 17 7 17 17" />
-      </svg>
-    );
+    return <TrendingUp size={size} className="text-buy" />;
   }
   if (value < 0) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--color-sell)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="7 17 17 7" /><polyline points="17 17 7 17 7 7" />
-      </svg>
-    );
+    return <TrendingDown size={size} className="text-sell" />;
   }
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="2" strokeLinecap="round">
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  );
+  return <Minus size={size} className="text-txt-muted" />;
 }
 
 /* ── Time ago ── */

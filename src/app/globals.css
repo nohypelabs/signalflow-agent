@@ -261,30 +261,9 @@ main::-webkit-scrollbar-thumb {
 }
 
 /* ── Dashboard intro gate ── */
-@keyframes intro-drift {
-  0% { transform: translate3d(-2%, 0, 0) rotate(0deg); }
-  25% { transform: translate3d(0.5%, -0.5%, 0) rotate(0.8deg); }
-  50% { transform: translate3d(2%, 0.8%, 0) rotate(0deg); }
-  75% { transform: translate3d(0%, 0.4%, 0) rotate(-0.8deg); }
-  100% { transform: translate3d(-2%, 0, 0) rotate(0deg); }
-}
-
-@keyframes intro-breathe {
-  0%, 100% { opacity: 0.6; transform: scale(1); }
-  50% { opacity: 0.95; transform: scale(1.05); }
-}
-
 @keyframes intro-glow {
   0%, 100% { box-shadow: 0 0 0 0 rgba(0, 229, 168, 0.18); }
   50% { box-shadow: 0 0 0 14px rgba(0, 229, 168, 0); }
-}
-
-.intro-drift {
-  animation: intro-drift 14s ease-in-out infinite;
-}
-
-.intro-breathe {
-  animation: intro-breathe 10s ease-in-out infinite;
 }
 
 .intro-glow {

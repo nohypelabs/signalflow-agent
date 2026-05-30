@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Target, Layers, Activity, Play } from "lucide-react";
+import { Target, Layers, Activity, Play, TrendingUp, TrendingDown, Database, Box, Brain, Cpu, GitMerge, Landmark, BarChart3, Grid2x2, MessageSquare, CheckCircle, Gauge, TrendingUpIcon, TrendingDownIcon, ArrowUp, ArrowDown, CircleDot } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import IndexROIDashboard from "@/components/IndexROIDashboard";
@@ -93,23 +93,20 @@ function IconControlButton({
 /* ── Tech Icon (inline SVG) ── */
 
 function TechIcon({ name, className = "" }: { name: string; className?: string }) {
-  const common = "fill-none stroke-current";
-  return (
-    <svg viewBox="0 0 32 32" className={cx("h-7 w-7 text-accent", className)} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      {name === "database" && <path className={common} d="M8 9c0-2 16-2 16 0v14c0 2-16 2-16 0V9Zm0 0c0 2 16 2 16 0M8 16c0 2 16 2 16 0" />}
-      {name === "cube" && <path className={common} d="m16 4 10 6v12l-10 6-10-6V10l10-6Zm0 0v12m10-6-10 6-10-6m10 6v12" />}
-      {name === "fusion" && <g className={common}><circle cx="12" cy="18" r="6" /><circle cx="20" cy="18" r="6" /><circle cx="16" cy="11" r="6" /></g>}
-      {name === "brain" && <path className={common} d="M11 7c-3 0-5 2-5 5 0 1 .3 2 .8 2.8A5.3 5.3 0 0 0 8 25c2 0 3.5-1 4-2m9-16c3 0 5 2 5 5 0 1-.3 2-.8 2.8A5.3 5.3 0 0 1 24 25c-2 0-3.5-1-4-2M16 6v20M11 12h3m4 0h3M10 18h4m4 0h4" />}
-      {name === "target" && <g className={common}><circle cx="16" cy="16" r="9" /><circle cx="16" cy="16" r="3" /><path d="M16 2v6M16 24v6M2 16h6M24 16h6" /></g>}
-      {name === "trend" && <path className={common} d="M5 22h22M7 19l5-5 4 4 8-10m0 0v6m0-6h-6" />}
-      {name === "globe" && <g className={common}><circle cx="16" cy="16" r="10" /><path d="M6 16h20M16 6c3 3 4 7 4 10s-1 7-4 10M16 6c-3 3-4 7-4 10s1 7 4 10" /></g>}
-      {name === "chat" && <path className={common} d="M6 8h20v13H12l-6 5V8Zm5 5h10M11 17h7" />}
-      {name === "bank" && <path className={common} d="M5 13h22L16 6 5 13Zm3 0v11m5-11v11m6-11v11m5-11v11M5 24h22" />}
-      {name === "bars" && <path className={common} d="M7 24V14m6 10V8m6 16V11m6 13V5M5 26h22" />}
-      {name === "score" && <g className={common}><circle cx="16" cy="16" r="10" /><path d="M11 16l3 3 7-7" /></g>}
-      {!["database", "cube", "fusion", "brain", "target", "trend", "globe", "chat", "bank", "bars", "score"].includes(name) && <circle className={common} cx="16" cy="16" r="10" />}
-    </svg>
-  );
+  const iconMap: Record<string, React.ReactNode> = {
+    database: <Database className={className} />,
+    cube: <Box className={className} />,
+    fusion: <GitMerge className={className} />,
+    brain: <Brain className={className} />,
+    target: <Target className={className} />,
+    trend: <TrendingUp className={className} />,
+    globe: <Layers className={className} />,
+    chat: <MessageSquare className={className} />,
+    bank: <Landmark className={className} />,
+    bars: <BarChart3 className={className} />,
+    score: <CheckCircle className={className} />,
+  };
+  return iconMap[name] ?? <CircleDot className={className} />;
 }
 
 /* ── Pipeline Flow ── */
@@ -766,9 +763,7 @@ function TopMoversCard() {
     <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
       <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
         <h3 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-txt-secondary">
-          <svg viewBox="0 0 16 16" className="h-3 w-3 text-buy" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M2 14h12M4 10l4-4 3 3 5-6" />
-          </svg>
+          <TrendingUp size={12} className="text-buy" />
           Top Movers
         </h3>
         <span className="text-[9px] text-txt-dim font-mono tabular-nums">{parsed.length} pairs</span>
@@ -1137,12 +1132,7 @@ function MarketStatsCard() {
     {
       label: "Volume 24H",
       value: fmtUsd(totalVolume),
-      icon: (
-        <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-          <path d="M3 14l4-4 3 3 7-9" />
-          <path d="M14 4h3v3" />
-        </svg>
-      ),
+      icon: <BarChart3 size={16} />,
       color: "text-accent",
       bgColor: "bg-accent-muted",
       large: true,
@@ -1150,12 +1140,7 @@ function MarketStatsCard() {
     {
       label: "Active Pairs",
       value: activePairs.toString(),
-      icon: (
-        <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-          <circle cx="7" cy="10" r="4" />
-          <circle cx="13" cy="10" r="4" />
-        </svg>
-      ),
+      icon: <Grid2x2 size={16} />,
       color: "text-info",
       bgColor: "bg-[#00d4ff10]",
       large: false,
@@ -1163,11 +1148,7 @@ function MarketStatsCard() {
     {
       label: "Buy Signals",
       value: buySignals.toString(),
-      icon: (
-        <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M10 15V5M6 9l4-4 4 4" />
-        </svg>
-      ),
+      icon: <ArrowUp size={16} />,
       color: "text-buy",
       bgColor: "bg-buy-muted",
       large: false,
@@ -1175,11 +1156,7 @@ function MarketStatsCard() {
     {
       label: "Sell Signals",
       value: sellSignals.toString(),
-      icon: (
-        <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M10 5v10M6 11l4 4 4-4" />
-        </svg>
-      ),
+      icon: <ArrowDown size={16} />,
       color: "text-sell",
       bgColor: "bg-sell-muted",
       large: false,
