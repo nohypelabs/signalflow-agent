@@ -14,7 +14,7 @@ export type TradingType = "scalping" | "intraday" | "swing" | "position";
 export interface TradingTypeConfig {
   id: TradingType;
   label: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; style?: React.CSSProperties; className?: string }>;
   description: string;
   timeframe: string;
   holdDuration: string;
