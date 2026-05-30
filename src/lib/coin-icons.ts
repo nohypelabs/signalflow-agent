@@ -19,6 +19,9 @@ export const COIN_ICONS: Record<string, string> = {
   "FIL": "https://coin-images.coingecko.com/coins/images/11474/thumb/filecoin.png?1698177980",
   "APT": "https://coin-images.coingecko.com/coins/images/26455/thumb/aptos.png?1696513713",
   "NEAR": "https://coin-images.coingecko.com/coins/images/10365/thumb/near.jpg?1696513716",
+  "XLM": "https://coin-images.coingecko.com/coins/images/100/thumb/fmpFRHHQ_400x400.jpg?1735231350",
+  "TON": "https://coin-images.coingecko.com/coins/images/17980/thumb/photo_2024-09-10_17.09.00.jpeg?1725963446",
+  "USDT": "https://coin-images.coingecko.com/coins/images/325/thumb/Tether.png?1696501661",
 
   // Layer 2 / Scaling
   "MATIC": "https://coin-images.coingecko.com/coins/images/4713/thumb/polygon.png?1698258967",

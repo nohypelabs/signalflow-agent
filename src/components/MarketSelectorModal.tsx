@@ -5,6 +5,7 @@ import type { SoDEXTicker } from "@/lib/types/trade";
 import type { Signal } from "@/lib/types/signal";
 import { sodexSymbolToBase } from "@/lib/pair-map";
 import { getCoinIcon } from "@/lib/coin-icons";
+import { getStockIcon } from "@/lib/stock-icons";
 
 /* ── Types ── */
 
@@ -117,14 +118,16 @@ function saveWatchlist(list: string[]) {
 
 function MarketIcon({ base, category, size = 26 }: { base: string; category: Category; size?: number }) {
   const [errored, setErrored] = useState(false);
-  const realIcon = getCoinIcon(base);
+  const cryptoIcon = getCoinIcon(base);
+  const stockIcon = getStockIcon(base);
+  const icon = category === "Crypto" ? cryptoIcon : stockIcon;
 
-  if (category === "Crypto" && !errored && realIcon) {
+  if (!errored && icon) {
     return (
       // Dynamic external crypto icons are intentionally rendered as plain images.
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={realIcon}
+        src={icon}
         alt={base} width={size} height={size}
         className="shrink-0 rounded-full"
         onError={() => setErrored(true)}

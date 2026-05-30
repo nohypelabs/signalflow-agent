@@ -9,6 +9,7 @@ import TradingChart from "@/components/TradingChart";
 import { useDashboard } from "@/lib/dashboard-context";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import { getCoinIcon } from "@/lib/coin-icons";
+import { getStockIcon } from "@/lib/stock-icons";
 import type { Signal } from "@/lib/types/signal";
 
 /* ── Pipeline Model ── */
@@ -984,9 +985,9 @@ function StockAvatar({ symbol, size = 32 }: { symbol: string; size?: number }) {
   const [errored, setErrored] = useState(false);
   const upper = symbol.toUpperCase();
   const color = STOCK_COLORS[upper] || coinColor(upper);
-  const logoUrl = `https://img.logo.dev/${symbol.toLowerCase()}?token=pk_XsCjJOo5QdyV2M_6rV3pcQ&size=${size * 2}&retina=true`;
+  const realIcon = getStockIcon(upper);
 
-  if (errored) {
+  if (errored || !realIcon) {
     return (
       <span
         className="inline-flex items-center justify-center rounded-lg shrink-0 font-bold"
@@ -1004,7 +1005,7 @@ function StockAvatar({ symbol, size = 32 }: { symbol: string; size?: number }) {
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={logoUrl}
+        src={realIcon}
         alt={symbol}
         width={size}
         height={size}
