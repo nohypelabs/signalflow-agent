@@ -67,7 +67,7 @@ function IconControlButton({
         onClick={onClick}
         disabled={disabled || loading}
         className={cx(
-          "flex h-11 w-11 items-center justify-center rounded-xl border transition-all",
+          "flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border transition-all",
           "focus:outline-none focus:ring-2 focus:ring-accent/40",
           intent === "execute"
             ? "border-buy-dim bg-buy-muted text-buy hover:border-buy hover:bg-buy-muted/80"
@@ -454,16 +454,18 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
         <div className="rounded-xl border border-border-default bg-inset/70 px-2 py-2 text-center">
           <div className="mb-1 text-[11px] font-semibold tracking-wide text-txt-tertiary uppercase">SignalFlow Final Score</div>
           <SpeedometerGauge value={decision.confidence} size="lg" showLabel={false} />
-          <div className="-mt-2 grid grid-cols-[44px_auto_44px] items-center justify-center gap-3">
-            <IconControlButton
-              label={d.analyzing ? "Generating Signal" : "Generate Signal"}
-              detail={generateTooltip}
-              onClick={generateSignal}
-              loading={d.analyzing}
-              intent="accent"
-            >
-              <PedalIcon className="h-5 w-5" />
-            </IconControlButton>
+          <div className="relative -mt-2 flex min-h-[52px] items-center justify-center px-14">
+            <div className="absolute left-2 top-1/2 -translate-y-1/2">
+              <IconControlButton
+                label={d.analyzing ? "Generating Signal" : "Generate Signal"}
+                detail={generateTooltip}
+                onClick={generateSignal}
+                loading={d.analyzing}
+                intent="accent"
+              >
+                <PedalIcon className="h-5 w-5" />
+              </IconControlButton>
+            </div>
             <div
               className="min-w-[104px] text-5xl font-bold tabular-nums tracking-tight"
               style={{
@@ -476,15 +478,17 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
             >
               {decision.confidence}%
             </div>
-            <IconControlButton
-              label={decision.action === "NO TRADE" ? "Wait For Setup" : "Execute Setup"}
-              detail={decision.action === "NO TRADE" ? "No executable setup yet." : `Execute this setup at ${decision.positionSize}.`}
-              onClick={execute}
-              disabled={!currentSignal || decision.action === "NO TRADE"}
-              intent="execute"
-            >
-              <Play size={19} fill="currentColor" />
-            </IconControlButton>
+            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+              <IconControlButton
+                label={decision.action === "NO TRADE" ? "Wait For Setup" : "Execute Setup"}
+                detail={decision.action === "NO TRADE" ? "No executable setup yet." : `Execute this setup at ${decision.positionSize}.`}
+                onClick={execute}
+                disabled={!currentSignal || decision.action === "NO TRADE"}
+                intent="execute"
+              >
+                <Play size={19} fill="currentColor" />
+              </IconControlButton>
+            </div>
           </div>
           <div className="text-sm font-medium text-txt-tertiary">{decision.label}</div>
         </div>

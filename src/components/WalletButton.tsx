@@ -45,7 +45,7 @@ export default function WalletButton() {
         <button
           onClick={handleConnect}
           disabled={connecting}
-          className="px-3 py-1.5 text-xs font-bold rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 hover:border-accent/50 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="cursor-pointer px-3 py-1.5 text-xs font-bold rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 hover:border-accent/50 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           {connecting ? "Connecting..." : "Connect Wallet"}
         </button>
@@ -63,7 +63,7 @@ export default function WalletButton() {
         <Badge variant="error" size="sm">Wrong Network</Badge>
         <button
           onClick={handleSwitch}
-          className="px-2 py-1 text-[10px] font-semibold rounded-md bg-elevated border border-border-default text-txt-secondary hover:text-txt-primary hover:border-border-muted whitespace-nowrap transition-colors"
+          className="cursor-pointer px-2 py-1 text-[10px] font-semibold rounded-md bg-elevated border border-border-default text-txt-secondary hover:text-txt-primary hover:border-border-muted whitespace-nowrap transition-colors"
         >
           Switch
         </button>
@@ -81,7 +81,7 @@ export default function WalletButton() {
     <div className="relative">
       <button
         onClick={() => setDropdownOpen(!dropdownOpen)}
-        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-inset border border-border-default text-txt-secondary hover:text-txt-primary hover:border-border-muted transition-colors"
+        className="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 rounded-lg bg-inset border border-border-default text-txt-secondary hover:text-txt-primary hover:border-border-muted transition-colors"
       >
         <StatusDot status="live" size="sm" />
         <span className="text-[11px] font-mono font-medium">{shortAddress}</span>

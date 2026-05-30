@@ -123,7 +123,7 @@ export default function TopBar({
           onClick={() => setOpenMenu(openMenu === key ? null : key)}
           aria-label={`${label} pages menu`}
           aria-expanded={openMenu === key}
-          className={`flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors ${
+          className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors ${
             active
               ? "border-accent/35 bg-accent/10 text-accent"
               : "border-border-default bg-elevated/45 text-txt-primary hover:border-accent/30 hover:bg-accent/10"
@@ -148,7 +148,7 @@ export default function TopBar({
                     key={href}
                     type="button"
                     onClick={() => navigate(href)}
-                    className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
+                    className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
                       itemActive
                         ? "bg-accent-muted text-accent"
                         : "text-txt-secondary hover:bg-elevated hover:text-txt-primary"
@@ -226,7 +226,7 @@ export default function TopBar({
             <button
               type="button"
               onClick={() => setSettingsOpen(!settingsOpen)}
-              className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
+              className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border transition-colors ${
                 settingsOpen || isSystemActive
                   ? "border-accent/50 bg-accent/15 text-accent shadow-[0_0_18px_rgba(0,229,168,0.35)]"
                   : "border-accent/30 bg-accent/10 text-accent shadow-[0_0_14px_rgba(0,229,168,0.22)] hover:bg-accent/15 hover:border-accent/50 hover:shadow-[0_0_20px_rgba(0,229,168,0.4)]"
@@ -250,7 +250,7 @@ export default function TopBar({
                       <button
                         type="button"
                         onClick={() => setSettingsOpen(false)}
-                        className="text-txt-muted hover:text-txt-primary transition-colors"
+                        className="cursor-pointer text-txt-muted hover:text-txt-primary transition-colors"
                       >
                         <CloseIcon size={14} />
                       </button>
@@ -265,7 +265,7 @@ export default function TopBar({
                           key={href}
                           type="button"
                           onClick={() => navigate(href)}
-                          className={`flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+                          className={`flex w-full cursor-pointer items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
                             itemActive
                               ? "bg-accent-muted"
                               : "hover:bg-elevated"
