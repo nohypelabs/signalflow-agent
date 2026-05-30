@@ -8,7 +8,6 @@ import type { TradingType } from "@/lib/types/trading-type";
 import { loadTradingType, TRADING_TYPES, getRecommendedType } from "@/lib/types/trading-type";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import Skeleton from "@/components/ui/Skeleton";
-import EmptyState from "@/components/ui/EmptyState";
 import SignalsPageHeader from "./signals/SignalsPageHeader";
 import SignalSummaryCards from "./signals/SignalSummaryCards";
 import SignalFilters, { type SortOption, type ViewMode } from "./signals/SignalFilters";
@@ -161,6 +160,14 @@ export default function SignalsPage({ tickers, liveSignals = [], liveDims, overa
     };
   };
 
+  const resetSignalFilters = () => {
+    setSearch("");
+    setTypeFilter("ALL");
+    setConfidenceFilter(0);
+  };
+
+  const showSignalGuidance = liveSignals.length > 0 && filteredSignals.length === 0;
+
   // Don't render until we've checked for saved type
   if (!modalChecked) {
     return (
@@ -195,6 +202,7 @@ export default function SignalsPage({ tickers, liveSignals = [], liveDims, overa
           timestamp={lastUpdated}
           currentType={tradingType}
           onTypeChange={handleTypeChange}
+          needsAttention={showSignalGuidance}
         />
 
         {/* Active type indicator */}
@@ -261,7 +269,7 @@ export default function SignalsPage({ tickers, liveSignals = [], liveDims, overa
         {filteredSignals.length > 0 && <SignalSummaryCards signals={filteredSignals} />}
 
         {/* Filters */}
-        {filteredSignals.length > 0 && (
+        {liveSignals.length > 0 && (
           <SignalFilters
             search={search}
             onSearchChange={setSearch}
@@ -302,17 +310,43 @@ export default function SignalsPage({ tickers, liveSignals = [], liveDims, overa
                 </div>
               ))
             ) : (
-              <EmptyState
-                title={tradingType
-                  ? `No ${TRADING_TYPES[tradingType].label} signals right now`
-                  : "No signals match your filters"
-                }
-                description={tradingType
-                  ? `Signals need ≥${TRADING_TYPES[tradingType].minConfidence}% confidence for ${TRADING_TYPES[tradingType].label} style. Try switching to a different type or adjusting filters.`
-                  : "Try adjusting the search, type, or confidence filters to see more signals."
-                }
-                icon="signal"
-              />
+              <div className="rounded-xl border border-hold/30 bg-hold/8 p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-hold">Signals are available</p>
+                    <h3 className="mt-1 text-lg font-bold text-txt-primary">
+                      Current type/filter has no matching signal
+                    </h3>
+                    <p className="mt-2 max-w-2xl text-xs leading-relaxed text-txt-secondary">
+                      This does not mean SignalFlow is inactive. Use the highlighted Trading Style dropdown above to switch signal type, or reset filters to show all live signals.
+                    </p>
+                    {tradingType && (
+                      <p className="mt-2 text-[11px] text-txt-muted">
+                        {TRADING_TYPES[tradingType].label} mode requires ≥{TRADING_TYPES[tradingType].minConfidence}% confidence.
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleTypeChange(null);
+                        resetSignalFilters();
+                      }}
+                      className="cursor-pointer rounded-lg border border-hold/40 bg-hold/12 px-3 py-2 text-xs font-bold text-hold transition-colors hover:bg-hold/20"
+                    >
+                      Show all signal types
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetSignalFilters}
+                      className="cursor-pointer rounded-lg border border-border-default bg-elevated/40 px-3 py-2 text-xs font-semibold text-txt-secondary transition-colors hover:bg-elevated hover:text-txt-primary"
+                    >
+                      Reset filters
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         ) : viewMode === "cards" ? (

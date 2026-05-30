@@ -10,9 +10,10 @@ interface Props {
   timestamp?: string;
   currentType: TradingType | null;
   onTypeChange: (type: TradingType | null) => void;
+  needsAttention?: boolean;
 }
 
-export default function SignalsPageHeader({ signalCount, timestamp, currentType, onTypeChange }: Props) {
+export default function SignalsPageHeader({ signalCount, timestamp, currentType, onTypeChange, needsAttention = false }: Props) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-border-default mb-5">
       <div className="flex items-center gap-3">
@@ -22,8 +23,13 @@ export default function SignalsPageHeader({ signalCount, timestamp, currentType,
           <span className="text-[10px] text-buy font-semibold uppercase tracking-wider">Live</span>
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <TypeSwitcher currentType={currentType} onTypeChange={onTypeChange} />
+      <div className="flex flex-wrap items-center gap-3">
+        {needsAttention && (
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-hold">
+            Try another signal type
+          </span>
+        )}
+        <TypeSwitcher currentType={currentType} onTypeChange={onTypeChange} attention={needsAttention} />
         <Badge variant="accent" size="md">
           {signalCount} {signalCount === 1 ? "signal" : "signals"}
         </Badge>

@@ -15,9 +15,10 @@ interface Props {
   currentType: TradingType | null;
   onTypeChange: (type: TradingType | null) => void;
   compact?: boolean;
+  attention?: boolean;
 }
 
-export default function TypeSwitcher({ currentType, onTypeChange, compact = false }: Props) {
+export default function TypeSwitcher({ currentType, onTypeChange, compact = false, attention = false }: Props) {
   const [open, setOpen] = useState(false);
   const [dropdownAlign, setDropdownAlign] = useState<"left" | "right">("right");
   const ref = useRef<HTMLDivElement>(null);
@@ -62,13 +63,18 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
       <button
         onClick={() => setOpen(!open)}
         className={`
-          flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all leading-none
+          flex items-center gap-2 rounded-lg border transition-all leading-none
+          ${attention ? "px-4 py-2 shadow-[0_0_18px_rgba(255,136,0,0.18)]" : "px-3 py-1.5"}
           ${current
-            ? "border-border-strong bg-card hover:bg-elevated"
-            : "border-border-default bg-card/50 hover:bg-card text-txt-dim"
+            ? attention
+              ? "border-hold/45 bg-hold/10 hover:bg-hold/15"
+              : "border-border-strong bg-card hover:bg-elevated"
+            : attention
+              ? "border-hold/45 bg-hold/10 text-hold hover:bg-hold/15"
+              : "border-border-default bg-card/50 hover:bg-card text-txt-dim"
           }
         `}
-        style={current ? { borderColor: `${current.color}40` } : undefined}
+        style={current && !attention ? { borderColor: `${current.color}40` } : undefined}
       >
         {current ? (
           <>
