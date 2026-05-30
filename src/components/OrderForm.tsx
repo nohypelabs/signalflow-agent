@@ -33,8 +33,6 @@ function fmtPrice(p: number, coin: string): string {
   return p.toFixed(5);
 }
 
-const LEVERAGE_PRESETS = [1, 2, 3, 5, 10];
-
 export default function OrderForm({ pair, coin, currentPrice, signal, isConnected, paperBalance, mode = "paper", tradingType, error, onExecute }: Props) {
   const [side, setSide] = useState<"LONG" | "SHORT">("LONG");
   const [orderType, setOrderType] = useState<"Market" | "Limit">("Market");
@@ -62,10 +60,6 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
   }, [pair]);
 
   const maxLeverage = typeConfig ? Math.min(typeConfig.maxLeverage, pairMaxLeverage) : pairMaxLeverage;
-  const leveragePresets = useMemo(() => {
-    return LEVERAGE_PRESETS.filter((l) => l <= maxLeverage);
-  }, [maxLeverage]);
-
   useEffect(() => {
     if (leverage > maxLeverage) setLeverage(maxLeverage);
   }, [maxLeverage, leverage]);
@@ -230,21 +224,18 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
 
         {/* Leverage settings (expandable) */}
         {showLeverageSettings && (
-          <div className="space-y-2.5 p-3 rounded-xl bg-inset/50 border border-border-default">
+          <div className="space-y-2.5 rounded-xl border border-hold/35 bg-inset/70 p-3 shadow-[0_0_18px_rgba(255,136,0,0.16)]">
             <div className="flex items-center justify-between">
-              <span className="text-[9px] text-txt-dim uppercase tracking-wider">Leverage</span>
+              <div>
+                <span className="text-[9px] text-hold uppercase tracking-wider">Leverage</span>
+                <p className="mt-0.5 text-[9px] text-txt-muted">Drag slider to adjust trade leverage.</p>
+              </div>
               <span className="text-sm font-bold font-mono text-hold tabular-nums">{leverage}x</span>
             </div>
             <input type="range" min={1} max={maxLeverage} value={leverage} onChange={(e) => setLeverage(Number(e.target.value))}
-              className="w-full h-1.5 bg-elevated rounded-full appearance-none cursor-pointer accent-hold" />
-            <div className="flex gap-1.5">
-              {leveragePresets.map((lev) => (
-                <button key={lev} onClick={() => setLeverage(lev)} className={`flex-1 text-[10px] py-1.5 rounded-lg cursor-pointer transition-all font-medium ${
-                  leverage === lev ? "bg-hold/15 text-hold border border-hold/35" : "bg-inset text-txt-dim border border-border-default hover:border-border-muted hover:text-txt-secondary"
-                }`}>{lev}x</button>
-              ))}
-            </div>
+              className="w-full h-2 bg-elevated rounded-full appearance-none cursor-pointer accent-hold drop-shadow-[0_0_8px_rgba(255,136,0,0.55)]" />
             <div className="flex items-center justify-between text-[9px] text-txt-faint">
+              <span>1x</span>
               <span>Max: {maxLeverage}x</span>
               <span>Notional: ${((parseFloat(margin) || 0) * leverage).toFixed(0)}</span>
             </div>
