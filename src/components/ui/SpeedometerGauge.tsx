@@ -74,18 +74,14 @@ export default function SpeedometerGauge({ value, size = "md", showLabel = true,
 
   useEffect(() => {
     if (!sweeping) return;
-    let direction = 1;
-    let current = displayAngle;
+    let current = valueToAngle(0);
+    const ceiling = valueToAngle(92);
+    setDisplayAngle(current);
 
     function animate() {
-      current += direction * 3.8;
-      if (current >= -18) {
-        current = -18;
-        direction = -1;
-      }
-      if (current <= -162) {
-        current = -162;
-        direction = 1;
+      current += 0.55;
+      if (current >= ceiling) {
+        current = valueToAngle(0);
       }
       setDisplayAngle(current);
       rafRef.current = requestAnimationFrame(animate);
