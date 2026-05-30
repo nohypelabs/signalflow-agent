@@ -80,15 +80,8 @@ export default function DashboardIntroGate() {
         </div>
 
         {/* Center content */}
-        <div className="mx-auto w-full max-w-4xl -translate-y-8 sm:-translate-y-12">
+        <div className="mx-auto w-full max-w-4xl">
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-5 flex justify-center">
-              <img
-                src="/icons/signalflow-banner.png"
-                alt="SignalFlow Agent"
-                className="h-auto w-[min(46vw,260px)] object-contain opacity-95"
-              />
-            </div>
             <p className="text-[10px] uppercase tracking-[0.4em] text-[#ff8800]">SignalFlow Agent</p>
             <h1 className="mt-4 text-4xl font-light tracking-[-0.04em] text-[#f8f3e4] sm:text-6xl lg:text-7xl">
               Market tape in. Decision out.
@@ -123,7 +116,14 @@ export default function DashboardIntroGate() {
         </div>
 
         {/* Bottom bar */}
-        <div className="flex items-end justify-between text-[11px] text-white/50">
+        <div className="relative flex items-end justify-between text-[11px] text-white/50">
+          <div className="pointer-events-none absolute bottom-0 left-1/2 flex -translate-x-1/2 justify-center">
+            <img
+              src="/icons/signalflow-banner.png"
+              alt="SignalFlow Agent"
+              className="h-auto w-[min(46vw,260px)] object-contain opacity-95"
+            />
+          </div>
           <p className="max-w-sm font-mono leading-5">
             AI-driven signals. Multi-timeframe confluence. Paper-first execution.
           </p>
