@@ -1207,7 +1207,32 @@ const CATEGORY_META: Record<string, { color: string; bg: string }> = {
 
 function IndexCard() {
   const d = useDashboard();
-  const tickers = d.tickers ?? [];
+  const [fallbackTickers, setFallbackTickers] = useState<typeof d.tickers>(null);
+  const [fallbackError, setFallbackError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (d.tickers && d.tickers.length > 0) return;
+    let cancelled = false;
+
+    fetch("/api/market/tickers", { cache: "no-store" })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Market tickers ${r.status}`);
+        return r.json();
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setFallbackTickers(Array.isArray(data) ? data : []);
+          setFallbackError(null);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setFallbackError(err instanceof Error ? err.message : "Market tickers unavailable");
+      });
+
+    return () => { cancelled = true; };
+  }, [d.tickers]);
+
+  const tickers = d.tickers && d.tickers.length > 0 ? d.tickers : fallbackTickers ?? [];
 
   const assets = tickers
     .map((t) => ({
@@ -1376,7 +1401,7 @@ function IndexCard() {
           <EvidenceEmptyState
             icon={<Layers size={18} />}
             title={d.marketLoading ? "Loading macro tape" : "Macro tape degraded"}
-            detail={d.marketError ?? "No index, commodity, stock, crypto proxy, or live signal data is available yet."}
+            detail={d.marketError ?? fallbackError ?? "No index, commodity, stock, crypto proxy, or live signal data is available yet."}
           />
         )}
       </div>
