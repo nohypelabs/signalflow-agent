@@ -1224,6 +1224,15 @@ function IndexCard() {
     }))
     .filter((t) => t.price > 0 && !isStockOrIndex(t.symbol))
     .sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+  const signalProxies = [...d.liveSignals]
+    .sort((a, b) => b.confidence - a.confidence)
+    .slice(0, 5)
+    .map((signal) => ({
+      symbol: signal.pair.split("/")[0],
+      action: signal.action,
+      confidence: signal.confidence,
+      regime: signal.regime ?? signal.actionV2?.replaceAll("_", " ") ?? "Signal engine",
+    }));
 
   // Group by category
   const grouped = assets.reduce<Record<string, typeof assets>>((acc, a) => {
@@ -1235,6 +1244,7 @@ function IndexCard() {
   const categoryOrder = ["Stocks", "Indices", "Commodities", "Other"];
   const sortedCategories = categoryOrder.filter((c) => grouped[c]?.length);
   const leadingAsset = [...assets].sort((a, b) => Math.abs(b.change) - Math.abs(a.change))[0] ?? riskProxies[0];
+  const leadingSignal = signalProxies[0];
 
   return (
     <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
@@ -1243,7 +1253,11 @@ function IndexCard() {
           <Layers size={12} className="text-accent" /> Macro Tape
         </h3>
         <span className="text-[9px] text-txt-muted font-mono tabular-nums">
-          {leadingAsset ? `${leadingAsset.symbol} ${changeArrow(leadingAsset.change)} ${Math.abs(leadingAsset.change).toFixed(1)}%` : "waiting"}
+          {leadingAsset
+            ? `${leadingAsset.symbol} ${changeArrow(leadingAsset.change)} ${Math.abs(leadingAsset.change).toFixed(1)}%`
+            : leadingSignal
+              ? `${leadingSignal.symbol} ${leadingSignal.action} ${leadingSignal.confidence}%`
+              : "waiting"}
         </span>
       </div>
       <div className="max-h-[280px] overflow-y-auto scrollbar-none">
@@ -1328,11 +1342,41 @@ function IndexCard() {
             })}
           </div>
         )}
-        {assets.length === 0 && riskProxies.length === 0 && (
+        {assets.length === 0 && riskProxies.length === 0 && signalProxies.length > 0 && (
+          <div>
+            <div className="flex items-center gap-1.5 border-y border-border-default/50 bg-accent-muted/10 px-4 py-1">
+              <span className="text-[9px] font-semibold tracking-wide text-accent">Signal Macro Proxy</span>
+              <span className="ml-auto text-[8px] text-txt-dim tabular-nums">Engine</span>
+            </div>
+            {signalProxies.map(({ symbol, action, confidence, regime }) => {
+              const tone = action === "LONG"
+                ? "bg-buy-muted text-buy"
+                : action === "SHORT"
+                  ? "bg-sell-muted text-sell"
+                  : "bg-hold-muted text-hold";
+              return (
+                <div key={symbol} className="flex items-center gap-2.5 border-b border-border-default/30 px-4 py-2 transition-colors last:border-b-0 hover:bg-elevated/20">
+                  <CoinAvatar symbol={symbol} size={26} />
+                  <div className="min-w-0 flex-1">
+                    <span className="block text-xs font-semibold leading-tight text-txt-primary">{symbol}</span>
+                    <span className="text-[10px] leading-tight text-txt-muted">{regime}</span>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className={cx("inline-flex items-center rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold tabular-nums", tone)}>
+                      {action}
+                    </span>
+                    <span className="mt-1 block font-mono text-[10px] font-semibold text-txt-secondary">{confidence}%</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {assets.length === 0 && riskProxies.length === 0 && signalProxies.length === 0 && (
           <EvidenceEmptyState
             icon={<Layers size={18} />}
             title={d.marketLoading ? "Loading macro tape" : "Macro tape degraded"}
-            detail={d.marketError ?? "No index, commodity, stock, or crypto proxy instruments are available from the current feed."}
+            detail={d.marketError ?? "No index, commodity, stock, crypto proxy, or live signal data is available yet."}
           />
         )}
       </div>
