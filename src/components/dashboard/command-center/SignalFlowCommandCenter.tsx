@@ -244,9 +244,10 @@ function signedFromSignal(signal: Signal | null): number {
   return 0;
 }
 
-function actionFromSigned(value: number): DecisionAction {
-  if (value > 8) return "LONG";
-  if (value < -8) return "SHORT";
+function actionFromSignal(signal: Signal | null): DecisionAction {
+  if (!signal) return "NO TRADE";
+  if (signal.action === "LONG") return "LONG";
+  if (signal.action === "SHORT") return "SHORT";
   return "NO TRADE";
 }
 
@@ -323,6 +324,8 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
   };
 
   const decision = useMemo(() => {
+    const systemAction = actionFromSignal(currentSignal);
+    const systemConfidence = currentSignal?.confidence ?? 0;
     const sources: DecisionSource[] = [
       {
         label: "SoDEX TA",
@@ -347,16 +350,10 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
       },
     ];
 
-    const available = sources.filter((source) => source.available);
-    const weightSum = available.reduce((sum, source) => sum + source.weight, 0);
-    const signed = weightSum
-      ? available.reduce((sum, source) => sum + source.signed * source.weight, 0) / weightSum
+    const action = systemAction;
+    const confidence = currentSignal
+      ? clamp(Math.round(systemConfidence), 0, 100)
       : 0;
-    const action = actionFromSigned(signed);
-    const strength = Math.round(Math.abs(signed));
-    const confidence = action === "NO TRADE"
-      ? clamp(100 - strength, 50, 88)
-      : clamp(strength, 45, 95);
     const signalForExecution = currentSignal ?? aiSignal;
 
     return {
@@ -366,8 +363,8 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
       sources,
       targets: buildTargets(action, currentPrice, signalForExecution),
       stop: buildStop(action, currentPrice, signalForExecution),
-      riskReward: action === "NO TRADE" ? "Stand aside" : signalForExecution?.execution.riskReward ?? "Live calc",
-      positionSize: action === "NO TRADE" ? "Flat / no entry" : signalForExecution?.execution.positionSize ?? "1-2%",
+      riskReward: !currentSignal || action === "NO TRADE" ? "Stand aside" : currentSignal.execution.riskReward,
+      positionSize: !currentSignal || action === "NO TRADE" ? "Flat / no entry" : currentSignal.execution.positionSize,
     };
   }, [aiSignal, currentPrice, currentSignal, d.analyzing, news]);
 
