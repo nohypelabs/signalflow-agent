@@ -1470,7 +1470,9 @@ function MarketStatsCard() {
   const selectedTicker = tickers.find((t) => t.symbol === selectedSymbol || t.symbol === d.selectedPair);
   const selectedVolume = toFiniteNumber(selectedTicker?.quoteVolume);
   const coverage = activePairs > 0 ? Math.min(100, Math.round((signals.length / activePairs) * 100)) : 0;
+  const readinessScore = Math.min(100, Math.round((coverage * 0.55) + (selectedVolume > 0 ? 25 : 0) + (totalSignals > 0 ? 20 : 0)));
   const longShare = totalSignals > 0 ? Math.round((buySignals / totalSignals) * 100) : 0;
+  const shortShare = totalSignals > 0 ? Math.round((sellSignals / totalSignals) * 100) : 0;
   const statusTone = d.marketLoading
     ? "text-hold"
     : d.marketError || d.sodexStatus === "error"
@@ -1491,33 +1493,47 @@ function MarketStatsCard() {
         <span className={cx("text-[9px] font-mono tabular-nums", statusTone)}>{statusLabel}</span>
       </div>
       <div className="p-3">
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-lg border border-accent-dim/30 bg-accent-muted/10 p-2.5">
-            <span className="mb-1 flex items-center gap-1.5 text-[9px] font-semibold text-txt-muted">
-              <BarChart3 size={14} className="text-accent" /> Selected Liquidity
-            </span>
-            <p className="font-mono text-lg font-bold leading-none text-txt-primary tabular-nums">
-              {selectedVolume > 0 ? fmtUsd(selectedVolume) : "—"}
+        <div className="grid grid-cols-[1fr_auto] gap-3">
+          <div>
+            <p className={cx("font-mono text-3xl font-bold leading-none tabular-nums", statusTone)}>
+              {readinessScore}%
             </p>
-            <p className="mt-1 truncate text-[9px] text-txt-muted">{d.selectedPairDisplay}</p>
+            <p className="mt-1 text-[9px] uppercase tracking-wide text-txt-muted">Execution readiness</p>
           </div>
-          <div className="rounded-lg border border-info/20 bg-[#00d4ff08] p-2.5">
-            <span className="mb-1 flex items-center gap-1.5 text-[9px] font-semibold text-txt-muted">
-              <Grid2x2 size={14} className="text-info" /> Feed Coverage
-            </span>
-            <p className="font-mono text-lg font-bold leading-none text-txt-primary tabular-nums">{coverage}%</p>
-            <p className="mt-1 text-[9px] text-txt-muted">{signals.length}/{activePairs || 0} pairs with signals</p>
+          <div className="min-w-[104px] rounded-lg border border-accent-dim/30 bg-accent-muted/10 p-2 text-right">
+            <p className="font-mono text-sm font-bold text-txt-primary tabular-nums">
+              {selectedVolume > 0 ? fmtUsd(selectedVolume) : "--"}
+            </p>
+            <p className="mt-0.5 truncate text-[9px] text-txt-muted">{d.selectedPairDisplay}</p>
           </div>
         </div>
 
-        <div className="mt-3 rounded-lg border border-border-default bg-elevated/20 p-2.5">
+        <div className="mt-3 grid grid-cols-2 gap-1.5">
+          <div className="rounded-lg border border-info/20 bg-[#00d4ff08] px-2 py-2">
+            <span className="flex items-center gap-1.5 text-[9px] font-semibold text-txt-muted">
+              <Grid2x2 size={14} className="text-info" /> Feed Coverage
+            </span>
+            <p className="mt-1 font-mono text-lg font-bold leading-none text-txt-primary tabular-nums">{coverage}%</p>
+            <p className="mt-1 text-[9px] text-txt-muted">{signals.length}/{activePairs || 0} pairs mapped</p>
+          </div>
+          <div className="rounded-lg border border-border-default bg-elevated/20 px-2 py-2">
+            <span className="flex items-center gap-1.5 text-[9px] font-semibold text-txt-muted">
+              <BarChart3 size={14} className="text-accent" /> Order Bias
+            </span>
+            <p className="mt-1 font-mono text-lg font-bold leading-none text-txt-primary tabular-nums">{totalSignals}</p>
+            <p className="mt-1 text-[9px] text-txt-muted">actionable signals</p>
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-lg border border-border-default bg-inset/50 p-2.5">
           <div className="mb-1.5 flex items-center justify-between text-[9px]">
             <span className="font-semibold text-buy">LONG {buySignals}</span>
-            <span className="font-mono text-txt-muted tabular-nums">{totalSignals} actionable</span>
+            <span className="font-mono text-txt-muted tabular-nums">{longShare}% / {shortShare}%</span>
             <span className="font-semibold text-sell">SHORT {sellSignals}</span>
           </div>
-          <div className="flex h-1.5 overflow-hidden rounded-full bg-sell-muted">
+          <div className="flex h-1.5 overflow-hidden rounded-full bg-hold-muted">
             <div className="bg-buy transition-all duration-700" style={{ width: `${longShare}%` }} />
+            <div className="bg-sell transition-all duration-700" style={{ width: `${shortShare}%` }} />
           </div>
           <p className="mt-2 text-[9px] leading-snug text-txt-muted">
             {d.marketError ?? `Total 24H tape volume ${fmtUsd(totalVolume)} across ${activePairs} active instruments.`}
