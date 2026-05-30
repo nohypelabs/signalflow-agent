@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Target, Layers, Activity, Play, TrendingUp, TrendingDown, Database, Box, Brain, Cpu, GitMerge, Landmark, BarChart3, Grid2x2, MessageSquare, CheckCircle, Gauge, TrendingUpIcon, TrendingDownIcon, ArrowUp, ArrowDown, CircleDot } from "lucide-react";
+import { Target, Layers, Activity, Play, TrendingUp, Database, Box, Brain, GitMerge, Landmark, BarChart3, Grid2x2, MessageSquare, CheckCircle, CircleDot } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import IndexROIDashboard from "@/components/IndexROIDashboard";
@@ -635,12 +635,34 @@ function fmtUsd(n: number): string {
   return `$${n.toFixed(2)}`;
 }
 
-function changeColor(pct: number): string {
-  return pct > 0 ? "text-buy" : pct < 0 ? "text-sell" : "text-txt-muted";
-}
-
 function changeArrow(pct: number): string {
   return pct > 0 ? "▲" : pct < 0 ? "▼" : "—";
+}
+
+function toFiniteNumber(value: unknown, fallback = 0): number {
+  const n = typeof value === "number" ? value : parseFloat(String(value ?? ""));
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function formatAssetPrice(price: number): string {
+  if (price >= 100000) return price.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  if (price >= 1000) return price.toLocaleString(undefined, { maximumFractionDigits: 1 });
+  if (price >= 1) return price.toFixed(2);
+  return price.toFixed(4);
+}
+
+function EvidenceEmptyState({ icon, title, detail }: { icon: React.ReactNode; title: string; detail: string }) {
+  return (
+    <div className="flex min-h-[150px] flex-col items-center justify-center gap-2 px-4 py-8 text-center">
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-border-default bg-elevated text-txt-secondary">
+        {icon}
+      </span>
+      <div>
+        <p className="text-xs font-semibold text-txt-secondary">{title}</p>
+        <p className="mt-1 max-w-[220px] text-[10px] leading-snug text-txt-muted">{detail}</p>
+      </div>
+    </div>
+  );
 }
 
 /* Coin color map for fallback avatars */
@@ -749,30 +771,45 @@ function TopMoversCard() {
   const parsed = tickers
     .map((t) => ({
       symbol: t.symbol.replace(/^v/, "").replace(/_vUSDC$/, ""),
-      change: typeof t.changePct === "number" ? t.changePct : parseFloat(String(t.changePct ?? "0")),
-      price: parseFloat(t.lastPx ?? "0"),
+      change: toFiniteNumber(t.changePct),
+      price: toFiniteNumber(t.lastPx),
     }))
-    .filter((t) => t.price > 0)
+    .filter((t) => t.price > 0 && !isStockOrIndex(t.symbol))
     .sort((a, b) => b.change - a.change);
 
   const top3 = parsed.slice(0, 3);
   const bottom3 = parsed.slice(-3).reverse();
   const maxAbs = Math.max(...parsed.map((t) => Math.abs(t.change)), 1);
+  const advancing = parsed.filter((t) => t.change > 0).length;
+  const declining = parsed.filter((t) => t.change < 0).length;
+  const breadth = parsed.length > 0 ? Math.round((advancing / parsed.length) * 100) : null;
 
   return (
     <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
       <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
         <h3 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-txt-secondary">
           <TrendingUp size={12} className="text-buy" />
-          Top Movers
+          Market Pressure
         </h3>
-        <span className="text-[9px] text-txt-dim font-mono tabular-nums">{parsed.length} pairs</span>
+        <span className="text-[9px] text-txt-muted font-mono tabular-nums">
+          {breadth == null ? "waiting" : `${breadth}% advancing`}
+        </span>
       </div>
+      {parsed.length === 0 ? (
+        <EvidenceEmptyState
+          icon={<TrendingUp size={18} />}
+          title={d.marketLoading ? "Loading market tape" : "Market tape unavailable"}
+          detail={d.marketError ?? "Waiting for tradable pair prices before ranking pressure."}
+        />
+      ) : (
       <div className="grid grid-cols-2 divide-x divide-border-default">
         <div className="p-3">
-          <div className="flex items-center gap-1.5 mb-2">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-buy" />
             <span className="text-[9px] font-semibold text-buy tracking-wide">Gainers</span>
+            </div>
+            <span className="text-[9px] font-mono text-txt-muted tabular-nums">{advancing}</span>
           </div>
           <div className="space-y-2">
             {top3.map((t, i) => (
@@ -784,7 +821,7 @@ function TopMoversCard() {
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="text-xs font-semibold text-txt-primary truncate">{t.symbol}</span>
                       <span className="font-mono text-[10px] text-txt-muted tabular-nums shrink-0">
-                        {t.price >= 1000 ? t.price.toLocaleString(undefined, { maximumFractionDigits: 1 }) : t.price >= 1 ? t.price.toFixed(2) : t.price.toFixed(4)}
+                        {formatAssetPrice(t.price)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between mt-0.5">
@@ -797,17 +834,15 @@ function TopMoversCard() {
                 </div>
               </div>
             ))}
-            {top3.length === 0 && (
-              <div className="flex items-center justify-center py-4">
-                <span className="text-[10px] text-txt-muted">No data</span>
-              </div>
-            )}
           </div>
         </div>
         <div className="p-3">
-          <div className="flex items-center gap-1.5 mb-2">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-sell" />
             <span className="text-[9px] font-semibold text-sell tracking-wide">Losers</span>
+            </div>
+            <span className="text-[9px] font-mono text-txt-muted tabular-nums">{declining}</span>
           </div>
           <div className="space-y-2">
             {bottom3.map((t, i) => (
@@ -819,7 +854,7 @@ function TopMoversCard() {
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="text-xs font-semibold text-txt-primary truncate">{t.symbol}</span>
                       <span className="font-mono text-[10px] text-txt-muted tabular-nums shrink-0">
-                        {t.price >= 1000 ? t.price.toLocaleString(undefined, { maximumFractionDigits: 1 }) : t.price >= 1 ? t.price.toFixed(2) : t.price.toFixed(4)}
+                        {formatAssetPrice(t.price)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between mt-0.5">
@@ -832,14 +867,10 @@ function TopMoversCard() {
                 </div>
               </div>
             ))}
-            {bottom3.length === 0 && (
-              <div className="flex items-center justify-center py-4">
-                <span className="text-[10px] text-txt-muted">No data</span>
-              </div>
-            )}
           </div>
         </div>
       </div>
+      )}
     </Card>
   );
 }
@@ -854,16 +885,23 @@ function SignalAccuracyCard() {
   const currentStreak = streaks?.current;
   const winStreak = currentStreak?.type === "win" ? currentStreak.count : 0;
   const lossStreak = currentStreak?.type === "loss" ? currentStreak.count : 0;
+  const reliabilityLabel = totalResolved === 0
+    ? "collecting"
+    : accuracy == null
+      ? "pending"
+      : accuracy >= 60
+        ? "strong"
+        : accuracy >= 45
+          ? "mixed"
+          : "weak";
 
   return (
     <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
       <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
         <h3 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-txt-secondary">
-          <Target size={12} className="text-accent" /> Signal Accuracy
+          <Target size={12} className="text-accent" /> Signal Reliability
         </h3>
-        {totalResolved > 0 && (
-          <span className="text-[9px] font-mono text-txt-dim tabular-nums">{totalResolved} resolved</span>
-        )}
+        <span className="text-[9px] font-mono text-txt-muted tabular-nums">{reliabilityLabel}</span>
       </div>
       <div className="p-3">
         <div className="flex justify-center mb-3">
@@ -885,11 +923,11 @@ function SignalAccuracyCard() {
           </div>
         </div>
 
-        {accuracy != null && (
+        {accuracy != null ? (
           <div>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[9px] text-txt-muted">Win Rate</span>
-              <span className="text-[9px] font-mono text-txt-tertiary tabular-nums">{accuracy.toFixed(1)}%</span>
+              <span className="text-[9px] text-txt-muted">{totalResolved} resolved signals</span>
+              <span className="text-[9px] font-mono text-txt-secondary tabular-nums">{accuracy.toFixed(1)}%</span>
             </div>
             <div className="h-1.5 w-full rounded-full bg-border-default/30 overflow-hidden">
               <div
@@ -904,6 +942,15 @@ function SignalAccuracyCard() {
                 }}
               />
             </div>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-border-default bg-elevated/20 px-3 py-2 text-center">
+            <p className="text-[10px] font-semibold text-txt-secondary">
+              {d.historyHydrated ? "Awaiting resolved outcomes" : "Loading history"}
+            </p>
+            <p className="mt-1 text-[9px] leading-snug text-txt-muted">
+              Accuracy appears after generated signals have enough time to resolve.
+            </p>
           </div>
         )}
       </div>
@@ -1034,12 +1081,11 @@ function IndexCard() {
   const d = useDashboard();
   const tickers = d.tickers ?? [];
 
-  // Filter for stocks, indices, and commodities — exclude crypto (those are in Top Movers)
   const assets = tickers
     .map((t) => ({
       symbol: t.symbol.replace(/^v/, "").replace(/_vUSDC$/, ""),
-      price: parseFloat(t.lastPx ?? "0"),
-      change: typeof t.changePct === "number" ? t.changePct : parseFloat(String(t.changePct ?? "0")),
+      price: toFiniteNumber(t.lastPx),
+      change: toFiniteNumber(t.changePct),
     }))
     .filter((t) => t.price > 0 && isStockOrIndex(t.symbol));
 
@@ -1052,14 +1098,17 @@ function IndexCard() {
 
   const categoryOrder = ["Stocks", "Indices", "Commodities", "Other"];
   const sortedCategories = categoryOrder.filter((c) => grouped[c]?.length);
+  const leadingAsset = [...assets].sort((a, b) => Math.abs(b.change) - Math.abs(a.change))[0];
 
   return (
     <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
       <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
         <h3 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-txt-secondary">
-          <Layers size={12} className="text-accent" /> Index & Stock Prices
+          <Layers size={12} className="text-accent" /> Macro Tape
         </h3>
-        <span className="text-[9px] text-txt-dim font-mono tabular-nums">{assets.length} assets</span>
+        <span className="text-[9px] text-txt-muted font-mono tabular-nums">
+          {leadingAsset ? `${leadingAsset.symbol} ${changeArrow(leadingAsset.change)} ${Math.abs(leadingAsset.change).toFixed(1)}%` : "waiting"}
+        </span>
       </div>
       <div className="max-h-[280px] overflow-y-auto scrollbar-none">
         {sortedCategories.map((cat) => {
@@ -1074,7 +1123,7 @@ function IndexCard() {
                 <span className="text-[8px] text-txt-dim ml-auto tabular-nums">{items.length}</span>
               </div>
               {/* Asset rows */}
-              {items.map(({ symbol, price, change }) => {
+              {items.slice(0, 5).map(({ symbol, price, change }) => {
                 const isPositive = change >= 0;
                 return (
                   <div key={symbol} className="flex items-center gap-2.5 px-4 py-2 transition-colors hover:bg-elevated/20 border-b border-border-default/30 last:border-b-0">
@@ -1085,7 +1134,7 @@ function IndexCard() {
                     </div>
                     <div className="text-right shrink-0">
                       <span className="font-mono text-xs font-semibold tabular-nums text-txt-primary block leading-tight">
-                        {fmtUsd(price)}
+                        {formatAssetPrice(price)}
                       </span>
                       <span
                         className={cx(
@@ -1107,10 +1156,11 @@ function IndexCard() {
           );
         })}
         {assets.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-8 gap-1">
-            <Layers size={20} className="text-txt-dim" />
-            <span className="text-[10px] text-txt-muted">No index data</span>
-          </div>
+          <EvidenceEmptyState
+            icon={<Layers size={18} />}
+            title="Macro tape unavailable"
+            detail="Index, stock, and commodity instruments are not present in the current ticker feed."
+          />
         )}
       </div>
     </Card>
@@ -1122,105 +1172,67 @@ function MarketStatsCard() {
   const tickers = d.tickers ?? [];
   const signals = d.liveSignals ?? [];
 
-  const totalVolume = tickers.reduce((sum, t) => sum + parseFloat(t.quoteVolume ?? "0"), 0);
-  const activePairs = tickers.filter((t) => parseFloat(t.lastPx ?? "0") > 0).length;
+  const totalVolume = tickers.reduce((sum, t) => sum + toFiniteNumber(t.quoteVolume), 0);
+  const activePairs = tickers.filter((t) => toFiniteNumber(t.lastPx) > 0).length;
   const buySignals = signals.filter((s) => s.action === "LONG").length;
   const sellSignals = signals.filter((s) => s.action === "SHORT").length;
   const totalSignals = buySignals + sellSignals;
-
-  const stats = [
-    {
-      label: "Volume 24H",
-      value: fmtUsd(totalVolume),
-      icon: <BarChart3 size={16} />,
-      color: "text-accent",
-      bgColor: "bg-accent-muted",
-      large: true,
-    },
-    {
-      label: "Active Pairs",
-      value: activePairs.toString(),
-      icon: <Grid2x2 size={16} />,
-      color: "text-info",
-      bgColor: "bg-[#00d4ff10]",
-      large: false,
-    },
-    {
-      label: "Buy Signals",
-      value: buySignals.toString(),
-      icon: <ArrowUp size={16} />,
-      color: "text-buy",
-      bgColor: "bg-buy-muted",
-      large: false,
-    },
-    {
-      label: "Sell Signals",
-      value: sellSignals.toString(),
-      icon: <ArrowDown size={16} />,
-      color: "text-sell",
-      bgColor: "bg-sell-muted",
-      large: false,
-    },
-  ];
+  const selectedSymbol = pairToSodexSymbol(d.selectedPair) ?? d.selectedPair;
+  const selectedTicker = tickers.find((t) => t.symbol === selectedSymbol || t.symbol === d.selectedPair);
+  const selectedVolume = toFiniteNumber(selectedTicker?.quoteVolume);
+  const coverage = activePairs > 0 ? Math.min(100, Math.round((signals.length / activePairs) * 100)) : 0;
+  const longShare = totalSignals > 0 ? Math.round((buySignals / totalSignals) * 100) : 0;
+  const statusTone = d.marketLoading
+    ? "text-hold"
+    : d.marketError || d.sodexStatus === "error"
+      ? "text-sell"
+      : "text-buy";
+  const statusLabel = d.marketLoading
+    ? "syncing"
+    : d.marketError || d.sodexStatus === "error"
+      ? "degraded"
+      : "ready";
 
   return (
     <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
       <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
         <h3 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-txt-secondary">
-          <Activity size={12} className="text-accent" /> Market Stats
+          <Activity size={12} className="text-accent" /> Execution Readiness
         </h3>
-        {totalSignals > 0 && (
-          <span className="text-[9px] font-mono text-txt-dim tabular-nums">{totalSignals} signals</span>
-        )}
+        <span className={cx("text-[9px] font-mono tabular-nums", statusTone)}>{statusLabel}</span>
       </div>
-      <div className="grid grid-cols-2 divide-x divide-border-default">
-        {/* Left column: Volume (hero) + Active Pairs */}
-        <div className="p-3 space-y-3">
+      <div className="p-3">
+        <div className="grid grid-cols-2 gap-2">
           <div className="rounded-lg border border-accent-dim/30 bg-accent-muted/10 p-2.5">
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className={cx("flex h-4 w-4 items-center justify-center rounded", stats[0].bgColor, stats[0].color)}>
-                {stats[0].icon}
-              </span>
-              <span className="text-[9px] font-semibold text-txt-muted">Volume 24H</span>
-            </div>
-            <span className="font-mono text-lg font-bold tabular-nums text-txt-primary leading-none">
-              {stats[0].value}
+            <span className="mb-1 flex items-center gap-1.5 text-[9px] font-semibold text-txt-muted">
+              <BarChart3 size={14} className="text-accent" /> Selected Liquidity
             </span>
+            <p className="font-mono text-lg font-bold leading-none text-txt-primary tabular-nums">
+              {selectedVolume > 0 ? fmtUsd(selectedVolume) : "—"}
+            </p>
+            <p className="mt-1 truncate text-[9px] text-txt-muted">{d.selectedPairDisplay}</p>
           </div>
-          <div className="flex items-center gap-2 px-1">
-            <span className={cx("flex h-6 w-6 items-center justify-center rounded", stats[1].bgColor, stats[1].color)}>
-              {stats[1].icon}
+          <div className="rounded-lg border border-info/20 bg-[#00d4ff08] p-2.5">
+            <span className="mb-1 flex items-center gap-1.5 text-[9px] font-semibold text-txt-muted">
+              <Grid2x2 size={14} className="text-info" /> Feed Coverage
             </span>
-            <div>
-              <span className="text-[9px] text-txt-muted block">Active Pairs</span>
-              <span className="font-mono text-sm font-bold tabular-nums text-txt-primary leading-none">{stats[1].value}</span>
-            </div>
+            <p className="font-mono text-lg font-bold leading-none text-txt-primary tabular-nums">{coverage}%</p>
+            <p className="mt-1 text-[9px] text-txt-muted">{signals.length}/{activePairs || 0} pairs with signals</p>
           </div>
         </div>
-        {/* Right column: Buy + Sell signals stacked */}
-        <div className="p-3 space-y-3">
-          <div className="rounded-lg border border-buy-dim/30 bg-buy-muted/10 p-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className={cx("flex h-4 w-4 items-center justify-center rounded", stats[2].bgColor, stats[2].color)}>
-                  {stats[2].icon}
-                </span>
-                <span className="text-[9px] font-semibold text-buy/70">Buy Signals</span>
-              </div>
-              <span className="font-mono text-lg font-bold tabular-nums text-buy leading-none">{stats[2].value}</span>
-            </div>
+
+        <div className="mt-3 rounded-lg border border-border-default bg-elevated/20 p-2.5">
+          <div className="mb-1.5 flex items-center justify-between text-[9px]">
+            <span className="font-semibold text-buy">LONG {buySignals}</span>
+            <span className="font-mono text-txt-muted tabular-nums">{totalSignals} actionable</span>
+            <span className="font-semibold text-sell">SHORT {sellSignals}</span>
           </div>
-          <div className="rounded-lg border border-sell-dim/30 bg-sell-muted/10 p-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className={cx("flex h-4 w-4 items-center justify-center rounded", stats[3].bgColor, stats[3].color)}>
-                  {stats[3].icon}
-                </span>
-                <span className="text-[9px] font-semibold text-sell/70">Sell Signals</span>
-              </div>
-              <span className="font-mono text-lg font-bold tabular-nums text-sell leading-none">{stats[3].value}</span>
-            </div>
+          <div className="flex h-1.5 overflow-hidden rounded-full bg-sell-muted">
+            <div className="bg-buy transition-all duration-700" style={{ width: `${longShare}%` }} />
           </div>
+          <p className="mt-2 text-[9px] leading-snug text-txt-muted">
+            {d.marketError ?? `Total 24H tape volume ${fmtUsd(totalVolume)} across ${activePairs} active instruments.`}
+          </p>
         </div>
       </div>
     </Card>
