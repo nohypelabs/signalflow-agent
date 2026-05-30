@@ -4,12 +4,15 @@ import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-const SIGNAL_ROWS = [
-  { y: 1.9, color: "#00d4ff", label: "SODEX TAPE" },
-  { y: 1.15, color: "#ff8800", label: "CATALYSTS" },
-  { y: 0.4, color: "#00e5a8", label: "TECHNICALS" },
-  { y: -0.35, color: "#5f7cff", label: "RISK" },
-  { y: -1.1, color: "#f6c85f", label: "AI THESIS" },
+type MeshWithBasicMaterial = THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+
+const TERMINAL_ROWS = [
+  "#00d4ff",
+  "#ff8800",
+  "#00e5a8",
+  "#5f7cff",
+  "#f6c85f",
+  "#ff4d5e",
 ];
 
 function makeLine(points: THREE.Vector3[], color: string, opacity = 0.45) {
@@ -22,51 +25,192 @@ function makeLine(points: THREE.Vector3[], color: string, opacity = 0.45) {
   return new THREE.Line(geometry, material);
 }
 
-function TerminalFloor() {
+function TerminalBootWall() {
   const group = useRef<THREE.Group>(null);
+  const bars = useMemo(() => {
+    return Array.from({ length: 144 }, (_, index) => {
+      const column = index % 18;
+      const row = Math.floor(index / 18);
+      const color = TERMINAL_ROWS[(row + column) % TERMINAL_ROWS.length];
+      return {
+        x: -5.2 + column * 0.62,
+        y: 2.55 - row * 0.34,
+        width: 0.16 + ((index * 17) % 10) * 0.035,
+        color,
+        delay: index * 0.045,
+        phase: (row * 0.16 + column * 0.035) % 1,
+      };
+    });
+  }, []);
 
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    const t = clock.getElapsedTime();
+    group.current.position.z = -2.4 + Math.sin(t * 0.16) * 0.12;
+    group.current.rotation.y = Math.sin(t * 0.08) * 0.035;
+
+    group.current.children.forEach((child, index) => {
+      if (!(child instanceof THREE.Mesh)) return;
+      const bar = bars[index];
+      const mesh = child as MeshWithBasicMaterial;
+      const boot = Math.min(1, Math.max(0, t * 0.38 - bar.phase));
+      const scan = 0.58 + Math.sin(t * 1.35 + bar.delay) * 0.3;
+      mesh.scale.x = 0.35 + boot * scan;
+      mesh.material.opacity = 0.05 + boot * (0.18 + scan * 0.22);
+    });
+  });
+
+  return (
+    <group ref={group} position={[0, 0.4, -2.4]} rotation={[0, -0.04, 0]}>
+      {bars.map((bar, index) => (
+        <mesh key={index} position={[bar.x, bar.y, 0]}>
+          <boxGeometry args={[bar.width, 0.055, 0.01]} />
+          <meshBasicMaterial color={bar.color} transparent opacity={0.2} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function TerminalGrid() {
+  const group = useRef<THREE.Group>(null);
   const lines = useMemo(() => {
     const output: THREE.Line[] = [];
-    for (let i = -8; i <= 8; i += 1) {
+    for (let i = -10; i <= 10; i += 1) {
       output.push(makeLine([
-        new THREE.Vector3(i, -2.25, -4),
-        new THREE.Vector3(i, -2.25, 4),
-      ], "#17314b", 0.2));
-      output.push(makeLine([
-        new THREE.Vector3(-8, -2.25, i / 2),
-        new THREE.Vector3(8, -2.25, i / 2),
+        new THREE.Vector3(i * 0.75, -2.7, -4.5),
+        new THREE.Vector3(i * 0.75, -2.7, 4.5),
       ], "#17314b", 0.16));
+      output.push(makeLine([
+        new THREE.Vector3(-7.5, -2.7, i * 0.45),
+        new THREE.Vector3(7.5, -2.7, i * 0.45),
+      ], "#17314b", 0.12));
     }
     return output;
   }, []);
 
   useFrame(({ clock }) => {
     if (!group.current) return;
-    group.current.position.z = ((clock.getElapsedTime() * 0.18) % 1) * -0.2;
+    group.current.position.z = ((clock.getElapsedTime() * 0.24) % 1) * -0.35;
   });
 
   return (
-    <group ref={group} rotation={[-0.72, 0, 0]}>
+    <group ref={group} rotation={[-0.78, 0, 0]}>
       {lines.map((line, index) => <primitive key={index} object={line} />)}
     </group>
   );
 }
 
-function MarketTapeWall() {
+function SignalTunnel() {
   const group = useRef<THREE.Group>(null);
-  const bars = useMemo(() => {
-    return Array.from({ length: 56 }, (_, index) => {
-      const column = index % 14;
-      const row = Math.floor(index / 14);
-      const positive = (index * 7 + row) % 5 !== 0;
-      return {
-        x: -4.9 + column * 0.34,
-        y: 2.35 - row * 0.32,
-        width: 0.12 + ((index * 13) % 9) * 0.025,
-        positive,
-        delay: index * 0.07,
-      };
+  const streams = useMemo(() => {
+    return Array.from({ length: 34 }, (_, index) => {
+      const side = index % 2 === 0 ? -1 : 1;
+      const lane = Math.floor(index / 2);
+      const y = -1.75 + (lane % 17) * 0.22;
+      const color = TERMINAL_ROWS[index % TERMINAL_ROWS.length];
+      const z = -0.45 + ((index * 7) % 12) * 0.055;
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(side * (5.5 + lane * 0.025), y * 1.28, z),
+        new THREE.Vector3(side * 2.85, y * 0.72, z + 0.34),
+        new THREE.Vector3(side * 1.08, y * 0.28, z + 0.08),
+        new THREE.Vector3(side * 0.2, 0.04, z),
+      ]);
+      return { curve, color, delay: index * 0.08 };
     });
+  }, []);
+
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    const t = clock.getElapsedTime();
+    group.current.children.forEach((child, index) => {
+      if (!(child instanceof THREE.Group)) return;
+      const marker = child.children[1] as MeshWithBasicMaterial;
+      const progress = (t * 0.105 + streams[index].delay) % 1;
+      marker.position.copy(streams[index].curve.getPoint(progress));
+      marker.scale.setScalar(0.45 + Math.sin(progress * Math.PI) * 0.9);
+      marker.material.opacity = 0.18 + Math.sin(progress * Math.PI) * 0.56;
+    });
+  });
+
+  return (
+    <group ref={group}>
+      {streams.map((stream, index) => (
+        <group key={index}>
+          <primitive object={makeLine(stream.curve.getPoints(72), stream.color, 0.2)} />
+          <mesh>
+            <boxGeometry args={[0.12, 0.12, 0.025]} />
+            <meshBasicMaterial color={stream.color} transparent opacity={0.5} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+function DecisionCore() {
+  const core = useRef<THREE.Group>(null);
+  const rings = useMemo(() => {
+    return Array.from({ length: 4 }, (_, index) => ({
+      scale: 0.92 + index * 0.28,
+      color: index % 2 === 0 ? "#ff8800" : "#00d4ff",
+      opacity: 0.2 - index * 0.032,
+      speed: 0.14 + index * 0.035,
+    }));
+  }, []);
+
+  useFrame(({ clock }) => {
+    if (!core.current) return;
+    const t = clock.getElapsedTime();
+    core.current.rotation.z = Math.sin(t * 0.12) * 0.04;
+    core.current.rotation.y = Math.sin(t * 0.2) * 0.12;
+    core.current.children.forEach((child, index) => {
+      if (!(child instanceof THREE.Mesh)) return;
+      const mesh = child as MeshWithBasicMaterial;
+      const pulse = 0.88 + Math.sin(t * (0.8 + index * 0.08) + index) * 0.08;
+      mesh.scale.setScalar(pulse);
+      mesh.material.opacity = index === 0 ? 0.64 + Math.sin(t * 1.4) * 0.08 : mesh.material.opacity;
+    });
+  });
+
+  return (
+    <group ref={core} position={[0, 0.02, 0.18]}>
+      <mesh>
+        <boxGeometry args={[1.1, 1.1, 0.08]} />
+        <meshBasicMaterial color="#08111d" transparent opacity={0.68} />
+      </mesh>
+      <mesh rotation={[0, 0, Math.PI / 4]}>
+        <boxGeometry args={[1.1, 1.1, 0.06]} />
+        <meshBasicMaterial color="#ff8800" transparent opacity={0.12} />
+      </mesh>
+      {rings.map((ring, index) => (
+        <mesh key={index} rotation={[0, 0, index * Math.PI / 6]}>
+          <torusGeometry args={[ring.scale, 0.008, 8, 72]} />
+          <meshBasicMaterial color={ring.color} transparent opacity={ring.opacity} />
+        </mesh>
+      ))}
+      <mesh position={[0, 0, 0.08]}>
+        <boxGeometry args={[0.18, 1.55, 0.02]} />
+        <meshBasicMaterial color="#ff8800" transparent opacity={0.28} />
+      </mesh>
+      <mesh position={[0, 0, 0.09]} rotation={[0, 0, Math.PI / 2]}>
+        <boxGeometry args={[0.18, 1.55, 0.02]} />
+        <meshBasicMaterial color="#00d4ff" transparent opacity={0.22} />
+      </mesh>
+    </group>
+  );
+}
+
+function DepthParticles() {
+  const group = useRef<THREE.Group>(null);
+  const particles = useMemo(() => {
+    return Array.from({ length: 96 }, (_, index) => ({
+      x: -5.8 + ((index * 37) % 116) / 10,
+      y: -2.55 + ((index * 19) % 52) / 10,
+      z: -2.2 + ((index * 29) % 42) / 10,
+      color: TERMINAL_ROWS[index % TERMINAL_ROWS.length],
+      delay: index * 0.033,
+    }));
   }, []);
 
   useFrame(({ clock }) => {
@@ -74,163 +218,20 @@ function MarketTapeWall() {
     const t = clock.getElapsedTime();
     group.current.children.forEach((child, index) => {
       if (!(child instanceof THREE.Mesh)) return;
-      const mesh = child;
-      const pulse = 0.65 + Math.sin(t * 1.2 + bars[index].delay) * 0.25;
-      mesh.scale.x = pulse;
-      (mesh.material as THREE.MeshBasicMaterial).opacity = 0.32 + pulse * 0.28;
-    });
-  });
-
-  return (
-    <group ref={group} position={[0, 0, -1.4]} rotation={[0, -0.08, 0]}>
-      {bars.map((bar, index) => (
-        <mesh key={index} position={[bar.x, bar.y, 0]}>
-          <boxGeometry args={[bar.width, 0.08, 0.01]} />
-          <meshBasicMaterial
-            color={bar.positive ? "#00e5a8" : "#ff4d5e"}
-            transparent
-            opacity={0.42}
-          />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function SignalRails() {
-  const group = useRef<THREE.Group>(null);
-  const pulses = useMemo(() => SIGNAL_ROWS.map((row) => ({
-    row,
-    curve: new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-4.7, row.y, 0),
-      new THREE.Vector3(-2.4, row.y * 0.82, 0.25),
-      new THREE.Vector3(-0.72, row.y * 0.34, 0.1),
-    ]),
-  })), []);
-
-  useFrame(({ clock }) => {
-    if (!group.current) return;
-    const t = clock.getElapsedTime();
-    group.current.children.forEach((child, index) => {
-      if (!(child instanceof THREE.Group)) return;
-      const marker = child.children[1] as THREE.Mesh;
-      const progress = (t * 0.12 + index * 0.18) % 1;
-      const point = pulses[index].curve.getPoint(progress);
-      marker.position.copy(point);
-      (marker.material as THREE.MeshBasicMaterial).opacity = 0.25 + Math.sin(progress * Math.PI) * 0.55;
+      const particle = particles[index];
+      const mesh = child as MeshWithBasicMaterial;
+      mesh.position.z = ((particle.z + t * 0.16) % 2.8) - 1.4;
+      mesh.material.opacity = 0.06 + Math.sin(t * 0.7 + particle.delay) * 0.04;
     });
   });
 
   return (
     <group ref={group}>
-      {pulses.map(({ row, curve }) => (
-        <group key={row.label}>
-          <primitive object={makeLine(curve.getPoints(64), row.color, 0.34)} />
-          <mesh>
-            <boxGeometry args={[0.14, 0.14, 0.02]} />
-            <meshBasicMaterial color={row.color} transparent opacity={0.65} />
-          </mesh>
-        </group>
-      ))}
-    </group>
-  );
-}
-
-function DecisionEngine() {
-  const core = useRef<THREE.Group>(null);
-  const needles = useMemo(() => {
-    return Array.from({ length: 18 }, (_, index) => {
-      const angle = (index / 18) * Math.PI * 2;
-      return {
-        x: Math.cos(angle) * 0.85,
-        y: Math.sin(angle) * 0.5,
-        angle,
-      };
-    });
-  }, []);
-
-  useFrame(({ clock }) => {
-    if (!core.current) return;
-    const t = clock.getElapsedTime();
-    core.current.rotation.y = Math.sin(t * 0.18) * 0.12;
-    core.current.rotation.x = Math.sin(t * 0.14) * 0.05;
-    core.current.children.forEach((child, index) => {
-      if (!(child instanceof THREE.Mesh) || index < 2) return;
-      (child.material as THREE.MeshBasicMaterial).opacity = 0.2 + Math.sin(t * 1.4 + index * 0.4) * 0.12;
-    });
-  });
-
-  return (
-    <group ref={core} position={[0, 0.05, 0]}>
-      <mesh>
-        <boxGeometry args={[1.35, 1.35, 0.08]} />
-        <meshBasicMaterial color="#08111d" transparent opacity={0.92} />
-      </mesh>
-      <mesh position={[0, 0, 0.045]}>
-        <boxGeometry args={[1.16, 1.16, 0.04]} />
-        <meshBasicMaterial color="#ff8800" transparent opacity={0.16} />
-      </mesh>
-      {needles.map((needle, index) => (
-        <mesh key={index} position={[needle.x, needle.y, 0.08]} rotation={[0, 0, needle.angle]}>
-          <boxGeometry args={[0.32, 0.012, 0.02]} />
-          <meshBasicMaterial color={index % 3 === 0 ? "#ff8800" : "#00d4ff"} transparent opacity={0.25} />
+      {particles.map((particle, index) => (
+        <mesh key={index} position={[particle.x, particle.y, particle.z]}>
+          <boxGeometry args={[0.018, 0.018, 0.018]} />
+          <meshBasicMaterial color={particle.color} transparent opacity={0.08} />
         </mesh>
-      ))}
-    </group>
-  );
-}
-
-function ExecutionPath() {
-  const group = useRef<THREE.Group>(null);
-  const curve = useMemo(() => new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0.82, 0.02, 0),
-    new THREE.Vector3(1.8, 0.08, 0.18),
-    new THREE.Vector3(3.0, -0.1, 0.1),
-    new THREE.Vector3(4.6, 0.08, 0),
-  ]), []);
-
-  useFrame(({ clock }) => {
-    if (!group.current) return;
-    const t = clock.getElapsedTime();
-    const marker = group.current.children[1] as THREE.Mesh;
-    const progress = (t * 0.16) % 1;
-    marker.position.copy(curve.getPoint(progress));
-    marker.scale.setScalar(0.8 + Math.sin(progress * Math.PI) * 0.5);
-  });
-
-  return (
-    <group ref={group}>
-      <primitive object={makeLine(curve.getPoints(72), "#ff8800", 0.52)} />
-      <mesh>
-        <coneGeometry args={[0.1, 0.26, 4]} />
-        <meshBasicMaterial color="#ff8800" transparent opacity={0.86} />
-      </mesh>
-      <mesh position={[4.8, 0.1, 0]}>
-        <boxGeometry args={[0.78, 0.42, 0.04]} />
-        <meshBasicMaterial color="#00e5a8" transparent opacity={0.18} />
-      </mesh>
-    </group>
-  );
-}
-
-function DataPanels() {
-  return (
-    <group position={[0, -1.55, 0.15]}>
-      {[
-        ["LIVE TAPE", "-1.8", "#00d4ff"],
-        ["RISK GATE", "0", "#ff8800"],
-        ["ORDER READY", "1.8", "#00e5a8"],
-      ].map(([label, x, color]) => (
-        <group key={label} position={[Number(x), 0, 0]}>
-          <mesh>
-            <boxGeometry args={[1.32, 0.34, 0.025]} />
-            <meshBasicMaterial color={color} transparent opacity={0.1} />
-          </mesh>
-          <mesh position={[0, -0.19, 0.01]}>
-            <boxGeometry args={[0.92, 0.018, 0.01]} />
-            <meshBasicMaterial color={color} transparent opacity={0.42} />
-          </mesh>
-        </group>
       ))}
     </group>
   );
@@ -240,12 +241,11 @@ function Scene() {
   return (
     <>
       <color attach="background" args={["#030712"]} />
-      <TerminalFloor />
-      <MarketTapeWall />
-      <SignalRails />
-      <DecisionEngine />
-      <ExecutionPath />
-      <DataPanels />
+      <DepthParticles />
+      <TerminalBootWall />
+      <TerminalGrid />
+      <SignalTunnel />
+      <DecisionCore />
     </>
   );
 }
@@ -254,7 +254,7 @@ export default function SignalFlow3DScene() {
   return (
     <div className="absolute inset-0 z-0">
       <Canvas
-        camera={{ position: [0, 0.15, 7.5], fov: 42 }}
+        camera={{ position: [0, 0.08, 7.1], fov: 41 }}
         dpr={[1, 1.5]}
         gl={{ antialias: true, alpha: false }}
         style={{ background: "#030712" }}
