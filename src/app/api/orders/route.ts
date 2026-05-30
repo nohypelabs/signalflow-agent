@@ -29,10 +29,11 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   if (!process.env.SODEX_API_KEY_NAME) {
-    return jsonNoCache(
-      { error: "SoDEX API key not configured. Set SODEX_API_KEY_NAME in .env.local" },
-      { status: 503 },
-    );
+    return jsonNoCache([], {
+      headers: {
+        "X-SignalFlow-Warning": "SoDEX API key not configured",
+      },
+    });
   }
 
   try {
@@ -40,7 +41,11 @@ export async function GET() {
     return jsonNoCache(orders);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Failed to fetch orders";
-    console.error("[/api/orders GET] SoDEX error:", msg);
-    return jsonNoCache({ error: msg }, { status: 502 });
+    console.warn("[/api/orders GET] SoDEX unavailable; returning empty open orders:", msg);
+    return jsonNoCache([], {
+      headers: {
+        "X-SignalFlow-Warning": msg.slice(0, 180),
+      },
+    });
   }
 }
