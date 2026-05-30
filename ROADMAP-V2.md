@@ -72,11 +72,21 @@
 - Dashboard redesign (dark fintech color system)
 - KPI cards with real data (no hardcoded values)
 
+#### Phase 13: Command Center upgrade — ✅ DONE
+- `/dashboard` now uses the SignalFlow command-center layout: pipeline rail, market canvas, Current Decision Score, Catalyst Monitor, and evidence strip
+- Current Decision Score is aligned to the same live system signal shown on `/signals` (action + confidence come from `liveSignals`)
+- Catalyst Monitor replaces the fragile news-only panel and remains populated during SoSoValue quota limits using live signal events, market movers, liquidity leaders, SoDEX status, and news-layer degraded state
+- Bottom evidence strip improved with Market Pressure, Signal Reliability, Macro Tape, and Execution Readiness
+
 ### Key Features Delivered
 
 **Signal Engine V2:** 5-layer architecture (Regime → Confluence → Classification → TP/SL → Filtering)
 **Trading Types:** 4 types with per-type weights, TP/SL, confidence, leverage
 **Multi-TF Confluence:** 1H/4H/1D alignment scoring
 **Paper Futures:** 1-100x leverage, auto-liquidation, per-type stats
+**Wallet & SoDEX Execution:** MetaMask + WalletConnect v2, ValueChain mainnet, EIP-712 signing, live balances, order placement/cancel/status
+**AI Signal Enhancement:** Deepseek/OpenAI/OpenRouter selection, browser-local keys, per-dimension reasoning and execution plans
+**SoSoValue Modules:** ETF flow, news sentiment, macro indicators, BTC treasury, index snapshots with quota-aware degraded states
 **Backtest Engine:** Walk-forward with per-regime accuracy, equity curves
-**Dashboard:** Dark fintech theme, real-time KPIs, no mock data
+**Dashboard:** Command-center UI, live decision score, Catalyst Monitor, real-time evidence strip, no mock data
+**Mobile & PWA:** Installable app metadata, icons, service worker support, responsive navigation, mobile-safe spacing

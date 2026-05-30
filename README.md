@@ -6,7 +6,7 @@
 
 **[signalflowagent.vercel.app](https://signalflowagent.vercel.app)**
 
-SignalFlow Agent transforms multi-dimensional market data into explainable, executable trade signals. Features a multi-factor confluence signal engine V2 with trading type differentiation, multi-timeframe analysis, paper futures trading, and historical backtesting — all in one professional dashboard.
+SignalFlow Agent transforms multi-dimensional market data into explainable, executable trade signals. Wave 2 moves the product beyond a read-only dashboard into a signal-to-execution trading platform with wallet connectivity, live order management, paper futures validation, a Bloomberg-style command center, and production-grade mobile/PWA support.
 
 ---
 
@@ -16,7 +16,7 @@ SignalFlow Agent transforms multi-dimensional market data into explainable, exec
 
 - **Not just signals — styles.** Choose your trading style (Scalper, Intraday, Swing, Position) and the engine adapts weights, TP/SL, and confidence thresholds to match.
 - **Not just one timeframe — confluence.** Signals analyzed across 1H, 4H, and 1D timeframes with alignment scoring for higher conviction.
-- **Not just a dashboard — execution.** Paper futures trading with leverage 1-100x, liquidation, and per-type performance tracking.
+- **Not just a dashboard — execution.** Paper futures trading, ValueChain wallet connectivity, SoDEX order signing, and live order management support the full signal-to-execution loop.
 - **Not just guesses — validation.** Built-in backtest engine that replays historical signals and measures accuracy by regime and trading type.
 
 ---
@@ -139,17 +139,39 @@ Access via `/performance` page → Backtest panel.
 - TP/SL/Liquidation auto-close on price ticks
 - Per-type performance stats (win rate, PnL, avg leverage by type)
 
+### Wallet & Live Trading
+- MetaMask + WalletConnect v2 support on ValueChain mainnet (chain ID 286623, SOSO currency)
+- Smart connector detects `window.ethereum` on desktop and falls back to WalletConnect QR/deep links on mobile
+- EIP-712 typed-data signing for SoDEX spot market orders using the ValueChain domain and SoDEX backend struct
+- Trade execution modal with ticker price, wallet balance, 25/50/75/100% quick fill, estimated cost, and Sign & Submit flow
+- Order management via `/api/orders` and balance lookup via `/api/balance`
+- Wallet dropdown with full address copy, network badge, live balances, wrong-network handling, and disconnect with permission revocation
+
 ### Market Intelligence
 - SoSoValue API: ETF flows, news sentiment, macro events, BTC treasuries, index snapshots
 - SoDEX API: live tickers, multi-timeframe klines, orderbooks
 - 5 trading pairs: BTC, ETH, SOL, AVAX, LINK
+
+### AI Signal Enhancement
+- Multi-provider AI selection: Deepseek, OpenAI, and OpenRouter
+- User-provided provider keys are stored locally in the browser and are not sent to SignalFlow servers
+- Per-dimension signal reasoning with why explanations, risk factors, and execution plans
+- AI config persists across sessions and resets model/key lock when switching providers
 
 ### Dashboard & UX
 - Onboarding modal for trading style selection
 - TypeSwitcher dropdown for quick style switching
 - Regime-based type recommendation
 - Per-type weight profiles on Strategy Config page
+- Command-center dashboard with pipeline rail, market canvas, Current Decision Score, Catalyst Monitor, and evidence strip
+- Current Decision Score follows the live system signal action/confidence shown on `/signals`
+- Catalyst Monitor replaces fragile news-only feed with signal events, market movers, volume leaders, SoDEX status, and degraded news-layer status
 - Dark theme with professional trading UI
+
+### Mobile & PWA
+- Manifest, custom icons, Apple Web App metadata, standalone display mode, and service worker support
+- Responsive navigation with compact header, drawer/sidebar behavior, bottom tabs, scroll lock, and safe-bottom padding
+- Loading skeletons, empty states, and user-friendly errors across trading, signal, and data views
 
 ---
 
@@ -170,6 +192,8 @@ Access via `/performance` page → Backtest panel.
 - Multi-AI provider — Deepseek, OpenAI, OpenRouter with user API keys
 - PWA support — installable, offline-capable, custom app icons
 - Mobile responsive — bottom tab nav, slide-in drawer, compact header
+- Order management dashboard — place market orders, view open/filled/canceled status, cancel pending orders
+- Wallet panel — address copy, ValueChain network badge, live balances, disconnect, wrong-network handling
 
 **Signal Engine V2:**
 - Multi-factor confluence system (5 factors, 7 layers)
@@ -202,6 +226,12 @@ Access via `/performance` page → Backtest panel.
 - Win rate, profit factor, max drawdown metrics
 - Equity curve visualization
 - Per-type backtesting
+
+**Command Center Dashboard:**
+- SignalFlow pipeline rail from market data to decision score
+- Current Decision Score wired to the same live system signal used by `/signals`
+- Catalyst Monitor stays useful during SoSoValue quota limits by synthesizing signal, market, risk, and data-layer events
+- Evidence strip: Market Pressure, Signal Reliability, Macro Tape, Execution Readiness
 
 **Enhanced Pages:**
 - /signals — Onboarding modal, type filtering, MTF badges, regime recommendation
