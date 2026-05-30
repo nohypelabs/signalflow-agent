@@ -70,7 +70,7 @@ export default function OrderbookDepth({ symbol = "vBTC_vUSDC", coin = "BTC" }: 
   const [data, setData] = useState<OrderBookData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [depth, setDepth] = useState(15);
+  const [depth, setDepth] = useState(10);
   const fetchingRef = useRef(false);
 
   useEffect(() => {
