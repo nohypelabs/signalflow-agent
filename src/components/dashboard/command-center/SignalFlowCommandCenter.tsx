@@ -297,14 +297,22 @@ function hasExternalSignalLayers(sources?: Record<string, boolean | number>): bo
 }
 
 function buildTargets(action: DecisionAction, entry: number, signal: Signal | null): Array<[string, string, string]> {
-  if (!entry || !Number.isFinite(entry)) return [["--", "--", "--"]];
   if (action === "NO TRADE") {
+    if (!entry || !Number.isFinite(entry)) {
+      return [
+        ["UP", "--", "break"],
+        ["MID", "--", "spot"],
+        ["DN", "--", "break"],
+      ];
+    }
     return [
       ["UP", formatPanelPrice(entry * 1.006), "break"],
       ["MID", formatPanelPrice(entry), "spot"],
       ["DN", formatPanelPrice(entry * 0.994), "break"],
     ];
   }
+
+  if (!entry || !Number.isFinite(entry)) return [["--", "--", "--"]];
 
   const dir = action === "LONG" ? 1 : -1;
   const tp1 = signal?.execution.takeProfit ?? entry * (1 + dir * 0.012);
@@ -518,15 +526,65 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
             <div className={cx("mb-2 text-center text-[11px] font-semibold uppercase tracking-wide", decisionTone)}>
               {decision.action === "NO TRADE" ? "Watch Triggers" : "Take Profit (TP)"}
             </div>
-            <div className="space-y-1">
-              {decision.targets.slice(0, 1).map(([label, price, risk]) => (
-                <div key={label} className="grid grid-cols-[36px_1fr_54px] gap-1 font-mono text-xs">
-                  <span className={decisionTone}>{label}</span>
-                  <span className={cx("font-semibold", decisionTone)}>{price}</span>
-                  <span className={decisionTone}>{risk}</span>
-                </div>
-              ))}
-            </div>
+            {decision.action === "NO TRADE" ? (
+              <div className="space-y-1">
+                {decision.targets.map(([label, price, risk], index) => {
+                  const isPrimary = index === 0;
+                  const isSpot = label === "MID";
+                  const labelText = label === "UP" ? "Upside" : label === "DN" ? "Downside" : "Spot";
+                  return (
+                    <div
+                      key={label}
+                      className={cx(
+                        "grid grid-cols-[58px_1fr_44px] items-center gap-1.5 rounded-lg border px-2 py-1.5",
+                        isPrimary
+                          ? "border-hold-dim bg-hold-muted shadow-[0_0_18px_rgba(255,136,0,0.08)]"
+                          : "border-border-default bg-card/45"
+                      )}
+                    >
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <span
+                          className={cx(
+                            "h-1.5 w-1.5 shrink-0 rounded-full",
+                            isSpot ? "bg-txt-muted" : label === "UP" ? "bg-buy" : "bg-sell"
+                          )}
+                        />
+                        <div className="min-w-0">
+                          <div className={cx("font-mono text-[10px] font-bold leading-none", isSpot ? "text-txt-muted" : decisionTone)}>
+                            {label}
+                          </div>
+                          <div className="mt-0.5 truncate text-[8px] font-semibold uppercase tracking-wide text-txt-tertiary">
+                            {labelText}
+                          </div>
+                        </div>
+                      </div>
+                      <span className={cx(
+                        "min-w-0 text-right font-mono text-sm font-bold tabular-nums",
+                        isSpot ? "text-txt-secondary" : decisionTone
+                      )}>
+                        {price}
+                      </span>
+                      <span className={cx(
+                        "justify-self-end rounded border px-1.5 py-[1px] text-[8px] font-bold uppercase tracking-wide",
+                        isPrimary ? "border-hold-dim bg-hold-muted text-hold" : "border-border-default bg-inset text-txt-muted"
+                      )}>
+                        {risk}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {decision.targets.slice(0, 1).map(([label, price, risk]) => (
+                  <div key={label} className="grid grid-cols-[36px_1fr_54px] gap-1 font-mono text-xs">
+                    <span className={decisionTone}>{label}</span>
+                    <span className={cx("font-semibold", decisionTone)}>{price}</span>
+                    <span className={decisionTone}>{risk}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </Card>
           <Card variant="inset" padding="sm" className="rounded-xl !p-2.5">
             <div className={cx("mb-2 text-center text-[11px] font-semibold uppercase tracking-wide", decisionTone)}>
