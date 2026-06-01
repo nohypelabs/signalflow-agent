@@ -5,6 +5,8 @@ import { mapAIError } from "@/lib/ai/providerErrors";
 import type { Provider } from "@/lib/ai-providers";
 import { getAllowedProvider } from "@/lib/ai-providers";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { signalGenerationSchema } from "@/lib/validation/api-schemas";
+import { validateRequest } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 import {
@@ -129,7 +131,11 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const body = await req.json().catch(() => ({}));
+    const rawBody = await req.json().catch(() => ({}));
+    const validation = validateRequest(signalGenerationSchema, rawBody);
+    if (!validation.ok) return validation.response;
+
+    const body = validation.data;
     const coin = (body.coin || body.pair || "BTC").replace(/\/.*$/, "").toUpperCase();
     console.log(`[/api/signals/analyze] coin=${coin} provider=${body.provider || "none"} model=${body.model || "none"} includeAI=${body.includeAI}`);
 

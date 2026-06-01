@@ -4,6 +4,8 @@ import { getCurrencies, getMarketSnapshot } from "@/lib/sosovalue";
 import type { SoDEXTicker } from "@/lib/sodex";
 import type { MarketSnapshot } from "@/lib/sosovalue";
 import { jsonNoCache } from "@/lib/api/no-cache";
+import { screenerQuerySchema } from "@/lib/validation/api-schemas";
+import { searchParamsToObject, validateRequest } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -47,8 +49,14 @@ let cache: { data: ScreenerPair[]; ts: number } | null = null;
 const CACHE_MS = 60_000;
 
 export async function GET(req: NextRequest) {
+  const validation = validateRequest(
+    screenerQuerySchema,
+    searchParamsToObject(req.nextUrl.searchParams),
+  );
+  if (!validation.ok) return validation.response;
+
   if (cache && Date.now() - cache.ts < CACHE_MS) {
-    return applyFilters(cache.data, req);
+    return applyFilters(cache.data, validation.data);
   }
 
   try {
@@ -114,7 +122,7 @@ export async function GET(req: NextRequest) {
     });
 
     cache = { data: pairs, ts: Date.now() };
-    return applyFilters(pairs, req);
+    return applyFilters(pairs, validation.data);
   } catch (err) {
     return jsonNoCache(
       { error: err instanceof Error ? err.message : "Failed to fetch screener data" },
@@ -123,30 +131,25 @@ export async function GET(req: NextRequest) {
   }
 }
 
-function applyFilters(pairs: ScreenerPair[], req: NextRequest) {
-  const q = req.nextUrl.searchParams;
+function applyFilters(pairs: ScreenerPair[], query: typeof screenerQuerySchema._output) {
   let filtered = [...pairs];
 
-  const category = q.get("category");
-  if (category && category !== "all") {
-    filtered = filtered.filter((p) => p.category === category);
+  if (query.category !== "all") {
+    filtered = filtered.filter((p) => p.category === query.category);
   }
 
-  const minVolume = q.get("minVolume");
-  if (minVolume) {
-    filtered = filtered.filter((p) => p.quoteVolume24h >= Number(minVolume));
+  if (query.minVolume) {
+    filtered = filtered.filter((p) => p.quoteVolume24h >= Number(query.minVolume));
   }
 
-  const status = q.get("status");
-  if (status) {
-    filtered = filtered.filter((p) => p.status === status);
+  if (query.status) {
+    filtered = filtered.filter((p) => p.status === query.status);
   }
 
-  const sortBy = q.get("sortBy") || "volume";
-  const sortDir = q.get("sortDir") === "asc" ? 1 : -1;
+  const sortDir = query.sortDir === "asc" ? 1 : -1;
   filtered.sort((a, b) => {
-    const av = sortBy === "volume" ? a.quoteVolume24h : sortBy === "change" ? a.change24h : sortBy === "marketcap" ? a.marketcap : a.price;
-    const bv = sortBy === "volume" ? b.quoteVolume24h : sortBy === "change" ? b.change24h : sortBy === "marketcap" ? b.marketcap : b.price;
+    const av = query.sortBy === "volume" ? a.quoteVolume24h : query.sortBy === "change" ? a.change24h : query.sortBy === "marketcap" ? a.marketcap : a.price;
+    const bv = query.sortBy === "volume" ? b.quoteVolume24h : query.sortBy === "change" ? b.change24h : query.sortBy === "marketcap" ? b.marketcap : b.price;
     return (av - bv) * sortDir;
   });
 

@@ -3,6 +3,8 @@ import { jsonNoCache } from "@/lib/api/no-cache";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { markIdempotency, readIdempotency } from "@/lib/security/idempotency";
 import { requireTradingAuthorization } from "@/lib/security/trading-auth";
+import { orderCreationSchema } from "@/lib/validation/api-schemas";
+import { validateRequest } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +14,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const clientOrderId = typeof body?.clientOrderId === "string" ? body.clientOrderId.trim() : "";
+    const validation = validateRequest(orderCreationSchema, body);
+    if (!validation.ok) return validation.response;
 
-    if (!body?.symbol || !body?.side || !body?.type || !body?.quantity) {
-      return jsonNoCache({ error: "Invalid order payload" }, { status: 400 });
-    }
+    const clientOrderId = validation.data.clientOrderId?.trim() ?? "";
 
     if (clientOrderId) {
       const existing = readIdempotency(clientOrderId);

@@ -1,6 +1,15 @@
 import { NextRequest } from "next/server";
 import { getTickers, getKlines, getSymbols, getOrderbook, getRecentTrades } from "@/lib/sodex";
 import { jsonNoCache } from "@/lib/api/no-cache";
+import {
+  marketKlinesQuerySchema,
+  marketOrderbookQuerySchema,
+  marketSymbolsQuerySchema,
+  marketTickersQuerySchema,
+  marketTradesQuerySchema,
+  marketTypeSchema,
+} from "@/lib/validation/api-schemas";
+import { searchParamsToObject, validateRequest } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -8,48 +17,49 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ type: string }> },
 ) {
-  const { type } = await params;
-  const q = req.nextUrl.searchParams;
+  const paramValidation = validateRequest(marketTypeSchema, await params);
+  if (!paramValidation.ok) return paramValidation.response;
+
+  const { type } = paramValidation.data;
+  const query = searchParamsToObject(req.nextUrl.searchParams);
 
   try {
     switch (type) {
       case "tickers": {
-        const symbol = q.get("symbol") || undefined;
+        const validation = validateRequest(marketTickersQuerySchema, query);
+        if (!validation.ok) return validation.response;
+        const { symbol } = validation.data;
         const data = await getTickers(symbol);
         return jsonNoCache(data);
       }
       case "klines": {
-        const symbol = q.get("symbol");
-        const interval = q.get("interval") || "1h";
-        if (!symbol) return jsonNoCache({ error: "symbol required" }, { status: 400 });
-        const data = await getKlines(
-          symbol,
-          interval,
-          q.get("limit") ? Number(q.get("limit")) : undefined,
-        );
+        const validation = validateRequest(marketKlinesQuerySchema, query);
+        if (!validation.ok) return validation.response;
+        const { symbol, interval, limit } = validation.data;
+        const data = await getKlines(symbol, interval, limit);
         return jsonNoCache(data);
       }
       case "symbols": {
-        const symbol = q.get("symbol") || undefined;
+        const validation = validateRequest(marketSymbolsQuerySchema, query);
+        if (!validation.ok) return validation.response;
+        const { symbol } = validation.data;
         const data = await getSymbols(symbol);
         return jsonNoCache(data);
       }
       case "orderbook": {
-        const symbol = q.get("symbol");
-        if (!symbol) return jsonNoCache({ error: "symbol required" }, { status: 400 });
-        const limit = q.get("limit") ? Number(q.get("limit")) : undefined;
+        const validation = validateRequest(marketOrderbookQuerySchema, query);
+        if (!validation.ok) return validation.response;
+        const { symbol, limit } = validation.data;
         const data = await getOrderbook(symbol, limit);
         return jsonNoCache(data);
       }
       case "trades": {
-        const symbol = q.get("symbol");
-        if (!symbol) return jsonNoCache({ error: "symbol required" }, { status: 400 });
-        const limit = q.get("limit") ? Number(q.get("limit")) : undefined;
+        const validation = validateRequest(marketTradesQuerySchema, query);
+        if (!validation.ok) return validation.response;
+        const { symbol, limit } = validation.data;
         const data = await getRecentTrades(symbol, limit);
         return jsonNoCache(data);
       }
-      default:
-        return jsonNoCache({ error: "unknown market type" }, { status: 404 });
     }
   } catch (err) {
     return jsonNoCache(

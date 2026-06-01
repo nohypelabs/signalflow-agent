@@ -128,10 +128,12 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
         quantity: String(qty),
       };
 
+      const clientOrderId = `sf-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...order, signature }),
+        body: JSON.stringify({ ...order, signature, clientOrderId }),
       });
 
       if (!res.ok) {

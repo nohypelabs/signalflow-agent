@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { getKlines } from "@/lib/sodex";
 import { jsonNoCache } from "@/lib/api/no-cache";
+import { correlationQuerySchema } from "@/lib/validation/api-schemas";
+import { searchParamsToObject, validateRequest } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -44,17 +46,15 @@ let cache: CacheEntry | null = null;
 const CACHE_MS = 5 * 60_000;
 
 export async function GET(req: NextRequest) {
-  const q = req.nextUrl.searchParams;
+  const validation = validateRequest(
+    correlationQuerySchema,
+    searchParamsToObject(req.nextUrl.searchParams),
+  );
+  if (!validation.ok) return validation.response;
 
-  const defaultSymbols = ["vBTC_vUSDC", "vETH_vUSDC", "vSOL_vUSDC", "vBNB_vUSDC", "vXRP_vUSDC", "vDOGE_vUSDC"];
-  const symbolsParam = q.get("symbols");
-  const symbols = symbolsParam ? symbolsParam.split(",") : defaultSymbols;
-
-  const limit = q.get("limit") ? Number(q.get("limit")) : 30;
-  const interval = q.get("timeframe") === "1h" ? "1h" : "1d";
+  const { symbols, limit, timeframe: interval } = validation.data;
 
   // Check cache
-  const cacheKey = symbols.join(",") + interval + limit;
   if (cache && Date.now() - cache.ts < CACHE_MS && cache.symbols.join(",") === symbols.join(",")) {
     return jsonNoCache({ matrix: cache.matrix, symbols: cache.symbols, updated: cache.ts });
   }
