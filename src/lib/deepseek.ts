@@ -1,3 +1,6 @@
+import type { Provider } from "./ai-providers";
+import { getAllowedProvider } from "./ai-providers";
+
 const DEFAULT_PROVIDERS = [
   { envKey: "MIMO_API_KEY", baseUrl: "https://token-plan-sgp.xiaomimimo.com/v1", model: "mimo-v2.5-pro" },
   { envKey: "DEEPSEEK_API_KEY", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-chat" },
@@ -25,16 +28,17 @@ export interface ChatResponse {
 export interface ChatOptions {
   temperature?: number;
   maxTokens?: number;
-  /** User-provided config — overrides server defaults when present */
-  provider?: { baseUrl: string; apiKey: string; model: string };
+  /** User-provided provider ID and key. Provider URL is resolved from an allowlist. */
+  provider?: { id: Provider; apiKey: string; model?: string };
 }
 
 export async function chat(messages: ChatMessage[], options?: ChatOptions): Promise<string> {
   const defaultProv = getDefaultProvider();
-  const hasUserConfig = options?.provider?.apiKey;
+  const userProvider = options?.provider ? getAllowedProvider(options.provider.id) : undefined;
+  const hasUserConfig = !!(options?.provider?.apiKey && userProvider);
 
-  const baseUrl = options?.provider?.baseUrl || defaultProv?.baseUrl || "https://api.deepseek.com/v1";
-  const model = options?.provider?.model || defaultProv?.model || "deepseek-chat";
+  const baseUrl = hasUserConfig ? userProvider!.baseUrl : defaultProv?.baseUrl || "https://api.deepseek.com/v1";
+  const model = hasUserConfig ? options.provider!.model || userProvider!.defaultModel : defaultProv?.model || "deepseek-chat";
   const apiKey = hasUserConfig ? options.provider!.apiKey : defaultProv?.apiKey || "";
 
   if (!apiKey) {

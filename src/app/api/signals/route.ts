@@ -24,6 +24,7 @@ import {
 import type { Signal } from "@/lib/types/signal";
 import { jsonNoCache } from "@/lib/api/no-cache";
 import type { TradingType } from "@/lib/types/trading-type";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,9 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 // ── Route handler ─────────────────────────────────────────
 
 export async function GET(request: Request) {
+  const limited = checkRateLimit(request, "signals");
+  if (limited) return limited;
+
   // Parse trading type from query params
   const url = new URL(request.url);
   const typeParam = url.searchParams.get("type");

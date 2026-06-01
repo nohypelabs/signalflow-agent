@@ -1,7 +1,8 @@
 import { getCurrencies } from "@/lib/sosovalue";
 import { getTickers } from "@/lib/sodex";
 import { chat } from "@/lib/deepseek";
-import { getProvider } from "@/lib/ai-providers";
+import type { Provider } from "@/lib/ai-providers";
+import { getAllowedProvider } from "@/lib/ai-providers";
 import { jsonNoCache } from "@/lib/api/no-cache";
 
 export const dynamic = "force-dynamic";
@@ -13,13 +14,12 @@ interface ServiceStatus {
   latencyMs: number;
 }
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const providerId = url.searchParams.get("provider") || undefined;
-  const model = url.searchParams.get("model") || undefined;
-  const apiKey = url.searchParams.get("apiKey") || undefined;
+async function buildStatus(providerId?: string, model?: string, apiKey?: string) {
+  const provider = providerId ? getAllowedProvider(providerId) : undefined;
+  if (providerId && !provider) {
+    return jsonNoCache({ error: "Unsupported AI provider" }, { status: 400 });
+  }
 
-  const provider = providerId ? getProvider(providerId) : undefined;
   const aiName = provider ? provider.name : "AI Model";
 
   const checks: Promise<ServiceStatus>[] = [
@@ -77,7 +77,7 @@ export async function GET(req: Request) {
       try {
         // Build provider config for the chat function
         const providerConfig = provider && apiKey
-          ? { baseUrl: provider.baseUrl, apiKey, model: model || provider.defaultModel }
+          ? { id: provider.id as Provider, apiKey, model: model || provider.defaultModel }
           : undefined;
 
         await chat(
@@ -105,4 +105,21 @@ export async function GET(req: Request) {
 
   const services = await Promise.all(checks);
   return jsonNoCache({ services, checked: Date.now() });
+}
+
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const providerId = url.searchParams.get("provider") || undefined;
+  const model = url.searchParams.get("model") || undefined;
+
+  return buildStatus(providerId, model);
+}
+
+export async function POST(req: Request) {
+  const body = await req.json().catch(() => ({}));
+  const providerId = typeof body.provider === "string" ? body.provider : undefined;
+  const model = typeof body.model === "string" ? body.model : undefined;
+  const apiKey = typeof body.apiKey === "string" ? body.apiKey : undefined;
+
+  return buildStatus(providerId, model, apiKey);
 }

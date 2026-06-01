@@ -2,6 +2,9 @@ import { NextRequest } from "next/server";
 import { chat } from "@/lib/deepseek";
 import { jsonNoCache } from "@/lib/api/no-cache";
 import { mapAIError } from "@/lib/ai/providerErrors";
+import type { Provider } from "@/lib/ai-providers";
+import { getAllowedProvider } from "@/lib/ai-providers";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 import {
@@ -122,10 +125,13 @@ Critical: takeProfit and stopLoss must be numbers, not null. For HOLD signals, u
 // ── Route handler ────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  const limited = checkRateLimit(req, "signalAnalyze");
+  if (limited) return limited;
+
   try {
     const body = await req.json().catch(() => ({}));
     const coin = (body.coin || body.pair || "BTC").replace(/\/.*$/, "").toUpperCase();
-    console.log(`[/api/signals/analyze] coin=${coin} provider=${body.provider || "none"} model=${body.model || "none"} hasKey=${!!body.apiKey} includeAI=${body.includeAI}`);
+    console.log(`[/api/signals/analyze] coin=${coin} provider=${body.provider || "none"} model=${body.model || "none"} includeAI=${body.includeAI}`);
 
     if (!["BTC", "ETH", "SOL"].includes(coin)) {
       return jsonNoCache(
@@ -179,9 +185,18 @@ export async function POST(req: NextRequest) {
     try {
       const prompt = buildPrompt(marketData);
 
-      // User-provided AI config takes precedence over server defaults
-      const userProvider = body.provider && body.apiKey
-        ? { baseUrl: body.provider, apiKey: body.apiKey, model: body.model || "mimo-v2.5-pro" }
+      // User-provided AI config takes precedence, but provider URLs are always resolved from an allowlist.
+      const requestedProvider =
+        typeof body.provider === "string" ? getAllowedProvider(body.provider) : undefined;
+      if (body.apiKey && !requestedProvider) {
+        return jsonNoCache({ error: "Unsupported AI provider" }, { status: 400 });
+      }
+      const userProvider = requestedProvider && typeof body.apiKey === "string"
+        ? {
+            id: requestedProvider.id as Provider,
+            apiKey: body.apiKey,
+            model: typeof body.model === "string" && body.model ? body.model : requestedProvider.defaultModel,
+          }
         : undefined;
 
       const raw = await chat(

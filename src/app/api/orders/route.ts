@@ -1,25 +1,39 @@
 import { NextRequest } from "next/server";
-import { placeOrder, getOpenOrders } from "@/lib/sodex";
 import { jsonNoCache } from "@/lib/api/no-cache";
+import { checkRateLimit } from "@/lib/security/rate-limit";
+import { markIdempotency, readIdempotency } from "@/lib/security/idempotency";
+import { requireTradingAuthorization } from "@/lib/security/trading-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  if (!process.env.SODEX_API_KEY_NAME) {
-    return jsonNoCache(
-      { error: "SoDEX API key not configured. Set SODEX_API_KEY_NAME in .env.local" },
-      { status: 503 },
-    );
-  }
+  const limited = checkRateLimit(req, "orders");
+  if (limited) return limited;
 
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const clientOrderId = typeof body?.clientOrderId === "string" ? body.clientOrderId.trim() : "";
+
     if (!body?.symbol || !body?.side || !body?.type || !body?.quantity) {
       return jsonNoCache({ error: "Invalid order payload" }, { status: 400 });
     }
 
-    const result = await placeOrder(body);
-    return jsonNoCache(result);
+    if (clientOrderId) {
+      const existing = readIdempotency(clientOrderId);
+      if (existing?.response) {
+        return jsonNoCache(existing.response, { status: existing.status === "rejected" ? 403 : 200 });
+      }
+      markIdempotency(clientOrderId, "pending");
+    }
+
+    const auth = await requireTradingAuthorization(req);
+    if (auth instanceof Response) {
+      const response = { error: "Live trading is disabled until authentication is implemented." };
+      if (clientOrderId) markIdempotency(clientOrderId, "rejected", response);
+      return jsonNoCache(response, { status: 403 });
+    }
+
+    return jsonNoCache({ error: "Trading authorization unavailable" }, { status: 403 });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Order placement failed";
     console.error("[/api/orders POST]", msg);
@@ -27,20 +41,14 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
-  if (!process.env.SODEX_API_KEY_NAME) {
-    return jsonNoCache(
-      { error: "SoDEX API key not configured. Set SODEX_API_KEY_NAME in .env.local" },
-      { status: 503 },
-    );
+export async function GET(req: NextRequest) {
+  const limited = checkRateLimit(req, "orders");
+  if (limited) return limited;
+
+  const auth = await requireTradingAuthorization(req);
+  if (auth instanceof Response) {
+    return auth;
   }
 
-  try {
-    const orders = await getOpenOrders();
-    return jsonNoCache(orders);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Failed to fetch orders";
-    console.error("[/api/orders GET] SoDEX error:", msg);
-    return jsonNoCache({ error: msg }, { status: 502 });
-  }
+  return jsonNoCache({ error: "Trading authorization unavailable" }, { status: 403 });
 }

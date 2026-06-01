@@ -4,7 +4,8 @@ import { useState } from "react";
 import type { Signal, SignalGenerationResult, SignalDimensionDetails, SignalExecution } from "../types/signal";
 import type { AIConfig } from "../types/datasource";
 import type { AIError } from "../ai/providerErrors";
-import { getProvider } from "../ai-providers";
+import type { Provider } from "../ai-providers";
+import { getAllowedProvider } from "../ai-providers";
 import { fetchAISignal } from "../api/signals";
 import { mapAIError } from "../ai/providerErrors";
 
@@ -38,17 +39,17 @@ export function useSignalGeneration(aiConfig?: AIConfig) {
 
     try {
       // Build provider opts if user has configured AI
-      let opts: { provider?: string; model?: string; apiKey?: string; includeAI?: boolean } = { includeAI };
+      let opts: { provider?: Provider; model?: string; apiKey?: string; includeAI?: boolean } = { includeAI };
       if (includeAI && aiConfig?.apiKey) {
-        const provider = getProvider(aiConfig.providerId);
+        const provider = getAllowedProvider(aiConfig.providerId);
         if (provider) {
           opts = {
-            provider: provider.baseUrl,
+            provider: provider.id as Provider,
             model: aiConfig.model || provider.defaultModel,
             apiKey: aiConfig.apiKey,
             includeAI,
           };
-          console.log(`[SignalGen] Using user provider: ${provider.name} (${provider.baseUrl}) model=${opts.model}`);
+          console.log(`[SignalGen] Using user provider: ${provider.name} model=${opts.model}`);
         }
       } else {
         console.log(`[SignalGen] No user API key, using server default. includeAI=${includeAI} hasKey=${!!aiConfig?.apiKey}`);

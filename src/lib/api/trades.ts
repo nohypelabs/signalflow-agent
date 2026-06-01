@@ -12,10 +12,17 @@ export async function fetchOrders(): Promise<SoDEXOrder[]> {
 export async function placeOrder(
   signedOrder: SoDEXNewOrderRequest & { signature?: string; userAddress?: string },
 ): Promise<unknown> {
+  const orderWithId = {
+    ...signedOrder,
+    clientOrderId:
+      "clientOrderId" in signedOrder && typeof signedOrder.clientOrderId === "string"
+        ? signedOrder.clientOrderId
+        : `sf-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  };
   const res = await fetch("/api/orders", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(signedOrder),
+    body: JSON.stringify(orderWithId),
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));

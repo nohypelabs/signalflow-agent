@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
-import { cancelOrder } from "@/lib/sodex";
 import { jsonNoCache } from "@/lib/api/no-cache";
+import { checkRateLimit } from "@/lib/security/rate-limit";
+import { requireTradingAuthorization, verifyOrderOwnership } from "@/lib/security/trading-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -8,12 +9,8 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!process.env.SODEX_API_KEY_NAME) {
-    return jsonNoCache(
-      { error: "SoDEX API key not configured" },
-      { status: 503 },
-    );
-  }
+  const limited = checkRateLimit(req, "orders");
+  if (limited) return limited;
 
   const { id } = await params;
   const orderId = Number(id);
@@ -21,13 +18,14 @@ export async function DELETE(
     return jsonNoCache({ error: "Invalid order id" }, { status: 400 });
   }
 
-  try {
-    await cancelOrder(orderId);
-    return jsonNoCache({ success: true });
-  } catch (err) {
-    return jsonNoCache(
-      { error: err instanceof Error ? err.message : "Cancel failed" },
-      { status: 502 },
-    );
+  const auth = await requireTradingAuthorization(req);
+  if (auth instanceof Response) {
+    return auth;
   }
+
+  if (!verifyOrderOwnership(auth, orderId)) {
+    return jsonNoCache({ error: "Order not found or not owned by caller" }, { status: 404 });
+  }
+
+  return jsonNoCache({ error: "Trading authorization unavailable" }, { status: 403 });
 }

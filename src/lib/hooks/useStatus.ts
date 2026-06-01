@@ -27,9 +27,20 @@ export function useStatus(params?: StatusParams) {
         const qs = new URLSearchParams();
         if (params?.providerId) qs.set("provider", params.providerId);
         if (params?.model) qs.set("model", params.model);
-        if (params?.apiKey) qs.set("apiKey", params.apiKey);
-        const url = `/api/status${qs.toString() ? `?${qs}` : ""}`;
-        const res = await fetch(url, { cache: "no-store" });
+        const hasSecret = !!params?.apiKey;
+        const url = `/api/status${!hasSecret && qs.toString() ? `?${qs}` : ""}`;
+        const res = await fetch(url, hasSecret
+          ? {
+              method: "POST",
+              cache: "no-store",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                provider: params?.providerId,
+                model: params?.model,
+                apiKey: params?.apiKey,
+              }),
+            }
+          : { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         if (!cancelled) {

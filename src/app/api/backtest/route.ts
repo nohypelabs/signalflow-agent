@@ -3,6 +3,7 @@ import { pairToSodexSymbol } from "@/lib/pair-map";
 import { runBacktest } from "@/lib/strategy/backtest";
 import type { TradingType } from "@/lib/types/trading-type";
 import { jsonNoCache } from "@/lib/api/no-cache";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,9 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 }
 
 export async function GET(request: Request) {
+  const limited = checkRateLimit(request, "backtest");
+  if (limited) return limited;
+
   try {
     const url = new URL(request.url);
     const pair = url.searchParams.get("pair") ?? "BTC/USDC";

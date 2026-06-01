@@ -2,36 +2,24 @@ import type { AIProvider, AIConfig } from "./types/datasource";
 
 export type { AIProvider, AIConfig };
 
-export const AI_PROVIDERS: AIProvider[] = [
-  {
+export type Provider = "openai" | "deepseek" | "openrouter" | "gemini";
+
+export const PROVIDER_MAP: Record<Provider, AIProvider> = {
+  deepseek: {
     id: "deepseek",
     name: "DeepSeek",
     baseUrl: "https://api.deepseek.com/v1",
     defaultModel: "deepseek-chat",
     models: ["deepseek-chat", "deepseek-reasoner"],
   },
-  {
+  openai: {
     id: "openai",
     name: "OpenAI",
     baseUrl: "https://api.openai.com/v1",
     defaultModel: "gpt-4o",
     models: ["gpt-4o", "gpt-4o-mini", "o3-mini", "o1", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano"],
   },
-  {
-    id: "anthropic",
-    name: "Anthropic (Claude)",
-    baseUrl: "https://api.anthropic.com/v1",
-    defaultModel: "claude-sonnet-4",
-    models: ["claude-opus-4", "claude-sonnet-4", "claude-3.5-haiku"],
-  },
-  {
-    id: "google",
-    name: "Google (Gemini)",
-    baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
-    defaultModel: "gemini-2.5-pro",
-    models: ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"],
-  },
-  {
+  openrouter: {
     id: "openrouter",
     name: "OpenRouter",
     baseUrl: "https://openrouter.ai/api/v1",
@@ -47,6 +35,27 @@ export const AI_PROVIDERS: AIProvider[] = [
       "qwen/qwen3-235b-a22b",
     ],
   },
+  gemini: {
+    id: "gemini",
+    name: "Google (Gemini)",
+    baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+    defaultModel: "gemini-2.5-pro",
+    models: ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"],
+  },
+};
+
+export const AI_PROVIDERS: AIProvider[] = [
+  PROVIDER_MAP.deepseek,
+  PROVIDER_MAP.openai,
+  {
+    id: "anthropic",
+    name: "Anthropic (Claude)",
+    baseUrl: "https://api.anthropic.com/v1",
+    defaultModel: "claude-sonnet-4",
+    models: ["claude-opus-4", "claude-sonnet-4", "claude-3.5-haiku"],
+  },
+  PROVIDER_MAP.gemini,
+  PROVIDER_MAP.openrouter,
   {
     id: "xiaomi",
     name: "Xiaomi (MiMo)",
@@ -93,4 +102,9 @@ export const AI_PROVIDERS: AIProvider[] = [
 
 export function getProvider(id: string): AIProvider | undefined {
   return AI_PROVIDERS.find((p) => p.id === id);
+}
+
+export function getAllowedProvider(id: string): AIProvider | undefined {
+  if (id === "google") return PROVIDER_MAP.gemini;
+  return PROVIDER_MAP[id as Provider];
 }

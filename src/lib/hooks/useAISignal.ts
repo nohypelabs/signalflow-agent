@@ -3,7 +3,8 @@
 import { useState } from "react";
 import type { Signal } from "../types/signal";
 import type { AIConfig } from "../types/datasource";
-import { getProvider } from "../ai-providers";
+import type { Provider } from "../ai-providers";
+import { getAllowedProvider } from "../ai-providers";
 import { fetchAISignal } from "../api/signals";
 
 export function useAISignal(aiConfig?: AIConfig) {
@@ -15,12 +16,12 @@ export function useAISignal(aiConfig?: AIConfig) {
     setAnalyzing(true);
     setError(null);
     try {
-      let opts: { provider?: string; model?: string; apiKey?: string } = {};
+      let opts: { provider?: Provider; model?: string; apiKey?: string } = {};
       if (aiConfig?.apiKey) {
-        const provider = getProvider(aiConfig.providerId);
+        const provider = getAllowedProvider(aiConfig.providerId);
         if (provider) {
           opts = {
-            provider: provider.baseUrl,
+            provider: provider.id as Provider,
             model: aiConfig.model || provider.defaultModel,
             apiKey: aiConfig.apiKey,
           };

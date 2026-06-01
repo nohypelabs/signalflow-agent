@@ -651,7 +651,7 @@ function AIAgents() {
         <pre className="text-[#aaaacc] whitespace-pre-wrap">{`User clicks "Generate Signal" for BTC
         │
         ▼
-POST /api/signals/analyze { coin: "BTC", provider, model, apiKey }
+POST /api/signals/analyze { coin: "BTC", provider: "deepseek", model, apiKey }
         │
         ▼
 Server gathers 5 data sources in parallel:
@@ -1281,7 +1281,7 @@ function APIReference() {
       <p className="text-[#aaaacc]">SoSoValue API module status — which modules are returning data.</p>
 
       <h3 className="text-lg font-bold text-white mt-6">GET /api/status</h3>
-      <p className="text-[#aaaacc]">SoSoValue, SoDEX, and AI provider connection health check. Accepts query params: <code className="text-accent bg-[#1E293B] px-1 rounded">?provider=id&model=name&apiKey=key</code> for dynamic AI provider testing.</p>
+      <p className="text-[#aaaacc]">SoSoValue, SoDEX, and AI provider connection health check. Public GET accepts non-secret query params: <code className="text-accent bg-[#1E293B] px-1 rounded">?provider=id&model=name</code>. User API key checks use POST body so secrets are never placed in URLs.</p>
 
       <h3 className="text-lg font-bold text-white mt-8">Error Handling</h3>
       <p className="text-[#aaaacc]">All API routes follow a consistent error pattern:</p>
