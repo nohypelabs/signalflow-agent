@@ -5,6 +5,7 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
 import { DocumentIcon } from "@/components/ui/icons";
+import { unwrapApiResponse } from "@/lib/api/client";
 
 interface NewsItem {
   id: number;
@@ -97,10 +98,10 @@ export default function NewsSentimentDashboard() {
     setLoading(true);
     fetch("/api/news?pageSize=30")
       .then((r) => r.json())
+      .then(unwrapApiResponse<NewsResponse>)
       .then((json) => {
         if (!cancelled) {
-          if (json.error) setError(json.error);
-          else setData(json);
+          setData(json);
         }
       })
       .catch((e) => { if (!cancelled) setError(String(e)); })

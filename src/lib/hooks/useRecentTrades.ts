@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { parseApiResponse } from "@/lib/api/client";
 import type { SoDEXTrade } from "../types/trade";
 
 interface UseRecentTradesReturn {
@@ -24,9 +25,7 @@ export function useRecentTrades(symbol: string, limit = 50): UseRecentTradesRetu
         `/api/trades/recent?symbol=${encodeURIComponent(symbol)}&limit=${limit}`,
         { cache: "no-store" },
       );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      if (json.error) throw new Error(json.error);
+      const json = await parseApiResponse<{ trades?: SoDEXTrade[] }>(res);
       setData(json.trades ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch trades");

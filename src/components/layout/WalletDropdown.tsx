@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useWallet } from "@/lib/hooks/useWallet";
 import { useSwitchChain } from "wagmi";
 import { valuechain } from "@/lib/wallet-config";
+import { parseApiResponse } from "@/lib/api/client";
 import type { SoDEXBalance } from "@/lib/sodex-types";
 import StatusDot from "@/components/ui/StatusDot";
 
@@ -40,7 +41,7 @@ export default function WalletDropdown({ onClose }: Props) {
       try {
         const res = await fetch(`/api/balance?address=${encodeURIComponent(address!)}`, { cache: "no-store" });
         if (cancelled) return;
-        const json = await res.json();
+        const json = await parseApiResponse<{ balances?: SoDEXBalance[] }>(res);
         if (!cancelled) setBalances(json.balances || []);
       } catch {
         if (!cancelled) setBalances([]);
@@ -75,7 +76,7 @@ export default function WalletDropdown({ onClose }: Props) {
     setBalanceLoading(true);
     try {
       const res = await fetch(`/api/balance?address=${encodeURIComponent(address)}`, { cache: "no-store" });
-      const json = await res.json();
+      const json = await parseApiResponse<{ balances?: SoDEXBalance[] }>(res);
       setBalances(json.balances || []);
     } catch {
       // keep existing balances

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { parseApiResponse } from "@/lib/api/client";
 import type { ScreenerPair } from "../api/screener";
 
 interface ScreenerFilters {
@@ -49,9 +50,7 @@ export function useScreener(): UseScreenerReturn {
       if (filters.minVolume > 0) qs.set("minVolume", String(filters.minVolume));
 
       const res = await fetch(`/api/screener?${qs.toString()}`, { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      if (json.error) throw new Error(json.error);
+      const json = await parseApiResponse<{ pairs?: ScreenerPair[]; total?: number }>(res);
       setData(json.pairs ?? []);
       setTotal(json.total ?? 0);
     } catch (err) {

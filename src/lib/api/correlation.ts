@@ -1,3 +1,5 @@
+import { parseApiResponse } from "./client";
+
 export interface CorrelationData {
   matrix: number[][];
   symbols: string[];
@@ -15,8 +17,5 @@ export async function fetchCorrelation(
   if (limit) qs.set("limit", String(limit));
 
   const res = await fetch(`/api/correlation?${qs.toString()}`, { cache: "no-store" });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = await res.json();
-  if (json.error) throw new Error(json.error);
-  return json;
+  return parseApiResponse(res);
 }

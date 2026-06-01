@@ -13,6 +13,7 @@ import { useDashboard } from "@/lib/dashboard-context";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import { getCoinIcon } from "@/lib/coin-icons";
 import { getStockIcon } from "@/lib/stock-icons";
+import { unwrapApiResponse } from "@/lib/api/client";
 import type { Signal } from "@/lib/types/signal";
 
 /* ── Pipeline Model ── */
@@ -1415,6 +1416,7 @@ function IndexCard() {
           if (!r.ok) throw new Error(`Market tickers ${r.status}`);
           return r.json();
         })
+        .then(unwrapApiResponse<typeof d.tickers>)
         .then((data) => {
           if (!cancelled) {
             const normalized = normalizeMarketTickers(data);
@@ -1889,6 +1891,7 @@ export default function SignalFlowCommandCenter() {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
+      .then(unwrapApiResponse<NewsResponse>)
       .then((data: NewsResponse) => {
         setNews(data);
         setNewsFetchError(false);

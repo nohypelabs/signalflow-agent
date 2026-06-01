@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { jsonNoCache } from "@/lib/api/no-cache";
+import { apiError } from "@/lib/api/response";
 
 export type ValidationResult<T> =
   | { ok: true; data: T }
@@ -25,10 +25,7 @@ export function validateRequest<T>(
 
   return {
     ok: false,
-    response: jsonNoCache(
-      { error: `Invalid request: ${formatValidationError(parsed.error)}` },
-      { status: 400 },
-    ),
+    response: apiError(`Invalid request: ${formatValidationError(parsed.error)}`, 400),
   };
 }
 

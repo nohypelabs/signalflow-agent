@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { parseApiResponse } from "@/lib/api/client";
 
 interface CorrelationData {
   matrix: number[][];
@@ -34,9 +35,7 @@ export function useCorrelation(
       qs.set("limit", String(limit));
 
       const res = await fetch(`/api/correlation?${qs.toString()}`, { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      if (json.error) throw new Error(json.error);
+      const json = await parseApiResponse<CorrelationData>(res);
       setData(json);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch correlation");

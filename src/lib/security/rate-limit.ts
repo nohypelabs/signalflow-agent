@@ -1,4 +1,4 @@
-import { jsonNoCache } from "@/lib/api/no-cache";
+import { apiError } from "@/lib/api/response";
 
 interface RateLimitConfig {
   windowMs: number;
@@ -61,11 +61,7 @@ export function checkRateLimit(
   }
 
   const retryAfter = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
-  return jsonNoCache(
-    { error: "Too many requests. Try again later." },
-    {
-      status: 429,
-      headers: { "Retry-After": String(retryAfter) },
-    },
-  );
+  return apiError("Too many requests. Try again later.", 429, {
+    headers: { "Retry-After": String(retryAfter) },
+  });
 }

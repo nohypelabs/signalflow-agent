@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { parseApiResponse } from "@/lib/api/client";
 import type { ETFSummaryItem } from "@/lib/sosovalue";
 
 interface UseETFFlowReturn {
@@ -20,9 +21,7 @@ export function useETFFlow(symbol = "BTC", countryCode = "US", limit = 30): UseE
     setError(null);
     try {
       const res = await fetch(`/api/etf-flow?symbol=${symbol}&country=${countryCode}&limit=${limit}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      if (json.error) throw new Error(json.error);
+      const json = await parseApiResponse<{ data?: ETFSummaryItem[] }>(res);
       setData(json.data ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch ETF data");

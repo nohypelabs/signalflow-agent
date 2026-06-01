@@ -5,6 +5,7 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
 import { Landmark } from "lucide-react";
+import { unwrapApiResponse } from "@/lib/api/client";
 
 interface BTCTreasury {
   ticker: string;
@@ -34,6 +35,7 @@ export default function BTCTreasuryDashboard() {
     // Fetch from the signals API which already aggregates this data
     fetch("/api/signals", { cache: "no-store" })
       .then((r) => r.json())
+      .then(unwrapApiResponse<{ btcTreasuries?: BTCTreasury[]; purchaseHistory?: PurchaseHistory[] }>)
       .then((d) => {
         if (cancelled) return;
         // The signals API includes BTC treasury data

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import Skeleton from "@/components/ui/Skeleton";
 import { BarChartIcon } from "@/components/ui/icons";
+import { unwrapApiResponse } from "@/lib/api/client";
 
 interface ETFDayData {
   date: string;
@@ -83,10 +84,10 @@ export default function ETFFlowChart({ symbol = "BTC" }: { symbol?: string }) {
     setLoading(true);
     fetch(`/api/etf-flow?symbol=${symbol}&limit=30`)
       .then((r) => r.json())
+      .then(unwrapApiResponse<ETFResponse>)
       .then((json) => {
         if (!cancelled) {
-          if (json.error) setError(json.error);
-          else setData(json);
+          setData(json);
         }
       })
       .catch((e) => { if (!cancelled) setError(String(e)); })

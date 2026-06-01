@@ -10,6 +10,7 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { CloseIcon } from "@/components/ui/icons";
+import { parseApiResponse } from "@/lib/api/client";
 
 interface Props {
   signal: Signal | null;
@@ -45,9 +46,7 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
     setBalanceError(null);
     try {
       const res = await fetch(`/api/balance?address=${encodeURIComponent(walletAddress)}`, { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      if (json.error) throw new Error(json.error);
+      const json = await parseApiResponse<{ balances?: SoDEXBalance[] }>(res);
       setBalances(json.balances || []);
     } catch (e) {
       setBalanceError(e instanceof Error ? e.message : "Balance fetch failed");
@@ -136,10 +135,7 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
         body: JSON.stringify({ ...order, signature, clientOrderId }),
       });
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-        throw new Error(body.error || "Order failed");
-      }
+      await parseApiResponse(res);
 
       await onExecute(order);
       setSuccess(`Order placed: ${qty} ${baseCoin} @ $${formatPrice(price)}`);

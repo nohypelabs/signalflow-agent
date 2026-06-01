@@ -5,6 +5,7 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
 import { Activity } from "lucide-react";
+import { unwrapApiResponse } from "@/lib/api/client";
 
 interface MacroEventItem {
   date: string;
@@ -33,6 +34,7 @@ export default function MacroSurprise({ eventName = "Federal Funds Rate" }: Prop
     setLoading(true);
     fetch(`/api/macro?history=true&event=${encodeURIComponent(eventName)}`, { cache: "no-store" })
       .then((r) => r.json())
+      .then(unwrapApiResponse<{ history?: MacroEventItem[]; upcoming?: MacroCalendarDay[]; events?: MacroCalendarDay[] }>)
       .then((d) => {
         if (cancelled) return;
         setData(d.history ?? []);

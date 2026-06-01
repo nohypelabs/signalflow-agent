@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+import { parseApiResponse } from "@/lib/api/client";
 import type { TradingType } from "@/lib/types/trading-type";
 import { TRADING_TYPE_LIST } from "@/lib/types/trading-type";
 
@@ -49,11 +50,7 @@ export default function BacktestPanel() {
       const params = new URLSearchParams({ pair, resolution: String(resolution) });
       if (tradingType) params.set("type", tradingType);
       const res = await fetch(`/api/backtest?${params.toString()}`);
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Failed" }));
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-      const json = await res.json();
+      const json = await parseApiResponse<BacktestData>(res);
       setData(json);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Backtest failed");

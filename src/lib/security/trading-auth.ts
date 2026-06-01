@@ -1,4 +1,4 @@
-import { jsonNoCache } from "@/lib/api/no-cache";
+import { apiError } from "@/lib/api/response";
 
 export interface TradingAuthContext {
   authorized: false;
@@ -10,12 +10,9 @@ export async function requireTradingAuthorization(
   req: Request,
 ): Promise<TradingAuthContext | Response> {
   void req;
-  return jsonNoCache(
-    {
-      error:
-        "Live trading is disabled until wallet-signature authentication and order ownership checks are implemented.",
-    },
-    { status: 403 },
+  return apiError(
+    "Live trading is disabled until wallet-signature authentication and order ownership checks are implemented.",
+    403,
   );
 }
 

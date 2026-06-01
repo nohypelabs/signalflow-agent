@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
+import { unwrapApiResponse } from "@/lib/api/client";
 import type { SoDEXTicker } from "@/lib/types/trade";
 import type { MarketSnapshot } from "@/lib/sosovalue";
 
@@ -43,6 +44,7 @@ export default function CompanyProfileCard({ symbol, snapshot }: Props) {
     setLoading(true);
     fetch(`/api/market/tickers?symbol=${encodeURIComponent(symbol)}`, { cache: "no-store" })
       .then((r) => r.json())
+      .then(unwrapApiResponse<SoDEXTicker | SoDEXTicker[]>)
       .then((d) => {
         if (cancelled) return;
         const arr = Array.isArray(d) ? d : [d];

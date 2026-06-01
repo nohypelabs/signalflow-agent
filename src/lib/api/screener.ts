@@ -1,3 +1,5 @@
+import { parseApiResponse } from "./client";
+
 export interface ScreenerPair {
   symbol: string;
   displayName: string;
@@ -39,8 +41,5 @@ export async function fetchScreener(params?: {
   if (params?.status) qs.set("status", params.status);
 
   const res = await fetch(`/api/screener?${qs.toString()}`, { cache: "no-store" });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = await res.json();
-  if (json.error) throw new Error(json.error);
-  return json;
+  return parseApiResponse(res);
 }

@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import Card from "@/components/ui/Card";
 import Skeleton from "@/components/ui/Skeleton";
 import { ChartBarIcon } from "@/components/ui/icons";
+import { unwrapApiResponse } from "@/lib/api/client";
 
 interface OrderBookEntry {
   price: number;
@@ -82,13 +83,10 @@ export default function OrderbookDepth({ symbol = "vBTC_vUSDC", coin = "BTC" }: 
 
       try {
         const res = await fetch(`/api/orderbook?symbol=${symbol}&limit=${depth}`);
-        const json = await res.json();
+        const json = unwrapApiResponse<OrderBookData>(await res.json());
         if (!cancelled) {
-          if (json.error) setError(json.error);
-          else {
-            setData(json);
-            setError(null);
-          }
+          setData(json);
+          setError(null);
           setLoading(false);
         }
       } catch (e) {

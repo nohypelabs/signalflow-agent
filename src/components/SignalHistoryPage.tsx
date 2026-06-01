@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Card from "@/components/ui/Card";
 import Skeleton from "@/components/ui/Skeleton";
 import PageHeader from "@/components/ui/PageHeader";
+import { parseApiResponse } from "@/lib/api/client";
 
 interface SignalRecord {
   id: string;
@@ -213,8 +214,7 @@ export default function SignalHistoryPage() {
     async function fetchHistory() {
       try {
         const res = await fetch("/api/signals");
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
+        const data = await parseApiResponse<{ signals?: SignalRecord[] }>(res);
 
         // Convert current signals to history format + generate synthetic history
         const currentSignals: SignalRecord[] = (data.signals ?? []).map((s: SignalRecord) => ({

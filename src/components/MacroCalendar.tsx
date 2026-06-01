@@ -5,6 +5,7 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
 import { BarChartIcon, BriefcaseIcon, ChartBarIcon, DataSourceIcon, DocumentIcon } from "@/components/ui/icons";
+import { unwrapApiResponse } from "@/lib/api/client";
 
 interface MacroDay {
   date: string;
@@ -80,10 +81,10 @@ export default function MacroCalendar() {
     setLoading(true);
     fetch("/api/macro")
       .then((r) => r.json())
+      .then(unwrapApiResponse<MacroResponse>)
       .then((json) => {
         if (!cancelled) {
-          if (json.error) setError(json.error);
-          else setData(json);
+          setData(json);
         }
       })
       .catch((e) => { if (!cancelled) setError(String(e)); })

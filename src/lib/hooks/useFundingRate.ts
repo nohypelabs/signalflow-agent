@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { parseApiResponse } from "@/lib/api/client";
 
 export interface FundingRateData {
   symbol: string;
@@ -26,8 +27,7 @@ export function useFundingRate(symbol: string) {
 
       try {
         const res = await fetch("/api/funding");
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const data = await parseApiResponse<Record<string, FundingRateData>>(res);
 
         if (!cancelled) {
           setData(data[base] ?? null);

@@ -1,12 +1,9 @@
 import type { SoDEXOrder, SoDEXNewOrderRequest } from "../types/trade";
+import { parseApiResponse } from "./client";
 
 export async function fetchOrders(): Promise<SoDEXOrder[]> {
   const res = await fetch("/api/orders", { cache: "no-store" });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  return res.json();
+  return parseApiResponse(res);
 }
 
 export async function placeOrder(
@@ -24,17 +21,10 @@ export async function placeOrder(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(orderWithId),
   });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-    throw new Error(body.error || "Order failed");
-  }
-  return res.json();
+  return parseApiResponse(res);
 }
 
 export async function cancelOrder(orderId: number): Promise<void> {
   const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: "Cancel failed" }));
-    throw new Error(body.error || "Cancel failed");
-  }
+  await parseApiResponse(res);
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { parseApiResponse } from "@/lib/api/client";
 
 export interface ServiceStatus {
   name: string;
@@ -41,8 +42,7 @@ export function useStatus(params?: StatusParams) {
               }),
             }
           : { cache: "no-store" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
+        const json = await parseApiResponse<{ services: ServiceStatus[] }>(res);
         if (!cancelled) {
           setServices(json.services);
           setError(null);

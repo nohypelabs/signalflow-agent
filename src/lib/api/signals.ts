@@ -1,14 +1,14 @@
 import type { Provider } from "../ai-providers";
 import type { SignalsData, SignalGenerationResult } from "../types/signal";
 import type { TradingType } from "../types/trading-type";
+import { parseApiResponse } from "./client";
 
 export async function fetchSignals(tradingType?: TradingType | null): Promise<SignalsData> {
   const url = tradingType
     ? `/api/signals?type=${tradingType}`
     : "/api/signals";
   const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  return parseApiResponse(res);
 }
 
 export async function fetchAISignal(
@@ -29,9 +29,5 @@ export async function fetchAISignal(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-    throw new Error(err.error || `HTTP ${res.status}`);
-  }
-  return res.json();
+  return parseApiResponse(res);
 }

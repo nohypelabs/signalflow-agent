@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Card from "@/components/ui/Card";
 import Skeleton from "@/components/ui/Skeleton";
+import { unwrapApiResponse } from "@/lib/api/client";
 
 interface OrderBookLevel {
   price: number;
@@ -27,6 +28,7 @@ export default function OrderBookAggregation({ symbol }: Props) {
     setLoading(true);
     fetch(`/api/orderbook?symbol=${encodeURIComponent(symbol)}&limit=100`, { cache: "no-store" })
       .then((r) => r.json())
+      .then(unwrapApiResponse<{ bids: [string, string][]; asks: [string, string][] }>)
       .then((d) => { if (!cancelled) setRaw(d); })
       .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : "Failed"); })
       .finally(() => { if (!cancelled) setLoading(false); });

@@ -1,18 +1,18 @@
 import type { SoDEXTicker, SoDEXKline } from "../types/trade";
 import type { CoinPerf } from "../types/datasource";
+import { parseApiResponse } from "./client";
 
 export async function fetchStatus(): Promise<{
   services: { name: string; status: "connected" | "error" | "no_key"; detail: string; latencyMs: number }[];
 }> {
   const res = await fetch("/api/status", { cache: "no-store" });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  return parseApiResponse(res);
 }
 
 export async function fetchTickers(): Promise<SoDEXTicker[] | null> {
   const res = await fetch("/api/market/tickers", { cache: "no-store" });
   if (!res.ok) return null;
-  return res.json();
+  return parseApiResponse(res);
 }
 
 export async function fetchKlines(
@@ -25,11 +25,10 @@ export async function fetchKlines(
     { cache: "no-store" },
   );
   if (!res.ok) return null;
-  return res.json();
+  return parseApiResponse(res);
 }
 
 export async function fetchPerformance(): Promise<{ coins: CoinPerf[] }> {
   const res = await fetch("/api/performance", { cache: "no-store" });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  return parseApiResponse(res);
 }

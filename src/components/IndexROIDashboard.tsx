@@ -5,6 +5,8 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
 import { LineChart } from "lucide-react";
+import { unwrapApiResponse } from "@/lib/api/client";
+import type { SoDEXTicker } from "@/lib/types/trade";
 
 interface IndexData {
   ticker: string;
@@ -44,7 +46,7 @@ export default function IndexROIDashboard() {
       INDICES.map(async (idx) => {
         try {
           const res = await fetch(`/api/market/tickers?symbol=v${idx.ticker}_vUSDC`, { cache: "no-store" });
-          const json = await res.json();
+          const json = unwrapApiResponse<SoDEXTicker | SoDEXTicker[]>(await res.json());
           const arr = Array.isArray(json) ? json : [json];
           const t = arr[0];
           if (!t) return null;

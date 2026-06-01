@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Card from "@/components/ui/Card";
 import Skeleton from "@/components/ui/Skeleton";
 import { TrendUpIcon } from "@/components/ui/icons";
+import { unwrapApiResponse } from "@/lib/api/client";
 
 interface MacroHistoryEntry {
   date: string;
@@ -206,10 +207,10 @@ export default function MacroEventHistory({ eventName = "Federal Funds Rate" }: 
     setLoading(true);
     fetch(`/api/macro?history=true&event=${encodeURIComponent(selectedEvent)}`)
       .then((r) => r.json())
+      .then(unwrapApiResponse<{ history?: MacroHistoryEntry[] }>)
       .then((json) => {
         if (!cancelled) {
-          if (json.error) setError(json.error);
-          else setData(json.history ?? []);
+          setData(json.history ?? []);
           setLoading(false);
         }
       })
