@@ -82,15 +82,15 @@ function IconControlButton({
           children
         )}
       </button>
-      <div className="pointer-events-none absolute bottom-[calc(100%+10px)] left-1/2 z-20 w-52 -translate-x-1/2 rounded-lg border border-accent/35 bg-[#050914] px-3 py-2.5 text-left opacity-0 shadow-[0_18px_44px_rgba(0,0,0,0.55),0_0_22px_rgba(255,136,0,0.12)] ring-1 ring-white/8 transition-all duration-150 group-hover:-translate-y-0.5 group-hover:opacity-100 group-focus-within:-translate-y-0.5 group-focus-within:opacity-100">
-        <div className="flex items-center justify-between gap-2">
-          <div className="text-[9px] font-bold uppercase tracking-wide text-txt-primary">{label}</div>
-          <span className="rounded-md border border-accent/30 bg-accent-muted px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-wide text-accent">
+      <div className="pointer-events-none absolute bottom-[calc(100%+10px)] left-1/2 z-20 w-40 -translate-x-1/2 rounded-lg border border-accent/35 bg-[#050914] px-2 py-2 text-left opacity-0 shadow-[0_18px_44px_rgba(0,0,0,0.55),0_0_22px_rgba(255,136,0,0.12)] ring-1 ring-white/8 transition-all duration-150 group-hover:-translate-y-0.5 group-hover:opacity-100 group-focus-within:-translate-y-0.5 group-focus-within:opacity-100">
+        <div className="flex items-center justify-between gap-1.5">
+          <div className="text-[7px] font-bold uppercase tracking-wide text-txt-primary">{label}</div>
+          <span className="rounded-md border border-accent/30 bg-accent-muted px-1 py-0.5 text-[6px] font-bold uppercase tracking-wide text-accent">
             Live
           </span>
         </div>
-        <div className="mt-1 text-[9px] font-medium leading-snug text-txt-secondary">{detail}</div>
-        <div className="absolute left-1/2 top-full h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-accent/35 bg-[#050914]" />
+        <div className="mt-0.5 text-[7px] font-medium leading-snug text-txt-secondary">{detail}</div>
+        <div className="absolute left-1/2 top-full h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-accent/35 bg-[#050914]" />
       </div>
     </div>
   );
