@@ -5,6 +5,7 @@ import { useCorrelation } from "@/lib/hooks/useCorrelation";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
+import { Grid3x3 } from "lucide-react";
 
 const DEFAULT_SYMBOLS = ["vBTC_vUSDC", "vETH_vUSDC", "vSOL_vUSDC", "vBNB_vUSDC", "vXRP_vUSDC", "vDOGE_vUSDC"];
 const TIMEFRAMES = [
@@ -13,11 +14,11 @@ const TIMEFRAMES = [
 ];
 
 function correlationColor(v: number): string {
-  if (v >= 0.7) return "#00ff88";
-  if (v >= 0.3) return "#00ff8866";
-  if (v >= -0.3) return "#1E293B";
-  if (v >= -0.7) return "#ff444466";
-  return "#ff4444";
+  if (v >= 0.7) return "var(--color-buy)";
+  if (v >= 0.3) return "color-mix(in srgb, var(--color-buy) 40%, transparent)";
+  if (v >= -0.3) return "var(--color-bg-inset)";
+  if (v >= -0.7) return "color-mix(in srgb, var(--color-sell) 40%, transparent)";
+  return "var(--color-sell)";
 }
 
 function cleanSymbol(s: string): string {
@@ -33,7 +34,7 @@ export default function CorrelationMatrix() {
       <div className="px-4 py-3 border-b border-border-default">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xs">🔗</span>
+            <Grid3x3 size={14} className="text-accent" />
             <h3 className="text-sm font-semibold text-txt-primary">Correlation Matrix</h3>
           </div>
           <div className="flex gap-1">
@@ -105,7 +106,7 @@ export default function CorrelationMatrix() {
             {/* Legend */}
             <div className="flex items-center justify-center gap-3 mt-3">
               <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#ff4444" }} />
+                <div className="w-3 h-3 rounded-sm bg-sell" />
                 <span className="text-[8px] text-txt-faint">-1.0</span>
               </div>
               <div className="flex items-center gap-1">
@@ -113,7 +114,7 @@ export default function CorrelationMatrix() {
                 <span className="text-[8px] text-txt-faint">0</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#00ff88" }} />
+                <div className="w-3 h-3 rounded-sm bg-buy" />
                 <span className="text-[8px] text-txt-faint">+1.0</span>
               </div>
             </div>

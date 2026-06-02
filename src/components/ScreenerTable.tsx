@@ -6,6 +6,7 @@ import type { ScreenerPair } from "@/lib/api/screener";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
+import { BarChart3 } from "lucide-react";
 
 const CATEGORIES = [
   { value: "all", label: "All" },
@@ -61,7 +62,7 @@ export default function ScreenerTable() {
       <div className="px-4 py-3 border-b border-border-default">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs">📊</span>
+            <BarChart3 size={14} className="text-accent" />
             <h3 className="text-sm font-semibold text-txt-primary">Pair Screener</h3>
             <Badge variant="accent" size="sm">{total} pairs</Badge>
           </div>
@@ -130,13 +131,13 @@ function ScreenerRow({ pair: p }: { pair: ScreenerPair }) {
   const isUp = p.change24h >= 0;
 
   return (
-    <div className="grid grid-cols-[1fr_100px_80px_100px_100px_80px] gap-2 px-4 py-2.5 hover:bg-elevated/20 transition-colors items-center">
+    <div className="grid grid-cols-[1fr_100px_80px_100px_100px_80px] gap-2 px-4 py-2.5 hover:bg-elevated/40 transition-colors items-center cursor-pointer">
       <div className="flex items-center gap-2">
         <span className="text-xs font-semibold text-txt-primary">{p.displayName}</span>
         <span className={`text-[8px] px-1 py-0.5 rounded ${
-          p.category === "crypto" ? "bg-[#00d4ff10] text-[#00d4ff]" :
-          p.category === "index" ? "bg-[#8B5CF610] text-[#8B5CF6]" :
-          p.category === "stock" ? "bg-[#ff880010] text-[#ff8800]" :
+          p.category === "crypto" ? "bg-accent-muted/50 text-accent" :
+          p.category === "index" ? "bg-hold-muted/50 text-hold" :
+          p.category === "stock" ? "bg-buy-muted/50 text-buy" :
           "bg-elevated text-txt-faint"
         }`}>
           {p.category}
@@ -145,7 +146,7 @@ function ScreenerRow({ pair: p }: { pair: ScreenerPair }) {
       <span className="text-xs font-mono text-txt-primary text-right">
         ${p.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
       </span>
-      <span className={`text-xs font-mono text-right ${isUp ? "text-[#00ff88]" : "text-[#ff4444]"}`}>
+      <span className={`text-xs font-mono text-right ${isUp ? "text-buy" : "text-sell"}`}>
         {isUp ? "+" : ""}{p.change24h.toFixed(2)}%
       </span>
       <span className="text-xs font-mono text-txt-secondary text-right">
