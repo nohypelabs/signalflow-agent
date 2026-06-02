@@ -170,7 +170,7 @@ export default function StrategyConfig() {
   return (
     <div className="space-y-5">
       {showPresetModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-4 pt-[12vh] backdrop-blur-sm">
           <div className="w-full max-w-4xl overflow-hidden rounded-xl border border-border-strong bg-card shadow-2xl">
             <div className="border-b border-border-default bg-inset/50 px-5 py-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
