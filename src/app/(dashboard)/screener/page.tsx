@@ -11,8 +11,10 @@ export default function ScreenerPage() {
         title="Market Screener"
         badge={{ variant: "accent", label: "LIVE" }}
       />
-      <PriceHeatmap />
-      <ScreenerTable />
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4">
+        <PriceHeatmap />
+        <ScreenerTable />
+      </div>
     </div>
   );
 }
