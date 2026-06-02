@@ -9,6 +9,7 @@ import { TRADING_TYPE_LIST } from "@/lib/types/trading-type";
 import { BarChartIcon, BriefcaseIcon, DataSourceIcon, DocumentIcon, TrendUpIcon } from "@/components/ui/icons";
 
 const STORAGE_KEY = "signalflow-strategy-config";
+type StrategyPresetName = "conservative" | "balanced" | "aggressive";
 
 interface StrategyConfig {
   etfFlow: number;
@@ -36,11 +37,37 @@ const DEFAULT_CONFIG: StrategyConfig = {
   maxDailyTrades: 10,
 };
 
-const PRESETS: Record<string, StrategyConfig> = {
+const PRESETS: Record<StrategyPresetName, StrategyConfig> = {
   conservative: { etfFlow: 35, sentiment: 15, macro: 25, momentum: 10, treasury: 15, minConfidence: 80, maxPositionSize: 3, autoExecute: false, slippage: 0.3, maxDailyTrades: 5 },
   balanced: { etfFlow: 30, sentiment: 25, macro: 20, momentum: 15, treasury: 10, minConfidence: 70, maxPositionSize: 5, autoExecute: true, slippage: 0.5, maxDailyTrades: 10 },
   aggressive: { etfFlow: 20, sentiment: 30, macro: 10, momentum: 30, treasury: 10, minConfidence: 55, maxPositionSize: 10, autoExecute: true, slippage: 1.0, maxDailyTrades: 25 },
 };
+
+const PRESET_META: Record<StrategyPresetName, { label: string; badge: string; desc: string; tone: string; bullets: string[] }> = {
+  conservative: {
+    label: "Conservative",
+    badge: "Low Risk",
+    desc: "High-confidence signals, smaller position size, manual execution bias.",
+    tone: "border-info/30 bg-info/5 text-info",
+    bullets: ["80% min confidence", "3% max position", "5 trades per day"],
+  },
+  balanced: {
+    label: "Balanced",
+    badge: "Default",
+    desc: "Middle-ground signal scoring for steady validation and controlled execution.",
+    tone: "border-accent/30 bg-accent/5 text-accent",
+    bullets: ["70% min confidence", "5% max position", "10 trades per day"],
+  },
+  aggressive: {
+    label: "Aggressive",
+    badge: "High Activity",
+    desc: "More momentum weight, lower confidence threshold, higher paper-trade cadence.",
+    tone: "border-hold/30 bg-hold/5 text-hold",
+    bullets: ["55% min confidence", "10% max position", "25 trades per day"],
+  },
+};
+
+const PRESET_ORDER: StrategyPresetName[] = ["conservative", "balanced", "aggressive"];
 
 function loadConfig(): StrategyConfig {
   if (typeof window === "undefined") return DEFAULT_CONFIG;
@@ -56,6 +83,15 @@ function saveConfig(config: StrategyConfig) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
   } catch {}
+}
+
+function getPresetName(config: StrategyConfig): StrategyPresetName | null {
+  for (const name of PRESET_ORDER) {
+    const preset = PRESETS[name];
+    const matches = (Object.keys(preset) as (keyof StrategyConfig)[]).every((key) => preset[key] === config[key]);
+    if (matches) return name;
+  }
+  return null;
 }
 
 const dimSliders = [
@@ -77,11 +113,14 @@ function DimIcon({ icon }: { icon: (typeof dimSliders)[number]["icon"] }) {
 export default function StrategyConfig() {
   const [config, setConfig] = useState<StrategyConfig>(DEFAULT_CONFIG);
   const [saved, setSaved] = useState(false);
-  const [activePreset, setActivePreset] = useState<string | null>(null);
+  const [activePreset, setActivePreset] = useState<StrategyPresetName | null>(null);
+  const [showPresetModal, setShowPresetModal] = useState(true);
   const { data: signalsData } = useSignals();
 
   useEffect(() => {
-    setConfig(loadConfig());
+    const loaded = loadConfig();
+    setConfig(loaded);
+    setActivePreset(getPresetName(loaded));
   }, []);
 
   const update = <K extends keyof StrategyConfig>(key: K, value: StrategyConfig[K]) => {
@@ -93,12 +132,13 @@ export default function StrategyConfig() {
     setTimeout(() => setSaved(false), 1500);
   };
 
-  const applyPreset = (name: string) => {
+  const applyPreset = (name: StrategyPresetName, closeModal = false) => {
     const preset = PRESETS[name];
     if (!preset) return;
     setConfig(preset);
     saveConfig(preset);
     setActivePreset(name);
+    if (closeModal) setShowPresetModal(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
   };
@@ -129,6 +169,67 @@ export default function StrategyConfig() {
 
   return (
     <div className="space-y-5">
+      {showPresetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-4xl overflow-hidden rounded-xl border border-border-strong bg-card shadow-2xl">
+            <div className="border-b border-border-default bg-inset/50 px-5 py-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">Strategy setup</p>
+                  <h2 className="mt-1 text-2xl font-bold text-txt-primary">Choose your strategy preset</h2>
+                  <p className="mt-1 max-w-2xl text-sm text-txt-secondary">
+                    Pick the risk profile before tuning weights. You can still fine-tune every slider after selection.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowPresetModal(false)}
+                  className="rounded-lg border border-border-default px-3 py-1.5 text-[10px] font-semibold text-txt-secondary transition-colors hover:bg-elevated hover:text-txt-primary"
+                >
+                  Continue current
+                </button>
+              </div>
+            </div>
+
+            <div className="grid gap-3 p-4 md:grid-cols-3">
+              {PRESET_ORDER.map((name) => {
+                const meta = PRESET_META[name];
+                const selected = activePreset === name;
+                return (
+                  <button
+                    key={name}
+                    onClick={() => applyPreset(name, true)}
+                    className={`group rounded-xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:border-border-strong hover:bg-elevated/70 ${
+                      selected ? "border-accent bg-accent/10" : "border-border-default bg-inset/40"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-lg font-bold text-txt-primary">{meta.label}</div>
+                        <div className="mt-1 text-xs leading-5 text-txt-secondary">{meta.desc}</div>
+                      </div>
+                      <span className={`shrink-0 rounded-md border px-2 py-1 text-[9px] font-bold uppercase ${meta.tone}`}>
+                        {meta.badge}
+                      </span>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {meta.bullets.map((bullet) => (
+                        <div key={bullet} className="flex items-center gap-2 text-[11px] text-txt-tertiary">
+                          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                          {bullet}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 rounded-lg border border-border-default bg-card/70 px-3 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-txt-primary group-hover:border-accent/40">
+                      Select {meta.label}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -137,6 +238,12 @@ export default function StrategyConfig() {
         </div>
         <div className="flex items-center gap-2">
           {saved && <Badge variant="live" size="sm">SAVED</Badge>}
+          <button
+            onClick={() => setShowPresetModal(true)}
+            className="text-[10px] font-semibold text-accent border border-accent/30 bg-accent/10 px-2 py-1 rounded hover:bg-accent/15 transition-colors"
+          >
+            Choose Strategy
+          </button>
           <button
             onClick={resetDefaults}
             className="text-[10px] text-txt-dim hover:text-txt-secondary border border-border-default px-2 py-1 rounded hover:bg-elevated transition-colors"
@@ -147,25 +254,36 @@ export default function StrategyConfig() {
       </div>
 
       {/* Presets */}
-      <div className="flex items-center gap-3">
-        <span className="text-[10px] text-txt-dim uppercase tracking-wider">Presets:</span>
-        <div className="flex items-center gap-1.5">
-          {Object.entries(PRESETS).map(([name]) => (
+      <Card padding="lg" className="border-accent/20 bg-accent/5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">Visible Presets</p>
+            <p className="mt-1 text-sm font-semibold text-txt-primary">Choose the strategy profile before adjusting the sliders.</p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[520px]">
+          {PRESET_ORDER.map((name) => {
+            const meta = PRESET_META[name];
+            return (
             <button
               key={name}
               onClick={() => applyPreset(name)}
-                className={`px-3 py-1.5 text-xs rounded-lg border transition-all cursor-pointer capitalize ${
+                className={`rounded-lg border px-3 py-2 text-left transition-all cursor-pointer ${
                   activePreset === name
-                  ? "border-border-strong bg-elevated text-txt-primary font-semibold"
-                  : "border-border-default bg-card text-txt-secondary hover:border-border-muted"
+                  ? "border-accent bg-accent/10 text-txt-primary"
+                  : "border-border-default bg-card text-txt-secondary hover:border-border-muted hover:bg-elevated/40"
                 }`}
             >
-              {name}
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold">{meta.label}</span>
+                <span className={`rounded border px-1.5 py-0.5 text-[8px] font-bold uppercase ${meta.tone}`}>{meta.badge}</span>
+              </div>
+              <div className="mt-1 text-[10px] leading-4 text-txt-tertiary">{meta.desc}</div>
             </button>
-          ))}
+            );
+          })}
+          </div>
         </div>
-        <span className="text-[9px] text-txt-faint ml-auto">Conservative: high confidence, low risk. Aggressive: more trades, higher risk.</span>
-      </div>
+      </Card>
 
       {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
