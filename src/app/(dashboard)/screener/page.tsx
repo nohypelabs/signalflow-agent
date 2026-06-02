@@ -2,10 +2,10 @@
 
 import { useMemo } from "react";
 import { useScreener } from "@/lib/hooks/useScreener";
-import MarketOverviewPage from "@/components/MarketOverviewPage";
+import PageHeader from "@/components/ui/PageHeader";
 import ScreenerTable from "@/components/ScreenerTable";
 import CorrelationMatrix from "@/components/CorrelationMatrix";
-import SignalHistoryPage from "@/components/SignalHistoryPage";
+import SignalHistoryPanel from "@/components/SignalHistoryPanel";
 import { TrendingUp, TrendingDown, BarChart3, Layers } from "lucide-react";
 
 function fmtVol(v: number): string {
@@ -102,22 +102,19 @@ function ScreenerStats() {
   );
 }
 
-function ScreenerTab() {
-  return (
-    <>
-      <ScreenerStats />
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4">
-        <CorrelationMatrix />
-        <ScreenerTable />
-      </div>
-    </>
-  );
-}
-
 export default function ScreenerPage() {
   return (
-    <MarketOverviewPage>
-      {(tab) => (tab === "screener" ? <ScreenerTab /> : <SignalHistoryPage />)}
-    </MarketOverviewPage>
+    <div className="space-y-4">
+      <PageHeader
+        title="Market Overview"
+        badge={{ variant: "accent", label: "LIVE" }}
+      />
+      <ScreenerStats />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_300px]">
+        <CorrelationMatrix />
+        <ScreenerTable />
+        <SignalHistoryPanel />
+      </div>
+    </div>
   );
 }
