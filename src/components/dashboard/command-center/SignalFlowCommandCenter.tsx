@@ -476,8 +476,8 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
         <div className="rounded-xl border border-border-default bg-inset/70 px-2 py-2 text-center">
           <div className="mb-1 text-[11px] font-semibold tracking-wide text-txt-tertiary uppercase">SignalFlow Final Score</div>
           <SpeedometerGauge value={decision.confidence} size="lg" showLabel={false} sweeping={d.analyzing} />
-          <div className="relative -mt-2 flex min-h-[52px] items-center justify-center px-14">
-            <div className="absolute left-2 top-1/2 -translate-y-1/2">
+          <div className="relative -mt-2 flex min-h-[52px] items-center justify-center gap-6">
+            <div className="flex flex-col items-center gap-1">
               <IconControlButton
                 label={d.analyzing ? "Generating Signal" : "Generate Signal"}
                 detail={generateTooltip}
@@ -487,6 +487,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
               >
                 <PedalIcon className="h-5 w-5" />
               </IconControlButton>
+              <span className="text-[9px] font-semibold uppercase tracking-wide text-txt-muted">Generate Signal</span>
             </div>
             <div
               className="min-w-[104px] text-5xl font-bold tabular-nums tracking-tight"
@@ -500,7 +501,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
             >
               {decision.confidence}%
             </div>
-            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+            <div className="flex flex-col items-center gap-1">
               <IconControlButton
                 label={decision.action === "NO TRADE" ? "Wait For Setup" : "Execute Setup"}
                 detail={decision.action === "NO TRADE" ? "No executable setup yet." : `Execute this setup at ${decision.positionSize}.`}
@@ -510,6 +511,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
               >
                 <Play size={19} fill="currentColor" />
               </IconControlButton>
+              <span className="text-[9px] font-semibold uppercase tracking-wide text-txt-muted">Execute Trade</span>
             </div>
           </div>
           <div className="text-sm font-medium text-txt-tertiary">{decision.label}</div>
