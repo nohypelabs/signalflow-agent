@@ -447,10 +447,10 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
     <Panel
       title="LIVE DECISION SCORE"
       badge={<Badge variant={decision.action === "LONG" ? "buy" : decision.action === "SHORT" ? "sell" : "hold"} size="sm">LIVE LOGIC</Badge>}
-      className="h-[598px]"
-      bodyClassName="flex-1 overflow-hidden"
+      className="h-[598px] relative z-10"
+      bodyClassName="flex-1 overflow-visible"
     >
-      <div className="flex h-full min-w-0 flex-col gap-2.5 overflow-hidden p-3">
+      <div className="flex h-full min-w-0 flex-col gap-2.5 overflow-visible p-3">
         <div className="rounded-xl border border-border-default bg-inset/70 px-3 py-2">
           <div className="flex items-center gap-3">
             <div className="grid min-w-0 flex-1 grid-cols-3 gap-1.5">
