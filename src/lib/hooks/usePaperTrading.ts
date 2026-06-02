@@ -100,10 +100,18 @@ function normalizeCapital(value: number): number {
   return Math.min(PAPER_CAPITAL_MAX, Math.max(PAPER_CAPITAL_MIN, Math.round(value)));
 }
 
-function loadFromStorage(): { trades: PaperTrade[]; balance: number; capitalConfigured: boolean } {
+function getScopedStorageKey(walletAddress: string): string {
+  return `${STORAGE_KEY}:${walletAddress.toLowerCase()}`;
+}
+
+function emptyPaperState(): { trades: PaperTrade[]; balance: number; capitalConfigured: boolean } {
+  return { trades: [], balance: INITIAL_BALANCE, capitalConfigured: false };
+}
+
+function loadFromStorage(storageKey: string): { trades: PaperTrade[]; balance: number; capitalConfigured: boolean } {
   if (typeof window === "undefined") return { trades: [], balance: INITIAL_BALANCE, capitalConfigured: false };
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (raw) {
       const data = JSON.parse(raw);
       const trades = Array.isArray(data.trades) ? data.trades.filter(isPaperTrade) : [];
@@ -113,13 +121,13 @@ function loadFromStorage(): { trades: PaperTrade[]; balance: number; capitalConf
       return { trades, balance, capitalConfigured: isConfigured };
     }
   } catch {}
-  return { trades: [], balance: INITIAL_BALANCE, capitalConfigured: false };
+  return emptyPaperState();
 }
 
-function saveToStorage(trades: PaperTrade[], balance: number, capitalConfigured: boolean) {
+function saveToStorage(storageKey: string, trades: PaperTrade[], balance: number, capitalConfigured: boolean) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ trades, balance, capitalConfigured }));
+    localStorage.setItem(storageKey, JSON.stringify({ trades, balance, capitalConfigured }));
   } catch {}
 }
 
@@ -225,7 +233,8 @@ function validateTrade(params: {
 
 // ── Hook ───────────────────────────────────────────────
 
-export function usePaperTrading() {
+export function usePaperTrading(walletAddress?: string) {
+  const storageKey = walletAddress ? getScopedStorageKey(walletAddress) : null;
   const [trades, setTrades] = useState<PaperTrade[]>([]);
   const [initialBalance, setInitialBalance] = useState(INITIAL_BALANCE);
   const [capitalConfigured, setCapitalConfigured] = useState(false);
@@ -233,16 +242,27 @@ export function usePaperTrading() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const { trades: saved, balance, capitalConfigured: configured } = loadFromStorage();
+    setLoaded(false);
+    setError(null);
+    if (!storageKey) {
+      const empty = emptyPaperState();
+      setTrades(empty.trades);
+      setInitialBalance(empty.balance);
+      setCapitalConfigured(empty.capitalConfigured);
+      setLoaded(true);
+      return;
+    }
+
+    const { trades: saved, balance, capitalConfigured: configured } = loadFromStorage(storageKey);
     setTrades(saved);
     setInitialBalance(balance);
     setCapitalConfigured(configured);
     setLoaded(true);
-  }, []);
+  }, [storageKey]);
 
   useEffect(() => {
-    if (loaded) saveToStorage(trades, initialBalance, capitalConfigured);
-  }, [trades, initialBalance, capitalConfigured, loaded]);
+    if (loaded && storageKey) saveToStorage(storageKey, trades, initialBalance, capitalConfigured);
+  }, [trades, initialBalance, capitalConfigured, loaded, storageKey]);
 
   // ── Open a futures position ──────────────────────────
   const openTrade = useCallback((params: {

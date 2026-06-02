@@ -6,7 +6,7 @@ import TradeHistory from "@/components/TradeHistory";
 
 export default function TradeHistoryPage() {
   const d = useDashboard();
-  const paper = usePaperTrading();
+  const paper = usePaperTrading(d.isConnected ? d.address : undefined);
   return (
     <TradeHistory
       orders={d.orders}

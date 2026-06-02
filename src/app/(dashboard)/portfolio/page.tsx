@@ -6,8 +6,8 @@ import { useDashboard } from "@/lib/dashboard-context";
 import PortfolioPage from "@/components/PortfolioPage";
 
 export default function PortfolioRoute() {
-  const paper = usePaperTrading();
   const d = useDashboard();
+  const paper = usePaperTrading(d.isConnected ? d.address : undefined);
   const checkPaperTpSl = paper.checkTpSl;
 
   const currentPrices = useMemo(() => {

@@ -166,7 +166,7 @@ export default function TradingPageContent() {
   const [bottomTab, setBottomTab] = useState<BottomTab>("positions");
   const [bookTab, setBookTab] = useState<BookTab>("book");
   const [isMobile, setIsMobile] = useState(false);
-  const paper = usePaperTrading();
+  const paper = usePaperTrading(d.isConnected ? d.address : undefined);
   const checkPaperTpSl = paper.checkTpSl;
 
   /* ── Panel widths ── */
