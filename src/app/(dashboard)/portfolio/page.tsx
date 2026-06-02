@@ -34,6 +34,7 @@ export default function PortfolioRoute() {
       trades={paper.trades}
       stats={paper.stats}
       balance={paper.balance}
+      isWalletConnected={d.isConnected}
       currentPrices={currentPrices}
       onClose={paper.closeTrade}
       onReset={paper.reset}

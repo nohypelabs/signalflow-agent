@@ -13,6 +13,7 @@ interface Props {
   trades: PaperTrade[];
   stats: PaperStats;
   balance: PaperBalance;
+  isWalletConnected: boolean;
   currentPrices?: Map<string, number>;
   onClose?: (tradeId: string, currentPrice: number) => void;
   onReset: () => void;
@@ -40,7 +41,7 @@ function fmtPrice(p: number): string {
   return p.toFixed(5);
 }
 
-export default function PortfolioPage({ trades, stats, balance, currentPrices, onClose, onReset, signals }: Props) {
+export default function PortfolioPage({ trades, stats, balance, isWalletConnected, currentPrices, onClose, onReset, signals }: Props) {
   const [activeTab, setActiveTab] = useState<"positions" | "history" | "types">("positions");
   const [typeFilter, setTypeFilter] = useState<TradingType | "ALL">("ALL");
   const [sortField, setSortField] = useState<"date" | "pnl" | "pair" | "hold">("date");
@@ -221,6 +222,32 @@ export default function PortfolioPage({ trades, stats, balance, currentPrices, o
     });
     return points;
   }, [closedTrades, balance.initialBalance]);
+
+  if (!isWalletConnected) {
+    return (
+      <div className="space-y-5">
+        <section className="rounded-xl border border-border-default bg-inset/70 p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-txt-secondary">Paper Portfolio</p>
+                <Badge variant="warning" size="sm">LOCKED</Badge>
+              </div>
+              <h1 className="mt-3 text-2xl font-bold leading-tight text-txt-primary">Connect wallet to view paper portfolio</h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-txt-secondary">
+                Paper balance, open positions, and performance history stay hidden until a wallet is connected.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border-default bg-panel/60 px-4 py-3 text-right">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-txt-faint">Portfolio Balance</div>
+              <div className="mt-1 font-mono text-2xl font-bold text-txt-muted">--</div>
+              <div className="mt-1 text-[10px] text-txt-tertiary">Wallet required</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
