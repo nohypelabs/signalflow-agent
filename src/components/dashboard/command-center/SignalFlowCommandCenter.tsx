@@ -401,6 +401,14 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
     : decision.action === "SHORT"
       ? "text-sell"
       : "text-hold";
+  const riskRewardNumber = parseFloat(String(decision.riskReward).replace(":1", ""));
+  const rewardShare = Number.isFinite(riskRewardNumber)
+    ? clamp((riskRewardNumber / (riskRewardNumber + 1)) * 100, 42, 76)
+    : 58;
+  const riskShare = 100 - rewardShare;
+  const riskRewardDisplay = Number.isFinite(riskRewardNumber)
+    ? `${riskRewardNumber.toFixed(2)}R`
+    : decision.riskReward;
 
   const execute = () => {
     if (currentSignal && decision.action !== "NO TRADE") {
@@ -445,21 +453,6 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
       <div className="flex h-full min-w-0 flex-col gap-2.5 overflow-hidden p-3">
         <div className="rounded-xl border border-border-default bg-inset/70 px-3 py-2">
           <div className="flex items-center gap-3">
-            <div className="flex w-9 shrink-0 flex-col items-center gap-1.5 rounded-2xl border border-border-default bg-[#050505] p-1.5 shadow-inner">
-              {signalLights.map((item) => {
-                const isActive = decision.action === item.action;
-                return (
-                  <span
-                    key={item.action}
-                    aria-label={`${item.label} ${isActive ? "active" : "inactive"}`}
-                    className={cx(
-                      "h-4 w-4 rounded-full border transition-all",
-                      isActive ? `${item.lamp} ${item.glow}` : "border-border-default bg-[#1a1a1a] opacity-45"
-                    )}
-                  />
-                );
-              })}
-            </div>
             <div className="grid min-w-0 flex-1 grid-cols-3 gap-1.5">
               {signalLights.map((item) => {
                 const isActive = decision.action === item.action;
@@ -528,60 +521,77 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
               {decision.action === "NO TRADE" ? "Watch Triggers" : "Take Profit (TP)"}
             </div>
             {decision.action === "NO TRADE" ? (
-              <div className="space-y-1">
-                {decision.targets.map(([label, price, risk], index) => {
-                  const isPrimary = index === 0;
-                  const isSpot = label === "MID";
-                  const labelText = label === "UP" ? "Upside" : label === "DN" ? "Downside" : "Spot";
+              <div>
+                {(() => {
+                  const [primary, spot, downside] = decision.targets;
                   return (
-                    <div
-                      key={label}
-                      className={cx(
-                        "grid grid-cols-[58px_1fr_44px] items-center gap-1.5 rounded-lg border px-2 py-1.5",
-                        isPrimary
-                          ? "border-hold-dim bg-hold-muted shadow-[0_0_18px_rgba(255,136,0,0.08)]"
-                          : "border-border-default bg-card/45"
-                      )}
-                    >
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        <span
-                          className={cx(
-                            "h-1.5 w-1.5 shrink-0 rounded-full",
-                            isSpot ? "bg-txt-muted" : label === "UP" ? "bg-buy" : "bg-sell"
-                          )}
-                        />
-                        <div className="min-w-0">
-                          <div className={cx("font-mono text-[10px] font-bold leading-none", isSpot ? "text-txt-muted" : decisionTone)}>
-                            {label}
-                          </div>
-                          <div className="mt-0.5 truncate text-[8px] font-semibold uppercase tracking-wide text-txt-tertiary">
-                            {labelText}
-                          </div>
+                    <div className="rounded-lg border border-hold-dim bg-hold-muted px-2 py-1.5 shadow-[0_0_18px_rgba(255,136,0,0.08)]">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-buy" />
+                          <span className="text-[9px] font-semibold uppercase tracking-wide text-txt-tertiary">Upside break</span>
                         </div>
+                        <span className="rounded border border-hold-dim bg-hold-muted px-1.5 py-[1px] text-[8px] font-bold uppercase tracking-wide text-hold">
+                          {primary?.[2] ?? "break"}
+                        </span>
                       </div>
-                      <span className={cx(
-                        "min-w-0 text-right font-mono text-sm font-bold tabular-nums",
-                        isSpot ? "text-txt-secondary" : decisionTone
-                      )}>
-                        {price}
-                      </span>
-                      <span className={cx(
-                        "justify-self-end rounded border px-1.5 py-[1px] text-[8px] font-bold uppercase tracking-wide",
-                        isPrimary ? "border-hold-dim bg-hold-muted text-hold" : "border-border-default bg-inset text-txt-muted"
-                      )}>
-                        {risk}
-                      </span>
+                      <div className="mt-1 flex items-baseline justify-between gap-2 font-mono">
+                        <span className={cx("text-[10px] font-bold", decisionTone)}>{primary?.[0] ?? "UP"}</span>
+                        <span className={cx("text-sm font-bold tabular-nums", decisionTone)}>{primary?.[1] ?? "--"}</span>
+                      </div>
+                      <div className="mt-1.5 grid grid-cols-2 gap-1 border-t border-hold-dim/70 pt-1">
+                        {[
+                          { item: spot, fallback: "MID", tone: "text-txt-secondary", dot: "bg-txt-muted" },
+                          { item: downside, fallback: "DN", tone: "text-sell", dot: "bg-sell" },
+                        ].map(({ item, fallback, tone, dot }) => (
+                          <div key={item?.[0] ?? fallback} className="min-w-0">
+                            <div className="flex items-center gap-1">
+                              <span className={cx("h-1 w-1 shrink-0 rounded-full", dot)} />
+                              <span className={cx("font-mono text-[8px] font-bold", tone)}>{item?.[0] ?? fallback}</span>
+                              <span className="truncate text-[7px] font-bold uppercase tracking-wide text-txt-faint">{item?.[2] ?? "--"}</span>
+                            </div>
+                            <div className={cx("truncate text-right font-mono text-[9px] font-semibold tabular-nums", tone)}>
+                              {item?.[1] ?? "--"}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   );
-                })}
+                })()}
               </div>
             ) : (
-              <div className="space-y-1">
+              <div>
                 {decision.targets.slice(0, 1).map(([label, price, risk]) => (
-                  <div key={label} className="grid grid-cols-[36px_1fr_54px] gap-1 font-mono text-xs">
-                    <span className={decisionTone}>{label}</span>
-                    <span className={cx("font-semibold", decisionTone)}>{price}</span>
-                    <span className={decisionTone}>{risk}</span>
+                  <div
+                    key={label}
+                    className={cx(
+                      "rounded-lg border px-2 py-1.5",
+                      decision.action === "LONG"
+                        ? "border-buy-dim bg-buy-muted shadow-[0_0_18px_rgba(0,229,168,0.08)]"
+                        : "border-sell-dim bg-sell-muted shadow-[0_0_18px_rgba(239,68,68,0.08)]"
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className={cx("h-1.5 w-1.5 rounded-full", decision.action === "LONG" ? "bg-buy" : "bg-sell")} />
+                        <span className="text-[8px] font-bold uppercase tracking-wider text-txt-tertiary">TP Target</span>
+                      </div>
+                      <span className={cx(
+                        "rounded border px-1.5 py-[1px] text-[8px] font-bold uppercase tracking-wide",
+                        decision.action === "LONG" ? "border-buy-dim bg-buy-muted text-buy" : "border-sell-dim bg-sell-muted text-sell"
+                      )}>
+                        {risk.replace(/[()]/g, "")}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-end justify-between gap-2 font-mono">
+                      <span className={cx("text-[10px] font-bold leading-none", decisionTone)}>{label}</span>
+                      <span className={cx("text-lg font-bold leading-none tabular-nums", decisionTone)}>{price}</span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-2 border-t border-border-default/70 pt-1">
+                      <span className="text-[8px] font-semibold uppercase tracking-wide text-txt-faint">Live target</span>
+                      <span className={cx("text-[9px] font-bold", decisionTone)}>Profit gate</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -600,17 +610,42 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
                 <div className={cx("mt-1 text-xs font-semibold", decisionTone)}>Flat until setup confirms</div>
               </div>
             ) : (
-              <div className="grid grid-cols-[28px_1fr_58px] gap-1 font-mono text-xs">
-                <span className={decisionTone}>{decision.stop[0]}</span>
-                <span className={cx("font-semibold", decisionTone)}>{decision.stop[1]}</span>
-                <span className={decisionTone}>{decision.stop[2]}</span>
+              <div className="rounded-lg border border-sell-dim bg-sell-muted px-2 py-1.5 shadow-[0_0_18px_rgba(239,68,68,0.08)]">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-sell" />
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-txt-tertiary">Stop risk</span>
+                  </div>
+                  <span className="rounded border border-sell-dim bg-sell-muted px-1.5 py-[1px] text-[8px] font-bold uppercase tracking-wide text-sell">
+                    {decision.stop[2]}
+                  </span>
+                </div>
+                <div className="mt-1 flex items-end justify-between gap-2 font-mono">
+                  <span className="text-[10px] font-bold leading-none text-sell">{decision.stop[0]}</span>
+                  <span className="text-lg font-bold leading-none tabular-nums text-sell">{decision.stop[1]}</span>
+                </div>
               </div>
             )}
             {decision.action !== "NO TRADE" && (
               <>
                 <div className="my-1.5 h-px bg-border-default" />
-                <div className="text-[11px] font-semibold text-txt-tertiary uppercase tracking-wide">Risk / Reward</div>
-                <div className="mt-0.5 font-mono text-base font-bold text-txt-primary">{decision.riskReward}</div>
+                <div className="rounded-lg border border-border-default bg-inset/70 px-2 py-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <div className="text-[8px] font-bold uppercase tracking-wider text-txt-tertiary">Payoff ratio</div>
+                      <div className="text-[8px] font-semibold text-txt-faint">Reward is {decision.riskReward} risk</div>
+                    </div>
+                    <div className="font-mono text-base font-bold leading-none text-txt-primary">{riskRewardDisplay}</div>
+                  </div>
+                  <div className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-border-default">
+                    <div className="bg-sell" style={{ width: `${riskShare}%` }} />
+                    <div className={decision.action === "LONG" ? "bg-buy" : "bg-sell/70"} style={{ width: `${rewardShare}%` }} />
+                  </div>
+                  <div className="mt-1 flex justify-between text-[7px] font-bold uppercase tracking-wide text-txt-faint">
+                    <span>Risk</span>
+                    <span>Reward</span>
+                  </div>
+                </div>
               </>
             )}
           </Card>
