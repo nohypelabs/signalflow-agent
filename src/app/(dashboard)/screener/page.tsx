@@ -2,7 +2,7 @@
 
 import PageHeader from "@/components/ui/PageHeader";
 import ScreenerTable from "@/components/ScreenerTable";
-import CorrelationMatrix from "@/components/CorrelationMatrix";
+import PriceHeatmap from "@/components/PriceHeatmap";
 
 export default function ScreenerPage() {
   return (
@@ -11,8 +11,8 @@ export default function ScreenerPage() {
         title="Market Screener"
         badge={{ variant: "accent", label: "LIVE" }}
       />
+      <PriceHeatmap />
       <ScreenerTable />
-      <CorrelationMatrix />
     </div>
   );
 }
