@@ -38,12 +38,12 @@ function ScreenerStats() {
   }
 
   return (
-    <section className="rounded-xl border border-border-default bg-inset/70 p-4">
-      <div className="grid gap-4 lg:grid-cols-[1.1fr_1.4fr] lg:items-end">
+    <section className="rounded-xl border border-border-default bg-inset/70 p-5">
+      <div className="grid gap-5 lg:grid-cols-[1.1fr_1.4fr] lg:items-end">
         {/* Big stat */}
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-txt-secondary">24H Volume</p>
-          <div className="mt-1 flex items-end gap-3">
+          <div className="mt-1.5 flex items-end gap-3">
             <div className="font-mono text-5xl font-bold leading-none tracking-tight text-accent">
               {fmtVol(stats.totalVol)}
             </div>
@@ -57,7 +57,7 @@ function ScreenerStats() {
         </div>
 
         {/* Stat grid */}
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
             {
               label: "Top Gainer",
@@ -93,8 +93,8 @@ function ScreenerStats() {
                 {item.icon}
                 <div className="text-[9px] font-semibold uppercase tracking-wider text-txt-faint">{item.label}</div>
               </div>
-              <div className={`mt-1 font-mono text-sm font-bold ${item.tone}`}>{item.value}</div>
-              <div className="text-[9px] text-txt-tertiary mt-0.5">{item.sub}</div>
+              <div className={`mt-1.5 font-mono text-base font-bold ${item.tone}`}>{item.value}</div>
+              <div className="text-[10px] text-txt-tertiary mt-0.5">{item.sub}</div>
             </div>
           ))}
         </div>
