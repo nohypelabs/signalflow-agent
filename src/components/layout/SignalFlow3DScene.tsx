@@ -28,13 +28,13 @@ function makeLine(points: THREE.Vector3[], color: string, opacity = 0.45) {
 function TerminalBootWall() {
   const group = useRef<THREE.Group>(null);
   const bars = useMemo(() => {
-    return Array.from({ length: 112 }, (_, index) => {
-      const column = index % 16;
-      const row = Math.floor(index / 16);
+    return Array.from({ length: 56 }, (_, index) => {
+      const column = index % 14;
+      const row = Math.floor(index / 14);
       const color = TERMINAL_ROWS[(row + column) % TERMINAL_ROWS.length];
       return {
-        x: -4.9 + column * 0.65,
-        y: 2.55 - row * 0.34,
+        x: -4.45 + column * 0.68,
+        y: 2.15 - row * 0.42,
         width: 0.16 + ((index * 17) % 10) * 0.035,
         color,
         delay: index * 0.045,
@@ -76,7 +76,7 @@ function TerminalGrid() {
   const group = useRef<THREE.Group>(null);
   const lines = useMemo(() => {
     const output: THREE.Line[] = [];
-    for (let i = -10; i <= 10; i += 1) {
+    for (let i = -8; i <= 8; i += 2) {
       output.push(makeLine([
         new THREE.Vector3(i * 0.75, -2.7, -4.5),
         new THREE.Vector3(i * 0.75, -2.7, 4.5),
@@ -104,10 +104,10 @@ function TerminalGrid() {
 function SignalTunnel() {
   const group = useRef<THREE.Group>(null);
   const streams = useMemo(() => {
-    return Array.from({ length: 24 }, (_, index) => {
+    return Array.from({ length: 14 }, (_, index) => {
       const side = index % 2 === 0 ? -1 : 1;
       const lane = Math.floor(index / 2);
-      const y = -1.45 + (lane % 12) * 0.26;
+      const y = -1.2 + (lane % 7) * 0.36;
       const color = TERMINAL_ROWS[index % TERMINAL_ROWS.length];
       const z = -0.45 + ((index * 7) % 12) * 0.055;
       const curve = new THREE.CatmullRomCurve3([
@@ -137,7 +137,7 @@ function SignalTunnel() {
     <group ref={group}>
       {streams.map((stream, index) => (
         <group key={index}>
-          <primitive object={makeLine(stream.curve.getPoints(72), stream.color, 0.2)} />
+          <primitive object={makeLine(stream.curve.getPoints(36), stream.color, 0.2)} />
           <mesh>
             <boxGeometry args={[0.12, 0.12, 0.025]} />
             <meshBasicMaterial color={stream.color} transparent opacity={0.5} />
@@ -151,7 +151,7 @@ function SignalTunnel() {
 function DecisionCore() {
   const core = useRef<THREE.Group>(null);
   const rings = useMemo(() => {
-    return Array.from({ length: 4 }, (_, index) => ({
+    return Array.from({ length: 3 }, (_, index) => ({
       scale: 0.92 + index * 0.28,
       color: index % 2 === 0 ? "#ff8800" : "#00d4ff",
       opacity: 0.2 - index * 0.032,
@@ -185,7 +185,7 @@ function DecisionCore() {
       </mesh>
       {rings.map((ring, index) => (
         <mesh key={index} rotation={[0, 0, index * Math.PI / 6]}>
-          <torusGeometry args={[ring.scale, 0.008, 8, 72]} />
+          <torusGeometry args={[ring.scale, 0.008, 8, 48]} />
           <meshBasicMaterial color={ring.color} transparent opacity={ring.opacity} />
         </mesh>
       ))}
@@ -204,7 +204,7 @@ function DecisionCore() {
 function DepthParticles() {
   const group = useRef<THREE.Group>(null);
   const particles = useMemo(() => {
-    return Array.from({ length: 64 }, (_, index) => ({
+    return Array.from({ length: 28 }, (_, index) => ({
       x: -5.8 + ((index * 37) % 116) / 10,
       y: -2.55 + ((index * 19) % 52) / 10,
       z: -2.2 + ((index * 29) % 42) / 10,
@@ -255,8 +255,8 @@ export default function SignalFlow3DScene() {
     <div className="absolute inset-0 z-0">
       <Canvas
         camera={{ position: [0, 0.08, 7.1], fov: 41 }}
-        dpr={[1, 1.25]}
-        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+        dpr={1}
+        gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }}
         style={{ background: "#030712" }}
       >
         <Scene />
