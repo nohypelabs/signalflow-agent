@@ -207,7 +207,7 @@ function MarketCanvas({ pair }: { pair: string }) {
   const currentPrice = ticker ? parseFloat(ticker.lastPx) : null;
 
   return (
-    <Card variant="default" padding="none" className="rounded-xl overflow-hidden h-[544px] flex flex-col">
+    <Card variant="default" padding="none" className="rounded-xl overflow-hidden h-[598px] flex flex-col">
       <TradingChart
         klines={d.klines}
         symbol={pair}
@@ -447,7 +447,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
     <Panel
       title="LIVE DECISION SCORE"
       badge={<Badge variant={decision.action === "LONG" ? "buy" : decision.action === "SHORT" ? "sell" : "hold"} size="sm">LIVE LOGIC</Badge>}
-      className="h-[544px]"
+      className="h-[598px]"
       bodyClassName="flex-1 overflow-hidden"
     >
       <div className="flex h-full min-w-0 flex-col gap-2.5 overflow-hidden p-3">
@@ -835,7 +835,7 @@ function CatalystMonitor({ news, fetchError }: { news: NewsResponse | null; fetc
     <Panel
       title="CATALYST MONITOR"
       badge={<Badge variant={apiError || fetchError ? "hold" : "buy"} size="sm">{events.length} LIVE</Badge>}
-      className="h-[544px]"
+      className="h-[598px]"
     >
       <div className="divide-y divide-border-default">
         {events.map((event) => (
