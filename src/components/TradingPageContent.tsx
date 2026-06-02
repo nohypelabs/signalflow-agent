@@ -247,12 +247,24 @@ export default function TradingPageContent() {
 
   const handleExecute = (order: TradeOrderInput) => {
     const ep = currentPrice || 0; const tp = parseFloat(order.takeProfit) || 0; const sl = parseFloat(order.stopLoss) || 0; setTradeError(null);
+    if (!d.isConnected) {
+      const msg = "Connect wallet before opening paper or live positions.";
+      setTradeError(msg);
+      setNotice({ id: Date.now(), kind: "error", title: "Wallet required", detail: msg });
+      return;
+    }
     if (!ep) { setTradeError("Market price is not available."); return; }
     setPendingAction({ kind: "open", mode: tradeMode, pair, order, entryPrice: ep, takeProfit: tp, stopLoss: sl, liquidationPrice: calcLiq(ep, order.side, order.leverage) });
   };
 
   const executeConfirmedOpen = (a: Extract<PendingTradeAction, { kind: "open" }>) => {
     const { order, entryPrice, takeProfit: tp, stopLoss: sl } = a;
+    if (!d.isConnected) {
+      const msg = "Connect wallet before opening paper or live positions.";
+      setTradeError(msg);
+      setNotice({ id: Date.now(), kind: "error", title: "Wallet required", detail: msg });
+      return;
+    }
     if (a.mode === "paper") {
       const t = paper.openTrade({ pair: a.pair, side: order.side, leverage: order.leverage, margin: order.margin, entryPrice, takeProfit: tp, stopLoss: sl, signalId: signalContext?.id, confidence: signalContext?.confidence, tradingType: tradingType ?? undefined });
       if (!t) { const msg = paper.error ?? "Paper trade rejected."; setTradeError(msg); setNotice({ id: Date.now(), kind: "error", title: "Trade rejected", detail: msg }); }

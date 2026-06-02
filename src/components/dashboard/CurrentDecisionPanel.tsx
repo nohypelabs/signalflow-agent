@@ -52,7 +52,7 @@ export default function CurrentDecisionPanel({
   const meta = actionMeta(signal);
   const livePrice = signal ? livePriceFor(signal, tickerMap) : null;
   const entry = livePrice ?? signal?.execution.entry ?? signal?.price ?? null;
-  const canExecute = !!signal && meta.executable && !!entry;
+  const canExecute = !!signal && meta.executable && !!entry && isConnected;
   const riskPct = signal && entry && signal.execution.stopLoss > 0
     ? (Math.abs(entry - signal.execution.stopLoss) / entry) * 100
     : null;
@@ -127,7 +127,7 @@ export default function CurrentDecisionPanel({
                   if (signal && canExecute) onExecuteSignal(signal);
                 }}
               >
-                {canExecute ? "Execute" : signal.action === "HOLD" ? "No Trade" : "Unavailable"}
+                {canExecute ? "Execute" : !isConnected ? "Connect Wallet" : signal.action === "HOLD" ? "No Trade" : "Unavailable"}
               </Button>
               <a
                 href={signal ? `/trading?pair=${encodeURIComponent(signal.pair)}&signal=${encodeURIComponent(signal.id)}` : "/trading"}
@@ -145,7 +145,7 @@ export default function CurrentDecisionPanel({
             </div>
 
             {!isConnected && (
-              <p className="text-[10px] text-txt-secondary">Wallet is not connected. Paper flow remains available from the trading desk.</p>
+              <p className="text-[10px] text-txt-secondary">Wallet is not connected. Connect wallet before opening paper or live positions.</p>
             )}
           </>
         ) : (

@@ -147,12 +147,13 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
   }, [sliderPct, paperBalance]);
 
   const handleSubmit = () => {
-    if (!marginNum || !currentPrice || validationError) return;
+    if (!isConnected || !marginNum || !currentPrice || validationError) return;
     onExecute({ side, leverage, margin: marginNum, quantity, takeProfit, stopLoss });
   };
 
-  const isSubmitDisabled = (mode === "live" && !isConnected) || !marginNum || !currentPrice || Boolean(validationError);
-  const displayedError = error ?? (marginNum > 0 ? validationError : null);
+  const walletRequiredError = !isConnected ? "Connect wallet before opening paper or live positions." : null;
+  const isSubmitDisabled = !isConnected || !marginNum || !currentPrice || Boolean(validationError);
+  const displayedError = error ?? walletRequiredError ?? (marginNum > 0 ? validationError : null);
 
   return (
     <div className="flex h-full flex-col bg-card">
@@ -359,7 +360,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
         {/* ═══ [8] Primary Action Button ═══ */}
         <button onClick={handleSubmit} disabled={isSubmitDisabled}
           className={`w-full py-2.5 text-sm font-bold rounded-lg transition-all cursor-pointer backdrop-blur-sm ${
-            (mode === "live" && !isConnected)
+            !isConnected
               ? "bg-inset text-txt-dim cursor-not-allowed"
               : !marginNum || !currentPrice || validationError
                 ? "bg-inset text-txt-dim cursor-not-allowed"
@@ -367,7 +368,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
                   ? "bg-hold/10 text-hold border border-hold/30 hover:bg-hold/20 hover:border-hold/50 active:scale-[0.98]"
                   : "bg-sell/10 text-sell border border-sell/30 hover:bg-sell/20 hover:border-sell/50 active:scale-[0.98]"
           }`}>
-          {(mode === "live" && !isConnected)
+          {!isConnected
             ? "Connect Wallet"
             : !marginNum || !currentPrice
               ? "Enter Margin"
