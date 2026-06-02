@@ -110,7 +110,7 @@ export default function ScreenerPage() {
         badge={{ variant: "accent", label: "LIVE" }}
       />
       <ScreenerStats />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr_1fr]">
         <CorrelationMatrix />
         <ScreenerTable />
         <SignalHistoryPanel />
