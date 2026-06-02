@@ -1,7 +1,12 @@
 "use client";
 
-import SignalHistoryPage from "@/components/SignalHistoryPage";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Page() {
-  return <SignalHistoryPage />;
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/screener");
+  }, [router]);
+  return null;
 }

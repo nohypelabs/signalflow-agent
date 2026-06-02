@@ -2,9 +2,10 @@
 
 import { useMemo } from "react";
 import { useScreener } from "@/lib/hooks/useScreener";
-import PageHeader from "@/components/ui/PageHeader";
+import MarketOverviewPage from "@/components/MarketOverviewPage";
 import ScreenerTable from "@/components/ScreenerTable";
 import CorrelationMatrix from "@/components/CorrelationMatrix";
+import SignalHistoryPage from "@/components/SignalHistoryPage";
 import { TrendingUp, TrendingDown, BarChart3, Layers } from "lucide-react";
 
 function fmtVol(v: number): string {
@@ -40,7 +41,6 @@ function ScreenerStats() {
   return (
     <section className="rounded-xl border border-border-default bg-inset/70 p-5">
       <div className="grid gap-5 lg:grid-cols-[1.1fr_1.4fr] lg:items-end">
-        {/* Big stat */}
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-txt-secondary">24H Volume</p>
           <div className="mt-1.5 flex items-end gap-3">
@@ -56,7 +56,6 @@ function ScreenerStats() {
           </div>
         </div>
 
-        {/* Stat grid */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
             {
@@ -103,18 +102,22 @@ function ScreenerStats() {
   );
 }
 
-export default function ScreenerPage() {
+function ScreenerTab() {
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="Market Screener"
-        badge={{ variant: "accent", label: "LIVE" }}
-      />
+    <>
       <ScreenerStats />
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4">
         <CorrelationMatrix />
         <ScreenerTable />
       </div>
-    </div>
+    </>
+  );
+}
+
+export default function ScreenerPage() {
+  return (
+    <MarketOverviewPage>
+      {(tab) => (tab === "screener" ? <ScreenerTab /> : <SignalHistoryPage />)}
+    </MarketOverviewPage>
   );
 }

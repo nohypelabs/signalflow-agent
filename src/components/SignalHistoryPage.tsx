@@ -301,7 +301,6 @@ export default function SignalHistoryPage() {
   if (loading) {
     return (
       <div className="space-y-5">
-        <PageHeader title="Signal History" />
         <Skeleton className="h-40 w-full" />
         <Skeleton className="h-60 w-full" />
       </div>
@@ -311,7 +310,6 @@ export default function SignalHistoryPage() {
   if (error) {
     return (
       <div className="space-y-5">
-        <PageHeader title="Signal History" />
         <Card padding="sm"><p className="text-xs text-sell">{error}</p></Card>
       </div>
     );

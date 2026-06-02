@@ -25,7 +25,7 @@ const groups = [
     items: [
       { href: "/dashboard", label: "Dashboard", Icon: HomeIcon },
       { href: "/signals", label: "Signals", Icon: SignalIcon },
-      { href: "/signal-history", label: "Signal History", Icon: HistoryIcon },
+      { href: "/screener", label: "Market Overview", Icon: HistoryIcon },
       { href: "/performance", label: "Performance", Icon: PerformanceIcon },
     ],
   },
