@@ -9,6 +9,7 @@ import { signalGenerationSchema } from "@/lib/validation/api-schemas";
 import { validateRequest } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // Allow up to 60s on Vercel Pro for AI calls
 import {
   getETFSummary,
   getMacroEvents,
@@ -23,27 +24,50 @@ import { pairToSodexSymbol } from "@/lib/pair-map";
 
 // ── Data fetching (reuse heuristic scoring as AI reference) ──
 
-async function gatherMarketData(coin: string) {
-  const [currencies, etfSummary, macroEvents, btcTreasuries, hotNews] = await Promise.all([
-    getCurrencies().catch(() => []),
-    getETFSummary("BTC", "US", 5).catch(() => []),
-    getMacroEvents().catch(() => []),
-    getBTCTreasuries().catch(() => []),
-    getNewsHot(1, 20).catch(() => ({ list: [], page: 1, page_size: 20, total: 0 })),
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms),
+    ),
   ]);
+}
+
+async function gatherMarketData(coin: string) {
+  const DATA_TIMEOUT = 15_000; // 15s for all external data
+
+  const [currencies, etfSummary, macroEvents, btcTreasuries, hotNews] = await withTimeout(
+    Promise.all([
+      getCurrencies().catch(() => []),
+      getETFSummary("BTC", "US", 5).catch(() => []),
+      getMacroEvents().catch(() => []),
+      getBTCTreasuries().catch(() => []),
+      getNewsHot(1, 20).catch(() => ({ list: [], page: 1, page_size: 20, total: 0 })),
+    ]),
+    DATA_TIMEOUT,
+    "SoSoValue data gathering",
+  );
 
   const currency = currencies.find((c) => c.symbol.toLowerCase() === coin.toLowerCase());
   const snap = currency
-    ? await getMarketSnapshot(currency.currency_id).catch(() => null)
+    ? await withTimeout(
+        getMarketSnapshot(currency.currency_id).catch(() => null),
+        DATA_TIMEOUT,
+        "Market snapshot",
+      )
     : null;
   const newsList = "list" in hotNews ? hotNews.list : [];
 
   // SoDEX ticker for live price + klines for TA engine
   const sodexSymbol = pairToSodexSymbol(`${coin}/USDC`) || `v${coin.toUpperCase()}_vUSDC`;
-  const [tickers, klines] = await Promise.all([
-    getTickers().catch(() => []),
-    getKlines(sodexSymbol, "1h", 100).catch(() => []),
-  ]);
+  const [tickers, klines] = await withTimeout(
+    Promise.all([
+      getTickers().catch(() => []),
+      getKlines(sodexSymbol, "1h", 100).catch(() => []),
+    ]),
+    DATA_TIMEOUT,
+    "SoDEX data gathering",
+  );
   const ticker = tickers.find((t) => t.symbol === sodexSymbol);
 
   return {

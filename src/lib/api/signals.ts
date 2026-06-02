@@ -24,10 +24,23 @@ export async function fetchAISignal(
     body.model = opts.model ?? "";
     body.apiKey = opts.apiKey;
   }
-  const res = await fetch("/api/signals/analyze", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  return parseApiResponse(res);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 90_000); // 90s (server needs 60s for AI + buffer)
+  try {
+    const res = await fetch("/api/signals/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    return parseApiResponse(res);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("abort") || msg.includes("AbortError")) {
+      throw new Error("Signal generation timed out. The server may be slow — try again.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
