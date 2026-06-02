@@ -2,7 +2,7 @@
 
 import PageHeader from "@/components/ui/PageHeader";
 import ScreenerTable from "@/components/ScreenerTable";
-import PriceHeatmap from "@/components/PriceHeatmap";
+import CorrelationMatrix from "@/components/CorrelationMatrix";
 
 export default function ScreenerPage() {
   return (
@@ -12,7 +12,7 @@ export default function ScreenerPage() {
         badge={{ variant: "accent", label: "LIVE" }}
       />
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4">
-        <PriceHeatmap />
+        <CorrelationMatrix />
         <ScreenerTable />
       </div>
     </div>
