@@ -71,9 +71,9 @@ export default function CorrelationMatrix() {
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="text-[9px] text-txt-faint uppercase tracking-wider p-1 text-left" />
+                  <th className="text-[11px] text-txt-secondary uppercase tracking-wider p-1 text-left" />
                   {data.symbols.map((s) => (
-                    <th key={s} className="text-[9px] text-txt-faint font-mono p-1 text-center min-w-[48px]">
+                    <th key={s} className="text-[11px] text-txt-secondary font-mono font-semibold p-1 text-center min-w-[48px]">
                       {cleanSymbol(s)}
                     </th>
                   ))}
@@ -82,7 +82,7 @@ export default function CorrelationMatrix() {
               <tbody>
                 {data.matrix.map((row, i) => (
                   <tr key={data.symbols[i]}>
-                    <td className="text-[9px] text-txt-faint font-mono p-1 text-left font-medium">
+                    <td className="text-[11px] text-txt-secondary font-mono p-1 text-left font-semibold">
                       {cleanSymbol(data.symbols[i])}
                     </td>
                     {row.map((v, j) => (
@@ -92,7 +92,7 @@ export default function CorrelationMatrix() {
                           style={{ backgroundColor: correlationColor(v) }}
                           title={`${cleanSymbol(data.symbols[i])} vs ${cleanSymbol(data.symbols[j])}: ${v.toFixed(2)}`}
                         >
-                          <span className={`text-[8px] font-mono font-bold ${Math.abs(v) >= 0.3 ? "text-white" : "text-txt-muted"}`}>
+                          <span className={`text-[10px] font-mono font-bold ${Math.abs(v) >= 0.3 ? "text-white" : "text-txt-secondary"}`}>
                             {v.toFixed(2)}
                           </span>
                         </div>
