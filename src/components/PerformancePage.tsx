@@ -9,6 +9,7 @@ import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
 import ProgressBar from "@/components/ui/ProgressBar";
 import BacktestPanel from "@/components/BacktestPanel";
+import { ChevronDown, Download } from "lucide-react";
 
 /* ── Helpers ── */
 
@@ -35,21 +36,22 @@ const RES_WINDOW_LABELS: Record<ResolutionWindow, string> = {
   "7d": "7 Days",
 };
 
-/* ── Props ── */
+/* ── Collapsible Section ── */
 
-interface Props {
-  signalHistory?: RecordedSignal[];
-  signalStats?: { totalResolved: number; totalCorrect: number; accuracy: number | null };
-  historyHydrated?: boolean;
-  calibration?: CalibrationBucket[];
-  equityCurve?: EquityPoint[];
-  drawdown?: DrawdownResult;
-  streaks?: StreakInfo;
-  perCoin?: CoinAccuracy[];
-  frequency?: FrequencyStats;
-  resolutionWindow?: ResolutionWindow;
-  setResolutionWindow?: (w: ResolutionWindow) => void;
-  exportCSV?: () => void;
+function Collapsible({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Card padding="none" className="overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center justify-between px-4 py-3 cursor-pointer hover:bg-elevated/20 transition-colors"
+      >
+        <h4 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider">{title}</h4>
+        <ChevronDown size={14} className={`text-txt-muted transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && <div className="border-t border-border-default">{children}</div>}
+    </Card>
+  );
 }
 
 /* ── Equity Curve SVG Chart ── */
@@ -77,7 +79,6 @@ function EquityCurveChart({ points }: { points: EquityPoint[] }) {
   const isUp = endVal >= startVal;
   const lineColor = isUp ? "#00E5A8" : "#EF4444";
 
-  // Build path
   let path = `M${scaleX(0)},${scaleY(values[0])}`;
   for (let i = 1; i < values.length; i++) {
     path += ` L${scaleX(i)},${scaleY(values[i])}`;
@@ -107,7 +108,6 @@ function EquityCurveChart({ points }: { points: EquityPoint[] }) {
           <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
         </linearGradient>
       </defs>
-      {/* Grid */}
       {Array.from({ length: 4 }, (_, i) => {
         const y = padT + (i / 3) * plotH;
         const val = max - (i / 3) * range;
@@ -122,7 +122,6 @@ function EquityCurveChart({ points }: { points: EquityPoint[] }) {
       })}
       <path d={areaPath} fill="url(#eqGrad)" />
       <path d={path} fill="none" stroke={lineColor} strokeWidth="1.5" strokeLinecap="round" />
-      {/* Hover */}
       {hIdx >= 0 && hVal != null && (
         <>
           <line x1={scaleX(hIdx)} y1={padT} x2={scaleX(hIdx)} y2={vbH - padB} stroke="#ffffff" strokeWidth="0.5" opacity="0.1" strokeDasharray="2 2" />
@@ -142,7 +141,7 @@ function CalibrationChart({ buckets }: { buckets: CalibrationBucket[] }) {
   const maxTotal = Math.max(...buckets.map((b) => b.total), 1);
 
   return (
-    <div className="space-y-2">
+    <div className="p-4 space-y-2">
       {buckets.map((b) => (
         <div key={b.range} className="flex items-center gap-3">
           <span className="text-[10px] text-txt-muted w-16 text-right font-mono">{b.range}</span>
@@ -172,6 +171,23 @@ function CalibrationChart({ buckets }: { buckets: CalibrationBucket[] }) {
   );
 }
 
+/* ── Props ── */
+
+interface Props {
+  signalHistory?: RecordedSignal[];
+  signalStats?: { totalResolved: number; totalCorrect: number; accuracy: number | null };
+  historyHydrated?: boolean;
+  calibration?: CalibrationBucket[];
+  equityCurve?: EquityPoint[];
+  drawdown?: DrawdownResult;
+  streaks?: StreakInfo;
+  perCoin?: CoinAccuracy[];
+  frequency?: FrequencyStats;
+  resolutionWindow?: ResolutionWindow;
+  setResolutionWindow?: (w: ResolutionWindow) => void;
+  exportCSV?: () => void;
+}
+
 /* ── Main Component ── */
 
 export default function PerformancePage({
@@ -191,10 +207,12 @@ export default function PerformancePage({
   const { coins, loading, error } = usePerformance();
   const { data: signalsData } = useSignals();
 
-  // Market metrics
   const avgChange24h = coins.length ? coins.reduce((s, c) => s + c.change24h, 0) / coins.length : 0;
   const avgChange30d = coins.length ? coins.reduce((s, c) => s + c.change30d, 0) / coins.length : 0;
   const avgVolatility = coins.length ? coins.reduce((s, c) => s + c.volatility30d, 0) / coins.length : 0;
+
+  // Win rate from streaks
+  const winRate = signalStats?.accuracy ?? null;
 
   if (loading) {
     return (
@@ -220,30 +238,32 @@ export default function PerformancePage({
   }
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-xl border border-border-default bg-inset/70 p-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="space-y-4">
+      {/* ── Hero: Big stat + 4 key metrics ── */}
+      <section className="rounded-xl border border-border-default bg-inset/70 p-5">
+        <div className="grid gap-5 lg:grid-cols-[1.1fr_1.4fr] lg:items-end">
           <div>
             <div className="flex items-center gap-2">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-txt-secondary">Performance Analytics</p>
               <Badge variant="muted" size="sm">LIVE DATA</Badge>
             </div>
-            <div className="mt-1 flex items-end gap-3">
+            <div className="mt-1.5 flex items-end gap-3">
               <div className={`font-mono text-5xl font-bold leading-none tracking-tight ${avgChange30d >= 0 ? "text-buy" : "text-sell"}`}>
                 {fmtPct(avgChange30d)}
               </div>
               <div className="pb-1">
                 <div className="text-sm font-semibold text-txt-primary">30-day market basket</div>
-                <div className="text-[11px] text-txt-tertiary">{coins.length} assets tracked across live market and signal layers</div>
+                <div className="text-[11px] text-txt-tertiary">{coins.length} assets tracked</div>
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[520px]">
+
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {[
-              { label: "Avg 24H", value: fmtPct(avgChange24h), tone: avgChange24h >= 0 ? "text-buy" : "text-sell" },
-              { label: "Volatility", value: `${avgVolatility.toFixed(1)}%`, tone: "text-info" },
-              { label: "Accuracy", value: signalStats?.accuracy != null ? `${Math.round(signalStats.accuracy)}%` : "—", tone: signalStats?.accuracy != null && signalStats.accuracy >= 60 ? "text-buy" : "text-hold" },
-              { label: "Resolved", value: `${signalStats?.totalResolved ?? 0}`, tone: "text-txt-primary" },
+              { label: "Accuracy", value: winRate != null ? `${Math.round(winRate)}%` : "—", tone: winRate != null && winRate >= 60 ? "text-buy" : winRate != null ? "text-hold" : "text-txt-muted" },
+              { label: "Signals/Day", value: `${frequency?.signalsPerDay ?? 0}`, tone: "text-info" },
+              { label: "Max Drawdown", value: drawdown ? `${drawdown.maxDrawdown.toFixed(1)}%` : "—", tone: "text-sell" },
+              { label: "Volatility", value: `${avgVolatility.toFixed(1)}%`, tone: "text-txt-primary" },
             ].map((item) => (
               <div key={item.label} className="border-l border-border-default px-3">
                 <div className="text-[9px] font-semibold uppercase tracking-wider text-txt-faint">{item.label}</div>
@@ -252,18 +272,117 @@ export default function PerformancePage({
             ))}
           </div>
         </div>
+
         {exportCSV && (
           <div className="mt-3 border-t border-border-default pt-3 text-right">
-            <button onClick={exportCSV} className="cursor-pointer rounded border border-border-default px-2 py-1 text-[10px] text-txt-secondary transition-colors hover:bg-elevated/30 hover:text-txt-primary">
+            <button onClick={exportCSV} className="cursor-pointer flex items-center gap-1.5 ml-auto rounded border border-border-default px-2.5 py-1 text-[10px] text-txt-secondary transition-colors hover:bg-elevated/30 hover:text-txt-primary">
+              <Download size={11} />
               Export CSV
             </button>
           </div>
         )}
       </section>
 
-      {/* ── Section 1: Market Performance ── */}
+      {/* ── Backtest CTA — right below hero ── */}
+      <BacktestPanel />
+
+      {/* ── Equity Curve + Streak/Drawdown (2-column) ── */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
+        {/* Equity Curve */}
+        {equityCurve.length > 2 && (
+          <Card padding="lg">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+              <h4 className="text-xs font-semibold text-txt-secondary">Simulated Equity Curve</h4>
+              <div className="flex items-center gap-3 flex-wrap text-[10px]">
+                <span className="text-txt-dim">Start: <span className="text-txt-secondary font-mono">$10,000</span></span>
+                <span className="text-txt-dim">End: <span className="text-txt-primary font-mono font-bold">${equityCurve[equityCurve.length - 1].value.toLocaleString()}</span></span>
+                {drawdown && (
+                  <span className="text-txt-dim">Max DD: <span className="text-sell font-mono">{drawdown.maxDrawdown.toFixed(1)}%</span></span>
+                )}
+              </div>
+            </div>
+            <EquityCurveChart points={equityCurve} />
+            <p className="text-[9px] text-txt-dim mt-2">Simulated P&L assuming 5% position per signal, correct = +2%, wrong = -1%.</p>
+          </Card>
+        )}
+
+        {/* Streak + Drawdown compact */}
+        <div className="space-y-4">
+          {streaks && signalHistory.length > 0 && (
+            <Card padding="sm">
+              <p className="text-[10px] text-txt-muted uppercase tracking-wider mb-2">Win/Loss Streaks</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <p className="text-[8px] text-txt-faint uppercase">Current</p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span className={`text-lg font-bold font-mono ${streaks.current.type === "win" ? "text-buy" : streaks.current.type === "loss" ? "text-sell" : "text-txt-dim"}`}>
+                      {streaks.current.count}
+                    </span>
+                    <span className={`text-[9px] ${streaks.current.type === "win" ? "text-buy" : streaks.current.type === "loss" ? "text-sell" : "text-txt-dim"}`}>
+                      {streaks.current.type === "win" ? "W" : streaks.current.type === "loss" ? "L" : "—"}
+                    </span>
+                  </div>
+                  <div className="flex gap-0.5 mt-1.5">
+                    {streaks.last10.map((r, i) => (
+                      <div key={i} className={`w-2.5 h-2.5 rounded-sm ${r === "win" ? "bg-buy" : "bg-sell"}`} />
+                    ))}
+                    {Array.from({ length: Math.max(0, 10 - streaks.last10.length) }).map((_, i) => (
+                      <div key={`e-${i}`} className="w-2.5 h-2.5 rounded-sm bg-inset border border-border-default" />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[8px] text-txt-faint uppercase">Best Win</p>
+                  <span className="text-lg font-bold font-mono text-buy">{streaks.bestWinStreak}</span>
+                </div>
+                <div>
+                  <p className="text-[8px] text-txt-faint uppercase">Worst Loss</p>
+                  <span className="text-lg font-bold font-mono text-sell">{streaks.worstLossStreak}</span>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {drawdown && drawdown.maxDrawdown > 0 && (
+            <Card padding="sm">
+              <p className="text-[10px] text-txt-muted uppercase tracking-wider mb-2">Drawdown</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[8px] text-txt-faint uppercase">Peak</p>
+                  <p className="text-sm font-bold font-mono text-txt-primary">{fmtPrice(drawdown.peakValue)}</p>
+                </div>
+                <div>
+                  <p className="text-[8px] text-txt-faint uppercase">Trough</p>
+                  <p className="text-sm font-bold font-mono text-sell">{fmtPrice(drawdown.troughValue)}</p>
+                </div>
+                <div>
+                  <p className="text-[8px] text-txt-faint uppercase">Max DD</p>
+                  <p className="text-sm font-bold font-mono text-sell">{drawdown.maxDrawdown.toFixed(1)}%</p>
+                </div>
+                <div>
+                  <p className="text-[8px] text-txt-faint uppercase">Recovery</p>
+                  <p className="text-sm font-bold font-mono text-txt-primary">{drawdown.recoverySignals} signals</p>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Quick stat cards */}
+          <div className="grid grid-cols-2 gap-2">
+            <Card padding="sm">
+              <p className="text-[9px] text-txt-muted uppercase">Tracked</p>
+              <p className="text-lg font-bold font-mono text-txt-primary">{signalHistory.length}</p>
+            </Card>
+            <Card padding="sm">
+              <p className="text-[9px] text-txt-muted uppercase">Resolved</p>
+              <p className="text-lg font-bold font-mono text-info">{signalStats?.totalResolved ?? 0}</p>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 30D Returns + Coin Table ── */}
       <div>
-        {/* 30D returns bar chart */}
         <Card padding="lg">
           <h4 className="text-xs font-semibold text-txt-secondary mb-3">30-Day Returns</h4>
           <div className="flex items-end gap-3 md:gap-6 h-40 overflow-x-auto scrollbar-none">
@@ -287,7 +406,6 @@ export default function PerformancePage({
           </div>
         </Card>
 
-        {/* Coin detail table */}
         <Card padding="none" className="overflow-hidden mt-3">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
@@ -322,164 +440,44 @@ export default function PerformancePage({
         </Card>
       </div>
 
-      {/* ── Section 2: Signal Accuracy ── */}
+      {/* ── Collapsible Details ── */}
       {historyHydrated && (
-        <div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-            <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider">Signal Accuracy Tracking</h3>
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Resolution window selector */}
-              <span className="text-[9px] text-txt-dim">Resolve after:</span>
-              <div className="flex items-center gap-0.5 bg-inset border border-border-default rounded-lg p-0.5 overflow-x-auto scrollbar-none">
-                {(Object.keys(RES_WINDOW_LABELS) as ResolutionWindow[]).map((w) => (
-                  <button
-                    key={w}
-                    onClick={() => setResolutionWindow?.(w)}
-                    className={`text-[9px] px-2 py-0.5 rounded transition-colors ${
-                      resolutionWindow === w ? "bg-elevated text-txt-primary" : "text-txt-dim hover:text-txt-secondary"
-                    }`}
-                  >
-                    {RES_WINDOW_LABELS[w]}
-                  </button>
-                ))}
-              </div>
+        <div className="space-y-3">
+          {/* Resolution window selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] text-txt-dim">Resolve signals after:</span>
+            <div className="flex items-center gap-0.5 bg-inset border border-border-default rounded-lg p-0.5">
+              {(Object.keys(RES_WINDOW_LABELS) as ResolutionWindow[]).map((w) => (
+                <button
+                  key={w}
+                  onClick={() => setResolutionWindow?.(w)}
+                  className={`text-[9px] px-2 py-0.5 rounded transition-colors ${
+                    resolutionWindow === w ? "bg-elevated text-txt-primary" : "text-txt-dim hover:text-txt-secondary"
+                  }`}
+                >
+                  {RES_WINDOW_LABELS[w]}
+                </button>
+              ))}
             </div>
           </div>
-
-          {/* Signal summary stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
-            <Card padding="sm">
-              <p className="text-[10px] text-txt-muted">Tracked</p>
-              <p className="text-lg font-bold font-mono text-txt-primary">{signalHistory.length}</p>
-            </Card>
-            <Card padding="sm">
-              <p className="text-[10px] text-txt-muted">Resolved</p>
-              <p className="text-lg font-bold font-mono text-info">{signalStats?.totalResolved ?? 0}</p>
-            </Card>
-            <Card padding="sm">
-              <p className="text-[10px] text-txt-muted">Correct</p>
-              <p className="text-lg font-bold font-mono text-buy">{signalStats?.totalCorrect ?? 0}</p>
-            </Card>
-            <Card padding="sm">
-              <p className="text-[10px] text-txt-muted">Accuracy</p>
-              <p className="text-lg font-bold font-mono" style={{ color: signalStats?.accuracy != null && signalStats.accuracy >= 60 ? "#00ff88" : signalStats?.accuracy != null && signalStats.accuracy >= 40 ? "#ff8800" : "#ff4444" }}>
-                {signalStats?.accuracy != null ? `${Math.round(signalStats.accuracy)}%` : "—"}
-              </p>
-            </Card>
-            <Card padding="sm">
-              <p className="text-[10px] text-txt-muted">Signals/Day</p>
-              <p className="text-lg font-bold font-mono text-txt-primary">{frequency?.signalsPerDay ?? 0}</p>
-            </Card>
-            <Card padding="sm">
-              <p className="text-[10px] text-txt-muted">Last 24H</p>
-              <p className="text-lg font-bold font-mono text-txt-primary">{frequency?.last24h ?? 0}</p>
-            </Card>
-          </div>
-
-          {/* Win/Loss Streaks */}
-          {streaks && signalHistory.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-              <Card padding="sm">
-                <p className="text-[10px] text-txt-muted uppercase tracking-wider mb-1.5">Current Streak</p>
-                <div className="flex items-center gap-2">
-                  <span className={`text-lg font-bold font-mono ${streaks.current.type === "win" ? "text-buy" : streaks.current.type === "loss" ? "text-sell" : "text-txt-dim"}`}>
-                    {streaks.current.count}
-                  </span>
-                  <span className={`text-xs ${streaks.current.type === "win" ? "text-buy" : streaks.current.type === "loss" ? "text-sell" : "text-txt-dim"}`}>
-                    {streaks.current.type === "win" ? "wins" : streaks.current.type === "loss" ? "losses" : "—"}
-                  </span>
-                </div>
-                {/* Last 10 dots */}
-                <div className="flex gap-1 mt-2">
-                  {streaks.last10.map((r, i) => (
-                    <div
-                      key={i}
-                      className={`w-3 h-3 rounded-sm ${r === "win" ? "bg-buy" : "bg-sell"}`}
-                      title={r}
-                    />
-                  ))}
-                  {Array.from({ length: Math.max(0, 10 - streaks.last10.length) }).map((_, i) => (
-                    <div key={`e-${i}`} className="w-3 h-3 rounded-sm bg-inset border border-border-default" />
-                  ))}
-                </div>
-              </Card>
-              <Card padding="sm">
-                <p className="text-[10px] text-txt-muted uppercase tracking-wider mb-1">Best Win Streak</p>
-                <span className="text-lg font-bold font-mono text-buy">{streaks.bestWinStreak}</span>
-                <span className="text-xs text-txt-dim ml-1">consecutive</span>
-              </Card>
-              <Card padding="sm">
-                <p className="text-[10px] text-txt-muted uppercase tracking-wider mb-1">Worst Loss Streak</p>
-                <span className="text-lg font-bold font-mono text-sell">{streaks.worstLossStreak}</span>
-                <span className="text-xs text-txt-dim ml-1">consecutive</span>
-              </Card>
-            </div>
-          )}
-
-          {/* Equity Curve */}
-          {equityCurve.length > 2 && (
-            <Card padding="lg" className="mb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                <h4 className="text-xs font-semibold text-txt-secondary">Simulated Equity Curve</h4>
-                <div className="flex items-center gap-3 flex-wrap text-[10px]">
-                  <span className="text-txt-dim">Start: <span className="text-txt-secondary font-mono">$10,000</span></span>
-                  <span className="text-txt-dim">End: <span className="text-txt-primary font-mono font-bold">${equityCurve[equityCurve.length - 1].value.toLocaleString()}</span></span>
-                  {drawdown && (
-                    <span className="text-txt-dim">Max DD: <span className="text-sell font-mono">{drawdown.maxDrawdown.toFixed(1)}%</span></span>
-                  )}
-                </div>
-              </div>
-              <EquityCurveChart points={equityCurve} />
-              <p className="text-[9px] text-txt-dim mt-2">Simulated P&L assuming 5% position per signal, correct = +2%, wrong = -1%.</p>
-            </Card>
-          )}
-
-          {/* Max Drawdown */}
-          {drawdown && drawdown.maxDrawdown > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-              <Card padding="sm">
-                <p className="text-[10px] text-txt-muted">Max Drawdown</p>
-                <p className="text-lg font-bold font-mono text-sell">{drawdown.maxDrawdown.toFixed(1)}%</p>
-              </Card>
-              <Card padding="sm">
-                <p className="text-[10px] text-txt-muted">Peak Value</p>
-                <p className="text-sm font-bold font-mono text-txt-primary">{fmtPrice(drawdown.peakValue)}</p>
-              </Card>
-              <Card padding="sm">
-                <p className="text-[10px] text-txt-muted">Trough Value</p>
-                <p className="text-sm font-bold font-mono text-sell">{fmtPrice(drawdown.troughValue)}</p>
-              </Card>
-              <Card padding="sm">
-                <p className="text-[10px] text-txt-muted">Recovery Signals</p>
-                <p className="text-sm font-bold font-mono text-txt-primary">{drawdown.recoverySignals}</p>
-              </Card>
-            </div>
-          )}
 
           {/* Confidence Calibration */}
           {calibration.some((b) => b.total > 0) && (
-            <Card padding="lg" className="mb-4">
-              <h4 className="text-xs font-semibold text-txt-secondary mb-3">Confidence Calibration</h4>
-              <p className="text-[9px] text-txt-dim mb-3">Does confidence predict accuracy? Ideally, 80% confidence signals should be ~80% accurate.</p>
+            <Collapsible title="Confidence Calibration">
+              <p className="text-[9px] text-txt-dim px-4 pt-3">Does confidence predict accuracy? Ideally, 80% confidence signals should be ~80% accurate.</p>
               <CalibrationChart buckets={calibration} />
-            </Card>
+            </Collapsible>
           )}
 
           {/* Per-Coin Breakdown */}
           {perCoin.length > 0 && (
-            <Card padding="lg" className="mb-4">
-              <h4 className="text-xs font-semibold text-txt-secondary mb-3">Per-Coin Accuracy</h4>
-              <div className="space-y-2">
+            <Collapsible title="Per-Coin Accuracy">
+              <div className="p-4 space-y-2">
                 {perCoin.map((c) => (
                   <div key={c.coin} className="flex items-center gap-3">
                     <span className="text-xs font-bold w-10" style={{ color: COIN_COLORS[c.coin] || "#CBD5E1" }}>{c.coin}</span>
                     <div className="flex-1">
-                      <ProgressBar
-                        value={c.accuracy ?? 0}
-                        color={COIN_COLORS[c.coin] || "#00E5A8"}
-                        height="sm"
-                        showValue
-                      />
+                      <ProgressBar value={c.accuracy ?? 0} color={COIN_COLORS[c.coin] || "#00E5A8"} height="sm" showValue />
                     </div>
                     <span className="text-[10px] text-txt-dim w-20 text-right">
                       {c.correct}/{c.resolved} correct
@@ -487,15 +485,15 @@ export default function PerformancePage({
                   </div>
                 ))}
               </div>
-            </Card>
+            </Collapsible>
           )}
 
           {/* Recent Signals Table */}
           {signalHistory.length > 0 && (
-            <Card padding="none" className="overflow-hidden">
-              <div className="p-3 border-b border-border-default flex items-center justify-between">
-                <h4 className="text-xs font-semibold text-txt-secondary">Recent Signals</h4>
+            <Collapsible title="Recent Signals" defaultOpen>
+              <div className="flex items-center justify-between px-4 pt-3 pb-1">
                 <span className="text-[9px] text-txt-dim">Resolves after {RES_WINDOW_LABELS[resolutionWindow]}</span>
+                <span className="text-[9px] text-txt-dim">Last 15 of {signalHistory.length}</span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
@@ -504,7 +502,7 @@ export default function PerformancePage({
                       <th className="text-left p-2 font-medium">Time</th>
                       <th className="text-left p-2 font-medium">Coin</th>
                       <th className="text-left p-2 font-medium">Action</th>
-                      <th className="text-right p-2 font-medium">Confidence</th>
+                      <th className="text-right p-2 font-medium">Conf</th>
                       <th className="text-right p-2 font-medium">Entry</th>
                       <th className="text-right p-2 font-medium">Current</th>
                       <th className="text-center p-2 font-medium">Result</th>
@@ -537,52 +535,33 @@ export default function PerformancePage({
                   </tbody>
                 </table>
               </div>
-              {signalHistory.length > 15 && (
-                <div className="p-2 border-t border-border-default">
-                  <p className="text-[9px] text-txt-dim">Showing last 15 of {signalHistory.length} signals</p>
-                </div>
-              )}
-            </Card>
+            </Collapsible>
           )}
 
-          {/* Most Active Pair */}
-          {frequency?.mostActivePair && (
-            <div className="mt-3 text-[10px] text-txt-dim">
-              Most active pair: <span className="text-txt-secondary font-semibold">{frequency.mostActivePair}</span>
-              {" · "}Last 7 days: <span className="text-txt-secondary">{frequency.last7d} signals</span>
-            </div>
+          {/* Live Dimensions (BTC) */}
+          {signalsData?.dimensions?.BTC && (
+            <Collapsible title="Live Signal Dimensions (BTC)">
+              <div className="p-4 flex flex-col gap-2">
+                {[
+                  { key: "etfFlow" as const, label: "ETF Flow", color: "#00d4ff" },
+                  { key: "sentiment" as const, label: "Sentiment", color: "#8B5CF6" },
+                  { key: "macro" as const, label: "Macro", color: "#00ff88" },
+                  { key: "momentum" as const, label: "Momentum", color: "#ff8800" },
+                  { key: "treasury" as const, label: "Treasury", color: "#ff4488" },
+                ].map((d) => {
+                  const dim = signalsData.dimensions.BTC[d.key];
+                  return (
+                    <div key={d.key}>
+                      <ProgressBar value={dim.score} color={d.color} height="md" label={d.label} showValue />
+                      <p className="text-[9px] text-txt-dim mt-0.5 ml-[7rem]">{dim.detail}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </Collapsible>
           )}
         </div>
       )}
-
-      {/* Live Dimensions (BTC) */}
-      {signalsData?.dimensions?.BTC && (
-        <div>
-          <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider mb-3">Live Signal Dimensions (BTC)</h3>
-          <Card padding="lg">
-            <div className="flex flex-col gap-2">
-              {[
-                { key: "etfFlow" as const, label: "ETF Flow", color: "#00d4ff" },
-                { key: "sentiment" as const, label: "Sentiment", color: "#8B5CF6" },
-                { key: "macro" as const, label: "Macro", color: "#00ff88" },
-                { key: "momentum" as const, label: "Momentum", color: "#ff8800" },
-                { key: "treasury" as const, label: "Treasury", color: "#ff4488" },
-              ].map((d) => {
-                const dim = signalsData.dimensions.BTC[d.key];
-                return (
-                  <div key={d.key}>
-                    <ProgressBar value={dim.score} color={d.color} height="md" label={d.label} showValue />
-                    <p className="text-[9px] text-txt-dim mt-0.5 ml-[7rem]">{dim.detail}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Backtest Panel */}
-      <BacktestPanel />
     </div>
   );
 }
