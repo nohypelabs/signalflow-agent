@@ -28,9 +28,6 @@ export default function WelcomePage() {
       localStorage.setItem(WELCOME_STORAGE_KEY, "1");
     } catch {}
     setIsLeaving(true);
-    window.setTimeout(() => {
-      router.push("/dashboard");
-    }, 420);
   };
 
   return (

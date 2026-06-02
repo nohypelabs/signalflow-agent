@@ -108,10 +108,10 @@ export default function WelcomeExperience({
           </div>
 
           <div className="flex justify-center">
-            <button
-              type="button"
+            <a
+              href="/dashboard"
               onClick={onEnter}
-              className="group intro-glow relative h-[60px] w-full max-w-[420px] cursor-pointer overflow-hidden rounded-full border border-white/10 bg-[#111827]/92 p-1.5 text-left shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-sm transition-transform hover:scale-[1.01] active:scale-[0.99] sm:h-[72px]"
+              className="group intro-glow relative block h-[60px] w-full max-w-[420px] cursor-pointer overflow-hidden rounded-full border border-white/10 bg-[#111827]/92 p-1.5 text-left shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-sm transition-transform hover:scale-[1.01] active:scale-[0.99] sm:h-[72px]"
               aria-label="Enter dashboard"
             >
               <span className="absolute inset-0 rounded-full bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0))]" />
@@ -121,7 +121,7 @@ export default function WelcomeExperience({
               <span className="absolute inset-y-1 right-1 flex w-[78px] items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffb04d_0%,#ff8800_100%)] text-[#07111b] shadow-[0_8px_25px_rgba(255,136,0,0.22)] transition-transform group-hover:translate-x-0.5">
                 <ArrowIcon />
               </span>
-            </button>
+            </a>
           </div>
 
           <div className="mt-7 flex items-center justify-center gap-3 text-center text-[10px] uppercase tracking-[0.22em] text-white/48">
@@ -135,13 +135,13 @@ export default function WelcomeExperience({
           <p className="max-w-sm font-mono leading-5 text-white/55">
             AI-driven signals. Multi-timeframe confluence. Paper-first execution.
           </p>
-          <button
-            type="button"
+          <a
+            href="/dashboard"
             onClick={onEnter}
             className="cursor-pointer rounded-full border border-white/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.24em] text-white/55 hover:border-white/20 hover:text-white/80"
           >
             Skip Intro
-          </button>
+          </a>
         </div>
       </div>
     </div>
