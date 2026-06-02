@@ -25,14 +25,14 @@ function heatmapBg(change: number): string {
 }
 
 /** Simple squarified treemap layout */
-function treemapLayout(items: ScreenerPair[], width: number, height: number) {
+function treemapLayout(items: Array<ScreenerPair & { sizeProxy: number }>, width: number, height: number) {
   if (items.length === 0 || width <= 0 || height <= 0) return [];
 
-  const totalMcap = items.reduce((s, p) => s + Math.max(p.marketcap, 1), 0);
+  const totalMcap = items.reduce((s, p) => s + Math.max(p.sizeProxy, 1), 0);
   const rects: Array<{ pair: ScreenerPair; x: number; y: number; w: number; h: number }> = [];
 
-  // Sort by marketcap descending for better layout
-  const sorted = [...items].sort((a, b) => b.marketcap - a.marketcap);
+  // Sort by sizeProxy descending for better layout
+  const sorted = [...items].sort((a, b) => b.sizeProxy - a.sizeProxy);
 
   let x = 0;
   let y = 0;
@@ -58,7 +58,7 @@ function treemapLayout(items: ScreenerPair[], width: number, height: number) {
   };
 
   for (const item of sorted) {
-    const area = (Math.max(item.marketcap, 1) / totalMcap) * width * height;
+    const area = (Math.max(item.sizeProxy, 1) / totalMcap) * width * height;
     const remainingHeight = height - y;
     if (remainingHeight <= 0) break;
 
@@ -84,12 +84,16 @@ function treemapLayout(items: ScreenerPair[], width: number, height: number) {
 export default function PriceHeatmap() {
   const { data, loading, error } = useScreener();
 
-  // Filter to crypto only with valid marketcap, take top 20
+  // Filter to crypto, use marketcap or quoteVolume24h as size proxy
   const pairs = useMemo(() => {
     if (!data || data.length === 0) return [];
     return data
-      .filter((p) => p.category === "crypto" && p.marketcap > 0)
-      .sort((a, b) => b.marketcap - a.marketcap)
+      .filter((p) => p.category === "crypto")
+      .map((p) => ({
+        ...p,
+        sizeProxy: p.marketcap > 0 ? p.marketcap : p.quoteVolume24h * 1000, // rough scale for volume-based sizing
+      }))
+      .sort((a, b) => b.sizeProxy - a.sizeProxy)
       .slice(0, 20);
   }, [data]);
 
