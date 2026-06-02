@@ -12,6 +12,7 @@ interface Props {
   signal?: Signal | null;
   isConnected: boolean;
   paperBalance?: number;
+  isPaperCapitalConfigured?: boolean;
   mode?: "paper" | "live";
   tradingType?: TradingType | null;
   error?: string | null;
@@ -33,7 +34,7 @@ function fmtPrice(p: number, coin: string): string {
   return p.toFixed(5);
 }
 
-export default function OrderForm({ pair, coin, currentPrice, signal, isConnected, paperBalance, mode = "paper", tradingType, error, onExecute }: Props) {
+export default function OrderForm({ pair, coin, currentPrice, signal, isConnected, paperBalance, isPaperCapitalConfigured = true, mode = "paper", tradingType, error, onExecute }: Props) {
   const [side, setSide] = useState<"LONG" | "SHORT">("LONG");
   const [orderType, setOrderType] = useState<"Market" | "Limit">("Market");
   const [limitPrice, setLimitPrice] = useState("");
@@ -124,6 +125,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
     const sl = parseFloat(stopLoss) || 0;
     if (!entry) return "Market price is not available.";
     if (!marginNum) return null;
+    if (mode === "paper" && !isPaperCapitalConfigured) return "Choose paper capital before opening paper positions.";
     if (marginNum <= 0) return "Margin must be greater than 0.";
     if (mode === "paper" && paperBalance != null && marginNum > paperBalance) return "Margin exceeds available paper balance.";
     if (tp > 0) {
@@ -137,7 +139,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
       if (liqPrice > 0 && side === "SHORT" && sl >= liqPrice) return "SHORT stop loss must sit below liquidation price.";
     }
     return null;
-  }, [currentPrice, takeProfit, stopLoss, marginNum, mode, paperBalance, side, liqPrice]);
+  }, [currentPrice, takeProfit, stopLoss, marginNum, mode, paperBalance, isPaperCapitalConfigured, side, liqPrice]);
 
   // Slider → margin sync
   useEffect(() => {
@@ -152,8 +154,9 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
   };
 
   const walletRequiredError = !isConnected ? "Connect wallet before opening paper or live positions." : null;
-  const isSubmitDisabled = !isConnected || !marginNum || !currentPrice || Boolean(validationError);
-  const displayedError = error ?? walletRequiredError ?? (marginNum > 0 ? validationError : null);
+  const paperCapitalRequiredError = mode === "paper" && isConnected && !isPaperCapitalConfigured ? "Choose paper capital from $100 to $10,000 before opening paper positions." : null;
+  const isSubmitDisabled = !isConnected || (mode === "paper" && !isPaperCapitalConfigured) || !marginNum || !currentPrice || Boolean(validationError);
+  const displayedError = error ?? walletRequiredError ?? paperCapitalRequiredError ?? (marginNum > 0 ? validationError : null);
 
   return (
     <div className="flex h-full flex-col bg-card">
@@ -370,6 +373,8 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
           }`}>
           {!isConnected
             ? "Connect Wallet"
+            : mode === "paper" && !isPaperCapitalConfigured
+              ? "Set Paper Capital"
             : !marginNum || !currentPrice
               ? "Enter Margin"
               : validationError
@@ -397,7 +402,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
         </div>
 
         {/* ═══ [10] Equity Section ═══ */}
-        {mode === "paper" && paperBalance != null && (
+        {mode === "paper" && isPaperCapitalConfigured && paperBalance != null && (
           <div className="space-y-1.5 pt-2 border-t border-border-default">
             <div className="flex items-center justify-between">
               <span className="text-[9px] text-txt-faint">Total Equity</span>

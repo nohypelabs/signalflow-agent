@@ -4,6 +4,7 @@ import Card from "@/components/ui/Card";
 import type { PaperStats, PaperBalance, PaperTrade } from "@/lib/hooks/usePaperTrading";
 import TradingTypeIcon from "@/components/TradingTypeIcon";
 import { ClipboardIcon } from "@/components/ui/icons";
+import PaperCapitalSetup from "@/components/PaperCapitalSetup";
 
 interface Props {
   stats: PaperStats;
@@ -12,6 +13,9 @@ interface Props {
   currentPrices?: Map<string, number>;
   onClose?: (tradeId: string, currentPrice: number) => void;
   onReset: () => void;
+  isWalletConnected: boolean;
+  isCapitalConfigured: boolean;
+  onConfigureCapital: (amount: number) => void;
 }
 
 function fmtUSD(n: number): string {
@@ -123,8 +127,23 @@ function PositionRow({ trade, currentPrice, onClose }: { trade: PaperTrade; curr
   );
 }
 
-export default function PaperTradingStats({ stats, balance, trades, currentPrices, onClose, onReset }: Props) {
+export default function PaperTradingStats({ stats, balance, trades, currentPrices, onClose, onReset, isWalletConnected, isCapitalConfigured, onConfigureCapital }: Props) {
   const openTrades = trades.filter((t) => t.status === "OPEN");
+
+  if (!isWalletConnected) {
+    return (
+      <Card padding="lg">
+        <div className="text-center">
+          <p className="text-xs font-semibold text-txt-primary">Connect wallet to unlock paper stats</p>
+          <p className="mt-1 text-[10px] text-txt-secondary">Paper balance and performance stay hidden until wallet connection.</p>
+        </div>
+      </Card>
+    );
+  }
+
+  if (!isCapitalConfigured) {
+    return <PaperCapitalSetup compact onConfirm={onConfigureCapital} />;
+  }
 
   return (
     <Card padding="none" className="overflow-hidden">

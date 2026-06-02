@@ -8,15 +8,18 @@ import type { Signal } from "@/lib/types/signal";
 import { TRADING_TYPES, TRADING_TYPE_LIST } from "@/lib/types/trading-type";
 import type { TradingType } from "@/lib/types/trading-type";
 import TradingTypeIcon from "@/components/TradingTypeIcon";
+import PaperCapitalSetup from "@/components/PaperCapitalSetup";
 
 interface Props {
   trades: PaperTrade[];
   stats: PaperStats;
   balance: PaperBalance;
   isWalletConnected: boolean;
+  isCapitalConfigured: boolean;
   currentPrices?: Map<string, number>;
   onClose?: (tradeId: string, currentPrice: number) => void;
   onReset: () => void;
+  onConfigureCapital: (amount: number) => void;
   signals?: Signal[];
 }
 
@@ -41,7 +44,7 @@ function fmtPrice(p: number): string {
   return p.toFixed(5);
 }
 
-export default function PortfolioPage({ trades, stats, balance, isWalletConnected, currentPrices, onClose, onReset, signals }: Props) {
+export default function PortfolioPage({ trades, stats, balance, isWalletConnected, isCapitalConfigured, currentPrices, onClose, onReset, onConfigureCapital, signals }: Props) {
   const [activeTab, setActiveTab] = useState<"positions" | "history" | "types">("positions");
   const [typeFilter, setTypeFilter] = useState<TradingType | "ALL">("ALL");
   const [sortField, setSortField] = useState<"date" | "pnl" | "pair" | "hold">("date");
@@ -247,6 +250,10 @@ export default function PortfolioPage({ trades, stats, balance, isWalletConnecte
         </section>
       </div>
     );
+  }
+
+  if (!isCapitalConfigured) {
+    return <PaperCapitalSetup onConfirm={onConfigureCapital} />;
   }
 
   return (

@@ -35,9 +35,11 @@ export default function PortfolioRoute() {
       stats={paper.stats}
       balance={paper.balance}
       isWalletConnected={d.isConnected}
+      isCapitalConfigured={paper.capitalConfigured}
       currentPrices={currentPrices}
       onClose={paper.closeTrade}
       onReset={paper.reset}
+      onConfigureCapital={paper.configureCapital}
       signals={d.liveSignals}
     />
   );

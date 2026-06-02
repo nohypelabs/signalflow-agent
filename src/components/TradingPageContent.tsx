@@ -253,6 +253,12 @@ export default function TradingPageContent() {
       setNotice({ id: Date.now(), kind: "error", title: "Wallet required", detail: msg });
       return;
     }
+    if (tradeMode === "paper" && !paper.capitalConfigured) {
+      const msg = "Choose paper capital from $100 to $10,000 before opening paper positions.";
+      setTradeError(msg);
+      setNotice({ id: Date.now(), kind: "error", title: "Paper capital required", detail: msg });
+      return;
+    }
     if (!ep) { setTradeError("Market price is not available."); return; }
     setPendingAction({ kind: "open", mode: tradeMode, pair, order, entryPrice: ep, takeProfit: tp, stopLoss: sl, liquidationPrice: calcLiq(ep, order.side, order.leverage) });
   };
@@ -266,6 +272,12 @@ export default function TradingPageContent() {
       return;
     }
     if (a.mode === "paper") {
+      if (!paper.capitalConfigured) {
+        const msg = "Choose paper capital from $100 to $10,000 before opening paper positions.";
+        setTradeError(msg);
+        setNotice({ id: Date.now(), kind: "error", title: "Paper capital required", detail: msg });
+        return;
+      }
       const t = paper.openTrade({ pair: a.pair, side: order.side, leverage: order.leverage, margin: order.margin, entryPrice, takeProfit: tp, stopLoss: sl, signalId: signalContext?.id, confidence: signalContext?.confidence, tradingType: tradingType ?? undefined });
       if (!t) { const msg = paper.error ?? "Paper trade rejected."; setTradeError(msg); setNotice({ id: Date.now(), kind: "error", title: "Trade rejected", detail: msg }); }
       else { setNotice({ id: Date.now(), kind: "success", title: "Paper position opened", detail: `${t.side} ${t.pair} ${t.leverage}x at $${formatPrice(t.entryPrice)}`, rows: [{ label: "Pair", value: t.pair }, { label: "Side", value: t.side, tone: t.side === "LONG" ? "buy" : "sell" }, { label: "Entry", value: `$${formatPrice(t.entryPrice)}` }, { label: "Margin", value: formatUsd(t.margin) }, { label: "Leverage", value: `${t.leverage}x`, tone: "accent" }, { label: "Liq", value: `$${formatPrice(t.liquidationPrice)}`, tone: "sell" }] }); }
@@ -353,7 +365,8 @@ export default function TradingPageContent() {
                 currentPrice={currentPrice}
                 signal={signalContext}
                 isConnected={d.isConnected}
-                paperBalance={paper.balance.available}
+                paperBalance={paper.capitalConfigured ? paper.balance.available : undefined}
+                isPaperCapitalConfigured={paper.capitalConfigured}
                 mode={tradeMode}
                 tradingType={tradingType}
                 error={tradeError}
@@ -389,7 +402,7 @@ export default function TradingPageContent() {
                   ) : <div className="flex items-center justify-center h-28"><p className="text-xs text-txt-dim">Switch to Paper mode</p></div>}
                 </ErrorBoundary>
               )}
-              {bottomTab === "stats" && <ErrorBoundary name="Paper Stats">{paper.loaded ? <PaperTradingStats stats={paper.stats} balance={paper.balance} trades={paper.trades} onReset={paper.reset} /> : <div className="flex items-center justify-center h-28"><p className="text-xs text-txt-dim">Loading…</p></div>}</ErrorBoundary>}
+              {bottomTab === "stats" && <ErrorBoundary name="Paper Stats">{paper.loaded ? <PaperTradingStats stats={paper.stats} balance={paper.balance} trades={paper.trades} onReset={paper.reset} isWalletConnected={d.isConnected} isCapitalConfigured={paper.capitalConfigured} onConfigureCapital={paper.configureCapital} /> : <div className="flex items-center justify-center h-28"><p className="text-xs text-txt-dim">Loading…</p></div>}</ErrorBoundary>}
               {bottomTab === "live" && <ErrorBoundary name="Live Trades"><RecentTradesList symbol={sodexSymbol} limit={50} /></ErrorBoundary>}
             </div>
           </div>
@@ -431,7 +444,7 @@ export default function TradingPageContent() {
         {/* Column C: Order Form */}
         <div className="min-w-0 flex flex-col overflow-y-auto scrollbar-none bg-card" style={{ width: `${widths.form}%` }}>
           <ErrorBoundary name="Order Form">
-            <OrderForm pair={pair} coin={coin} currentPrice={currentPrice} signal={signalContext} isConnected={d.isConnected} paperBalance={paper.balance.available} mode={tradeMode} tradingType={tradingType} error={tradeError} onModeChange={setTradeMode} onExecute={handleExecute} />
+            <OrderForm pair={pair} coin={coin} currentPrice={currentPrice} signal={signalContext} isConnected={d.isConnected} paperBalance={paper.capitalConfigured ? paper.balance.available : undefined} isPaperCapitalConfigured={paper.capitalConfigured} mode={tradeMode} tradingType={tradingType} error={tradeError} onModeChange={setTradeMode} onExecute={handleExecute} />
           </ErrorBoundary>
         </div>
       </div>
@@ -463,7 +476,7 @@ export default function TradingPageContent() {
               ) : <div className="flex items-center justify-center h-full"><p className="text-xs text-txt-dim">Switch to Paper mode</p></div>}
             </ErrorBoundary>
           )}
-          {bottomTab === "stats" && <ErrorBoundary name="Paper Stats">{paper.loaded ? <PaperTradingStats stats={paper.stats} balance={paper.balance} trades={paper.trades} onReset={paper.reset} /> : <div className="flex items-center justify-center h-full"><p className="text-xs text-txt-dim">Loading…</p></div>}</ErrorBoundary>}
+          {bottomTab === "stats" && <ErrorBoundary name="Paper Stats">{paper.loaded ? <PaperTradingStats stats={paper.stats} balance={paper.balance} trades={paper.trades} onReset={paper.reset} isWalletConnected={d.isConnected} isCapitalConfigured={paper.capitalConfigured} onConfigureCapital={paper.configureCapital} /> : <div className="flex items-center justify-center h-full"><p className="text-xs text-txt-dim">Loading…</p></div>}</ErrorBoundary>}
           {bottomTab === "live" && <ErrorBoundary name="Live Trades"><RecentTradesList symbol={sodexSymbol} limit={50} /></ErrorBoundary>}
         </div>
       </div>

@@ -70,7 +70,9 @@ export interface PaperStats {
 }
 
 const STORAGE_KEY = "signalflow-paper-futures";
-const INITIAL_BALANCE = 10000;
+const INITIAL_BALANCE = 0;
+export const PAPER_CAPITAL_MIN = 100;
+export const PAPER_CAPITAL_MAX = 10000;
 type CloseReason = "TP" | "SL" | "LIQ" | "MANUAL";
 
 // ── Storage ────────────────────────────────────────────
@@ -93,24 +95,31 @@ function isPaperTrade(value: unknown): value is PaperTrade {
   );
 }
 
-function loadFromStorage(): { trades: PaperTrade[]; balance: number } {
-  if (typeof window === "undefined") return { trades: [], balance: INITIAL_BALANCE };
+function normalizeCapital(value: number): number {
+  if (!Number.isFinite(value)) return INITIAL_BALANCE;
+  return Math.min(PAPER_CAPITAL_MAX, Math.max(PAPER_CAPITAL_MIN, Math.round(value)));
+}
+
+function loadFromStorage(): { trades: PaperTrade[]; balance: number; capitalConfigured: boolean } {
+  if (typeof window === "undefined") return { trades: [], balance: INITIAL_BALANCE, capitalConfigured: false };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const data = JSON.parse(raw);
       const trades = Array.isArray(data.trades) ? data.trades.filter(isPaperTrade) : [];
-      const balance = Number.isFinite(data.balance) && data.balance > 0 ? data.balance : INITIAL_BALANCE;
-      return { trades, balance };
+      const hasStoredCapital = Number.isFinite(data.balance) && data.balance >= PAPER_CAPITAL_MIN;
+      const isConfigured = data.capitalConfigured === true || (trades.length > 0 && hasStoredCapital);
+      const balance = isConfigured && hasStoredCapital ? normalizeCapital(data.balance) : INITIAL_BALANCE;
+      return { trades, balance, capitalConfigured: isConfigured };
     }
   } catch {}
-  return { trades: [], balance: INITIAL_BALANCE };
+  return { trades: [], balance: INITIAL_BALANCE, capitalConfigured: false };
 }
 
-function saveToStorage(trades: PaperTrade[], balance: number) {
+function saveToStorage(trades: PaperTrade[], balance: number, capitalConfigured: boolean) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ trades, balance }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ trades, balance, capitalConfigured }));
   } catch {}
 }
 
@@ -219,19 +228,21 @@ function validateTrade(params: {
 export function usePaperTrading() {
   const [trades, setTrades] = useState<PaperTrade[]>([]);
   const [initialBalance, setInitialBalance] = useState(INITIAL_BALANCE);
+  const [capitalConfigured, setCapitalConfigured] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const { trades: saved, balance } = loadFromStorage();
+    const { trades: saved, balance, capitalConfigured: configured } = loadFromStorage();
     setTrades(saved);
     setInitialBalance(balance);
+    setCapitalConfigured(configured);
     setLoaded(true);
   }, []);
 
   useEffect(() => {
-    if (loaded) saveToStorage(trades, initialBalance);
-  }, [trades, initialBalance, loaded]);
+    if (loaded) saveToStorage(trades, initialBalance, capitalConfigured);
+  }, [trades, initialBalance, capitalConfigured, loaded]);
 
   // ── Open a futures position ──────────────────────────
   const openTrade = useCallback((params: {
@@ -246,6 +257,11 @@ export function usePaperTrading() {
     confidence?: number;
     tradingType?: string;
   }): PaperTrade | null => {
+    if (!capitalConfigured) {
+      setError("Choose paper capital before opening paper positions.");
+      return null;
+    }
+
     const lev = Math.max(1, Math.min(100, params.leverage));
     const margin = params.margin;
     const liqPrice = calcLiquidationPrice(params.entryPrice, params.side, lev);
@@ -298,7 +314,7 @@ export function usePaperTrading() {
     setError(null);
     setTrades((prev) => [trade, ...prev]);
     return trade;
-  }, [trades, initialBalance]);
+  }, [trades, initialBalance, capitalConfigured]);
 
   // ── Close a position ─────────────────────────────────
   const closeTrade = useCallback((tradeId: string, exitPrice: number, reason: CloseReason) => {
@@ -432,10 +448,19 @@ export function usePaperTrading() {
   const reset = useCallback(() => {
     setTrades([]);
     setInitialBalance(INITIAL_BALANCE);
+    setCapitalConfigured(false);
   }, []);
 
   const setBalance = useCallback((amount: number) => {
-    setInitialBalance(amount);
+    setInitialBalance(normalizeCapital(amount));
+    setCapitalConfigured(true);
+  }, []);
+
+  const configureCapital = useCallback((amount: number) => {
+    setTrades([]);
+    setInitialBalance(normalizeCapital(amount));
+    setCapitalConfigured(true);
+    setError(null);
   }, []);
 
   return {
@@ -444,10 +469,12 @@ export function usePaperTrading() {
     stats,
     loaded,
     error,
+    capitalConfigured,
     openTrade,
     closeTrade: closeManual,
     checkTpSl,
     reset,
     setBalance,
+    configureCapital,
   };
 }
