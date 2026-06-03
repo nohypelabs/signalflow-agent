@@ -45,9 +45,10 @@ export default function WalletButton() {
         <button
           onClick={handleConnect}
           disabled={connecting}
-          className="cursor-pointer px-3 py-1.5 text-xs font-bold rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 hover:border-accent/50 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="cursor-pointer px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 hover:border-accent/50 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all whitespace-nowrap"
         >
-          {connecting ? "Connecting..." : "Connect Wallet"}
+          <span className="hidden sm:inline">{connecting ? "Connecting..." : "Connect Wallet"}</span>
+          <span className="sm:hidden">{connecting ? "..." : "Connect"}</span>
         </button>
         {error && (
           <span className="text-[10px] text-error">{error}</span>
@@ -81,10 +82,10 @@ export default function WalletButton() {
     <div className="relative">
       <button
         onClick={() => setDropdownOpen(!dropdownOpen)}
-        className="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 rounded-lg bg-inset border border-border-default text-txt-secondary hover:text-txt-primary hover:border-border-muted transition-colors"
+        className="flex cursor-pointer items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1.5 rounded-lg bg-inset border border-border-default text-txt-secondary hover:text-txt-primary hover:border-border-muted transition-colors"
       >
         <StatusDot status="live" size="sm" />
-        <span className="text-[11px] font-mono font-medium">{shortAddress}</span>
+        <span className="text-[11px] font-mono font-medium hidden sm:inline">{shortAddress}</span>
         <svg
           className={`w-3 h-3 text-txt-muted transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
           viewBox="0 0 16 16"

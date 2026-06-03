@@ -224,10 +224,10 @@ export default function TopBar({
                 alt="SignalFlow logo"
                 width={36}
                 height={36}
-                className="h-9 w-9 object-contain"
+                className="h-7 w-7 sm:h-9 sm:w-9 object-contain"
                 priority
               />
-              <span className="font-bold text-[13px] text-txt-primary tracking-tight">SignalFlow</span>
+              <span className="hidden sm:inline font-bold text-[13px] text-txt-primary tracking-tight">SignalFlow</span>
             </button>
             <div
               className="hidden lg:flex items-center gap-1.5 rounded border border-border-default bg-elevated/25 px-1.5 py-0.5"
@@ -244,7 +244,7 @@ export default function TopBar({
             </div>
           </div>
 
-          <div className="h-5 w-px bg-border-default" />
+          <div className="hidden sm:block h-5 w-px bg-border-default" />
 
           <nav className="flex items-center gap-1 rounded-xl border border-border-default bg-elevated/20 px-1.5 py-1">
             {directNavItems.map(({ href, label, Icon }) => {
@@ -283,7 +283,7 @@ export default function TopBar({
         </div>
 
         {/* Right: system modal + wallet */}
-        <div className="flex min-w-0 items-center gap-2.5 shrink-0">
+        <div className="flex min-w-0 items-center gap-1.5 sm:gap-2.5 shrink-0">
           <div className="md:hidden flex items-center gap-1">
             <StatusDot status={dotStatus} pulse size="sm" />
           </div>
