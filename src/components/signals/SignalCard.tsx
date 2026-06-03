@@ -64,7 +64,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
             <SignalTypeBadge action={signal.actionV2 ?? signal.action} size="md" />
             {ticker && <Badge variant="live" size="sm">LIVE</Badge>}
             {signal.regime && (
-              <span className="text-[8px] px-1.5 py-0.5 rounded bg-elevated text-txt-faint font-mono uppercase tracking-wider">
+              <span className="text-[8px] px-1.5 py-0.5 rounded bg-elevated text-txt-muted font-mono uppercase tracking-wider">
                 {signal.regime.replace("_", " ")}
               </span>
             )}
@@ -145,7 +145,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
             {signal.setup && (
               <div className="rounded-lg border border-border-default bg-inset/30 p-2.5">
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <span className="text-[9px] text-txt-faint uppercase tracking-wider">Thesis</span>
+                  <span className="text-[9px] font-semibold text-txt-secondary uppercase tracking-wider">Thesis</span>
                   <span className="text-[9px] text-accent font-mono">
                     {signal.setup.evidence.slice(0, 2).join(" / ") || "Awaiting edge"}
                   </span>
@@ -161,17 +161,17 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
             {signal.quality && (
               <div className="rounded-lg border border-border-default bg-inset/30 p-2.5">
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <span className="text-[9px] text-txt-faint uppercase tracking-wider">Calibration</span>
-                  <span className="text-[9px] text-txt-muted font-mono">
+                  <span className="text-[9px] font-semibold text-txt-secondary uppercase tracking-wider">Calibration</span>
+                  <span className="text-[9px] text-txt-tertiary font-mono">
                     {signal.quality.rawConfidence} to {signal.quality.calibratedConfidence}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono">
-                  <span className="text-txt-muted">Min {signal.quality.minConfidence}</span>
+                  <span className="text-txt-tertiary">Min {signal.quality.minConfidence}</span>
                   <span className={signal.quality.confidenceAdjustment >= 0 ? "text-buy" : "text-sell"}>
                     Adj {signal.quality.confidenceAdjustment >= 0 ? "+" : ""}{signal.quality.confidenceAdjustment}
                   </span>
-                  <span className="text-txt-muted">{signal.quality.lesson.status}</span>
+                  <span className="text-txt-tertiary">{signal.quality.lesson.status}</span>
                 </div>
                 <p className="mt-1.5 text-[10px] leading-relaxed text-txt-muted">
                   {signal.quality.blockedReasons[0] ?? signal.quality.lesson.note}
@@ -197,7 +197,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
               backgroundColor: `${typeConfig.color}06`,
             }}
           >
-            <span className="text-[9px] text-txt-dim uppercase tracking-wider shrink-0">
+            <span className="text-[9px] font-semibold text-txt-secondary uppercase tracking-wider shrink-0">
               {typeConfig.label} Targets
             </span>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-mono">

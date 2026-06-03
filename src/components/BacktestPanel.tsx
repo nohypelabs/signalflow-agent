@@ -77,7 +77,7 @@ export default function BacktestPanel() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-bold text-txt-primary">Signal Backtest</h3>
-          <p className="text-[10px] text-txt-dim mt-0.5">
+          <p className="text-[10px] text-txt-tertiary mt-0.5">
             Replay historical signals and measure accuracy
           </p>
         </div>
@@ -91,7 +91,7 @@ export default function BacktestPanel() {
       {/* Controls */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <div>
-          <label className="text-[9px] text-txt-faint uppercase tracking-wider block mb-1">Pair</label>
+          <label className="text-[9px] font-semibold text-txt-tertiary uppercase tracking-wider block mb-1">Pair</label>
           <select
             value={pair}
             onChange={(e) => setPair(e.target.value)}
@@ -103,7 +103,7 @@ export default function BacktestPanel() {
           </select>
         </div>
         <div>
-          <label className="text-[9px] text-txt-faint uppercase tracking-wider block mb-1">Type</label>
+          <label className="text-[9px] font-semibold text-txt-tertiary uppercase tracking-wider block mb-1">Type</label>
           <select
             value={tradingType ?? ""}
             onChange={(e) => setTradingType(e.target.value ? e.target.value as TradingType : null)}
@@ -116,7 +116,7 @@ export default function BacktestPanel() {
           </select>
         </div>
         <div>
-          <label className="text-[9px] text-txt-faint uppercase tracking-wider block mb-1">
+          <label className="text-[9px] font-semibold text-txt-tertiary uppercase tracking-wider block mb-1">
             Resolution (bars)
           </label>
           <select
@@ -181,7 +181,7 @@ export default function BacktestPanel() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* Win/Loss */}
             <div className="p-3 rounded-lg bg-inset/30 border border-border-default">
-              <p className="text-[9px] text-txt-faint uppercase tracking-wider mb-2">Win / Loss</p>
+              <p className="text-[9px] font-semibold text-txt-secondary uppercase tracking-wider mb-2">Win / Loss</p>
               <div className="flex items-center gap-4">
                 <span className="text-sm font-bold text-buy">{data.wins}W</span>
                 <span className="text-sm font-bold text-sell">{data.losses}L</span>
@@ -195,7 +195,7 @@ export default function BacktestPanel() {
 
             {/* Long/Short */}
             <div className="p-3 rounded-lg bg-inset/30 border border-border-default">
-              <p className="text-[9px] text-txt-faint uppercase tracking-wider mb-2">Long vs Short</p>
+              <p className="text-[9px] font-semibold text-txt-secondary uppercase tracking-wider mb-2">Long vs Short</p>
               <div className="flex items-center gap-4">
                 <span className="text-sm font-bold text-buy">L: {data.longSignals} ({data.longWinRate}%)</span>
                 <span className="text-sm font-bold text-sell">S: {data.shortSignals} ({data.shortWinRate}%)</span>
@@ -208,7 +208,7 @@ export default function BacktestPanel() {
 
             {/* Streaks */}
             <div className="p-3 rounded-lg bg-inset/30 border border-border-default">
-              <p className="text-[9px] text-txt-faint uppercase tracking-wider mb-2">Streaks</p>
+              <p className="text-[9px] font-semibold text-txt-secondary uppercase tracking-wider mb-2">Streaks</p>
               <div className="flex items-center gap-4">
                 <span className="text-sm font-bold text-buy">Best {data.maxWinStreak}W</span>
                 <span className="text-sm font-bold text-sell">Worst {data.maxLossStreak}L</span>
@@ -222,7 +222,7 @@ export default function BacktestPanel() {
           {/* Regime accuracy */}
           {Object.keys(data.regimeAccuracy).length > 0 && (
             <div className="p-3 rounded-lg bg-inset/30 border border-border-default">
-              <p className="text-[9px] text-txt-faint uppercase tracking-wider mb-2">Accuracy by Regime</p>
+              <p className="text-[9px] font-semibold text-txt-secondary uppercase tracking-wider mb-2">Accuracy by Regime</p>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                 {Object.entries(data.regimeAccuracy).map(([regime, stats]) => (
                   <div key={regime} className="text-center">
@@ -241,8 +241,8 @@ export default function BacktestPanel() {
           {data.setupAccuracy && Object.keys(data.setupAccuracy).length > 0 && (
             <div className="p-3 rounded-lg bg-inset/30 border border-border-default">
               <div className="flex items-center justify-between gap-3 mb-2">
-                <p className="text-[9px] text-txt-faint uppercase tracking-wider">Accuracy by Setup</p>
-                <p className="text-[9px] text-txt-dim">TP/SL path based</p>
+                <p className="text-[9px] font-semibold text-txt-secondary uppercase tracking-wider">Accuracy by Setup</p>
+                <p className="text-[9px] text-txt-tertiary">TP/SL path based</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
                 {Object.entries(data.setupAccuracy)
@@ -304,7 +304,7 @@ export default function BacktestPanel() {
 function MetricCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
     <div className="p-2.5 rounded-lg bg-inset/30 border border-border-default text-center">
-      <p className="text-[8px] text-txt-faint uppercase tracking-wider">{label}</p>
+      <p className="text-[8px] font-semibold text-txt-tertiary uppercase tracking-wider">{label}</p>
       <p className="text-sm font-bold font-mono" style={{ color }}>{value}</p>
     </div>
   );
@@ -321,7 +321,7 @@ function SetupMetric({
 }) {
   return (
     <div className="rounded bg-inset/60 px-1.5 py-1">
-      <p className="text-[8px] text-txt-faint">{label}</p>
+      <p className="text-[8px] font-semibold text-txt-tertiary">{label}</p>
       <p className={`text-[10px] font-bold font-mono ${className}`}>{value}</p>
     </div>
   );
@@ -358,7 +358,7 @@ function EquityCurveMini({ curve }: { curve: { index: number; value: number }[] 
   return (
     <div className="p-3 rounded-lg bg-inset/30 border border-border-default">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[9px] text-txt-faint uppercase tracking-wider">Equity Curve</p>
+        <p className="text-[9px] font-semibold text-txt-secondary uppercase tracking-wider">Equity Curve</p>
         <span className="text-[10px] font-mono font-bold" style={{ color: lineColor }}>
           ${endVal.toFixed(0)} ({isUp ? "+" : ""}{((endVal - startVal) / startVal * 100).toFixed(1)}%)
         </span>

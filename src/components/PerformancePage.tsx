@@ -114,7 +114,7 @@ function EquityCurveChart({ points }: { points: EquityPoint[] }) {
         return (
           <g key={i}>
             <line x1={padL} y1={y} x2={vbW - padR} y2={y} stroke="#ffffff" strokeWidth="0.3" opacity="0.05" />
-            <text x={padL - 4} y={y + 3} fill="#475569" fontSize="8" textAnchor="end" fontFamily="monospace">
+            <text x={padL - 4} y={y + 3} fill="#7C8DA3" fontSize="8" textAnchor="end" fontFamily="monospace">
               ${val.toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </text>
           </g>
@@ -126,7 +126,7 @@ function EquityCurveChart({ points }: { points: EquityPoint[] }) {
         <>
           <line x1={scaleX(hIdx)} y1={padT} x2={scaleX(hIdx)} y2={vbH - padB} stroke="#ffffff" strokeWidth="0.5" opacity="0.1" strokeDasharray="2 2" />
           <circle cx={scaleX(hIdx)} cy={scaleY(hVal)} r="3" fill={lineColor} />
-          <text x={scaleX(hIdx)} y={vbH - 6} fill="#64748B" fontSize="7" textAnchor="middle" fontFamily="monospace">
+          <text x={scaleX(hIdx)} y={vbH - 6} fill="#94A3B8" fontSize="7" textAnchor="middle" fontFamily="monospace">
             {new Date(points[hIdx].timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
           </text>
         </>
@@ -266,7 +266,7 @@ export default function PerformancePage({
               { label: "Volatility", value: `${avgVolatility.toFixed(1)}%`, tone: "text-txt-primary" },
             ].map((item) => (
               <div key={item.label} className="border-l border-border-default px-3">
-                <div className="text-[9px] font-semibold uppercase tracking-wider text-txt-faint">{item.label}</div>
+                <div className="text-[9px] font-semibold uppercase tracking-wider text-txt-tertiary">{item.label}</div>
                 <div className={`mt-1 font-mono text-sm font-bold ${item.tone}`}>{item.value}</div>
               </div>
             ))}
@@ -292,7 +292,7 @@ export default function PerformancePage({
         {equityCurve.length > 2 && (
           <Card padding="lg">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-              <h4 className="text-xs font-semibold text-txt-secondary">Simulated Equity Curve</h4>
+              <h4 className="text-xs font-semibold text-txt-primary">Simulated Equity Curve</h4>
               <div className="flex items-center gap-3 flex-wrap text-[10px]">
                 <span className="text-txt-dim">Start: <span className="text-txt-secondary font-mono">$10,000</span></span>
                 <span className="text-txt-dim">End: <span className="text-txt-primary font-mono font-bold">${equityCurve[equityCurve.length - 1].value.toLocaleString()}</span></span>
@@ -310,10 +310,10 @@ export default function PerformancePage({
         <div className="space-y-4">
           {streaks && signalHistory.length > 0 && (
             <Card padding="sm">
-              <p className="text-[10px] text-txt-muted uppercase tracking-wider mb-2">Win/Loss Streaks</p>
+              <p className="text-[10px] font-semibold text-txt-secondary uppercase tracking-wider mb-2">Win/Loss Streaks</p>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <p className="text-[8px] text-txt-faint uppercase">Current</p>
+                  <p className="text-[8px] font-semibold text-txt-tertiary uppercase">Current</p>
                   <div className="flex items-center gap-1 mt-0.5">
                     <span className={`text-lg font-bold font-mono ${streaks.current.type === "win" ? "text-buy" : streaks.current.type === "loss" ? "text-sell" : "text-txt-dim"}`}>
                       {streaks.current.count}
@@ -332,11 +332,11 @@ export default function PerformancePage({
                   </div>
                 </div>
                 <div>
-                  <p className="text-[8px] text-txt-faint uppercase">Best Win</p>
+                  <p className="text-[8px] font-semibold text-txt-tertiary uppercase">Best Win</p>
                   <span className="text-lg font-bold font-mono text-buy">{streaks.bestWinStreak}</span>
                 </div>
                 <div>
-                  <p className="text-[8px] text-txt-faint uppercase">Worst Loss</p>
+                  <p className="text-[8px] font-semibold text-txt-tertiary uppercase">Worst Loss</p>
                   <span className="text-lg font-bold font-mono text-sell">{streaks.worstLossStreak}</span>
                 </div>
               </div>
@@ -345,22 +345,22 @@ export default function PerformancePage({
 
           {drawdown && drawdown.maxDrawdown > 0 && (
             <Card padding="sm">
-              <p className="text-[10px] text-txt-muted uppercase tracking-wider mb-2">Drawdown</p>
+              <p className="text-[10px] font-semibold text-txt-secondary uppercase tracking-wider mb-2">Drawdown</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-[8px] text-txt-faint uppercase">Peak</p>
+                  <p className="text-[8px] font-semibold text-txt-tertiary uppercase">Peak</p>
                   <p className="text-sm font-bold font-mono text-txt-primary">{fmtPrice(drawdown.peakValue)}</p>
                 </div>
                 <div>
-                  <p className="text-[8px] text-txt-faint uppercase">Trough</p>
+                  <p className="text-[8px] font-semibold text-txt-tertiary uppercase">Trough</p>
                   <p className="text-sm font-bold font-mono text-sell">{fmtPrice(drawdown.troughValue)}</p>
                 </div>
                 <div>
-                  <p className="text-[8px] text-txt-faint uppercase">Max DD</p>
+                  <p className="text-[8px] font-semibold text-txt-tertiary uppercase">Max DD</p>
                   <p className="text-sm font-bold font-mono text-sell">{drawdown.maxDrawdown.toFixed(1)}%</p>
                 </div>
                 <div>
-                  <p className="text-[8px] text-txt-faint uppercase">Recovery</p>
+                  <p className="text-[8px] font-semibold text-txt-tertiary uppercase">Recovery</p>
                   <p className="text-sm font-bold font-mono text-txt-primary">{drawdown.recoverySignals} signals</p>
                 </div>
               </div>
@@ -370,11 +370,11 @@ export default function PerformancePage({
           {/* Quick stat cards */}
           <div className="grid grid-cols-2 gap-2">
             <Card padding="sm">
-              <p className="text-[9px] text-txt-muted uppercase">Tracked</p>
+              <p className="text-[9px] font-semibold text-txt-tertiary uppercase">Tracked</p>
               <p className="text-lg font-bold font-mono text-txt-primary">{signalHistory.length}</p>
             </Card>
             <Card padding="sm">
-              <p className="text-[9px] text-txt-muted uppercase">Resolved</p>
+              <p className="text-[9px] font-semibold text-txt-tertiary uppercase">Resolved</p>
               <p className="text-lg font-bold font-mono text-info">{signalStats?.totalResolved ?? 0}</p>
             </Card>
           </div>
@@ -384,7 +384,7 @@ export default function PerformancePage({
       {/* ── 30D Returns + Coin Table ── */}
       <div>
         <Card padding="lg">
-          <h4 className="text-xs font-semibold text-txt-secondary mb-3">30-Day Returns</h4>
+          <h4 className="text-xs font-semibold text-txt-primary mb-3">30-Day Returns</h4>
           <div className="flex items-end gap-3 md:gap-6 h-40 overflow-x-auto scrollbar-none">
             {coins.map((coin) => {
               const maxAbs = Math.max(...coins.map((c) => Math.abs(c.change30d)), 1);

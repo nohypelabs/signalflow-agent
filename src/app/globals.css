@@ -46,9 +46,9 @@
   --text-primary: #F8FAFC;
   --text-secondary: #CBD5E1;
   --text-tertiary: #94A3B8;
-  --text-muted: #64748B;
-  --text-dim: #475569;
-  --text-faint: #334155;
+  --text-muted: #94A3B8;
+  --text-dim: #7C8DA3;
+  --text-faint: #64748B;
 }
 
 @theme inline {
