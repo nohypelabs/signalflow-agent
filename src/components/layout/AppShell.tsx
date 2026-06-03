@@ -21,7 +21,6 @@ interface AppShellProps {
     walletAddress?: string;
     onExecute: (order: SoDEXNewOrderRequest) => Promise<void>;
     onClose: () => void;
-    paperMode?: boolean;
     paperBalance?: number;
     paperAvailable?: number;
     onPaperTrade?: (trade: { pair: string; side: 'LONG' | 'SHORT'; leverage: number; margin: number; entryPrice: number; takeProfit: number; stopLoss: number }) => void;
@@ -108,7 +107,6 @@ export default function AppShell({
           walletAddress={tradeForm.walletAddress}
           onExecute={tradeForm.onExecute}
           onClose={tradeForm.onClose}
-          paperMode={tradeForm.paperMode}
           paperBalance={tradeForm.paperBalance}
           paperAvailable={tradeForm.paperAvailable}
           onPaperTrade={tradeForm.onPaperTrade}

@@ -22,6 +22,8 @@ interface PaperTradeInput {
   stopLoss: number;
 }
 
+type TradeMode = 'live' | 'paper';
+
 interface Props {
   signal: Signal | null;
   ticker: SoDEXTicker | null;
@@ -30,7 +32,6 @@ interface Props {
   onExecute: (order: SoDEXNewOrderRequest) => Promise<void>;
   onClose: () => void;
   // Paper trading props
-  paperMode?: boolean;
   paperBalance?: number;
   paperAvailable?: number;
   onPaperTrade?: (trade: PaperTradeInput) => void;
@@ -44,12 +45,15 @@ function formatPrice(p: number) {
 
 const PCT_OPTIONS = [25, 50, 75, 100] as const;
 
-export default function TradeForm({ signal, ticker, walletConnected, walletAddress, onExecute, onClose, paperMode, paperBalance, paperAvailable, onPaperTrade }: Props) {
+export default function TradeForm({ signal, ticker, walletConnected, walletAddress, onExecute, onClose, paperBalance, paperAvailable, onPaperTrade }: Props) {
+  const [mode, setMode] = useState<TradeMode>('paper');
   const [quantity, setQuantity] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const { signTypedDataAsync } = useSignTypedData();
+
+  const isPaper = mode === 'paper';
 
   const [balances, setBalances] = useState<SoDEXBalance[]>([]);
   const [balanceLoading, setBalanceLoading] = useState(false);
@@ -94,7 +98,7 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
     (b) => b.asset.toUpperCase() === balanceAsset.toUpperCase(),
   );
   const liveFreeBalance = balance ? parseFloat(String(balance.free)) : 0;
-  const freeBalance = paperMode ? (paperAvailable ?? 0) : liveFreeBalance;
+  const freeBalance = isPaper ? (paperAvailable ?? 0) : liveFreeBalance;
 
   const maxQty =
     side === "BUY"
@@ -127,7 +131,7 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
 
     try {
       // Paper trading mode
-      if (paperMode && onPaperTrade) {
+      if (isPaper && onPaperTrade) {
         const margin = side === "BUY" ? qty * price : qty * price;
         const leverage = 1;
         onPaperTrade({
@@ -197,6 +201,25 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
           </button>
         </div>
 
+        {/* Mode Switcher */}
+        <div className="flex rounded-lg border border-border-default bg-inset p-0.5 mb-4">
+          {(['paper', 'live'] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => { setMode(m); setError(null); setSuccess(null); }}
+              className={`flex-1 cursor-pointer rounded-md py-2 text-xs font-semibold transition-all ${
+                mode === m
+                  ? m === 'paper'
+                    ? 'bg-accent/15 text-accent border border-accent/30 shadow-[0_0_12px_rgba(0,229,168,0.15)]'
+                    : 'bg-sell/10 text-sell border border-sell/30 shadow-[0_0_12px_rgba(255,68,68,0.15)]'
+                  : 'text-txt-muted hover:text-txt-secondary border border-transparent'
+              }`}
+            >
+              {m === 'paper' ? 'Paper Trade' : 'Live Trade'}
+            </button>
+          ))}
+        </div>
+
         {/* Signal info */}
         <Card variant="inset" padding="md" className="mb-4 space-y-1.5">
           <div className="flex justify-between text-xs">
@@ -221,9 +244,9 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
         <Card variant="inset" padding="md" className="mb-4 space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-txt-muted">
-              {paperMode ? "Paper Balance" : "Wallet Balance"}
+              {isPaper ? "Paper Balance" : "Wallet Balance"}
             </span>
-            {paperMode ? (
+            {isPaper ? (
               <span className="text-[10px] text-accent font-semibold">PAPER</span>
             ) : (
               <>
@@ -246,7 +269,7 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
             )}
           </div>
 
-          {paperMode ? (
+          {isPaper ? (
             <div className="pt-1.5 mt-1 border-t border-border-default flex justify-between">
               <span className="text-[10px] text-txt-muted">
                 Available (USDC)
@@ -379,18 +402,18 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
           size="lg"
           className="w-full"
           onClick={handleExecute}
-          disabled={(!paperMode && !walletConnected) || !quantity || submitting}
+          disabled={!walletConnected || !quantity || submitting}
           loading={submitting}
         >
-          {paperMode
-            ? "Open Paper Trade"
-            : !walletConnected
-              ? "Connect Wallet to Execute"
+          {!walletConnected
+            ? "Connect Wallet to Execute"
+            : isPaper
+              ? "Open Paper Trade"
               : "Sign & Submit"}
         </Button>
 
         <p className="text-center text-[10px] text-txt-faint mt-3">
-          {paperMode ? "Paper Trading — No real funds at risk" : "SoDEX Mainnet — EIP-712 signing required"}
+          {isPaper ? "Paper Trading — No real funds at risk" : "SoDEX Mainnet — EIP-712 signing required"}
         </p>
       </Card>
     </div>

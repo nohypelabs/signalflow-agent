@@ -33,7 +33,6 @@ function ShellWithProps({ children }: { children: React.ReactNode }) {
               walletAddress: d.address,
               onExecute: d.handleExecuteOrder,
               onClose: d.handleCloseForm,
-              paperMode: !d.isConnected,
               paperBalance: paper.balance?.total,
               paperAvailable: paper.balance?.available,
               onPaperTrade: (trade) => {
