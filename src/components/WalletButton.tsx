@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useWallet } from "@/lib/hooks/useWallet";
 import { useSwitchChain } from "wagmi";
 import { valuechain } from "@/lib/wallet-config";
@@ -10,13 +10,27 @@ import StatusDot from "@/components/ui/StatusDot";
 import WalletDropdown from "@/components/layout/WalletDropdown";
 
 export default function WalletButton() {
-  const { shortAddress, isConnected, chainId, connect, disconnect } = useWallet();
+  const {
+    shortAddress,
+    isConnected,
+    chainId,
+    connect,
+    disconnect,
+    hasInjectedProvider,
+    walletConnectConfigured,
+  } = useWallet();
   const { switchChainAsync } = useSwitchChain();
+  const [mounted, setMounted] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const correctChain = chainId === valuechain.id;
+  const walletConnectMissing = mounted && !hasInjectedProvider && !walletConnectConfigured;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleConnect = async () => {
     setConnecting(true);
@@ -52,6 +66,11 @@ export default function WalletButton() {
         </button>
         {error && (
           <span className="text-[10px] text-error">{error}</span>
+        )}
+        {!error && walletConnectMissing && (
+          <span className="hidden md:inline text-[10px] text-hold">
+            WalletConnect env missing
+          </span>
         )}
       </div>
     );
