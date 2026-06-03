@@ -11,6 +11,7 @@ import MarketTickerTape from "./MarketTickerTape";
 import { useAlerts } from "@/lib/hooks/useAlerts";
 import {
   ActivityIcon,
+  BarChartIcon,
   BellIcon,
   ChartIcon,
   DocsIcon,
@@ -45,6 +46,7 @@ const navGroups = {
   trading: [
     { href: "/trading", label: "Trading", Icon: TradeIcon },
     { href: "/portfolio", label: "Portfolio", Icon: ChartIcon },
+    { href: "/analytics", label: "Analytics", Icon: BarChartIcon },
     { href: "/alerts", label: "Alerts", Icon: BellIcon },
     { href: "/journal", label: "Journal", Icon: DocumentIcon },
     { href: "/trade-history", label: "Trade History", Icon: HistoryIcon },

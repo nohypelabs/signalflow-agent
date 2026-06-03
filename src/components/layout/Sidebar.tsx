@@ -19,6 +19,7 @@ import {
   ChartIcon,
   BellIcon,
   DocumentIcon,
+  BarChartIcon,
 } from "@/components/ui/icons";
 
 const groups = [
@@ -36,6 +37,7 @@ const groups = [
     items: [
       { href: "/trading", label: "Trading", Icon: TradeIcon },
       { href: "/portfolio", label: "Portfolio", Icon: ChartIcon },
+      { href: "/analytics", label: "Analytics", Icon: BarChartIcon },
       { href: "/alerts", label: "Alerts", Icon: BellIcon },
       { href: "/journal", label: "Journal", Icon: DocumentIcon },
       { href: "/trade-history", label: "Trade History", Icon: HistoryIcon },
