@@ -139,7 +139,7 @@ export default function TopBar({
 
   const pagesMenuButton = () => {
     return (
-      <div className="relative">
+      <div className="relative lg:ml-0 ml-[-23%]">
         <button
           type="button"
           onClick={() => setPagesOpen(!pagesOpen)}
@@ -212,10 +212,11 @@ export default function TopBar({
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex items-center gap-2">
             {pagesMenuButton()}
+            {/* Desktop: logo inline */}
             <button
               type="button"
               onClick={() => navigate("/dashboard")}
-              className="flex cursor-pointer items-center gap-2 rounded-lg pr-1 transition-opacity hover:opacity-85"
+              className="hidden lg:flex cursor-pointer items-center gap-2 rounded-lg pr-1 transition-opacity hover:opacity-85"
               aria-label="Go to dashboard"
             >
               <Image
@@ -223,10 +224,10 @@ export default function TopBar({
                 alt="SignalFlow logo"
                 width={36}
                 height={36}
-                className="h-7 w-7 sm:h-9 sm:w-9 object-contain"
+                className="h-9 w-9 object-contain"
                 priority
               />
-              <span className="hidden sm:inline font-bold text-[13px] text-txt-primary tracking-tight">SignalFlow</span>
+              <span className="font-bold text-[13px] text-txt-primary tracking-tight">SignalFlow</span>
             </button>
             <div
               className="hidden lg:flex items-center gap-1.5 rounded border border-border-default bg-elevated/25 px-1.5 py-0.5"
@@ -245,7 +246,7 @@ export default function TopBar({
 
           <div className="hidden sm:block h-5 w-px bg-border-default" />
 
-          <nav className="flex items-center gap-1 rounded-xl border border-border-default bg-elevated/20 px-1.5 py-1">
+          <nav className="flex items-center gap-1 rounded-xl border border-border-default bg-elevated/20 px-1.5 py-1 lg:ml-0 ml-[-15%]">
             {directNavItems.map(({ href, label, Icon }) => {
               const itemActive = pathname === href;
               return (
@@ -267,6 +268,23 @@ export default function TopBar({
           </nav>
 
         </div>
+
+        {/* Mobile: logo centered */}
+        <button
+          type="button"
+          onClick={() => navigate("/dashboard")}
+          className="absolute left-1/2 -translate-x-1/2 lg:hidden flex cursor-pointer items-center transition-opacity hover:opacity-85"
+          aria-label="Go to dashboard"
+        >
+          <Image
+            src="/icons/signalflow-logo.png"
+            alt="SignalFlow logo"
+            width={32}
+            height={32}
+            className="h-7 w-7 object-contain"
+            priority
+          />
+        </button>
 
         {/* Center: scrolling ticker tape (desktop only) */}
         <div
