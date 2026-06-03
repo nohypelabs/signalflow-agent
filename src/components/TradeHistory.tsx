@@ -72,33 +72,33 @@ export default function TradeHistory({
   };
 
   return (
-    <div className="space-y-4">
-      <section className="rounded-xl border border-border-default bg-inset/70 p-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
+    <div className="min-w-0 space-y-4">
+      <section className="rounded-xl border border-border-default bg-inset/70 p-3 sm:p-4">
+        <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-txt-secondary">Trade History</p>
               <Badge variant="muted" size="sm">PAPER + LIVE</Badge>
             </div>
-            <div className="mt-1 flex items-end gap-3">
-              <div className={`font-mono text-5xl font-bold leading-none tracking-tight ${paperPnl >= 0 ? "text-buy" : "text-sell"}`}>
+            <div className="mt-1 flex min-w-0 flex-wrap items-end gap-3">
+              <div className={`font-mono text-4xl font-bold leading-none tracking-tight sm:text-5xl ${paperPnl >= 0 ? "text-buy" : "text-sell"}`}>
                 {paperPnl >= 0 ? "+" : ""}{fmtUsd(paperPnl)}
               </div>
-              <div className="pb-1">
+              <div className="min-w-0 pb-1">
                 <div className="text-sm font-semibold text-txt-primary">closed paper P&L</div>
-                <div className="text-[11px] text-txt-tertiary">{closedPaperTrades.length} closed paper trades · {orders.length} live orders</div>
+                <div className="truncate text-[11px] text-txt-tertiary">{closedPaperTrades.length} closed paper trades · {orders.length} live orders</div>
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[520px]">
+          <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4 lg:max-w-[520px] lg:flex-1">
             {[
               { label: "Open Orders", value: `${openOrders.length}`, tone: "text-info" },
               { label: "Filled / History", value: `${filledOrders.length} / ${historyOrders.length}`, tone: "text-buy" },
               { label: "Live Signals", value: `${liveSignals.length}`, tone: "text-txt-primary" },
               { label: "Paper WR", value: paperStats ? `${paperStats.winRate.toFixed(1)}%` : "—", tone: paperStats && paperStats.winRate >= 50 ? "text-buy" : "text-hold" },
             ].map((item) => (
-              <div key={item.label} className="border-l border-border-default px-3">
-                <div className="text-[9px] font-semibold uppercase tracking-wider text-txt-faint">{item.label}</div>
+              <div key={item.label} className="min-w-0 border-l border-border-default px-3">
+                <div className="truncate text-[9px] font-semibold uppercase tracking-wider text-txt-faint">{item.label}</div>
                 <div className={`mt-1 font-mono text-sm font-bold ${item.tone}`}>{item.value}</div>
               </div>
             ))}
@@ -108,31 +108,31 @@ export default function TradeHistory({
 
       {/* Tabs */}
       <div className="overflow-x-auto scrollbar-none">
-      <div className="flex gap-1 bg-inset rounded-lg p-1 w-max min-w-full sm:min-w-0 sm:w-fit">
-        {(["paper", "open", "filled", "signals"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-3 py-1.5 text-xs rounded-md font-medium whitespace-nowrap ${
-              tab === t
-                ? "bg-elevated text-txt-primary"
-                : "text-txt-muted hover:text-txt-secondary"
-            }`}
-          >
-            {t === "paper"
-              ? `Paper (${closedPaperTrades.length})`
-              : t === "open"
-                ? `Open (${openOrders.length})`
-                : t === "filled"
-                  ? `Live History (${historyOrders.length})`
-                  : `Signals (${liveSignals.length})`}
-          </button>
-        ))}
-      </div>
+        <div className="flex gap-1 bg-inset rounded-lg p-1 w-max min-w-full sm:min-w-0 sm:w-fit">
+          {(["paper", "open", "filled", "signals"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-3 py-1.5 text-xs rounded-md font-medium whitespace-nowrap ${
+                tab === t
+                  ? "bg-elevated text-txt-primary"
+                  : "text-txt-muted hover:text-txt-secondary"
+              }`}
+            >
+              {t === "paper"
+                ? `Paper (${closedPaperTrades.length})`
+                : t === "open"
+                  ? `Open (${openOrders.length})`
+                  : t === "filled"
+                    ? `Live History (${historyOrders.length})`
+                    : `Signals (${liveSignals.length})`}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Content */}
-      <Card padding="none" className="overflow-hidden">
+      <Card padding="none" className="min-w-0 overflow-hidden">
         {/* Loading */}
         {ordersLoading && (
           <div className="p-4 space-y-3">
