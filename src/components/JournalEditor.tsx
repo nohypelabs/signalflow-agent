@@ -133,8 +133,8 @@ export default function JournalEditor({ initialData, onSave, onCancel }: Props) 
       </div>
 
       {/* Row 2: P&L + Mood */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
+      <div className="flex gap-3">
+        <div className="w-32 shrink-0">
           <label className="text-[10px] font-semibold uppercase tracking-wider text-txt-faint">P&L (USDC)</label>
           <input
             type="number"
@@ -144,7 +144,7 @@ export default function JournalEditor({ initialData, onSave, onCancel }: Props) 
             className="mt-1 w-full rounded-lg border border-border-default bg-elevated px-3 py-2 text-xs text-txt-primary placeholder:text-txt-faint focus:border-accent/50 focus:outline-none"
           />
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <label className="text-[10px] font-semibold uppercase tracking-wider text-txt-faint">Mood</label>
           <div className="mt-1 flex gap-1">
             {(Object.keys(MOOD_CONFIG) as JournalMood[]).map((m) => {
@@ -160,8 +160,8 @@ export default function JournalEditor({ initialData, onSave, onCancel }: Props) 
                       : "bg-elevated border border-border-default hover:bg-elevated/80"
                   }`}
                 >
-                  <span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: cfg.dotColor }} />
-                  {cfg.short}
+                  <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: cfg.dotColor }} />
+                  {cfg.label}
                 </button>
               );
             })}

@@ -69,9 +69,9 @@ export default function JournalEntryCard({ entry, onEdit, onDelete }: Props) {
         )}
 
         {/* Mood */}
-        <span title={moodCfg.label} className={`text-[10px] font-semibold ${moodCfg.color}`}>
-          <span className="inline-block w-1.5 h-1.5 rounded-full mr-1" style={{ backgroundColor: moodCfg.dotColor }} />
-          {moodCfg.short}
+        <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${moodCfg.color}`}>
+          <span className="inline-block w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: moodCfg.dotColor }} />
+          {moodCfg.label}
         </span>
 
         {/* Tags preview */}
@@ -150,8 +150,8 @@ export default function JournalEntryCard({ entry, onEdit, onDelete }: Props) {
                   )}
                   <div>
                     <span className="text-[10px] text-txt-faint">Mood</span>
-                    <p className={`text-xs ${moodCfg.color}`}>
-                      <span className="inline-block w-1.5 h-1.5 rounded-full mr-1" style={{ backgroundColor: moodCfg.dotColor }} />
+                    <p className={`inline-flex items-center gap-1.5 text-xs ${moodCfg.color}`}>
+                      <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: moodCfg.dotColor }} />
                       {moodCfg.label}
                     </p>
                   </div>

@@ -139,8 +139,8 @@ export default function JournalPage({
                         : "text-txt-muted hover:text-txt-secondary"
                     }`}
                   >
-                    <span className="inline-block w-1.5 h-1.5 rounded-full mr-1" style={{ backgroundColor: MOOD_CONFIG[m].dotColor }} />
-                    {MOOD_CONFIG[m].short} {count}
+                    <span className="inline-block w-1.5 h-1.5 rounded-full mr-1.5" style={{ backgroundColor: MOOD_CONFIG[m].dotColor }} />
+                    {MOOD_CONFIG[m].label} ({count})
                   </button>
                 );
               })}
