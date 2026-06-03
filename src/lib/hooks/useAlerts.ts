@@ -116,8 +116,8 @@ export function useAlerts(tickers?: SoDEXTicker[] | null) {
           const direction = priceAlert.type === "price_above" ? "above" : "below";
           const msg = `${priceAlert.pair} is now ${direction} $${priceAlert.targetPrice.toLocaleString()} (current: $${currentPrice.toLocaleString()})`;
 
-          toast.success("Price Alert Triggered! 🎯", { description: msg });
-          fireNotification("Price Alert Triggered! 🎯", msg);
+          toast.success("Price Alert Triggered", { description: msg });
+          fireNotification("Price Alert Triggered", msg);
 
           changed = true;
           return {
@@ -244,8 +244,8 @@ export function useAlerts(tickers?: SoDEXTicker[] | null) {
           lastTriggeredRef.current.add(alert.id);
           const msg = `${pair} — ${signalAction} signal detected!`;
 
-          toast.success("Signal Alert Triggered! 📡", { description: msg });
-          fireNotification("Signal Alert Triggered! 📡", msg);
+          toast.success("Signal Alert Triggered", { description: msg });
+          fireNotification("Signal Alert Triggered", msg);
 
           changed = true;
           return { ...signalAlert, triggered: true, triggeredAt: Date.now() };

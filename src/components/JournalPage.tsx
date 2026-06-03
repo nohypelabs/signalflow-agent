@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { AnimatePresence } from "framer-motion";
-import { PlusIcon } from "@/components/ui/icons";
+import { PlusIcon, DocumentIcon } from "@/components/ui/icons";
 import JournalEditor from "./JournalEditor";
 import JournalEntryCard from "./JournalEntryCard";
 import type { JournalEntry, JournalMood } from "@/lib/types/journal";
@@ -139,7 +139,8 @@ export default function JournalPage({
                         : "text-txt-muted hover:text-txt-secondary"
                     }`}
                   >
-                    {MOOD_CONFIG[m].emoji} {count}
+                    <span className="inline-block w-1.5 h-1.5 rounded-full mr-1" style={{ backgroundColor: MOOD_CONFIG[m].dotColor }} />
+                    {MOOD_CONFIG[m].short} {count}
                   </button>
                 );
               })}
@@ -216,7 +217,7 @@ export default function JournalPage({
       {/* Entry list */}
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-border-default bg-card py-16">
-          <span className="text-3xl mb-3">📓</span>
+          <DocumentIcon size={32} className="text-txt-faint mb-3" />
           <p className="text-sm font-medium text-txt-muted">
             {entries.length === 0 ? "No journal entries yet" : "No entries match your filters"}
           </p>

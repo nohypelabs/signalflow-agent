@@ -154,13 +154,14 @@ export default function JournalEditor({ initialData, onSave, onCancel }: Props) 
                   key={m}
                   onClick={() => setMood(m)}
                   title={cfg.label}
-                  className={`flex-1 cursor-pointer rounded-lg py-1.5 text-sm transition-colors ${
+                  className={`flex-1 cursor-pointer rounded-lg py-1.5 text-[11px] font-semibold transition-colors ${
                     mood === m
                       ? "bg-accent/15 border border-accent/30"
                       : "bg-elevated border border-border-default hover:bg-elevated/80"
                   }`}
                 >
-                  {cfg.emoji}
+                  <span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: cfg.dotColor }} />
+                  {cfg.short}
                 </button>
               );
             })}

@@ -16,12 +16,12 @@ export interface JournalEntry {
   updatedAt: number;
 }
 
-export const MOOD_CONFIG: Record<JournalMood, { label: string; emoji: string; color: string }> = {
-  confident: { label: 'Confident', emoji: '😎', color: 'text-buy' },
-  neutral:   { label: 'Neutral',   emoji: '😐', color: 'text-txt-muted' },
-  anxious:   { label: 'Anxious',   emoji: '😰', color: 'text-warning' },
-  fomo:      { label: 'FOMO',      emoji: '🤯', color: 'text-error' },
-  revenge:   { label: 'Revenge',   emoji: '😤', color: 'text-error' },
+export const MOOD_CONFIG: Record<JournalMood, { label: string; short: string; color: string; dotColor: string }> = {
+  confident: { label: 'Confident', short: 'C', color: 'text-buy', dotColor: '#00ff88' },
+  neutral:   { label: 'Neutral',   short: 'N', color: 'text-txt-muted', dotColor: '#475569' },
+  anxious:   { label: 'Anxious',   short: 'A', color: 'text-warning', dotColor: '#ff8800' },
+  fomo:      { label: 'FOMO',      short: 'F', color: 'text-error', dotColor: '#ff4444' },
+  revenge:   { label: 'Revenge',   short: 'R', color: 'text-error', dotColor: '#ff4444' },
 };
 
 export const SUGGESTED_TAGS = [
