@@ -10,8 +10,10 @@ import { BarChartIcon, BriefcaseIcon, DataSourceIcon, DocumentIcon, TrendUpIcon 
 
 const STORAGE_KEY = "signalflow-strategy-config";
 type StrategyPresetName = "conservative" | "balanced" | "aggressive";
+type StrategyEngineName = "confluence" | "liquidityFlow";
 
 interface StrategyConfig {
+  engine: StrategyEngineName;
   etfFlow: number;
   sentiment: number;
   macro: number;
@@ -25,6 +27,7 @@ interface StrategyConfig {
 }
 
 const DEFAULT_CONFIG: StrategyConfig = {
+  engine: "confluence",
   etfFlow: 30,
   sentiment: 25,
   macro: 20,
@@ -38,9 +41,24 @@ const DEFAULT_CONFIG: StrategyConfig = {
 };
 
 const PRESETS: Record<StrategyPresetName, StrategyConfig> = {
-  conservative: { etfFlow: 35, sentiment: 15, macro: 25, momentum: 10, treasury: 15, minConfidence: 80, maxPositionSize: 3, autoExecute: false, slippage: 0.3, maxDailyTrades: 5 },
-  balanced: { etfFlow: 30, sentiment: 25, macro: 20, momentum: 15, treasury: 10, minConfidence: 70, maxPositionSize: 5, autoExecute: true, slippage: 0.5, maxDailyTrades: 10 },
-  aggressive: { etfFlow: 20, sentiment: 30, macro: 10, momentum: 30, treasury: 10, minConfidence: 55, maxPositionSize: 10, autoExecute: true, slippage: 1.0, maxDailyTrades: 25 },
+  conservative: { ...DEFAULT_CONFIG, etfFlow: 35, sentiment: 15, macro: 25, momentum: 10, treasury: 15, minConfidence: 80, maxPositionSize: 3, autoExecute: false, slippage: 0.3, maxDailyTrades: 5 },
+  balanced: { ...DEFAULT_CONFIG, etfFlow: 30, sentiment: 25, macro: 20, momentum: 15, treasury: 10, minConfidence: 70, maxPositionSize: 5, autoExecute: true, slippage: 0.5, maxDailyTrades: 10 },
+  aggressive: { ...DEFAULT_CONFIG, etfFlow: 20, sentiment: 30, macro: 10, momentum: 30, treasury: 10, minConfidence: 55, maxPositionSize: 10, autoExecute: true, slippage: 1.0, maxDailyTrades: 25 },
+};
+
+const LIQUIDITY_FLOW_CONFIG: StrategyConfig = {
+  ...DEFAULT_CONFIG,
+  engine: "liquidityFlow",
+  etfFlow: 0,
+  sentiment: 0,
+  macro: 0,
+  momentum: 100,
+  treasury: 0,
+  minConfidence: 72,
+  maxPositionSize: 0.5,
+  autoExecute: false,
+  slippage: 0.03,
+  maxDailyTrades: 8,
 };
 
 const PRESET_META: Record<StrategyPresetName, { label: string; badge: string; desc: string; tone: string; bullets: string[] }> = {
@@ -102,6 +120,48 @@ const dimSliders = [
   { key: "treasury" as const, label: "Treasury", color: "#ff4488", icon: "treasury" as const, desc: "Public company BTC holdings, institutional adoption" },
 ];
 
+const STRATEGY_ENGINES: Record<
+  StrategyEngineName,
+  {
+    label: string;
+    badge: string;
+    desc: string;
+    thesis: string;
+    tone: string;
+    checks: string[];
+    breakdown: { label: string; value: string; detail: string }[];
+  }
+> = {
+  confluence: {
+    label: "Confluence V2",
+    badge: "Current",
+    desc: "Multi-factor signal engine for broader directional context.",
+    thesis: "Combines SoSoValue fundamentals, sentiment, macro, and technical momentum into one confidence score.",
+    tone: "border-accent/40 bg-accent/10 text-accent",
+    checks: ["ETF flow", "sentiment layer", "macro regime", "momentum confirmation", "treasury adoption"],
+    breakdown: [
+      { label: "Entry Source", value: "Composite score", detail: "Signal appears when weighted factors pass confidence threshold." },
+      { label: "Best Fit", value: "Intraday / swing", detail: "Useful when market context matters more than microstructure speed." },
+      { label: "Execution", value: "Limit preferred", detail: "Slippage guard follows configured tolerance." },
+    ],
+  },
+  liquidityFlow: {
+    label: "Liquidity Flow",
+    badge: "New",
+    desc: "Orderbook-first strategy for cleaner entries and strict execution control.",
+    thesis: "Ignores news as an entry trigger, checks spread and top-book imbalance first, then uses EMA(9), EMA(21), and RSI(14) only.",
+    tone: "border-info/40 bg-info/10 text-info",
+    checks: ["top 5 bid/ask", "spread <= 3 bps", "orderbook imbalance", "EMA 9/21", "RSI 14", "limit-only timeout"],
+    breakdown: [
+      { label: "Entry Gate", value: "Liquidity first", detail: "Skip if spread is wider than 3 bps or imbalance is weak." },
+      { label: "TA Layer", value: "EMA + RSI", detail: "No MACD, OBV, Bollinger, linear regression, or news trigger." },
+      { label: "Risk / Execution", value: "0.5% + 200ms", detail: "Max two positions, limit order only, timeout then skip." },
+    ],
+  },
+};
+
+const STRATEGY_ENGINE_ORDER: StrategyEngineName[] = ["confluence", "liquidityFlow"];
+
 function DimIcon({ icon }: { icon: (typeof dimSliders)[number]["icon"] }) {
   if (icon === "etf") return <BarChartIcon size={12} />;
   if (icon === "sentiment") return <DocumentIcon size={12} />;
@@ -132,6 +192,16 @@ export default function StrategyConfig() {
     setTimeout(() => setSaved(false), 1500);
   };
 
+  const selectEngine = (engine: StrategyEngineName, closeModal = false) => {
+    const next = engine === "liquidityFlow" ? LIQUIDITY_FLOW_CONFIG : { ...DEFAULT_CONFIG, engine };
+    setConfig(next);
+    saveConfig(next);
+    setActivePreset(engine === "confluence" ? "balanced" : null);
+    if (closeModal) setShowPresetModal(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  };
+
   const applyPreset = (name: StrategyPresetName, closeModal = false) => {
     const preset = PRESETS[name];
     if (!preset) return;
@@ -153,19 +223,33 @@ export default function StrategyConfig() {
 
   // Weight total validation
   const weightTotal = config.etfFlow + config.sentiment + config.macro + config.momentum + config.treasury;
-  const weightValid = weightTotal >= 90 && weightTotal <= 110;
+  const weightValid = config.engine === "liquidityFlow" || (weightTotal >= 90 && weightTotal <= 110);
 
   // Live dimension data
   const liveDims = signalsData?.dimensions?.BTC;
 
   // Active strategies
-  const activeStrategies = useMemo(() => [
-    { name: "Multi-Signal Momentum", desc: "ETF flow + sentiment + momentum for directional trades", active: config.etfFlow + config.sentiment + config.momentum > 50 },
-    { name: "Macro Regime Follower", desc: "Adjusts risk based on Fed policy and macro indicators", active: config.macro >= 15 },
-    { name: "Sentiment Reversal", desc: "Contrarian plays when sentiment hits extreme levels", active: config.sentiment >= 25 },
-    { name: "Treasury Accumulation", desc: "Long bias when institutional BTC holdings increase", active: config.treasury >= 15 },
-    { name: "Pure Technical", desc: "Momentum-driven entries with tight risk management", active: config.momentum >= 25 },
-  ], [config]);
+  const activeStrategies = useMemo(() => {
+    if (config.engine === "liquidityFlow") {
+      return [
+        { name: "Spread Gate", desc: "Never enter when top-book spread is wider than 3 bps", active: true },
+        { name: "Book Imbalance", desc: "Require dominant bid/ask depth before directional entry", active: true },
+        { name: "EMA 9/21 Filter", desc: "Use only fast/slow EMA alignment for trend confirmation", active: true },
+        { name: "RSI 14 Guard", desc: "Avoid entries when RSI shows poor continuation quality", active: true },
+        { name: "News Trigger", desc: "Disabled because latency edge is not available", active: false },
+      ];
+    }
+
+    return [
+      { name: "Multi-Signal Momentum", desc: "ETF flow + sentiment + momentum for directional trades", active: config.etfFlow + config.sentiment + config.momentum > 50 },
+      { name: "Macro Regime Follower", desc: "Adjusts risk based on Fed policy and macro indicators", active: config.macro >= 15 },
+      { name: "Sentiment Reversal", desc: "Contrarian plays when sentiment hits extreme levels", active: config.sentiment >= 25 },
+      { name: "Treasury Accumulation", desc: "Long bias when institutional BTC holdings increase", active: config.treasury >= 15 },
+      { name: "Pure Technical", desc: "Momentum-driven entries with tight risk management", active: config.momentum >= 25 },
+    ];
+  }, [config]);
+
+  const selectedEngine = STRATEGY_ENGINES[config.engine];
 
   return (
     <div className="space-y-5">
@@ -176,9 +260,9 @@ export default function StrategyConfig() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">Strategy setup</p>
-                  <h2 className="mt-1 text-2xl font-bold text-txt-primary">Choose your strategy preset</h2>
+                  <h2 className="mt-1 text-2xl font-bold text-txt-primary">Choose strategy engine</h2>
                   <p className="mt-1 max-w-2xl text-sm text-txt-secondary">
-                    Pick the risk profile before tuning weights. You can still fine-tune every slider after selection.
+                    Select the signal approach first. The breakdown and controls below will follow the selected engine.
                   </p>
                 </div>
                 <button
@@ -190,14 +274,14 @@ export default function StrategyConfig() {
               </div>
             </div>
 
-            <div className="grid gap-3 p-4 md:grid-cols-3">
-              {PRESET_ORDER.map((name) => {
-                const meta = PRESET_META[name];
-                const selected = activePreset === name;
+            <div className="grid gap-3 p-4 md:grid-cols-2">
+              {STRATEGY_ENGINE_ORDER.map((engine) => {
+                const meta = STRATEGY_ENGINES[engine];
+                const selected = config.engine === engine;
                 return (
                   <button
-                    key={name}
-                    onClick={() => applyPreset(name, true)}
+                    key={engine}
+                    onClick={() => selectEngine(engine, true)}
                     className={`group rounded-xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:border-border-strong hover:bg-elevated/70 ${
                       selected ? "border-accent bg-accent/10" : "border-border-default bg-inset/40"
                     }`}
@@ -212,13 +296,14 @@ export default function StrategyConfig() {
                       </span>
                     </div>
                     <div className="mt-4 space-y-2">
-                      {meta.bullets.map((bullet) => (
-                        <div key={bullet} className="flex items-center gap-2 text-[11px] text-txt-tertiary">
+                      {meta.checks.slice(0, 4).map((check) => (
+                        <div key={check} className="flex items-center gap-2 text-[11px] text-txt-tertiary">
                           <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                          {bullet}
+                          {check}
                         </div>
                       ))}
                     </div>
+                    <p className="mt-4 min-h-10 text-[10px] leading-5 text-txt-dim">{meta.thesis}</p>
                     <div className="mt-4 rounded-lg border border-border-default bg-card/70 px-3 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-txt-primary group-hover:border-accent/40">
                       Select {meta.label}
                     </div>
@@ -253,100 +338,187 @@ export default function StrategyConfig() {
         </div>
       </div>
 
-      {/* Presets */}
       <Card padding="lg" className="border-accent/20 bg-accent/5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">Visible Presets</p>
-            <p className="mt-1 text-sm font-semibold text-txt-primary">Choose the strategy profile before adjusting the sliders.</p>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">Strategy Engine</p>
+              <p className="mt-1 text-sm font-semibold text-txt-primary">Choose one approach. Breakdown appears after selection.</p>
+            </div>
+            <Badge variant={config.engine === "liquidityFlow" ? "info" : "live"} size="sm">
+              {selectedEngine.label}
+            </Badge>
           </div>
-          <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[520px]">
-          {PRESET_ORDER.map((name) => {
-            const meta = PRESET_META[name];
-            return (
-            <button
-              key={name}
-              onClick={() => applyPreset(name)}
-                className={`rounded-lg border px-3 py-2 text-left transition-all cursor-pointer ${
-                  activePreset === name
-                  ? "border-accent bg-accent/10 text-txt-primary"
-                  : "border-border-default bg-card text-txt-secondary hover:border-border-muted hover:bg-elevated/40"
-                }`}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-bold">{meta.label}</span>
-                <span className={`rounded border px-1.5 py-0.5 text-[8px] font-bold uppercase ${meta.tone}`}>{meta.badge}</span>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            {STRATEGY_ENGINE_ORDER.map((engine) => {
+              const meta = STRATEGY_ENGINES[engine];
+              const selected = config.engine === engine;
+              return (
+                <button
+                  key={engine}
+                  onClick={() => selectEngine(engine)}
+                  className={`rounded-xl border p-4 text-left transition-all cursor-pointer hover:-translate-y-0.5 hover:bg-elevated/50 ${
+                    selected ? "border-accent bg-accent/10 text-txt-primary" : "border-border-default bg-card text-txt-secondary"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-base font-bold text-txt-primary">{meta.label}</p>
+                      <p className="mt-1 text-xs leading-5 text-txt-secondary">{meta.desc}</p>
+                    </div>
+                    <span className={`shrink-0 rounded-md border px-2 py-1 text-[9px] font-bold uppercase ${meta.tone}`}>
+                      {meta.badge}
+                    </span>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-1.5">
+                    {meta.checks.map((check) => (
+                      <span key={check} className="rounded border border-border-default bg-inset/50 px-2 py-1 text-[9px] font-semibold text-txt-tertiary">
+                        {check}
+                      </span>
+                    ))}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="rounded-xl border border-border-default bg-card/70 p-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-bold text-txt-primary">{selectedEngine.label} Breakdown</p>
+                <p className="mt-1 max-w-3xl text-[11px] leading-5 text-txt-secondary">{selectedEngine.thesis}</p>
               </div>
-              <div className="mt-1 text-[10px] leading-4 text-txt-tertiary">{meta.desc}</div>
-            </button>
-            );
-          })}
+              <span className={`w-fit rounded-md border px-2 py-1 text-[9px] font-bold uppercase ${selectedEngine.tone}`}>
+                Active
+              </span>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {selectedEngine.breakdown.map((item) => (
+                <div key={item.label} className="rounded-lg border border-border-default bg-inset/30 p-3">
+                  <p className="text-[9px] font-semibold uppercase tracking-wider text-txt-dim">{item.label}</p>
+                  <p className="mt-1 text-xs font-bold text-txt-primary">{item.value}</p>
+                  <p className="mt-1 text-[10px] leading-4 text-txt-tertiary">{item.detail}</p>
+                </div>
+              ))}
+            </div>
           </div>
+
+          {config.engine === "confluence" && (
+            <div className="grid gap-2 sm:grid-cols-3">
+              {PRESET_ORDER.map((name) => {
+                const meta = PRESET_META[name];
+                return (
+                  <button
+                    key={name}
+                    onClick={() => applyPreset(name)}
+                    className={`rounded-lg border px-3 py-2 text-left transition-all cursor-pointer ${
+                      activePreset === name
+                        ? "border-accent bg-accent/10 text-txt-primary"
+                        : "border-border-default bg-card text-txt-secondary hover:border-border-muted hover:bg-elevated/40"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold">{meta.label}</span>
+                      <span className={`rounded border px-1.5 py-0.5 text-[8px] font-bold uppercase ${meta.tone}`}>{meta.badge}</span>
+                    </div>
+                    <div className="mt-1 text-[10px] leading-4 text-txt-tertiary">{meta.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </Card>
 
       {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Dimension Weights */}
-        <Card padding="lg">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider">Signal Dimension Weights</h3>
-            <span className={`text-[10px] font-mono ${weightValid ? "text-txt-dim" : "text-hold"}`}>
-              Total: {weightTotal}%{!weightValid && " (should be ~100%)"}
-            </span>
-          </div>
-          <div className="space-y-3">
-            {dimSliders.map((d) => {
-              const liveScore = liveDims?.[d.key]?.score;
-              const liveDetail = liveDims?.[d.key]?.detail;
-              return (
-                <div key={d.key}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="w-4 h-4 inline-flex items-center justify-center text-txt-secondary"><DimIcon icon={d.icon} /></span>
-                    <span className="text-xs font-semibold w-20 shrink-0" style={{ color: d.color }}>{d.label}</span>
-                    <div className="flex-1">
-                      <ProgressBar value={liveScore ?? 0} color={d.color} height="sm" />
+        {/* Dimension Weights / Liquidity Gates */}
+        {config.engine === "confluence" ? (
+          <Card padding="lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider">Signal Dimension Weights</h3>
+              <span className={`text-[10px] font-mono ${weightValid ? "text-txt-dim" : "text-hold"}`}>
+                Total: {weightTotal}%{!weightValid && " (should be ~100%)"}
+              </span>
+            </div>
+            <div className="space-y-3">
+              {dimSliders.map((d) => {
+                const liveScore = liveDims?.[d.key]?.score;
+                const liveDetail = liveDims?.[d.key]?.detail;
+                return (
+                  <div key={d.key}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="w-4 h-4 inline-flex items-center justify-center text-txt-secondary"><DimIcon icon={d.icon} /></span>
+                      <span className="text-xs font-semibold w-20 shrink-0" style={{ color: d.color }}>{d.label}</span>
+                      <div className="flex-1">
+                        <ProgressBar value={liveScore ?? 0} color={d.color} height="sm" />
+                      </div>
+                      <span className="text-[10px] text-txt-dim w-8 text-right font-mono">{liveScore ?? "—"}%</span>
                     </div>
-                    <span className="text-[10px] text-txt-dim w-8 text-right font-mono">{liveScore ?? "—"}%</span>
+                    <div className="flex items-center gap-2 ml-6">
+                      <input
+                        type="range" min="0" max="50" value={config[d.key]}
+                        onChange={(e) => update(d.key, Number(e.target.value))}
+                        className="flex-1 h-1"
+                        style={{ accentColor: d.color }}
+                      />
+                      <span className="text-xs w-8 text-right font-bold tabular-nums" style={{ color: d.color }}>
+                        {config[d.key]}%
+                      </span>
+                    </div>
+                    {liveDetail && (
+                      <p className="text-[9px] text-txt-faint ml-6 mt-0.5 truncate">{liveDetail}</p>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 ml-6">
-                    <input
-                      type="range" min="0" max="50" value={config[d.key]}
-                      onChange={(e) => update(d.key, Number(e.target.value))}
-                      className="flex-1 h-1"
-                      style={{ accentColor: d.color }}
-                    />
-                    <span className="text-xs w-8 text-right font-bold tabular-nums" style={{ color: d.color }}>
-                      {config[d.key]}%
-                    </span>
-                  </div>
-                  {liveDetail && (
-                    <p className="text-[9px] text-txt-faint ml-6 mt-0.5 truncate">{liveDetail}</p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          {/* Weight distribution visual */}
-          <div className="mt-4 pt-3 border-t border-border-default">
-            <p className="text-[10px] text-txt-dim mb-2">Weight Distribution</p>
-            <div className="h-3 rounded-full overflow-hidden flex bg-inset">
-              {dimSliders.map((d) => (
-                <div
-                  key={d.key}
-                  className="h-full transition-all duration-300"
-                  style={{
-                    width: `${(config[d.key] / weightTotal) * 100}%`,
-                    backgroundColor: d.color,
-                    opacity: 0.7,
-                  }}
-                  title={`${d.label}: ${config[d.key]}%`}
-                />
+            <div className="mt-4 pt-3 border-t border-border-default">
+              <p className="text-[10px] text-txt-dim mb-2">Weight Distribution</p>
+              <div className="h-3 rounded-full overflow-hidden flex bg-inset">
+                {dimSliders.map((d) => (
+                  <div
+                    key={d.key}
+                    className="h-full transition-all duration-300"
+                    style={{
+                      width: `${(config[d.key] / weightTotal) * 100}%`,
+                      backgroundColor: d.color,
+                      opacity: 0.7,
+                    }}
+                    title={`${d.label}: ${config[d.key]}%`}
+                  />
+                ))}
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <Card padding="lg" className="border-info/20 bg-info/5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider">Liquidity Flow Gates</h3>
+              <Badge variant="info" size="sm">NEWS OFF</Badge>
+            </div>
+            <div className="grid gap-3">
+              {[
+                { label: "Spread Filter", value: "<= 3 bps", detail: "Skip every signal when the top-book spread is too wide." },
+                { label: "Orderbook Depth", value: "Top 5", detail: "Compare bid/ask volume before the TA layer is allowed to fire." },
+                { label: "Imbalance Gate", value: "Directional", detail: "Bid dominance supports long; ask dominance supports short." },
+                { label: "TA Stack", value: "EMA 9 / EMA 21 / RSI 14", detail: "No MACD, OBV, Bollinger, regression, or news trigger." },
+                { label: "Order Policy", value: "Limit only", detail: "Market orders are blocked for this strategy." },
+                { label: "Timeout", value: "200ms", detail: "Unfilled limit order expires and the setup is skipped." },
+              ].map((item) => (
+                <div key={item.label} className="rounded-lg border border-border-default bg-card/60 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs font-bold text-txt-primary">{item.label}</p>
+                    <span className="rounded border border-info/30 bg-info/10 px-2 py-1 text-[9px] font-bold text-info">{item.value}</span>
+                  </div>
+                  <p className="mt-1 text-[10px] leading-4 text-txt-tertiary">{item.detail}</p>
+                </div>
               ))}
             </div>
-          </div>
-        </Card>
+          </Card>
+        )}
 
         {/* Right column: Active Strategies + Risk + Execution */}
         <div className="space-y-4">
@@ -391,11 +563,13 @@ export default function StrategyConfig() {
                   <span className="text-hold font-bold tabular-nums">{config.maxPositionSize}%</span>
                 </div>
                 <input
-                  type="range" min="1" max="20" value={config.maxPositionSize}
+                  type="range" min={config.engine === "liquidityFlow" ? "0.1" : "1"} max="20" step={config.engine === "liquidityFlow" ? "0.1" : "1"} value={config.maxPositionSize}
                   onChange={(e) => update("maxPositionSize", Number(e.target.value))}
                   className="w-full"
                 />
-                <p className="text-[9px] text-txt-faint mt-1">Maximum percentage of portfolio per trade.</p>
+                <p className="text-[9px] text-txt-faint mt-1">
+                  {config.engine === "liquidityFlow" ? "Liquidity Flow default is 0.5% per trade until fill quality is proven." : "Maximum percentage of portfolio per trade."}
+                </p>
               </div>
             </div>
           </Card>
@@ -407,7 +581,14 @@ export default function StrategyConfig() {
               {[
                 { label: "Exchange", value: "SoDEX (ValueChain)", color: "#00ff88", editable: false },
                 { label: "Order Type", value: "Limit Orders", color: "#00d4ff", editable: false },
-                { label: "Slippage Tolerance", value: `${config.slippage}%`, color: "#ff8800", editable: true, key: "slippage" as const, min: 0.1, max: 5, step: 0.1 },
+                ...(config.engine === "liquidityFlow"
+                  ? [
+                      { label: "Spread Cap", value: "3 bps", color: "#00d4ff", editable: false },
+                      { label: "Limit Timeout", value: "200ms", color: "#00d4ff", editable: false },
+                      { label: "Max Open Positions", value: "2", color: "#ff8800", editable: false },
+                    ]
+                  : []),
+                { label: "Slippage Tolerance", value: `${config.slippage}%`, color: "#ff8800", editable: true, key: "slippage" as const, min: config.engine === "liquidityFlow" ? 0.01 : 0.1, max: config.engine === "liquidityFlow" ? 0.1 : 5, step: config.engine === "liquidityFlow" ? 0.01 : 0.1 },
                 { label: "Max Daily Trades", value: String(config.maxDailyTrades), color: "#00E5A8", editable: true, key: "maxDailyTrades" as const, min: 1, max: 50, step: 1 },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between p-2 rounded-lg bg-inset/30 border border-border-default">
@@ -458,62 +639,94 @@ export default function StrategyConfig() {
       {/* Composite formula reference */}
       <Card padding="sm" className="bg-inset/30">
         <div className="flex items-center gap-3 text-[9px] text-txt-faint font-mono">
-          <span>Composite = TA(55%) + Sentiment(25%) + Fundamental(20%)</span>
-          <span>·</span>
-          <span>BUY: composite &gt; 60 AND momentum &gt; 55 AND trend &gt; 50 AND sentiment &gt; 45</span>
-          <span>·</span>
-          <span>Confidence = 50 + |composite - 50| × 1.5, cap 98</span>
+          {config.engine === "liquidityFlow" ? (
+            <>
+              <span>Gate = spread &lt;= 3bps AND top5 imbalance confirms direction</span>
+              <span>·</span>
+              <span>Signal = EMA(9/21) alignment + RSI(14) continuation</span>
+              <span>·</span>
+              <span>Execution = limit only, timeout 200ms, skip if unfilled</span>
+            </>
+          ) : (
+            <>
+              <span>Composite = TA(55%) + Sentiment(25%) + Fundamental(20%)</span>
+              <span>·</span>
+              <span>BUY: composite &gt; 60 AND momentum &gt; 55 AND trend &gt; 50 AND sentiment &gt; 45</span>
+              <span>·</span>
+              <span>Confidence = 50 + |composite - 50| × 1.5, cap 98</span>
+            </>
+          )}
         </div>
       </Card>
 
-      {/* Per-Type Weight Profiles */}
-      <Card padding="lg">
-        <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider mb-3">
-          Trading Type Weight Profiles
-        </h3>
-        <p className="text-[10px] text-txt-dim mb-4">
-          Each trading style uses different factor weights. The signal engine adapts automatically when a type is selected.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          {TRADING_TYPE_LIST.map((type) => (
-            <div
-              key={type.id}
-              className="p-3 rounded-xl border bg-inset/20"
-              style={{ borderColor: `${type.color}25` }}
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center justify-center"><type.icon size={18} style={{ color: type.color }} /></span>
-                <div>
-                  <p className="text-xs font-bold" style={{ color: type.color }}>{type.label}</p>
-                  <p className="text-[9px] text-txt-faint font-mono">{type.timeframe}</p>
+      {config.engine === "confluence" ? (
+        <Card padding="lg">
+          <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider mb-3">
+            Trading Type Weight Profiles
+          </h3>
+          <p className="text-[10px] text-txt-dim mb-4">
+            Each trading style uses different factor weights. The signal engine adapts automatically when a type is selected.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {TRADING_TYPE_LIST.map((type) => (
+              <div
+                key={type.id}
+                className="p-3 rounded-xl border bg-inset/20"
+                style={{ borderColor: `${type.color}25` }}
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="inline-flex items-center justify-center"><type.icon size={18} style={{ color: type.color }} /></span>
+                  <div>
+                    <p className="text-xs font-bold" style={{ color: type.color }}>{type.label}</p>
+                    <p className="text-[9px] text-txt-faint font-mono">{type.timeframe}</p>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  {Object.entries(type.weights).map(([key, value]) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <span className="text-[9px] text-txt-dim w-16 capitalize">{key}</span>
+                      <div className="flex-1 h-1.5 bg-elevated rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${value}%`,
+                            backgroundColor: type.color,
+                            opacity: 0.7,
+                          }}
+                        />
+                      </div>
+                      <span className="text-[9px] font-mono text-txt-faint w-6 text-right">{value}%</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 pt-2 border-t border-border-default flex items-center justify-between">
+                  <span className="text-[8px] text-txt-faint">Min conf: {type.minConfidence}%</span>
+                  <span className="text-[8px] text-txt-faint">Max lev: {type.maxLeverage}x</span>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                {Object.entries(type.weights).map(([key, value]) => (
-                  <div key={key} className="flex items-center gap-2">
-                    <span className="text-[9px] text-txt-dim w-16 capitalize">{key}</span>
-                    <div className="flex-1 h-1.5 bg-elevated rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all"
-                        style={{
-                          width: `${value}%`,
-                          backgroundColor: type.color,
-                          opacity: 0.7,
-                        }}
-                      />
-                    </div>
-                    <span className="text-[9px] font-mono text-txt-faint w-6 text-right">{value}%</span>
-                  </div>
-                ))}
+            ))}
+          </div>
+        </Card>
+      ) : (
+        <Card padding="lg" className="border-info/20 bg-info/5">
+          <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider mb-3">
+            Liquidity Flow Execution Contract
+          </h3>
+          <div className="grid gap-3 md:grid-cols-4">
+            {[
+              { label: "News", value: "OFF" },
+              { label: "Risk", value: "0.5%" },
+              { label: "Positions", value: "Max 2" },
+              { label: "Orders", value: "Limit only" },
+            ].map((item) => (
+              <div key={item.label} className="rounded-lg border border-border-default bg-card/60 p-3">
+                <p className="text-[9px] font-semibold uppercase tracking-wider text-txt-dim">{item.label}</p>
+                <p className="mt-1 text-sm font-bold text-info">{item.value}</p>
               </div>
-              <div className="mt-2 pt-2 border-t border-border-default flex items-center justify-between">
-                <span className="text-[8px] text-txt-faint">Min conf: {type.minConfidence}%</span>
-                <span className="text-[8px] text-txt-faint">Max lev: {type.maxLeverage}x</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
