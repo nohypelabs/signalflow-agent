@@ -33,6 +33,14 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
   const change = ticker ? ticker.changePct : signal.change24h;
   const coin = signal.pair.split("/")[0];
   const typeConfig = tradingType ? TRADING_TYPES[tradingType] : null;
+  const qualityStatus = signal.quality?.status;
+  const qualityTone = qualityStatus === "actionable"
+    ? { text: "ACTIONABLE", className: "bg-buy/10 text-buy border-buy/25" }
+    : qualityStatus === "watch"
+      ? { text: "WATCH", className: "bg-hold/10 text-hold border-hold/25" }
+      : qualityStatus === "blocked"
+        ? { text: "BLOCKED", className: "bg-sell/10 text-sell border-sell/25" }
+        : null;
 
   // Calculate type-specific TP/SL if trading type is selected
   const typeTP = typeConfig && signal.execution.entry > 0
@@ -58,6 +66,16 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
             {signal.regime && (
               <span className="text-[8px] px-1.5 py-0.5 rounded bg-elevated text-txt-faint font-mono uppercase tracking-wider">
                 {signal.regime.replace("_", " ")}
+              </span>
+            )}
+            {signal.setup && (
+              <span className="text-[8px] px-1.5 py-0.5 rounded bg-accent/10 text-accent border border-accent/20 font-mono uppercase tracking-wider">
+                {signal.setup.label}
+              </span>
+            )}
+            {qualityTone && (
+              <span className={`text-[8px] px-1.5 py-0.5 rounded border font-mono font-semibold ${qualityTone.className}`}>
+                {qualityTone.text}
               </span>
             )}
             {/* Trading type badge */}
@@ -121,6 +139,47 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
         <p className="text-xs text-txt-secondary leading-relaxed line-clamp-2 mb-3">
           {signal.reasoning}
         </p>
+
+        {(signal.setup || signal.quality) && (
+          <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {signal.setup && (
+              <div className="rounded-lg border border-border-default bg-inset/30 p-2.5">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-[9px] text-txt-faint uppercase tracking-wider">Thesis</span>
+                  <span className="text-[9px] text-accent font-mono">
+                    {signal.setup.evidence.slice(0, 2).join(" / ") || "Awaiting edge"}
+                  </span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-txt-secondary">
+                  {signal.setup.thesis}
+                </p>
+                <p className="mt-1.5 text-[10px] leading-relaxed text-txt-muted">
+                  Invalid if: {signal.setup.invalidation}
+                </p>
+              </div>
+            )}
+            {signal.quality && (
+              <div className="rounded-lg border border-border-default bg-inset/30 p-2.5">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-[9px] text-txt-faint uppercase tracking-wider">Calibration</span>
+                  <span className="text-[9px] text-txt-muted font-mono">
+                    {signal.quality.rawConfidence} to {signal.quality.calibratedConfidence}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono">
+                  <span className="text-txt-muted">Min {signal.quality.minConfidence}</span>
+                  <span className={signal.quality.confidenceAdjustment >= 0 ? "text-buy" : "text-sell"}>
+                    Adj {signal.quality.confidenceAdjustment >= 0 ? "+" : ""}{signal.quality.confidenceAdjustment}
+                  </span>
+                  <span className="text-txt-muted">{signal.quality.lesson.status}</span>
+                </div>
+                <p className="mt-1.5 text-[10px] leading-relaxed text-txt-muted">
+                  {signal.quality.blockedReasons[0] ?? signal.quality.lesson.note}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Score breakdown */}
         <SignalScoreBreakdown

@@ -30,6 +30,14 @@ interface BacktestData {
   longWinRate: number;
   shortWinRate: number;
   regimeAccuracy: Record<string, { total: number; wins: number; accuracy: number }>;
+  setupAccuracy: Record<string, {
+    total: number;
+    wins: number;
+    losses: number;
+    neutrals: number;
+    accuracy: number;
+    profitFactor: number;
+  }>;
   equityCurve: { index: number; value: number }[];
 }
 
@@ -205,6 +213,47 @@ export default function BacktestPanel() {
             </div>
           )}
 
+          {/* Setup accuracy */}
+          {data.setupAccuracy && Object.keys(data.setupAccuracy).length > 0 && (
+            <div className="p-3 rounded-lg bg-inset/30 border border-border-default">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <p className="text-[9px] text-txt-faint uppercase tracking-wider">Accuracy by Setup</p>
+                <p className="text-[9px] text-txt-dim">TP/SL path based</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+                {Object.entries(data.setupAccuracy)
+                  .sort(([, a], [, b]) => b.total - a.total)
+                  .map(([setup, stats]) => (
+                    <div key={setup} className="rounded-lg border border-border-default bg-elevated/40 p-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[10px] font-semibold text-txt-primary uppercase">
+                          {setup.replaceAll("_", " ")}
+                        </p>
+                        <span className={`text-xs font-bold font-mono ${stats.accuracy >= 60 ? "text-buy" : stats.accuracy >= 50 ? "text-hold" : "text-sell"}`}>
+                          {stats.accuracy}%
+                        </span>
+                      </div>
+                      <div className="mt-2 grid grid-cols-4 gap-1.5 text-center">
+                        <SetupMetric label="W" value={stats.wins} className="text-buy" />
+                        <SetupMetric label="L" value={stats.losses} className="text-sell" />
+                        <SetupMetric label="N" value={stats.neutrals} className="text-txt-muted" />
+                        <SetupMetric
+                          label="PF"
+                          value={stats.profitFactor === Infinity ? "∞" : stats.profitFactor.toFixed(2)}
+                          className={stats.profitFactor >= 1.5 ? "text-buy" : stats.profitFactor >= 1 ? "text-hold" : "text-sell"}
+                        />
+                      </div>
+                      <div className="mt-2 h-1.5 rounded-full overflow-hidden flex bg-inset">
+                        <div className="h-full bg-buy" style={{ width: `${(stats.wins / stats.total) * 100}%` }} />
+                        <div className="h-full bg-sell" style={{ width: `${(stats.losses / stats.total) * 100}%` }} />
+                      </div>
+                      <p className="mt-1.5 text-[8px] text-txt-faint">{stats.total} signals</p>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
           {/* Mini equity curve */}
           {data.equityCurve.length > 2 && (
             <EquityCurveMini curve={data.equityCurve} />
@@ -230,6 +279,23 @@ function MetricCard({ label, value, color }: { label: string; value: string; col
     <div className="p-2.5 rounded-lg bg-inset/30 border border-border-default text-center">
       <p className="text-[8px] text-txt-faint uppercase tracking-wider">{label}</p>
       <p className="text-sm font-bold font-mono" style={{ color }}>{value}</p>
+    </div>
+  );
+}
+
+function SetupMetric({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: number | string;
+  className: string;
+}) {
+  return (
+    <div className="rounded bg-inset/60 px-1.5 py-1">
+      <p className="text-[8px] text-txt-faint">{label}</p>
+      <p className={`text-[10px] font-bold font-mono ${className}`}>{value}</p>
     </div>
   );
 }
