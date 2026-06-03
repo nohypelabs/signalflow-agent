@@ -24,23 +24,34 @@ import {
 
 const groups = [
   {
-    label: "Overview",
+    label: "Command",
     items: [
       { href: "/dashboard", label: "Dashboard", Icon: HomeIcon },
       { href: "/signals", label: "Signals", Icon: SignalIcon },
       { href: "/screener", label: "Market Overview", Icon: HistoryIcon },
-      { href: "/performance", label: "Performance", Icon: PerformanceIcon },
     ],
   },
   {
-    label: "Trading",
+    label: "Execution",
     items: [
       { href: "/trading", label: "Trading", Icon: TradeIcon },
       { href: "/portfolio", label: "Portfolio", Icon: ChartIcon },
-      { href: "/analytics", label: "Analytics", Icon: BarChartIcon },
       { href: "/alerts", label: "Alerts", Icon: BellIcon },
-      { href: "/journal", label: "Journal", Icon: DocumentIcon },
+    ],
+  },
+  {
+    label: "Review",
+    items: [
+      { href: "/performance", label: "Performance", Icon: PerformanceIcon },
+      { href: "/analytics", label: "Analytics", Icon: BarChartIcon },
+      { href: "/signal-history", label: "Signal History", Icon: SignalIcon },
       { href: "/trade-history", label: "Trade History", Icon: HistoryIcon },
+      { href: "/journal", label: "Journal", Icon: DocumentIcon },
+    ],
+  },
+  {
+    label: "Strategy",
+    items: [
       { href: "/strategy-config", label: "Strategy Config", Icon: StrategyIcon },
     ],
   },
