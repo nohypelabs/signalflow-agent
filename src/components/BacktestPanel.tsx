@@ -43,6 +43,25 @@ interface BacktestData {
     accuracy: number;
     profitFactor: number;
   }>;
+  lessonReport?: {
+    coverage: {
+      watchable: number;
+      candidates: number;
+      percent: number;
+      targetPercent: number;
+      status: "healthy" | "thin" | "dead";
+    };
+    blockedReasons: { reason: string; count: number }[];
+    setupLessons: {
+      setup: string;
+      total: number;
+      tradable: number;
+      blocked: number;
+      accuracy: number;
+      profitFactor: number;
+      recommendation: "promote" | "demote" | "watch" | "collect_data";
+    }[];
+  };
   equityCurve: { index: number; value: number }[];
 }
 
@@ -176,6 +195,52 @@ export default function BacktestPanel() {
             <MetricCard label="Avg Win" value={`+${data.avgWin.toFixed(2)}%`} color="#00E5A8" />
             <MetricCard label="Avg Loss" value={`-${data.avgLoss.toFixed(2)}%`} color="#EF4444" />
           </div>
+
+          {data.lessonReport && (
+            <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-3">
+              <div className="p-3 rounded-lg bg-inset/30 border border-border-default">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[9px] font-semibold text-txt-secondary uppercase tracking-wider">Lesson Coverage</p>
+                  <span className={`text-[10px] font-bold font-mono ${
+                    data.lessonReport.coverage.status === "healthy" ? "text-buy" : data.lessonReport.coverage.status === "thin" ? "text-hold" : "text-sell"
+                  }`}>
+                    {data.lessonReport.coverage.status.toUpperCase()}
+                  </span>
+                </div>
+                <p className="mt-2 text-lg font-bold font-mono text-txt-primary">
+                  {data.lessonReport.coverage.percent}%
+                </p>
+                <p className="text-[9px] text-txt-muted">
+                  {data.lessonReport.coverage.watchable}/{data.lessonReport.coverage.candidates} watchable, target {data.lessonReport.coverage.targetPercent}%
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-inset/30 border border-border-default">
+                <p className="text-[9px] font-semibold text-txt-secondary uppercase tracking-wider mb-2">Lesson Actions</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {data.lessonReport.setupLessons.slice(0, 4).map((lesson) => (
+                    <div key={lesson.setup} className="rounded bg-elevated/40 px-2.5 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-semibold text-txt-primary uppercase">
+                          {lesson.setup.replaceAll("_", " ")}
+                        </span>
+                        <span className={`text-[9px] font-bold font-mono uppercase ${lessonTone(lesson.recommendation)}`}>
+                          {lesson.recommendation.replace("_", " ")}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[9px] text-txt-muted">
+                        {lesson.tradable}/{lesson.total} trades · {lesson.accuracy}% · PF {lesson.profitFactor === Infinity ? "∞" : lesson.profitFactor.toFixed(2)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                {data.lessonReport.blockedReasons[0] && (
+                  <p className="mt-2 text-[9px] text-txt-muted">
+                    Top block: {data.lessonReport.blockedReasons[0].reason} ({data.lessonReport.blockedReasons[0].count})
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Breakdown */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -325,6 +390,13 @@ function SetupMetric({
       <p className={`text-[10px] font-bold font-mono ${className}`}>{value}</p>
     </div>
   );
+}
+
+function lessonTone(recommendation: "promote" | "demote" | "watch" | "collect_data"): string {
+  if (recommendation === "promote") return "text-buy";
+  if (recommendation === "demote") return "text-sell";
+  if (recommendation === "watch") return "text-hold";
+  return "text-txt-tertiary";
 }
 
 // ── Mini Equity Curve ──────────────────────────────────────

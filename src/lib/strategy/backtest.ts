@@ -9,6 +9,7 @@
 // - Track: setup quality, correct/incorrect, profit/loss, per-type stats
 
 import { generateSignalV2 } from "./signal-engine-v2";
+import { COVERAGE_GUARDRAIL } from "./signal-engine-v2/strategy-lessons";
 import type { SoDEXKline } from "../sodex-types";
 import type { TradingType } from "../types/trading-type";
 
@@ -39,6 +40,8 @@ export interface BacktestSignal {
   pnlPercent: number | null;
   directionCorrect: boolean | null;
 }
+
+type LessonRecommendation = "promote" | "demote" | "watch" | "collect_data";
 
 export interface BacktestResult {
   pair: string;
@@ -73,6 +76,25 @@ export interface BacktestResult {
   regimeAccuracy: Record<string, { total: number; wins: number; accuracy: number }>;
   // Per-setup breakdown
   setupAccuracy: Record<string, { total: number; tradable: number; blocked: number; wins: number; losses: number; neutrals: number; accuracy: number; profitFactor: number }>;
+  lessonReport: {
+    coverage: {
+      watchable: number;
+      candidates: number;
+      percent: number;
+      targetPercent: number;
+      status: "healthy" | "thin" | "dead";
+    };
+    blockedReasons: { reason: string; count: number }[];
+    setupLessons: {
+      setup: string;
+      total: number;
+      tradable: number;
+      blocked: number;
+      accuracy: number;
+      profitFactor: number;
+      recommendation: LessonRecommendation;
+    }[];
+  };
   // Signal list
   signals: BacktestSignal[];
   // Equity curve
@@ -279,6 +301,7 @@ export function runBacktest(
   }
 
   const setupAccuracy = buildSetupAccuracy(signals);
+  const lessonReport = buildLessonReport(signals, setupAccuracy);
 
   return {
     pair,
@@ -307,6 +330,7 @@ export function runBacktest(
     shortWinRate: shortSignals > 0 ? parseFloat(((shortWins / shortSignals) * 100).toFixed(1)) : 0,
     regimeAccuracy,
     setupAccuracy,
+    lessonReport,
     signals,
     equityCurve,
   };
@@ -402,6 +426,58 @@ function buildSetupAccuracy(
   return setupAccuracy;
 }
 
+function buildLessonReport(
+  signals: BacktestSignal[],
+  setupAccuracy: BacktestResult["setupAccuracy"],
+): BacktestResult["lessonReport"] {
+  const watchable = signals.filter((signal) => signal.outcome !== null || signal.qualityStatus === "watch").length;
+  const percent = signals.length > 0 ? parseFloat(((watchable / signals.length) * 100).toFixed(1)) : 0;
+  const reasonCounts = new Map<string, number>();
+
+  for (const signal of signals) {
+    for (const reason of signal.blockedReasons) {
+      reasonCounts.set(reason, (reasonCounts.get(reason) ?? 0) + 1);
+    }
+  }
+
+  const setupLessons = Object.entries(setupAccuracy)
+    .map(([setup, stats]) => {
+      const recommendation: LessonRecommendation = stats.tradable < 10
+        ? "collect_data"
+        : stats.accuracy >= 55 && stats.profitFactor >= 1.2
+          ? "promote"
+          : stats.accuracy < 45 || stats.profitFactor < 0.9
+            ? "demote"
+            : "watch";
+
+      return {
+        setup,
+        total: stats.total,
+        tradable: stats.tradable,
+        blocked: stats.blocked,
+        accuracy: stats.accuracy,
+        profitFactor: stats.profitFactor,
+        recommendation,
+      };
+    })
+    .sort((a, b) => b.total - a.total);
+
+  return {
+    coverage: {
+      watchable,
+      candidates: signals.length,
+      percent,
+      targetPercent: COVERAGE_GUARDRAIL.minWatchableCoveragePct,
+      status: watchable === 0 ? "dead" : percent < COVERAGE_GUARDRAIL.minWatchableCoveragePct ? "thin" : "healthy",
+    },
+    blockedReasons: [...reasonCounts.entries()]
+      .map(([reason, count]) => ({ reason, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5),
+    setupLessons,
+  };
+}
+
 // ── Empty result helper ────────────────────────────────────
 
 function emptyResult(
@@ -438,6 +514,17 @@ function emptyResult(
     shortWinRate: 0,
     regimeAccuracy: {},
     setupAccuracy: {},
+    lessonReport: {
+      coverage: {
+        watchable: 0,
+        candidates: 0,
+        percent: 0,
+        targetPercent: COVERAGE_GUARDRAIL.minWatchableCoveragePct,
+        status: "dead",
+      },
+      blockedReasons: [],
+      setupLessons: [],
+    },
     signals: [],
     equityCurve: [],
   };

@@ -5,7 +5,7 @@ import type { NewsItem, ETFSummaryItem, MacroEvent, MarketSnapshot, BTCPurchaseH
 import type { SoDEXKline } from "../../sodex-types";
 import { adx, normalizeKlines } from "./indicator-engine";
 import { detectRegime } from "./regime-engine";
-import { scoreTrend, scoreMomentum, scoreVolatility, scoreVolume, scoreStructure, calculateConfluence, classifySignal, passesFilter, buildDimensions } from "./score-engine";
+import { scoreTrend, scoreMomentum, scoreVolatility, scoreVolume, scoreStructure, calculateConfluence, classifySignal, applyCoverageGuardrail, passesFilter, buildDimensions } from "./score-engine";
 import { calculateTPSL } from "./execution-plan-builder";
 import { calibrateSignalQuality, classifyTradeSetup } from "./lesson-engine";
 import type { ConfluenceFactor, MarketRegime, SignalV2 } from "./types";
@@ -110,7 +110,7 @@ export function generateSignalV2(input: {
   const confluence = calculateConfluence(factors);
 
   // ── LAYER 3: Signal Classification ─────────────────────
-  let action = classifySignal(confluence);
+  let action = applyCoverageGuardrail(confluence, classifySignal(confluence));
 
   // ── LAYER 5: Filtering ─────────────────────────────────
   if (!passesFilter(confluence, action)) {

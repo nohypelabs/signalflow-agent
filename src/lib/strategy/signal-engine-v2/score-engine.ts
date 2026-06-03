@@ -3,6 +3,7 @@ import { sma, ema, rsi, macd, bollingerBands, atr, last } from "../indicators";
 import type { SignalDimensions, SignalDimensionDetails } from "../../types/signal";
 import type { NewsItem, ETFSummaryItem, MacroEvent, MarketSnapshot, BTCPurchaseHistory } from "../../sosovalue";
 import { obv, roc, findSupportResistance } from "./indicator-engine";
+import { COVERAGE_GUARDRAIL } from "./strategy-lessons";
 import type { ConfluenceFactor, ConfluenceResult, SignalActionV2 } from "./types";
 
 export function scoreTrend(
@@ -455,6 +456,19 @@ export function classifySignal(confluence: ConfluenceResult): SignalActionV2 {
 
   // HOLD: confluence 40-55 OR regime = RANGING
   return "HOLD";
+}
+
+export function applyCoverageGuardrail(confluence: ConfluenceResult, action: SignalActionV2): SignalActionV2 {
+  if (action !== "HOLD") return action;
+  const { score, bullishCount, bearishCount } = confluence;
+
+  if (score >= COVERAGE_GUARDRAIL.weakLongScore && bullishCount >= 1 && bearishCount <= 1) {
+    return "WEAK_LONG";
+  }
+  if (score <= COVERAGE_GUARDRAIL.weakShortScore && bearishCount >= 1 && bullishCount <= 1) {
+    return "WEAK_SHORT";
+  }
+  return action;
 }
 
 export function passesFilter(confluence: ConfluenceResult, action: SignalActionV2): boolean {
