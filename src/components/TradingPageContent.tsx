@@ -499,7 +499,7 @@ function TradeConfirmationModal({ action, onCancel, onConfirm }: { action: Pendi
     : [{ l: "Pair", v: action.trade.pair }, { l: "Side", v: side }, { l: "Entry", v: `$${formatPrice(action.trade.entryPrice)}` }, { l: "Exit", v: `$${formatPrice(action.markPrice)}` }, { l: "PnL", v: `${action.pnl >= 0 ? "+" : ""}${formatUsd(action.pnl)}` }, { l: "ROI", v: `${action.roi >= 0 ? "+" : ""}${action.roi.toFixed(2)}%` }];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 px-4 pt-[15vh] backdrop-blur-sm">
       <div className="w-full max-w-lg overflow-hidden rounded-xl border border-accent/30 bg-panel">
         <div className="border-b border-border-default bg-accent/10 px-5 py-4">
           <p className="text-xs font-bold uppercase tracking-wider text-accent">Action Required</p>
@@ -520,7 +520,7 @@ function TradeExecutionModal({ notice, onClose }: { notice: TradeNotice; onClose
   const bd = notice.kind === "error" ? "border-sell/30" : notice.kind === "success" ? "border-buy/30" : "border-accent/30";
   const bg = notice.kind === "error" ? "bg-sell/10" : notice.kind === "success" ? "bg-buy/10" : "bg-accent/10";
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 px-4 pt-[15vh] backdrop-blur-sm">
       <div className={`w-full max-w-md overflow-hidden rounded-xl border ${bd} bg-panel`}>
         <div className={`px-5 py-4 ${bg} border-b ${bd}`}>
           <div className="flex items-start justify-between gap-4">
