@@ -17,6 +17,7 @@ import {
   SidebarCollapseIcon,
   SidebarExpandIcon,
   ChartIcon,
+  BellIcon,
 } from "@/components/ui/icons";
 
 const groups = [
@@ -34,6 +35,7 @@ const groups = [
     items: [
       { href: "/trading", label: "Trading", Icon: TradeIcon },
       { href: "/portfolio", label: "Portfolio", Icon: ChartIcon },
+      { href: "/alerts", label: "Alerts", Icon: BellIcon },
       { href: "/trade-history", label: "Trade History", Icon: HistoryIcon },
       { href: "/strategy-config", label: "Strategy Config", Icon: StrategyIcon },
     ],

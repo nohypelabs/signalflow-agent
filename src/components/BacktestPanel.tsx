@@ -13,7 +13,10 @@ interface BacktestData {
   lookback: number;
   resolution: number;
   totalBars: number;
+  totalCandidates?: number;
   totalSignals: number;
+  blockedSignals?: number;
+  watchSignals?: number;
   wins: number;
   losses: number;
   neutrals: number;
@@ -32,6 +35,8 @@ interface BacktestData {
   regimeAccuracy: Record<string, { total: number; wins: number; accuracy: number }>;
   setupAccuracy: Record<string, {
     total: number;
+    tradable?: number;
+    blocked?: number;
     wins: number;
     losses: number;
     neutrals: number;
@@ -78,7 +83,7 @@ export default function BacktestPanel() {
         </div>
         {data && (
           <Badge variant="accent" size="sm">
-            {data.totalSignals} signals
+            {data.totalSignals} trades / {data.totalCandidates ?? data.totalSignals} candidates
           </Badge>
         )}
       </div>
@@ -144,8 +149,24 @@ export default function BacktestPanel() {
       )}
 
       {/* Results */}
-      {data && data.totalSignals > 0 && (
+      {data && (data.totalCandidates ?? data.totalSignals) > 0 && (
         <div className="space-y-4">
+          {data.totalSignals === 0 && (
+            <div className="rounded-lg border border-hold/20 bg-hold/10 p-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <p className="text-sm font-bold text-hold">Backtest completed: no executable trades</p>
+                  <p className="text-[10px] text-txt-muted mt-0.5">
+                    The engine found {data.totalCandidates ?? 0} candidates, then blocked {data.blockedSignals ?? 0} through setup quality and lesson gating.
+                  </p>
+                </div>
+                <span className="text-[10px] font-mono text-txt-muted">
+                  {data.watchSignals ?? 0} watchlist candidates
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Key metrics */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             <MetricCard label="Win Rate" value={`${data.winRate}%`} color={data.winRate >= 60 ? "#00E5A8" : data.winRate >= 50 ? "#F59E0B" : "#EF4444"} />
@@ -180,8 +201,8 @@ export default function BacktestPanel() {
                 <span className="text-sm font-bold text-sell">S: {data.shortSignals} ({data.shortWinRate}%)</span>
               </div>
               <div className="mt-2 h-2 rounded-full overflow-hidden flex bg-elevated">
-                <div className="h-full bg-buy" style={{ width: `${data.longSignals / data.totalSignals * 100}%` }} />
-                <div className="h-full bg-sell" style={{ width: `${data.shortSignals / data.totalSignals * 100}%` }} />
+                <div className="h-full bg-buy" style={{ width: `${data.totalSignals > 0 ? data.longSignals / data.totalSignals * 100 : 0}%` }} />
+                <div className="h-full bg-sell" style={{ width: `${data.totalSignals > 0 ? data.shortSignals / data.totalSignals * 100 : 0}%` }} />
               </div>
             </div>
 
@@ -192,6 +213,9 @@ export default function BacktestPanel() {
                 <span className="text-sm font-bold text-buy">Best {data.maxWinStreak}W</span>
                 <span className="text-sm font-bold text-sell">Worst {data.maxLossStreak}L</span>
               </div>
+              <p className="mt-2 text-[9px] text-txt-muted">
+                Blocked {data.blockedSignals ?? 0} / {data.totalCandidates ?? data.totalSignals}
+              </p>
             </div>
           </div>
 
@@ -236,7 +260,7 @@ export default function BacktestPanel() {
                       <div className="mt-2 grid grid-cols-4 gap-1.5 text-center">
                         <SetupMetric label="W" value={stats.wins} className="text-buy" />
                         <SetupMetric label="L" value={stats.losses} className="text-sell" />
-                        <SetupMetric label="N" value={stats.neutrals} className="text-txt-muted" />
+                        <SetupMetric label="B" value={stats.blocked ?? 0} className="text-hold" />
                         <SetupMetric
                           label="PF"
                           value={stats.profitFactor === Infinity ? "∞" : stats.profitFactor.toFixed(2)}
@@ -246,8 +270,11 @@ export default function BacktestPanel() {
                       <div className="mt-2 h-1.5 rounded-full overflow-hidden flex bg-inset">
                         <div className="h-full bg-buy" style={{ width: `${(stats.wins / stats.total) * 100}%` }} />
                         <div className="h-full bg-sell" style={{ width: `${(stats.losses / stats.total) * 100}%` }} />
+                        <div className="h-full bg-hold" style={{ width: `${((stats.blocked ?? 0) / stats.total) * 100}%` }} />
                       </div>
-                      <p className="mt-1.5 text-[8px] text-txt-faint">{stats.total} signals</p>
+                      <p className="mt-1.5 text-[8px] text-txt-faint">
+                        {stats.tradable ?? stats.wins + stats.losses + stats.neutrals} trades / {stats.total} candidates
+                      </p>
                     </div>
                   ))}
               </div>
@@ -262,9 +289,9 @@ export default function BacktestPanel() {
       )}
 
       {/* No results */}
-      {data && data.totalSignals === 0 && (
+      {data && (data.totalCandidates ?? data.totalSignals) === 0 && (
         <div className="text-center py-8">
-          <p className="text-sm text-txt-dim">No signals generated in backtest period</p>
+          <p className="text-sm text-txt-dim">No candidates generated in backtest period</p>
           <p className="text-[10px] text-txt-faint mt-1">Try a different pair or resolution</p>
         </div>
       )}

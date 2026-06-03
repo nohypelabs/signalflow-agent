@@ -5,10 +5,13 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import WalletButton from "./WalletButton";
+import AlertBell from "./AlertBell";
 import StatusDot from "@/components/ui/StatusDot";
 import MarketTickerTape from "./MarketTickerTape";
+import { useAlerts } from "@/lib/hooks/useAlerts";
 import {
   ActivityIcon,
+  BellIcon,
   ChartIcon,
   DocsIcon,
   HistoryIcon,
@@ -41,6 +44,7 @@ const navGroups = {
   trading: [
     { href: "/trading", label: "Trading", Icon: TradeIcon },
     { href: "/portfolio", label: "Portfolio", Icon: ChartIcon },
+    { href: "/alerts", label: "Alerts", Icon: BellIcon },
     { href: "/trade-history", label: "Trade History", Icon: HistoryIcon },
     { href: "/strategy-config", label: "Strategy Config", Icon: StrategyIcon },
   ],
@@ -69,6 +73,8 @@ export default function TopBar({
   const [pagesOpen, setPagesOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
+  const tickerArray = tickerMap ? Array.from(tickerMap.values()) : null;
+  const alerts = useAlerts(tickerArray);
 
   const dotStatus =
     sodexStatus === "connected" ? "live" : sodexStatus === "loading" ? "warning" : "error";
@@ -278,6 +284,11 @@ export default function TopBar({
             <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
           </span>
           <WalletButton />
+          <AlertBell
+            unreadCount={alerts.unreadCount}
+            triggeredAlerts={alerts.triggeredAlerts}
+            onNavigate={() => navigate("/alerts")}
+          />
           {/* Gear icon → System modal */}
           <div className="relative" ref={settingsRef}>
             <button

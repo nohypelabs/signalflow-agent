@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "./providers";
 import ServiceWorkerCleanup from "@/components/ServiceWorkerCleanup";
 import CacheBuster from "@/components/CacheBuster";
+import { Toast } from "@/components/ui/Toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,6 +52,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-[#05070D] text-[#F8FAFC]">
         <Providers>{children}</Providers>
+        <Toast />
         <ServiceWorkerCleanup />
         <CacheBuster />
       </body>

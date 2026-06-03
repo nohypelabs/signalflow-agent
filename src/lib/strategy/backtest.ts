@@ -27,6 +27,7 @@ export interface BacktestSignal {
   qualityStatus: "actionable" | "watch" | "blocked";
   confidenceRaw: number;
   confidenceAdjustment: number;
+  blockedReasons: string[];
   price: number;
   takeProfit: number;
   stopLoss: number;
@@ -45,7 +46,10 @@ export interface BacktestResult {
   lookback: number;
   resolution: number;
   totalBars: number;
+  totalCandidates: number;
   totalSignals: number;
+  blockedSignals: number;
+  watchSignals: number;
   // Performance
   wins: number;
   losses: number;
@@ -68,7 +72,7 @@ export interface BacktestResult {
   // Per-regime breakdown
   regimeAccuracy: Record<string, { total: number; wins: number; accuracy: number }>;
   // Per-setup breakdown
-  setupAccuracy: Record<string, { total: number; wins: number; losses: number; neutrals: number; accuracy: number; profitFactor: number }>;
+  setupAccuracy: Record<string, { total: number; tradable: number; blocked: number; wins: number; losses: number; neutrals: number; accuracy: number; profitFactor: number }>;
   // Signal list
   signals: BacktestSignal[];
   // Equity curve
@@ -149,7 +153,7 @@ export function runBacktest(
       tradingType,
     });
 
-    if (!signal || signal.action === "HOLD") continue;
+    if (!signal) continue;
 
     const entryPrice = sorted[i].close;
     const isBuy = signal.action.includes("LONG");
@@ -222,6 +226,7 @@ export function runBacktest(
       qualityStatus: signal.quality.status,
       confidenceRaw: signal.quality.rawConfidence,
       confidenceAdjustment: signal.quality.confidenceAdjustment,
+      blockedReasons: signal.quality.blockedReasons,
       price: entryPrice,
       takeProfit: signal.execution.takeProfit,
       stopLoss: signal.execution.stopLoss,
@@ -238,6 +243,8 @@ export function runBacktest(
 
   // ── Compute metrics ───────────────────────────────────
   const actionable = signals.filter((s) => s.outcome !== null);
+  const blockedSignals = signals.filter((s) => s.action === "HOLD" || s.qualityStatus === "blocked").length;
+  const watchSignals = signals.filter((s) => s.qualityStatus === "watch").length;
   const wins = actionable.filter((s) => s.outcome === "WIN").length;
   const losses = actionable.filter((s) => s.outcome === "LOSS").length;
   const neutrals = actionable.filter((s) => s.outcome === "NEUTRAL").length;
@@ -271,7 +278,7 @@ export function runBacktest(
       : 0;
   }
 
-  const setupAccuracy = buildSetupAccuracy(actionable);
+  const setupAccuracy = buildSetupAccuracy(signals);
 
   return {
     pair,
@@ -279,7 +286,10 @@ export function runBacktest(
     lookback,
     resolution,
     totalBars,
-    totalSignals: signals.length,
+    totalCandidates: signals.length,
+    totalSignals: actionable.length,
+    blockedSignals,
+    watchSignals,
     wins,
     losses,
     neutrals,
@@ -353,6 +363,8 @@ function buildSetupAccuracy(
     if (!setupAccuracy[key]) {
       setupAccuracy[key] = {
         total: 0,
+        tradable: 0,
+        blocked: 0,
         wins: 0,
         losses: 0,
         neutrals: 0,
@@ -361,6 +373,8 @@ function buildSetupAccuracy(
       };
     }
     setupAccuracy[key].total++;
+    if (signal.outcome !== null) setupAccuracy[key].tradable++;
+    if (signal.outcome === null || signal.qualityStatus === "blocked") setupAccuracy[key].blocked++;
     if (signal.outcome === "WIN") setupAccuracy[key].wins++;
     if (signal.outcome === "LOSS") setupAccuracy[key].losses++;
     if (signal.outcome === "NEUTRAL") setupAccuracy[key].neutrals++;
@@ -377,8 +391,8 @@ function buildSetupAccuracy(
         .reduce((sum, signal) => sum + Math.min(0, signal.pnlPercent ?? 0), 0),
     );
 
-    stats.accuracy = stats.total > 0
-      ? parseFloat(((stats.wins / stats.total) * 100).toFixed(1))
+    stats.accuracy = stats.tradable > 0
+      ? parseFloat(((stats.wins / stats.tradable) * 100).toFixed(1))
       : 0;
     stats.profitFactor = grossLoss > 0
       ? parseFloat((grossProfit / grossLoss).toFixed(2))
@@ -403,7 +417,10 @@ function emptyResult(
     lookback,
     resolution,
     totalBars,
+    totalCandidates: 0,
     totalSignals: 0,
+    blockedSignals: 0,
+    watchSignals: 0,
     wins: 0,
     losses: 0,
     neutrals: 0,
