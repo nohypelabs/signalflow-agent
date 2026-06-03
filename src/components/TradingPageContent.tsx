@@ -246,7 +246,18 @@ export default function TradingPageContent() {
   const calcLiq = (ep: number, s: "LONG" | "SHORT", lev: number) => { const mm = 0.005; return s === "LONG" ? ep * (1 - 1 / lev + mm) : ep * (1 + 1 / lev - mm); };
 
   const handleExecute = (order: TradeOrderInput) => {
-    const ep = currentPrice || 0; const tp = parseFloat(order.takeProfit) || 0; const sl = parseFloat(order.stopLoss) || 0; setTradeError(null);
+    const ep = currentPrice || signalContext?.price || 0;
+    const tp = parseFloat(order.takeProfit) || 0;
+    const sl = parseFloat(order.stopLoss) || 0;
+    setTradeError(null);
+
+    if (!ep || ep <= 0) {
+      const msg = "Market price is not available. Wait for ticker data.";
+      setTradeError(msg);
+      setNotice({ id: Date.now(), kind: "error", title: "No price data", detail: msg });
+      return;
+    }
+
     if (!d.isConnected) {
       const msg = "Connect wallet before opening paper or live positions.";
       setTradeError(msg);
