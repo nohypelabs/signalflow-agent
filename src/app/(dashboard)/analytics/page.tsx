@@ -19,7 +19,7 @@ export default function AnalyticsRoute() {
   }, [d.klines]);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6">
+    <div className="mx-auto max-w-6xl">
       <AnalyticsDashboard
         trades={paper.trades}
         initialBalance={paper.balance?.initialBalance ?? 10000}

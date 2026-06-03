@@ -7,7 +7,7 @@ export default function JournalRoute() {
   const journal = useJournal();
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6">
+    <div className="mx-auto max-w-6xl">
       <JournalPage
         entries={journal.entries}
         allTags={journal.allTags}
