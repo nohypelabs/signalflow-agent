@@ -15,7 +15,7 @@ export const valuechain = defineChain({
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
 
 const connectors: CreateConnectorFn[] = [injected()];
-if (projectId) {
+if (typeof window !== "undefined" && "indexedDB" in window && projectId) {
   connectors.push(
     walletConnect({
       projectId,

@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum StrategyEngine {
+  CONFLUENCE
+  LIQUIDITY_FLOW
+}
+
+enum SignalAction {
+  STRONG_LONG
+  LONG
+  WEAK_LONG
+  HOLD
+  WEAK_SHORT
+  SHORT
+  STRONG_SHORT
+}
+
+enum SignalStatus {
+  OPEN
+  WON
+  LOST
+  EXPIRED
+  CANCELED
+}
+
+enum PositionSide {
+  LONG
+  SHORT
+}
+
+enum PositionStatus {
+  OPEN
+  CLOSED
+  LIQUIDATED
+}
+
+enum TradeSource {
+  PAPER
+  LIVE
+}
+
+enum TradeStatus {
+  PENDING
+  FILLED
+  CANCELED
+  REJECTED
+}
+
+model WalletProfile {
+  id               String           @id @default(cuid())
+  walletAddress    String           @unique
+  normalizedWallet String           @unique
+  displayName      String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  lastSeenAt       DateTime?
+  strategyConfigs  StrategyConfig[]
+  signalHistory    SignalHistory[]
+  paperAccount     PaperAccount?
+  tradeJournal     TradeJournal[]
+  backtestRuns     BacktestRun[]
+
+  @@index([normalizedWallet])
+}
+
+model StrategyConfig {
+  id                String         @id @default(cuid())
+  walletProfileId   String
+  walletProfile     WalletProfile  @relation(fields: [walletProfileId], references: [id], onDelete: Cascade)
+  name              String         @default("Default")
+  engine            StrategyEngine @default(CONFLUENCE)
+  tradingType       String         @default("intraday")
+  isActive          Boolean        @default(false)
+  confluenceWeights Json?
+  liquidityFlow     Json?
+  riskConfig        Json?
+  executionConfig   Json?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  backtestRuns      BacktestRun[]
+
+  @@unique([walletProfileId, name])
+  @@index([walletProfileId, isActive])
+  @@index([engine])
+}
+
+model SignalHistory {
+  id              String         @id @default(cuid())
+  walletProfileId String?
+  walletProfile   WalletProfile? @relation(fields: [walletProfileId], references: [id], onDelete: SetNull)
+  symbol          String
+  engine          StrategyEngine @default(CONFLUENCE)
+  action          SignalAction
+  confidence      Int
+  score           Int?
+  entryPrice      Decimal?       @db.Decimal(20, 8)
+  takeProfit      Decimal?       @db.Decimal(20, 8)
+  stopLoss        Decimal?       @db.Decimal(20, 8)
+  status          SignalStatus   @default(OPEN)
+  generatedAt     DateTime       @default(now())
+  resolvedAt      DateTime?
+  payload         Json?
+
+  @@index([walletProfileId, generatedAt])
+  @@index([symbol, generatedAt])
+  @@index([engine, status])
+}
+
+model PaperAccount {
+  id              String          @id @default(cuid())
+  walletProfileId String          @unique
+  walletProfile   WalletProfile   @relation(fields: [walletProfileId], references: [id], onDelete: Cascade)
+  balance         Decimal         @default(10000) @db.Decimal(20, 8)
+  equity          Decimal         @default(10000) @db.Decimal(20, 8)
+  realizedPnl     Decimal         @default(0) @db.Decimal(20, 8)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  positions       PaperPosition[]
+  trades          TradeJournal[]
+}
+
+model PaperPosition {
+  id             String         @id @default(cuid())
+  paperAccountId String
+  paperAccount   PaperAccount   @relation(fields: [paperAccountId], references: [id], onDelete: Cascade)
+  symbol         String
+  side           PositionSide
+  status         PositionStatus @default(OPEN)
+  size           Decimal        @db.Decimal(20, 8)
+  entryPrice     Decimal        @db.Decimal(20, 8)
+  markPrice      Decimal?       @db.Decimal(20, 8)
+  leverage       Decimal        @default(1) @db.Decimal(10, 2)
+  margin         Decimal        @db.Decimal(20, 8)
+  realizedPnl    Decimal?       @db.Decimal(20, 8)
+  openedAt       DateTime       @default(now())
+  closedAt       DateTime?
+  payload        Json?
+
+  @@index([paperAccountId, status])
+  @@index([symbol, openedAt])
+}
+
+model TradeJournal {
+  id              String        @id @default(cuid())
+  walletProfileId String
+  walletProfile   WalletProfile @relation(fields: [walletProfileId], references: [id], onDelete: Cascade)
+  paperAccountId  String?
+  paperAccount    PaperAccount? @relation(fields: [paperAccountId], references: [id], onDelete: SetNull)
+  source          TradeSource
+  status          TradeStatus   @default(PENDING)
+  symbol          String
+  side            PositionSide
+  orderType       String
+  quantity        Decimal       @db.Decimal(20, 8)
+  price           Decimal?      @db.Decimal(20, 8)
+  fee             Decimal?      @db.Decimal(20, 8)
+  pnl             Decimal?      @db.Decimal(20, 8)
+  txHash          String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  payload         Json?
+
+  @@index([walletProfileId, createdAt])
+  @@index([source, status])
+  @@index([txHash])
+}
+
+model BacktestRun {
+  id               String          @id @default(cuid())
+  walletProfileId  String?
+  walletProfile    WalletProfile?  @relation(fields: [walletProfileId], references: [id], onDelete: SetNull)
+  strategyConfigId String?
+  strategyConfig   StrategyConfig? @relation(fields: [strategyConfigId], references: [id], onDelete: SetNull)
+  engine           StrategyEngine
+  symbol           String
+  timeframe        String
+  startedAt        DateTime        @default(now())
+  endedAt          DateTime?
+  configSnapshot   Json
+  metrics          Json?
+  trades           Json?
+
+  @@index([walletProfileId, startedAt])
+  @@index([engine, symbol, timeframe])
+}
