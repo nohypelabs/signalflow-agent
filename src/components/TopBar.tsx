@@ -319,7 +319,9 @@ export default function TopBar({
           <AlertBell
             unreadCount={alerts.unreadCount}
             triggeredAlerts={alerts.triggeredAlerts}
-            onNavigate={() => navigate("/alerts")}
+            activeCount={alerts.activeAlerts.length}
+            onRemove={alerts.removeAlert}
+            onClearTriggered={alerts.clearTriggered}
           />
           {/* Gear icon → System modal */}
           <div className="relative" ref={settingsRef}>
