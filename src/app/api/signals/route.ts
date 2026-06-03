@@ -277,6 +277,8 @@ export async function GET(request: Request) {
       factors: s.factors,
       confluence: s.confluence,
       tradingType: s.tradingType,
+      setup: s.setup,
+      quality: s.quality,
       multiTF: multiTFResults.get(s.pair.split("/")[0]),
     }));
 

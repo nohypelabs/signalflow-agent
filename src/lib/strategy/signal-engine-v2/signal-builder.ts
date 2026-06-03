@@ -7,6 +7,7 @@ import { adx, normalizeKlines } from "./indicator-engine";
 import { detectRegime } from "./regime-engine";
 import { scoreTrend, scoreMomentum, scoreVolatility, scoreVolume, scoreStructure, calculateConfluence, classifySignal, passesFilter, buildDimensions } from "./score-engine";
 import { calculateTPSL } from "./execution-plan-builder";
+import { calibrateSignalQuality, classifyTradeSetup } from "./lesson-engine";
 import type { ConfluenceFactor, MarketRegime, SignalV2 } from "./types";
 
 export function generateSignalV2(input: {
@@ -118,7 +119,24 @@ export function generateSignalV2(input: {
 
   // Confidence = distance from 50 (neutral), scaled
   const distance = Math.abs(confluence.score - 50);
-  const confidence = Math.min(98, Math.max(20, Math.round(50 + distance * 0.96)));
+  const rawConfidence = Math.min(98, Math.max(20, Math.round(50 + distance * 0.96)));
+
+  const setup = classifyTradeSetup({ action, regime, factors });
+  const quality = calibrateSignalQuality({
+    action,
+    rawConfidence,
+    setup,
+    regime,
+    tradingType,
+  });
+
+  if (quality.status === "blocked") {
+    action = "HOLD";
+  }
+
+  const confidence = action === "HOLD"
+    ? Math.min(55, quality.calibratedConfidence)
+    : quality.calibratedConfidence;
 
   // ── LAYER 4: TP/SL ─────────────────────────────────────
   const execution = calculateTPSL(price, isNaN(atrVal) ? price * 0.02 : atrVal, action, regime, tradingType);
@@ -142,8 +160,15 @@ export function generateSignalV2(input: {
     BREAKOUT: "breakout",
   };
 
-  let reasoning = `[${actionLabel}] on ${pair} — Confluence ${confluence.score}/100, ` +
-    `Regime: ${regimeLabel[regime]}. `;
+  let reasoning = `[${actionLabel}] on ${pair} — Setup: ${setup.label}. ` +
+    `Confluence ${confluence.score}/100, Regime: ${regimeLabel[regime]}. ` +
+    `${setup.thesis} `;
+
+  if (quality.blockedReasons.length > 0) {
+    reasoning += `Execution blocked: ${quality.blockedReasons.join(" ")} `;
+  } else {
+    reasoning += `Lesson: ${quality.lesson.note} `;
+  }
 
   if (bullishFactors.length > 0) {
     reasoning += `Bullish factors: ${bullishFactors.join(", ")}. `;
@@ -177,6 +202,8 @@ export function generateSignalV2(input: {
     factors,
     confluence: confluence.score,
     tradingType,
+    setup,
+    quality,
     dimensions,
     dimensionDetails,
     execution,

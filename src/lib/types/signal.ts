@@ -25,6 +25,13 @@ export type MarketRegime =
   | "VOLATILE"
   | "BREAKOUT";
 
+export type SignalSetupType =
+  | "trend_continuation"
+  | "breakout"
+  | "mean_reversion"
+  | "range_trade"
+  | "no_edge";
+
 export interface ConfluenceFactor {
   name: string;
   score: number;
@@ -52,6 +59,35 @@ export type Signal = {
   factors?: ConfluenceFactor[];
   confluence?: number;
   tradingType?: TradingType;
+  setup?: {
+    type: SignalSetupType;
+    direction: "long" | "short" | "neutral";
+    label: string;
+    thesis: string;
+    invalidation: string;
+    evidence: string[];
+    confidenceBias: number;
+  };
+  quality?: {
+    rawConfidence: number;
+    calibratedConfidence: number;
+    confidenceAdjustment: number;
+    minConfidence: number;
+    status: "actionable" | "watch" | "blocked";
+    blockedReasons: string[];
+    lesson: {
+      setupType: SignalSetupType;
+      regime: MarketRegime | "ANY";
+      source: "baseline_rule" | "backtest" | "paper";
+      sampleSize: number;
+      winRate: number | null;
+      profitFactor: number | null;
+      confidenceAdjustment: number;
+      minConfidence: number;
+      status: "trusted" | "watch" | "blocked";
+      note: string;
+    };
+  };
   multiTF?: {
     score: number;
     details: { tf: string; action: string; direction: string; confidence: number }[];

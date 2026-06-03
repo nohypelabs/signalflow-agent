@@ -5,8 +5,8 @@
 //
 // Method: Walk-forward sliding window
 // - Generate signal using bars [i..i+lookback]
-// - Evaluate outcome at bar [i+lookback+resolution]
-// - Track: correct/incorrect, profit/loss, per-type stats
+// - Evaluate whether TP/SL is reached first inside the resolution window
+// - Track: setup quality, correct/incorrect, profit/loss, per-type stats
 
 import { generateSignalV2 } from "./signal-engine-v2";
 import type { SoDEXKline } from "../sodex-types";
@@ -22,9 +22,18 @@ export interface BacktestSignal {
   confidence: number;
   confluence: number;
   regime: string;
+  setupType: string;
+  setupLabel: string;
+  qualityStatus: "actionable" | "watch" | "blocked";
+  confidenceRaw: number;
+  confidenceAdjustment: number;
   price: number;
+  takeProfit: number;
+  stopLoss: number;
   // Outcome
   outcomePrice: number | null;
+  exitIndex: number | null;
+  exitReason: "TAKE_PROFIT" | "STOP_LOSS" | "WINDOW_CLOSE" | null;
   outcome: "WIN" | "LOSS" | "NEUTRAL" | null;
   pnlPercent: number | null;
   directionCorrect: boolean | null;
@@ -58,6 +67,8 @@ export interface BacktestResult {
   shortWinRate: number;
   // Per-regime breakdown
   regimeAccuracy: Record<string, { total: number; wins: number; accuracy: number }>;
+  // Per-setup breakdown
+  setupAccuracy: Record<string, { total: number; wins: number; losses: number; neutrals: number; accuracy: number; profitFactor: number }>;
   // Signal list
   signals: BacktestSignal[];
   // Equity curve
@@ -74,6 +85,8 @@ export function runBacktest(
     step?: number;         // step size between signals (default: 4)
     resolution?: number;   // bars to look ahead for outcome (default: 12)
     tradingType?: TradingType;
+    feeBps?: number;
+    slippageBps?: number;
   } = {},
 ): BacktestResult {
   const {
@@ -81,6 +94,8 @@ export function runBacktest(
     step = 4,
     resolution = 12,
     tradingType,
+    feeBps = 2,
+    slippageBps = 3,
   } = options;
 
   // Normalize klines
@@ -137,21 +152,43 @@ export function runBacktest(
     if (!signal || signal.action === "HOLD") continue;
 
     const entryPrice = sorted[i].close;
-    const outcomePrice = sorted[Math.min(i + resolution, totalBars - 1)].close;
     const isBuy = signal.action.includes("LONG");
     const isSell = signal.action.includes("SHORT");
+    const outcomeWindow = sorted.slice(i + 1, Math.min(i + resolution + 1, totalBars));
 
     let pnlPercent: number | null = null;
     let outcome: "WIN" | "LOSS" | "NEUTRAL" | null = null;
     let directionCorrect: boolean | null = null;
+    let outcomePrice: number | null = null;
+    let exitIndex: number | null = null;
+    let exitReason: BacktestSignal["exitReason"] = null;
 
     if (isBuy || isSell) {
-      pnlPercent = isBuy
-        ? ((outcomePrice - entryPrice) / entryPrice) * 100
-        : ((entryPrice - outcomePrice) / entryPrice) * 100;
+      const exit = evaluateTradePath({
+        bars: outcomeWindow,
+        startIndex: i + 1,
+        isBuy,
+        entryPrice,
+        takeProfit: signal.execution.takeProfit,
+        stopLoss: signal.execution.stopLoss,
+      });
+
+      outcomePrice = exit.exitPrice;
+      exitIndex = exit.exitIndex;
+      exitReason = exit.exitReason;
+
+      const grossPnl = isBuy
+        ? ((exit.exitPrice - entryPrice) / entryPrice) * 100
+        : ((entryPrice - exit.exitPrice) / entryPrice) * 100;
+      const roundTripCostPct = ((feeBps + slippageBps) * 2) / 100;
+      pnlPercent = grossPnl - roundTripCostPct;
 
       directionCorrect = pnlPercent > 0;
-      outcome = pnlPercent > 0.1 ? "WIN" : pnlPercent < -0.1 ? "LOSS" : "NEUTRAL";
+      outcome = exit.exitReason === "TAKE_PROFIT"
+        ? "WIN"
+        : exit.exitReason === "STOP_LOSS"
+          ? "LOSS"
+          : pnlPercent > 0.1 ? "WIN" : pnlPercent < -0.1 ? "LOSS" : "NEUTRAL";
 
       // Update equity
       const positionSize = 0.05; // 5% per trade
@@ -180,8 +217,17 @@ export function runBacktest(
       confidence: signal.confidence,
       confluence: signal.confluence,
       regime: signal.regime,
+      setupType: signal.setup.type,
+      setupLabel: signal.setup.label,
+      qualityStatus: signal.quality.status,
+      confidenceRaw: signal.quality.rawConfidence,
+      confidenceAdjustment: signal.quality.confidenceAdjustment,
       price: entryPrice,
+      takeProfit: signal.execution.takeProfit,
+      stopLoss: signal.execution.stopLoss,
       outcomePrice,
+      exitIndex,
+      exitReason,
       outcome,
       pnlPercent: pnlPercent !== null ? parseFloat(pnlPercent.toFixed(3)) : null,
       directionCorrect,
@@ -225,6 +271,8 @@ export function runBacktest(
       : 0;
   }
 
+  const setupAccuracy = buildSetupAccuracy(actionable);
+
   return {
     pair,
     tradingType,
@@ -248,9 +296,96 @@ export function runBacktest(
     longWinRate: longSignals > 0 ? parseFloat(((longWins / longSignals) * 100).toFixed(1)) : 0,
     shortWinRate: shortSignals > 0 ? parseFloat(((shortWins / shortSignals) * 100).toFixed(1)) : 0,
     regimeAccuracy,
+    setupAccuracy,
     signals,
     equityCurve,
   };
+}
+
+type NormalizedBar = {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  q?: string;
+};
+
+function evaluateTradePath(input: {
+  bars: NormalizedBar[];
+  startIndex: number;
+  isBuy: boolean;
+  entryPrice: number;
+  takeProfit: number;
+  stopLoss: number;
+}): { exitPrice: number; exitIndex: number; exitReason: NonNullable<BacktestSignal["exitReason"]> } {
+  const fallbackIndex = Math.max(input.startIndex, input.startIndex + input.bars.length - 1);
+  const fallbackPrice = input.bars[input.bars.length - 1]?.close ?? input.entryPrice;
+
+  for (let offset = 0; offset < input.bars.length; offset++) {
+    const bar = input.bars[offset];
+    const exitIndex = input.startIndex + offset;
+    const hitStop = input.isBuy ? bar.low <= input.stopLoss : bar.high >= input.stopLoss;
+    const hitTarget = input.isBuy ? bar.high >= input.takeProfit : bar.low <= input.takeProfit;
+
+    if (hitStop && hitTarget) {
+      return { exitPrice: input.stopLoss, exitIndex, exitReason: "STOP_LOSS" };
+    }
+    if (hitStop) {
+      return { exitPrice: input.stopLoss, exitIndex, exitReason: "STOP_LOSS" };
+    }
+    if (hitTarget) {
+      return { exitPrice: input.takeProfit, exitIndex, exitReason: "TAKE_PROFIT" };
+    }
+  }
+
+  return { exitPrice: fallbackPrice, exitIndex: fallbackIndex, exitReason: "WINDOW_CLOSE" };
+}
+
+function buildSetupAccuracy(
+  signals: BacktestSignal[],
+): BacktestResult["setupAccuracy"] {
+  const setupAccuracy: BacktestResult["setupAccuracy"] = {};
+
+  for (const signal of signals) {
+    const key = signal.setupType;
+    if (!setupAccuracy[key]) {
+      setupAccuracy[key] = {
+        total: 0,
+        wins: 0,
+        losses: 0,
+        neutrals: 0,
+        accuracy: 0,
+        profitFactor: 0,
+      };
+    }
+    setupAccuracy[key].total++;
+    if (signal.outcome === "WIN") setupAccuracy[key].wins++;
+    if (signal.outcome === "LOSS") setupAccuracy[key].losses++;
+    if (signal.outcome === "NEUTRAL") setupAccuracy[key].neutrals++;
+  }
+
+  for (const [setupType, stats] of Object.entries(setupAccuracy)) {
+    const setupSignals = signals.filter((signal) => signal.setupType === setupType);
+    const grossProfit = setupSignals
+      .filter((signal) => signal.outcome === "WIN")
+      .reduce((sum, signal) => sum + Math.max(0, signal.pnlPercent ?? 0), 0);
+    const grossLoss = Math.abs(
+      setupSignals
+        .filter((signal) => signal.outcome === "LOSS")
+        .reduce((sum, signal) => sum + Math.min(0, signal.pnlPercent ?? 0), 0),
+    );
+
+    stats.accuracy = stats.total > 0
+      ? parseFloat(((stats.wins / stats.total) * 100).toFixed(1))
+      : 0;
+    stats.profitFactor = grossLoss > 0
+      ? parseFloat((grossProfit / grossLoss).toFixed(2))
+      : grossProfit > 0 ? Infinity : 0;
+  }
+
+  return setupAccuracy;
 }
 
 // ── Empty result helper ────────────────────────────────────
@@ -285,6 +420,7 @@ function emptyResult(
     longWinRate: 0,
     shortWinRate: 0,
     regimeAccuracy: {},
+    setupAccuracy: {},
     signals: [],
     equityCurve: [],
   };
