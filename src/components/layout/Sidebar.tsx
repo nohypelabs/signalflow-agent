@@ -44,7 +44,6 @@ const groups = [
     items: [
       { href: "/performance", label: "Performance", Icon: PerformanceIcon },
       { href: "/analytics", label: "Analytics", Icon: BarChartIcon },
-      { href: "/signal-history", label: "Signal History", Icon: SignalIcon },
       { href: "/trade-history", label: "Trade History", Icon: HistoryIcon },
       { href: "/journal", label: "Journal", Icon: DocumentIcon },
     ],
