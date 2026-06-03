@@ -458,18 +458,20 @@ export function classifySignal(confluence: ConfluenceResult): SignalActionV2 {
 }
 
 export function passesFilter(confluence: ConfluenceResult, action: SignalActionV2): boolean {
-  // Min 2 factors > 60 to generate any signal other than HOLD
-  if (action !== "HOLD" && confluence.bullishCount < 2 && confluence.bearishCount < 2) {
-    return false;
+  // Strong/normal signals need two aligned factors. Weak signals are allowed
+  // as watchlist candidates when one side has at least a small edge.
+  if (action === "STRONG_LONG" || action === "LONG") {
+    return confluence.bullishCount >= 2;
   }
-
-  // For BUY signals: require at least 2 factors with score > 60
-  const isBuy = action === "STRONG_LONG" || action === "LONG" || action === "WEAK_LONG";
-  if (isBuy && confluence.bullishCount < 2) return false;
-
-  // For SELL signals: require at least 2 factors with score < 40
-  const isSell = action === "STRONG_SHORT" || action === "SHORT" || action === "WEAK_SHORT";
-  if (isSell && confluence.bearishCount < 2) return false;
+  if (action === "STRONG_SHORT" || action === "SHORT") {
+    return confluence.bearishCount >= 2;
+  }
+  if (action === "WEAK_LONG") {
+    return confluence.bullishCount >= 1 && confluence.bearishCount <= 1;
+  }
+  if (action === "WEAK_SHORT") {
+    return confluence.bearishCount >= 1 && confluence.bullishCount <= 1;
+  }
 
   return true;
 }

@@ -123,6 +123,10 @@ function supports(direction: SignalDirection, score: number): boolean {
   return false;
 }
 
+function isWeakAction(action: SignalActionV2): boolean {
+  return action === "WEAK_LONG" || action === "WEAK_SHORT";
+}
+
 export function classifyTradeSetup(input: {
   action: SignalActionV2;
   regime: MarketRegime;
@@ -146,7 +150,7 @@ export function classifyTradeSetup(input: {
   let invalidation = "Wait for at least three aligned factors or a clearer regime transition.";
   let confidenceBias = -12;
 
-  if (direction === "neutral" || conflictCount >= 2 || supportCount < 2) {
+  if (direction === "neutral" || conflictCount >= 2 || (supportCount < 2 && !isWeakAction(action))) {
     type = "no_edge";
   } else if (
     regime === "BREAKOUT" &&
@@ -177,6 +181,15 @@ export function classifyTradeSetup(input: {
     thesis = "Structure and momentum show a bounce/rejection attempt from an extreme zone.";
     invalidation = "Invalidate if the structure level breaks instead of rejecting.";
     confidenceBias = regime === "RANGING" ? 1 : -2;
+  } else if (isWeakAction(action) && supportCount >= 1 && conflictCount <= 1) {
+    type = regime === "BREAKOUT"
+      ? "breakout"
+      : regime === "RANGING"
+        ? "range_trade"
+        : "trend_continuation";
+    thesis = "Early directional edge is present, but confirmation is still thin; track as a watch-grade setup.";
+    invalidation = "Invalidate if the first aligned factor rolls back through neutral or a second factor contradicts the move.";
+    confidenceBias = -4;
   }
 
   const evidence = factors
@@ -237,6 +250,7 @@ export function calibrateSignalQuality(input: {
     Math.min(98, Math.round(input.rawConfidence + confidenceAdjustment)),
   );
   const blockedReasons: string[] = [];
+  const confidenceShortfall = lesson.minConfidence - calibratedConfidence;
 
   if (input.action === "HOLD") {
     blockedReasons.push("Base classifier returned HOLD.");
@@ -244,16 +258,18 @@ export function calibrateSignalQuality(input: {
   if (lesson.status === "blocked") {
     blockedReasons.push(lesson.note);
   }
-  if (calibratedConfidence < lesson.minConfidence && input.action !== "HOLD") {
-    blockedReasons.push(`Calibrated confidence ${calibratedConfidence} below ${lesson.minConfidence}.`);
-  }
+  const status: SignalQuality["status"] = blockedReasons.length > 0
+    ? "blocked"
+    : lesson.status === "watch" || confidenceShortfall > 0
+      ? "watch"
+      : "actionable";
 
   return {
     rawConfidence: input.rawConfidence,
     calibratedConfidence,
     confidenceAdjustment,
     minConfidence: lesson.minConfidence,
-    status: blockedReasons.length > 0 ? "blocked" : lesson.status === "watch" ? "watch" : "actionable",
+    status,
     blockedReasons,
     lesson,
   };
