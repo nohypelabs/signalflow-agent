@@ -103,12 +103,12 @@ export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChan
         {/* Selected provider details */}
         {selectedProvider && (
           <Card padding="lg" className="space-y-4" accent={meta?.color}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: meta?.color ?? "#64748B" }} />
-                <h4 className="text-sm font-bold text-txt-primary">{selectedProvider.name}</h4>
+                <h4 className="truncate text-sm font-bold text-txt-primary">{selectedProvider.name}</h4>
               </div>
-              <span className="text-[10px] text-txt-dim font-mono">{selectedProvider.baseUrl}</span>
+              <span className="min-w-0 truncate text-[10px] text-txt-dim font-mono sm:max-w-[42%]">{selectedProvider.baseUrl}</span>
             </div>
 
             {/* Model selector */}
@@ -218,15 +218,15 @@ export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChan
           ) : (
             <div className="divide-y divide-border-default">
               {services.map((s) => (
-                <div key={s.name} className="flex items-center justify-between px-4 py-3 hover:bg-elevated/30 transition-colors">
-                  <div className="flex items-center gap-3">
+                <div key={s.name} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-elevated/30 transition-colors">
+                  <div className="flex min-w-0 items-center gap-3">
                     <div className={`w-2 h-2 rounded-full ${
                       s.status === "connected" ? "bg-buy" : s.status === "no_key" ? "bg-hold" : "bg-sell"
                     }`} />
-                    <span className="text-xs text-txt-primary font-medium">{s.name}</span>
+                    <span className="truncate text-xs text-txt-primary font-medium">{s.name}</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] text-txt-dim font-mono">{s.detail}</span>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="hidden truncate text-[10px] text-txt-dim font-mono sm:inline">{s.detail}</span>
                     {s.latencyMs > 0 && (
                       <span className="text-[10px] text-txt-faint font-mono">{s.latencyMs}ms</span>
                     )}
@@ -252,10 +252,10 @@ export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChan
             { label: "Wallet", value: walletConnected ? "Connected" : "Not connected", badge: walletConnected ? "Active" : null },
             { label: "Version", value: "v0.1.0", badge: null },
           ].map((item) => (
-            <div key={item.label} className="flex items-center justify-between px-4 py-3 hover:bg-elevated/30 transition-colors">
-              <span className="text-xs text-txt-tertiary">{item.label}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-txt-primary font-mono">{item.value}</span>
+            <div key={item.label} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-elevated/30 transition-colors">
+              <span className="shrink-0 text-xs text-txt-tertiary">{item.label}</span>
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="truncate text-right text-xs text-txt-primary font-mono">{item.value}</span>
                 {item.badge && (
                   <Badge variant={item.badge === "Custom" ? "accent" : item.badge === "Active" ? "live" : "muted"} size="sm">
                     {item.badge}

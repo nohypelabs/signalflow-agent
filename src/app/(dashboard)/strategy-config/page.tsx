@@ -3,5 +3,9 @@
 import StrategyConfig from "@/components/StrategyConfig";
 
 export default function StrategyPage() {
-  return <StrategyConfig />;
+  return (
+    <div className="mx-auto w-full max-w-5xl">
+      <StrategyConfig />
+    </div>
+  );
 }
