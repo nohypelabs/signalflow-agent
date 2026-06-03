@@ -30,17 +30,19 @@ export default function PortfolioRoute() {
   }, [currentPrices, checkPaperTpSl]);
 
   return (
-    <PortfolioPage
-      trades={paper.trades}
-      stats={paper.stats}
-      balance={paper.balance}
-      isWalletConnected={d.isConnected}
-      isCapitalConfigured={paper.capitalConfigured}
-      currentPrices={currentPrices}
-      onClose={paper.closeTrade}
-      onReset={paper.reset}
-      onConfigureCapital={paper.configureCapital}
-      signals={d.liveSignals}
-    />
+    <div className="mx-auto max-w-6xl">
+      <PortfolioPage
+        trades={paper.trades}
+        stats={paper.stats}
+        balance={paper.balance}
+        isWalletConnected={d.isConnected}
+        isCapitalConfigured={paper.capitalConfigured}
+        currentPrices={currentPrices}
+        onClose={paper.closeTrade}
+        onReset={paper.reset}
+        onConfigureCapital={paper.configureCapital}
+        signals={d.liveSignals}
+      />
+    </div>
   );
 }
