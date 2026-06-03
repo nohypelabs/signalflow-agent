@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { DashboardProvider, useDashboard } from "@/lib/dashboard-context";
+import { usePaperTrading } from "@/lib/hooks/usePaperTrading";
 import AppShell from "@/components/layout/AppShell";
 import DynamicTitle from "@/components/DynamicTitle";
 
@@ -10,6 +11,7 @@ function ShellWithProps({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isDashboard = pathname === "/dashboard";
   const isFullScreen = pathname === "/trading" || isDashboard;
+  const paper = usePaperTrading(d.isConnected ? d.address : undefined);
 
   return (
     <>
@@ -31,6 +33,20 @@ function ShellWithProps({ children }: { children: React.ReactNode }) {
               walletAddress: d.address,
               onExecute: d.handleExecuteOrder,
               onClose: d.handleCloseForm,
+              paperMode: !d.isConnected,
+              paperBalance: paper.balance?.total,
+              paperAvailable: paper.balance?.available,
+              onPaperTrade: (trade) => {
+                paper.openTrade({
+                  pair: trade.pair,
+                  side: trade.side,
+                  leverage: trade.leverage,
+                  margin: trade.margin,
+                  entryPrice: trade.entryPrice,
+                  takeProfit: trade.takeProfit,
+                  stopLoss: trade.stopLoss,
+                });
+              },
             }
           : null
       }

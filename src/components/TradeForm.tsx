@@ -12,6 +12,16 @@ import Button from "@/components/ui/Button";
 import { CloseIcon } from "@/components/ui/icons";
 import { parseApiResponse } from "@/lib/api/client";
 
+interface PaperTradeInput {
+  pair: string;
+  side: 'LONG' | 'SHORT';
+  leverage: number;
+  margin: number;
+  entryPrice: number;
+  takeProfit: number;
+  stopLoss: number;
+}
+
 interface Props {
   signal: Signal | null;
   ticker: SoDEXTicker | null;
@@ -19,6 +29,11 @@ interface Props {
   walletAddress?: string;
   onExecute: (order: SoDEXNewOrderRequest) => Promise<void>;
   onClose: () => void;
+  // Paper trading props
+  paperMode?: boolean;
+  paperBalance?: number;
+  paperAvailable?: number;
+  onPaperTrade?: (trade: PaperTradeInput) => void;
 }
 
 function formatPrice(p: number) {
@@ -29,7 +44,7 @@ function formatPrice(p: number) {
 
 const PCT_OPTIONS = [25, 50, 75, 100] as const;
 
-export default function TradeForm({ signal, ticker, walletConnected, walletAddress, onExecute, onClose }: Props) {
+export default function TradeForm({ signal, ticker, walletConnected, walletAddress, onExecute, onClose, paperMode, paperBalance, paperAvailable, onPaperTrade }: Props) {
   const [quantity, setQuantity] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +93,8 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
   const balance = balances.find(
     (b) => b.asset.toUpperCase() === balanceAsset.toUpperCase(),
   );
-  const freeBalance = balance ? parseFloat(String(balance.free)) : 0;
+  const liveFreeBalance = balance ? parseFloat(String(balance.free)) : 0;
+  const freeBalance = paperMode ? (paperAvailable ?? 0) : liveFreeBalance;
 
   const maxQty =
     side === "BUY"
@@ -110,6 +126,25 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
     setSuccess(null);
 
     try {
+      // Paper trading mode
+      if (paperMode && onPaperTrade) {
+        const margin = side === "BUY" ? qty * price : qty * price;
+        const leverage = 1;
+        onPaperTrade({
+          pair: signal.pair,
+          side: side === "BUY" ? "LONG" : "SHORT",
+          leverage,
+          margin,
+          entryPrice: price,
+          takeProfit: signal.execution?.takeProfit ?? price * (side === "BUY" ? 1.05 : 0.95),
+          stopLoss: signal.execution?.stopLoss ?? price * (side === "BUY" ? 0.97 : 1.03),
+        });
+        setSuccess(`Paper trade opened: ${qty} ${baseCoin} @ $${formatPrice(price)}`);
+        setTimeout(() => onClose(), 1500);
+        return;
+      }
+
+      // Live trading mode
       const typedData = buildOrderTypedData({
         symbol: sodSymbol,
         side,
@@ -182,75 +217,94 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
           </div>
         </Card>
 
-        {/* Wallet Balance */}
-        {walletConnected && (
-          <Card variant="inset" padding="md" className="mb-4 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-txt-muted">Wallet Balance</span>
-              {balanceLoading && (
-                <span className="text-[10px] text-warning animate-pulse">Loading...</span>
-              )}
-              {balanceError && (
-                <span className="text-[10px] text-error">{balanceError}</span>
-              )}
-              {!balanceLoading && !balanceError && balances.length === 0 && (
-                <span className="text-[10px] text-txt-muted">No balances found</span>
-              )}
-              <button
-                onClick={fetchBalances}
-                className="text-[10px] text-accent hover:opacity-80"
-              >
-                Refresh
-              </button>
+        {/* Balance */}
+        <Card variant="inset" padding="md" className="mb-4 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-txt-muted">
+              {paperMode ? "Paper Balance" : "Wallet Balance"}
+            </span>
+            {paperMode ? (
+              <span className="text-[10px] text-accent font-semibold">PAPER</span>
+            ) : (
+              <>
+                {balanceLoading && (
+                  <span className="text-[10px] text-warning animate-pulse">Loading...</span>
+                )}
+                {balanceError && (
+                  <span className="text-[10px] text-error">{balanceError}</span>
+                )}
+                {!balanceLoading && !balanceError && balances.length === 0 && (
+                  <span className="text-[10px] text-txt-muted">No balances found</span>
+                )}
+                <button
+                  onClick={fetchBalances}
+                  className="text-[10px] text-accent hover:opacity-80"
+                >
+                  Refresh
+                </button>
+              </>
+            )}
+          </div>
+
+          {paperMode ? (
+            <div className="pt-1.5 mt-1 border-t border-border-default flex justify-between">
+              <span className="text-[10px] text-txt-muted">
+                Available (USDC)
+              </span>
+              <span className="text-[10px] text-txt-primary font-mono font-semibold">
+                ${(paperAvailable ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              </span>
             </div>
-
-            {balances.length > 0 && (
-              <div className="space-y-1">
-                {balances.map((b) => {
-                  const isRelevant = b.asset.toUpperCase() === balanceAsset.toUpperCase();
-                  return (
-                    <div
-                      key={b.asset}
-                      className={`flex justify-between text-xs rounded p-1.5 ${
-                        isRelevant ? "bg-accent-muted border border-accent-dim" : ""
-                      }`}
-                    >
-                      <span className={isRelevant ? "text-txt-primary font-semibold" : "text-txt-tertiary"}>
-                        {b.asset}
-                      </span>
-                      <div className="flex gap-3">
-                        <span className={isRelevant ? "text-txt-primary font-mono" : "text-txt-muted font-mono"}>
-                          {parseFloat(String(b.free)).toLocaleString(undefined, { maximumFractionDigits: 6 })}
+          ) : (
+            <>
+              {balances.length > 0 && (
+                <div className="space-y-1">
+                  {balances.map((b) => {
+                    const isRelevant = b.asset.toUpperCase() === balanceAsset.toUpperCase();
+                    return (
+                      <div
+                        key={b.asset}
+                        className={`flex justify-between text-xs rounded p-1.5 ${
+                          isRelevant ? "bg-accent-muted border border-accent-dim" : ""
+                        }`}
+                      >
+                        <span className={isRelevant ? "text-txt-primary font-semibold" : "text-txt-tertiary"}>
+                          {b.asset}
                         </span>
-                        {parseFloat(String(b.locked)) > 0 && (
-                          <span className="text-warning text-[10px]">
-                            ({parseFloat(String(b.locked)).toLocaleString(undefined, { maximumFractionDigits: 4 })} locked)
+                        <div className="flex gap-3">
+                          <span className={isRelevant ? "text-txt-primary font-mono" : "text-txt-muted font-mono"}>
+                            {parseFloat(String(b.free)).toLocaleString(undefined, { maximumFractionDigits: 6 })}
                           </span>
-                        )}
+                          {parseFloat(String(b.locked)) > 0 && (
+                            <span className="text-warning text-[10px]">
+                              ({parseFloat(String(b.locked)).toLocaleString(undefined, { maximumFractionDigits: 4 })} locked)
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              )}
 
-            {freeBalance > 0 && (
-              <div className="pt-1.5 mt-1 border-t border-border-default flex justify-between">
-                <span className="text-[10px] text-txt-muted">
-                  Available ({side === "BUY" ? quoteCoin : baseCoin})
-                </span>
-                <span className="text-[10px] text-txt-primary font-mono font-semibold">
-                  {freeBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })} {balanceAsset}
-                  {side === "BUY" && price > 0 && (
-                    <span className="text-txt-muted ml-1">
-                      (~{(freeBalance / price).toFixed(6)} {baseCoin})
-                    </span>
-                  )}
-                </span>
-              </div>
-            )}
-          </Card>
-        )}
+              {freeBalance > 0 && (
+                <div className="pt-1.5 mt-1 border-t border-border-default flex justify-between">
+                  <span className="text-[10px] text-txt-muted">
+                    Available ({side === "BUY" ? quoteCoin : baseCoin})
+                  </span>
+                  <span className="text-[10px] text-txt-primary font-mono font-semibold">
+                    {freeBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })} {balanceAsset}
+                    {side === "BUY" && price > 0 && (
+                      <span className="text-txt-muted ml-1">
+                        (~{(freeBalance / price).toFixed(6)} {baseCoin})
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+        </Card>
 
         {/* Quantity input */}
         <div className="mb-4">
@@ -325,14 +379,18 @@ export default function TradeForm({ signal, ticker, walletConnected, walletAddre
           size="lg"
           className="w-full"
           onClick={handleExecute}
-          disabled={!walletConnected || !quantity || submitting}
+          disabled={(!paperMode && !walletConnected) || !quantity || submitting}
           loading={submitting}
         >
-          {!walletConnected ? "Connect Wallet to Execute" : "Sign & Submit"}
+          {paperMode
+            ? "Open Paper Trade"
+            : !walletConnected
+              ? "Connect Wallet to Execute"
+              : "Sign & Submit"}
         </Button>
 
         <p className="text-center text-[10px] text-txt-faint mt-3">
-          SoDEX Mainnet — EIP-712 signing required
+          {paperMode ? "Paper Trading — No real funds at risk" : "SoDEX Mainnet — EIP-712 signing required"}
         </p>
       </Card>
     </div>
