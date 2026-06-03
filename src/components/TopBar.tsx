@@ -36,22 +36,33 @@ interface Props {
 }
 
 const navGroups = {
-  overview: [
+  command: [
     { href: "/dashboard", label: "Dashboard", Icon: HomeIcon },
     { href: "/signals", label: "Signals", Icon: SignalIcon },
-    { href: "/screener", label: "Screener", Icon: ActivityIcon },
-    { href: "/signal-history", label: "Signal History", Icon: HistoryIcon },
-    { href: "/performance", label: "Performance", Icon: PerformanceIcon },
+    { href: "/screener", label: "Market Overview", Icon: ActivityIcon },
   ],
-  trading: [
+  execution: [
     { href: "/trading", label: "Trading", Icon: TradeIcon },
     { href: "/portfolio", label: "Portfolio", Icon: ChartIcon },
-    { href: "/analytics", label: "Analytics", Icon: BarChartIcon },
     { href: "/alerts", label: "Alerts", Icon: BellIcon },
-    { href: "/journal", label: "Journal", Icon: DocumentIcon },
+  ],
+  review: [
+    { href: "/performance", label: "Performance", Icon: PerformanceIcon },
+    { href: "/analytics", label: "Analytics", Icon: BarChartIcon },
+    { href: "/signal-history", label: "Signal History", Icon: HistoryIcon },
     { href: "/trade-history", label: "Trade History", Icon: HistoryIcon },
+    { href: "/journal", label: "Journal", Icon: DocumentIcon },
+  ],
+  strategy: [
     { href: "/strategy-config", label: "Strategy Config", Icon: StrategyIcon },
   ],
+};
+
+const navGroupLabels: Record<keyof typeof navGroups, string> = {
+  command: "Command",
+  execution: "Execution",
+  review: "Review",
+  strategy: "Strategy",
 };
 
 const systemItems = [
@@ -153,11 +164,11 @@ export default function TopBar({
               transition={{ duration: 0.15 }}
               className="absolute left-0 top-10 z-50 w-56 rounded-xl border border-border-default bg-card p-1.5 shadow-2xl shadow-black/50"
             >
-              {(["overview", "trading"] as const).map((groupKey, index) => (
+              {(["command", "execution", "review", "strategy"] as const).map((groupKey, index) => (
                 <div key={groupKey}>
                   {index > 0 && <div className="my-1 h-px bg-border-default" />}
                   <div className="px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-txt-faint">
-                    {groupKey === "overview" ? "Overview" : "Trading"}
+                    {navGroupLabels[groupKey]}
                   </div>
                   {navGroups[groupKey].filter(({ href }) => !directNavHrefs.has(href)).map(({ href, label: itemLabel, Icon }) => {
                     const itemActive = pathname === href;
