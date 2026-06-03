@@ -8,10 +8,10 @@ Set these variables in local development and Vercel:
 
 ```bash
 DATABASE_URL="postgresql://postgres.project-ref:password@aws-0-region.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
-DIRECT_URL="postgresql://postgres:password@db.project-ref.supabase.co:5432/postgres"
+DIRECT_URL="postgresql://postgres.project-ref:password@aws-0-region.pooler.supabase.com:5432/postgres"
 ```
 
-Use `DATABASE_URL` for runtime/serverless traffic. Use `DIRECT_URL` for migrations when Supabase gives you a direct database connection.
+Use `DATABASE_URL` for runtime/serverless traffic. Use `DIRECT_URL` for Prisma migrations. If your environment can reach Supabase's direct database host, that direct URL also works for `DIRECT_URL`; otherwise use the Supabase Session Pooler on port `5432`.
 
 ## Commands
 
