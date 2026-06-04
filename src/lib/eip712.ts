@@ -2,7 +2,8 @@ import type { TypedDataDefinition } from "viem";
 
 export const SODEX_CHAIN_ID = 286623;
 
-// TODO: verify domain fields + verifyingContract against SoDEX API docs
+// ── Spot domain (legacy) ─────────────────────────────────
+
 export const spotDomain = {
   name: "spot",
   version: "1",
@@ -10,7 +11,6 @@ export const spotDomain = {
   verifyingContract: "0x0000000000000000000000000000000000000000",
 } as const;
 
-// TODO: verify field names and ordering match SoDEX Go structs exactly
 export const spotOrderTypes = {
   NewOrder: [
     { name: "symbol", type: "string" },
@@ -40,6 +40,45 @@ export function buildOrderTypedData(order: {
       orderType: order.orderType,
       quantity: order.quantity,
       timestamp: BigInt(order.timestamp),
+    },
+  };
+}
+
+// ── Perps domain (SoDEX futures) ─────────────────────────
+
+export const perpsDomain = {
+  name: "futures",
+  version: "1",
+  chainId: SODEX_CHAIN_ID,
+  verifyingContract: "0x0000000000000000000000000000000000000000",
+} as const;
+
+export const exchangeActionTypes = {
+  ExchangeAction: [
+    { name: "payloadHash", type: "bytes32" },
+    { name: "nonce", type: "uint256" },
+  ],
+} as const;
+
+export const exchangeActionPrimaryType = "ExchangeAction";
+
+/**
+ * Build EIP-712 typed data for SoDEX perps order signing.
+ *
+ * The payloadHash is keccak256 of the compact JSON {type, params}.
+ * The API key's private key signs this; the signature goes in X-API-Sign.
+ */
+export function buildPerpsActionTypedData(payloadHash: `0x${string}`, nonce: number): TypedDataDefinition<
+  typeof exchangeActionTypes,
+  typeof exchangeActionPrimaryType
+> {
+  return {
+    domain: perpsDomain,
+    types: exchangeActionTypes,
+    primaryType: exchangeActionPrimaryType,
+    message: {
+      payloadHash,
+      nonce: BigInt(nonce),
     },
   };
 }

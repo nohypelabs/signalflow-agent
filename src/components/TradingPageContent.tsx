@@ -291,10 +291,10 @@ export default function TradingPageContent() {
       return;
     }
 
-    if (tradeMode === "live") {
-      const msg = "Live SoDEX perps execution is locked until wallet-signature authentication and order ownership checks are implemented.";
+    if (tradeMode === "live" && !d.isConnected) {
+      const msg = "Connect wallet to execute live trades.";
       setTradeError(msg);
-      setNotice({ id: Date.now(), kind: "info", title: "Live execution locked", detail: msg });
+      setNotice({ id: Date.now(), kind: "error", title: "Wallet required", detail: msg });
       return;
     }
 
@@ -340,7 +340,51 @@ export default function TradingPageContent() {
       if (!t) { const msg = paper.error ?? "Paper trade rejected."; setTradeError(msg); setNotice({ id: Date.now(), kind: "error", title: "Trade rejected", detail: msg }); }
       else { setNotice({ id: Date.now(), kind: "success", title: "Paper position opened", detail: `${t.side} ${t.pair} ${t.leverage}x at $${formatPrice(t.entryPrice)}`, rows: [{ label: "Pair", value: t.pair }, { label: "Side", value: t.side, tone: t.side === "LONG" ? "buy" : "sell" }, { label: "Entry", value: `$${formatPrice(t.entryPrice)}` }, { label: "Margin", value: formatUsd(t.margin) }, { label: "Leverage", value: `${t.leverage}x`, tone: "accent" }, { label: "Liq", value: `$${formatPrice(t.liquidationPrice)}`, tone: "sell" }] }); }
     } else {
-      setNotice({ id: Date.now(), kind: "info", title: "Live execution locked", detail: "No order was submitted. Wallet-signature authentication and order ownership checks are required first." });
+      // Live execution — POST to /api/orders
+      const submitLiveOrder = async () => {
+        setTradeError(null);
+        try {
+          const res = await fetch("/api/orders", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-wallet-address": d.address ?? "",
+            },
+            body: JSON.stringify({
+              symbol: a.pair,
+              side: order.side,
+              type: "MARKET",
+              quantity: String(order.quantity),
+              leverage: order.leverage,
+              reduceOnly: false,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            const msg = data.error ?? "Live order failed.";
+            setTradeError(msg);
+            setNotice({ id: Date.now(), kind: "error", title: "Order rejected", detail: msg });
+          } else {
+            setNotice({
+              id: Date.now(),
+              kind: "success",
+              title: "Live order submitted",
+              detail: `${order.side} ${a.pair} ${order.leverage}x via SoDEX Perps`,
+              rows: [
+                { label: "Pair", value: a.pair },
+                { label: "Side", value: order.side, tone: order.side === "LONG" ? "buy" : "sell" },
+                { label: "Leverage", value: `${order.leverage}x`, tone: "accent" },
+                { label: "Source", value: data.source ?? "SoDEX Perps" },
+              ],
+            });
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Network error";
+          setTradeError(msg);
+          setNotice({ id: Date.now(), kind: "error", title: "Order failed", detail: msg });
+        }
+      };
+      submitLiveOrder();
     }
   };
 

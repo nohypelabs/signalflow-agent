@@ -1413,7 +1413,7 @@ function Roadmap() {
           "Live balance display with 25/50/75/100% quick-fill",
           "PWA support — installable, offline-capable, custom app icons",
           "Mobile responsive — bottom tab nav, slide-in drawer, compact header",
-          "Live order submission locked pending wallet authentication and order ownership",
+          "Live perps execution via SoDEX — wallet connected, EIP-712 signed, order forwarded",
           "Wrong network handling — switch chain or disconnect option",
           "Wallet panel — address copy, balance view, clear disconnect button",
           "Dynamic weight engine with outlier capping",

@@ -131,3 +131,181 @@ export function getPerpsPositions(userAddress: string, accountID?: number) {
     accountID !== undefined ? { accountID: String(accountID) } : undefined,
   );
 }
+
+// ── Authenticated perps trading ──────────────────────────
+
+export interface PerpsOrderParams {
+  accountID: number;
+  symbolID: number;
+  clOrdID?: string;
+  side: 1 | 2;           // 1 = buy, 2 = sell
+  type: 1 | 2 | 3 | 4;  // 1 = limit, 2 = market, 3 = stop_market, 4 = take_profit_market
+  quantity: string;
+  price?: string;
+  stopPrice?: string;
+  reduceOnly?: boolean;
+  positionSide: 1 | 2 | 3; // 1 = long, 2 = short, 3 = both (hedge mode)
+  timeInForce?: 1 | 2 | 3 | 4; // 1 = GTC, 2 = IOC, 3 = FOK, 4 = post_only
+}
+
+interface PerpsOrderResponse {
+  orderID?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Place a perps order on SoDEX.
+ *
+ * Auth headers required by SoDEX perps API:
+ * - X-API-Key: API key name string
+ * - X-API-Sign: 0x01 prefix + 65-byte EIP-712 signature
+ * - X-API-Nonce: monotonic Unix ms timestamp
+ *
+ * The signing domain is { name: "futures", version: "1", chainId: 286623 }.
+ * The signed struct is ExchangeAction { payloadHash, nonce }
+ * where payloadHash = keccak256(compactJSON({type, params})).
+ */
+export async function placePerpOrder(
+  params: PerpsOrderParams,
+  auth: { apiKeyName: string; apiKeyPrivate: string },
+): Promise<PerpsOrderResponse> {
+  const url = `${perpsBaseUrl()}/trade/orders`;
+
+  const orderBody = {
+    accountID: params.accountID,
+    symbolID: params.symbolID,
+    orders: [
+      {
+        clOrdID: params.clOrdID ?? `sf-${Date.now()}`,
+        modifier: 1,
+        side: params.side,
+        type: params.type,
+        timeInForce: params.timeInForce ?? (params.type === 2 ? 3 : 1),
+        ...(params.price ? { price: params.price } : {}),
+        quantity: params.quantity,
+        ...(params.stopPrice ? { stopPrice: params.stopPrice } : {}),
+        reduceOnly: params.reduceOnly ?? false,
+        positionSide: params.positionSide,
+      },
+    ],
+  };
+
+  // Sign the payload with API key private key
+  const { privateKeyToAccount } = await import("viem/accounts");
+  const { keccak256, toBytes } = await import("viem");
+
+  const account = privateKeyToAccount(auth.apiKeyPrivate as `0x${string}`);
+  const payloadJson = JSON.stringify({ type: "newOrder", params: orderBody });
+  const payloadHash = keccak256(toBytes(payloadJson));
+  const nonce = Date.now();
+
+  const domain = { name: "futures", version: "1", chainId: 286623 as const, verifyingContract: "0x0000000000000000000000000000000000000000" as const };
+  const types = {
+    ExchangeAction: [
+      { name: "payloadHash", type: "bytes32" },
+      { name: "nonce", type: "uint256" },
+    ],
+  };
+
+  const signature = await account.signTypedData({
+    domain,
+    types,
+    primaryType: "ExchangeAction",
+    message: { payloadHash, nonce: BigInt(nonce) },
+  });
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "X-API-Key": auth.apiKeyName,
+      "X-API-Sign": `0x01${signature.slice(2)}`,
+      "X-API-Nonce": String(nonce),
+    },
+    body: JSON.stringify(orderBody),
+    cache: "no-store",
+  });
+
+  const body = await response.json().catch(() => null) as {
+    code?: number;
+    error?: string;
+    message?: string;
+    data?: PerpsOrderResponse;
+  } | null;
+
+  if (!response.ok || !body || body.code !== 0) {
+    throw new Error(
+      body?.error || body?.message || `SoDEX perps order failed ${response.status}`,
+    );
+  }
+
+  return (body.data ?? body) as PerpsOrderResponse;
+}
+
+/**
+ * Cancel a perps order on SoDEX.
+ */
+export async function cancelPerpOrder(
+  params: { accountID: number; symbolID: number; orderID: string },
+  auth: { apiKeyName: string; apiKeyPrivate: string },
+): Promise<unknown> {
+  const url = `${perpsBaseUrl()}/trade/orders`;
+
+  const cancelBody = {
+    accountID: params.accountID,
+    symbolID: params.symbolID,
+    orderID: params.orderID,
+  };
+
+  const { privateKeyToAccount } = await import("viem/accounts");
+  const { keccak256, toBytes } = await import("viem");
+
+  const account = privateKeyToAccount(auth.apiKeyPrivate as `0x${string}`);
+  const payloadJson = JSON.stringify({ type: "cancelOrder", params: cancelBody });
+  const payloadHash = keccak256(toBytes(payloadJson));
+  const nonce = Date.now();
+
+  const domain = { name: "futures", version: "1", chainId: 286623 as const, verifyingContract: "0x0000000000000000000000000000000000000000" as const };
+  const types = {
+    ExchangeAction: [
+      { name: "payloadHash", type: "bytes32" },
+      { name: "nonce", type: "uint256" },
+    ],
+  };
+
+  const signature = await account.signTypedData({
+    domain,
+    types,
+    primaryType: "ExchangeAction",
+    message: { payloadHash, nonce: BigInt(nonce) },
+  });
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "X-API-Key": auth.apiKeyName,
+      "X-API-Sign": `0x01${signature.slice(2)}`,
+      "X-API-Nonce": String(nonce),
+    },
+    body: JSON.stringify({ type: "cancelOrder", params: cancelBody }),
+    cache: "no-store",
+  });
+
+  const body = await response.json().catch(() => null) as {
+    code?: number;
+    error?: string;
+    message?: string;
+  } | null;
+
+  if (!response.ok || !body || body.code !== 0) {
+    throw new Error(
+      body?.error || body?.message || `SoDEX perps cancel failed ${response.status}`,
+    );
+  }
+
+  return body;
+}

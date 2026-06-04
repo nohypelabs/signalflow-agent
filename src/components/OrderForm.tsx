@@ -123,7 +123,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
     const entry = currentPrice ?? 0;
     const tp = parseFloat(takeProfit) || 0;
     const sl = parseFloat(stopLoss) || 0;
-    if (mode === "live") return "Live SoDEX perps execution is locked until wallet-signature authentication and order ownership checks are implemented.";
+    if (mode === "live" && !isConnected) return "Connect wallet to execute live trades.";
     if (!entry) return "Market price is not available.";
     if (!marginNum) return null;
     if (mode === "paper" && !isPaperCapitalConfigured) return "Choose paper capital before opening paper positions.";
@@ -445,8 +445,12 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
           }`}>
           {!isConnected
             ? "Connect Wallet to Trade"
+            : mode === "live" && !marginNum
+              ? "Enter Margin to Continue"
+            : mode === "live" && validationError
+              ? "Review Order Details"
             : mode === "live"
-              ? "Live Execution Locked"
+              ? `Open ${side} · ${leverage}x (Live)`
             : mode === "paper" && !isPaperCapitalConfigured
               ? "Set Paper Capital"
               : !marginNum || !currentPrice

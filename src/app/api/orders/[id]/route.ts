@@ -1,9 +1,16 @@
 import { NextRequest } from "next/server";
 import { jsonNoCache } from "@/lib/api/no-cache";
 import { checkRateLimit } from "@/lib/security/rate-limit";
-import { requireTradingAuthorization, verifyOrderOwnership } from "@/lib/security/trading-auth";
+import { requireTradingAuthorization } from "@/lib/security/trading-auth";
+import { cancelPerpOrder } from "@/lib/sodex-perps";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
+
+const cancelSchema = z.object({
+  accountID: z.number().int().min(0).default(0),
+  symbolID: z.number().int().min(1).default(1),
+}).strict();
 
 export async function DELETE(
   req: NextRequest,
@@ -13,19 +20,27 @@ export async function DELETE(
   if (limited) return limited;
 
   const { id } = await params;
-  const orderId = Number(id);
-  if (!Number.isInteger(orderId) || orderId <= 0) {
-    return jsonNoCache({ error: "Invalid order id" }, { status: 400 });
+  if (!id || id.trim().length === 0) {
+    return jsonNoCache({ error: "Order ID required" }, { status: 400 });
   }
 
   const auth = await requireTradingAuthorization(req);
-  if (auth instanceof Response) {
-    return auth;
-  }
+  if (auth instanceof Response) return auth;
 
-  if (!verifyOrderOwnership(auth, orderId)) {
-    return jsonNoCache({ error: "Order not found or not owned by caller" }, { status: 404 });
-  }
+  // Parse optional body for accountID/symbolID
+  const body = await req.json().catch(() => ({}));
+  const parsed = cancelSchema.safeParse(body);
+  const { accountID, symbolID } = parsed.success ? parsed.data : { accountID: 0, symbolID: 1 };
 
-  return jsonNoCache({ error: "Trading authorization unavailable" }, { status: 403 });
+  try {
+    await cancelPerpOrder(
+      { accountID, symbolID, orderID: id },
+      { apiKeyName: auth.apiKeyName, apiKeyPrivate: auth.apiKeyPrivate },
+    );
+    return jsonNoCache({ success: true, cancelledOrderId: id });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Cancel failed";
+    console.error("[/api/orders/[id] DELETE]", msg);
+    return jsonNoCache({ error: msg }, { status: 502 });
+  }
 }

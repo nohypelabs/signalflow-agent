@@ -3,10 +3,23 @@ import { jsonNoCache } from "@/lib/api/no-cache";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { markIdempotency, readIdempotency } from "@/lib/security/idempotency";
 import { requireTradingAuthorization } from "@/lib/security/trading-auth";
-import { orderCreationSchema } from "@/lib/validation/api-schemas";
-import { validateRequest } from "@/lib/validation";
+import { placePerpOrder, toPerpsSymbol } from "@/lib/sodex-perps";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
+
+const perpsOrderSchema = z.object({
+  symbol: z.string().trim().min(1),
+  side: z.enum(["LONG", "SHORT"]),
+  type: z.enum(["MARKET", "LIMIT"]).default("MARKET"),
+  quantity: z.string().trim().min(1),
+  leverage: z.number().int().min(1).max(100).default(1),
+  reduceOnly: z.boolean().default(false),
+  price: z.string().trim().optional(),
+  clientOrderId: z.string().trim().min(1).max(120).optional(),
+  accountID: z.number().int().min(0).optional(),
+  symbolID: z.number().int().min(1).optional(),
+}).strict();
 
 export async function POST(req: NextRequest) {
   const limited = checkRateLimit(req, "orders");
@@ -14,27 +27,69 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const validation = validateRequest(orderCreationSchema, body);
-    if (!validation.ok) return validation.response;
-
-    const clientOrderId = validation.data.clientOrderId?.trim() ?? "";
-
-    if (clientOrderId) {
-      const existing = readIdempotency(clientOrderId);
-      if (existing?.response) {
-        return jsonNoCache(existing.response, { status: existing.status === "rejected" ? 403 : 200 });
-      }
-      markIdempotency(clientOrderId, "pending");
+    const parsed = perpsOrderSchema.safeParse(body);
+    if (!parsed.success) {
+      return jsonNoCache(
+        { error: "Invalid order", details: parsed.error.flatten().fieldErrors },
+        { status: 400 },
+      );
     }
 
+    const order = parsed.data;
+
+    // Idempotency check
+    if (order.clientOrderId) {
+      const existing = readIdempotency(order.clientOrderId);
+      if (existing?.response) {
+        return jsonNoCache(existing.response, {
+          status: existing.status === "rejected" ? 403 : 200,
+        });
+      }
+      markIdempotency(order.clientOrderId, "pending");
+    }
+
+    // Auth check
     const auth = await requireTradingAuthorization(req);
     if (auth instanceof Response) {
-      const response = { error: "Live trading is disabled until authentication is implemented." };
-      if (clientOrderId) markIdempotency(clientOrderId, "rejected", response);
-      return jsonNoCache(response, { status: 403 });
+      const response = { error: "Authentication failed." };
+      if (order.clientOrderId) markIdempotency(order.clientOrderId, "rejected", response);
+      return jsonNoCache(
+        { error: "Authentication failed. Connect wallet and ensure SoDEX API keys are configured." },
+        { status: 401 },
+      );
     }
 
-    return jsonNoCache({ error: "Trading authorization unavailable" }, { status: 403 });
+    // Build SoDEX perps order
+    const perpsSymbol = toPerpsSymbol(order.symbol);
+    const perpsOrder = {
+      accountID: order.accountID ?? 0,
+      symbolID: order.symbolID ?? 1,
+      side: (order.side === "LONG" ? 1 : 2) as 1 | 2,
+      type: (order.type === "MARKET" ? 2 : 1) as 1 | 2,
+      quantity: order.quantity,
+      reduceOnly: order.reduceOnly,
+      positionSide: (order.side === "LONG" ? 1 : 2) as 1 | 2 | 3,
+      ...(order.price ? { price: order.price } : {}),
+    };
+
+    const result = await placePerpOrder(perpsOrder, {
+      apiKeyName: auth.apiKeyName,
+      apiKeyPrivate: auth.apiKeyPrivate,
+    });
+
+    const response = {
+      success: true,
+      source: "SoDEX Perps",
+      symbol: perpsSymbol,
+      side: order.side,
+      type: order.type,
+      quantity: order.quantity,
+      leverage: order.leverage,
+      result,
+    };
+
+    if (order.clientOrderId) markIdempotency(order.clientOrderId, "completed", response);
+    return jsonNoCache(response);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Order placement failed";
     console.error("[/api/orders POST]", msg);
@@ -47,9 +102,7 @@ export async function GET(req: NextRequest) {
   if (limited) return limited;
 
   const auth = await requireTradingAuthorization(req);
-  if (auth instanceof Response) {
-    return auth;
-  }
+  if (auth instanceof Response) return auth;
 
-  return jsonNoCache({ error: "Trading authorization unavailable" }, { status: 403 });
+  return jsonNoCache({ error: "GET /api/orders not yet implemented for perps" }, { status: 501 });
 }
