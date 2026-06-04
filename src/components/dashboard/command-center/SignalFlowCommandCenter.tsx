@@ -338,11 +338,16 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
   const ticker = d.tickerMap.get(pairToSodexSymbol(pair));
   const currentPrice = currentSignal?.price ?? (ticker ? parseFloat(ticker.lastPx) : 0);
   const coin = pair.split("/")[0];
-  const fullEngineReady = hasExternalSignalLayers(d.signalsData?.sources) && !news?.error;
+  const activeStrategy = d.signalsData?.strategy;
+  const liquidityFlowActive = activeStrategy?.engine === "liquidityFlow";
+  const sourceState = d.signalsData?.sources;
+  const fullEngineReady = liquidityFlowActive
+    ? Boolean(sourceState?.sodexKlines) && Boolean(sourceState?.orderbooks)
+    : hasExternalSignalLayers(sourceState) && !news?.error;
   const generateTooltip = d.analyzing
-    ? "SignalFlow is recalculating the latest SoDEX tape, signal engine output, and AI thesis before locking the next score."
+    ? `SignalFlow is recalculating ${activeStrategy?.label ?? "the active strategy"} before locking the next score.`
     : fullEngineReady
-      ? "Generate a fresh SignalFlow decision from live SoDEX market data, SoSoValue layers, and AI reasoning."
+      ? `Generate a fresh decision from the active ${activeStrategy?.label ?? "SignalFlow"} policy.`
       : "Generate a fresh decision from the live data currently available while external layers recover.";
 
   const generateSignal = async () => {
@@ -354,29 +359,53 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
   const decision = useMemo(() => {
     const systemAction = actionFromSignal(currentSignal);
     const systemConfidence = currentSignal?.confidence ?? 0;
-    const sources: DecisionSource[] = [
-      {
-        label: "SoDEX TA",
-        signed: signedFromSignal(currentSignal),
-        weight: 0.55,
-        available: !!currentSignal,
-        note: currentSignal?.actionV2?.replaceAll("_", " ") ?? currentSignal?.regime ?? "Waiting for TA",
-      },
-      {
-        label: "SoSoValue News",
-        signed: signedFromNews(news),
-        weight: 0.25,
-        available: !!news && !news.error,
-        note: news?.error ? "quota limited" : news?.sentiment?.label ?? "Waiting for news",
-      },
-      {
-        label: "AI Thesis",
-        signed: signedFromSignal(aiSignal),
-        weight: 0.2,
-        available: !!aiSignal,
-        note: aiSignal ? "AI signal active" : d.analyzing ? "analyzing" : "not generated",
-      },
-    ];
+    const sources: DecisionSource[] = liquidityFlowActive
+      ? [
+          {
+            label: "Liquidity Flow",
+            signed: signedFromSignal(currentSignal),
+            weight: 1,
+            available: !!currentSignal,
+            note: currentSignal?.actionV2?.replaceAll("_", " ") ?? "Waiting for liquidity signal",
+          },
+          {
+            label: "Orderbook Gate",
+            signed: signedFromSignal(currentSignal),
+            weight: 0,
+            available: Boolean(sourceState?.orderbooks),
+            note: "Spread ≤3 bps + top-5 imbalance",
+          },
+          {
+            label: "News / AI",
+            signed: 0,
+            weight: 0,
+            available: false,
+            note: "Excluded by active strategy",
+          },
+        ]
+      : [
+          {
+            label: "SoDEX TA",
+            signed: signedFromSignal(currentSignal),
+            weight: 0.55,
+            available: !!currentSignal,
+            note: currentSignal?.actionV2?.replaceAll("_", " ") ?? currentSignal?.regime ?? "Waiting for TA",
+          },
+          {
+            label: "SoSoValue News",
+            signed: signedFromNews(news),
+            weight: 0.25,
+            available: !!news && !news.error,
+            note: news?.error ? "quota limited" : news?.sentiment?.label ?? "Waiting for news",
+          },
+          {
+            label: "AI Thesis",
+            signed: signedFromSignal(aiSignal),
+            weight: 0.2,
+            available: !!aiSignal,
+            note: aiSignal ? "AI signal active" : d.analyzing ? "analyzing" : "not generated",
+          },
+        ];
 
     const action = systemAction;
     const confidence = currentSignal
@@ -394,7 +423,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
       riskReward: !currentSignal || action === "NO TRADE" ? "Stand aside" : currentSignal.execution.riskReward,
       positionSize: !currentSignal || action === "NO TRADE" ? "Flat / no entry" : currentSignal.execution.positionSize,
     };
-  }, [aiSignal, currentPrice, currentSignal, d.analyzing, news]);
+  }, [aiSignal, currentPrice, currentSignal, d.analyzing, liquidityFlowActive, news, sourceState?.orderbooks]);
 
   const decisionTone = decision.action === "LONG"
     ? "text-buy"
@@ -446,7 +475,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
   return (
     <Panel
       title="LIVE DECISION SCORE"
-      badge={<Badge variant={decision.action === "LONG" ? "buy" : decision.action === "SHORT" ? "sell" : "hold"} size="sm">LIVE LOGIC</Badge>}
+      badge={<Badge variant={decision.action === "LONG" ? "buy" : decision.action === "SHORT" ? "sell" : "hold"} size="sm">{activeStrategy?.label ?? "LIVE LOGIC"}</Badge>}
       className="h-[598px] relative z-10"
       bodyClassName="flex-1 overflow-visible"
     >

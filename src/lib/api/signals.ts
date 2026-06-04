@@ -1,12 +1,18 @@
 import type { Provider } from "../ai-providers";
 import type { SignalsData, SignalGenerationResult } from "../types/signal";
 import type { TradingType } from "../types/trading-type";
+import { serializeStrategyConfig, type StrategyConfig } from "../strategy/config";
 import { parseApiResponse } from "./client";
 
-export async function fetchSignals(tradingType?: TradingType | null): Promise<SignalsData> {
-  const url = tradingType
-    ? `/api/signals?type=${tradingType}`
-    : "/api/signals";
+export async function fetchSignals(
+  tradingType?: TradingType | null,
+  strategyConfig?: StrategyConfig,
+): Promise<SignalsData> {
+  const params = new URLSearchParams();
+  if (tradingType) params.set("type", tradingType);
+  if (strategyConfig) params.set("strategy", serializeStrategyConfig(strategyConfig));
+  const query = params.toString();
+  const url = query ? `/api/signals?${query}` : "/api/signals";
   const res = await fetch(url, { cache: "no-store" });
   return parseApiResponse(res);
 }

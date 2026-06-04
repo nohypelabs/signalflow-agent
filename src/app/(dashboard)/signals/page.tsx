@@ -14,6 +14,7 @@ export default function SignalsRoute() {
         overallScores={d.signalsData?.overall}
         weights={d.signalsData?.weights}
         cappedDims={d.signalsData?.capped}
+        activeStrategy={d.signalsData?.strategy}
       />
     </div>
   );

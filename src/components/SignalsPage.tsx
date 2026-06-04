@@ -5,6 +5,7 @@ import type { Signal, SignalAction } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/types/trade";
 import type { LiveSignalDimensions } from "@/lib/types/signal";
 import type { TradingType } from "@/lib/types/trading-type";
+import type { ActiveStrategySummary } from "@/lib/strategy/config";
 import { loadTradingType, TRADING_TYPES, getRecommendedType } from "@/lib/types/trading-type";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import Skeleton from "@/components/ui/Skeleton";
@@ -24,9 +25,18 @@ interface Props {
   overallScores?: Record<string, number> | null;
   weights?: Record<string, Record<string, number>> | null;
   cappedDims?: Record<string, string[]> | null;
+  activeStrategy?: ActiveStrategySummary | null;
 }
 
-export default function SignalsPage({ tickers, liveSignals = [], liveDims, overallScores, weights, cappedDims }: Props) {
+export default function SignalsPage({
+  tickers,
+  liveSignals = [],
+  liveDims,
+  overallScores,
+  weights,
+  cappedDims,
+  activeStrategy,
+}: Props) {
   // ── Trader Type State ──────────────────────────────────
   const [tradingType, setTradingType] = useState<TradingType | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -204,6 +214,26 @@ export default function SignalsPage({ tickers, liveSignals = [], liveDims, overa
           onTypeChange={handleTypeChange}
           needsAttention={showSignalGuidance}
         />
+
+        {/* Active strategy policy */}
+        {activeStrategy && (
+          <div className="flex flex-wrap items-center gap-2.5 rounded-xl border border-accent/25 bg-accent-muted/40 px-3.5 py-2.5 sm:px-4">
+            <div className="flex-1 min-w-[220px]">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-txt-dim">
+                Active Strategy Policy
+              </span>
+              <span className="block text-xs font-semibold text-accent sm:inline sm:ml-2">
+                {activeStrategy.label}
+              </span>
+            </div>
+            <span className="rounded-md border border-border-default bg-elevated/50 px-2 py-1 text-[10px] font-mono text-txt-secondary">
+              ≥{activeStrategy.minConfidence}% confidence
+            </span>
+            <span className="rounded-md border border-border-default bg-elevated/50 px-2 py-1 text-[10px] font-mono text-txt-secondary">
+              {activeStrategy.maxPositionSize}% max position
+            </span>
+          </div>
+        )}
 
         {/* Active type indicator */}
         {tradingType && (

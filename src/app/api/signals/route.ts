@@ -9,10 +9,20 @@ import {
   getCurrencies,
 } from "@/lib/sosovalue";
 import type { ETFSummaryItem, MarketSnapshot, NewsItem, MacroEvent, BTCPurchaseHistory } from "@/lib/sosovalue";
-import { getKlines as getSodexKlines } from "@/lib/sodex";
-import type { SoDEXKline } from "@/lib/sodex-types";
+import { getKlines as getSodexKlines, getOrderbook } from "@/lib/sodex";
+import type { OrderBook, SoDEXKline } from "@/lib/sodex-types";
 import { pairToSodexSymbol, SUPPORTED_SIGNAL_PAIRS } from "@/lib/pair-map";
 import { generateSignalsV2 } from "@/lib/strategy/signal-engine-v2";
+import {
+  deserializeStrategyConfig,
+  strategyConfigKey,
+  toActiveStrategySummary,
+} from "@/lib/strategy/config";
+import {
+  applyConfluenceStrategyPolicy,
+  generateLiquidityFlowSignals,
+  liquidityDimensionsFromSignals,
+} from "@/lib/strategy/policy-engine";
 import {
   scoreETF,
   scoreSentiment,
@@ -34,8 +44,23 @@ const SIGNAL_PAIRS = SUPPORTED_SIGNAL_PAIRS;
 
 // ── In-memory cache ──────────────────────────────────────
 
-let cache: { data: unknown; ts: number } | null = null;
+const cache = new Map<string, { data: unknown; ts: number }>();
 const CACHE_MS = 5 * 60_000;
+const LIQUIDITY_CACHE_MS = 5_000;
+const MAX_CACHE_ENTRIES = 50;
+
+function setCachedResult(key: string, data: unknown) {
+  const now = Date.now();
+  for (const [cachedKey, entry] of cache) {
+    if (now - entry.ts >= CACHE_MS) cache.delete(cachedKey);
+  }
+  if (!cache.has(key) && cache.size >= MAX_CACHE_ENTRIES) {
+    const oldestKey = [...cache.entries()]
+      .sort(([, a], [, b]) => a.ts - b.ts)[0]?.[0];
+    if (oldestKey) cache.delete(oldestKey);
+  }
+  cache.set(key, { data, ts: now });
+}
 
 // ── Fetch with timeout ───────────────────────────────────
 
@@ -59,12 +84,89 @@ export async function GET(request: Request) {
     typeParam && ["scalping", "intraday", "swing", "position"].includes(typeParam)
       ? typeParam as TradingType
       : null;
+  const strategyConfig = deserializeStrategyConfig(url.searchParams.get("strategy"));
+  const cacheKey = `${tradingType ?? "all"}:${strategyConfigKey(strategyConfig)}`;
+  const cached = cache.get(cacheKey);
+  const cacheTtl = strategyConfig.engine === "liquidityFlow" ? LIQUIDITY_CACHE_MS : CACHE_MS;
 
-  if (cache && Date.now() - cache.ts < CACHE_MS) {
-    return jsonNoCache(cache.data);
+  if (cached && Date.now() - cached.ts < cacheTtl) {
+    return jsonNoCache(cached.data);
   }
+  if (cached) cache.delete(cacheKey);
 
   try {
+    if (strategyConfig.engine === "liquidityFlow") {
+      const klinesMap = new Map<string, SoDEXKline[]>();
+      const orderbooks = new Map<string, OrderBook>();
+
+      await Promise.all(
+        SIGNAL_PAIRS.map(async (pair) => {
+          const base = pair.split("/")[0];
+          const symbol = pairToSodexSymbol(pair);
+          if (!symbol) return;
+
+          const [klines, orderbook] = await Promise.all([
+            withTimeout(
+              getSodexKlines(symbol, "1h", 120).catch(() => []),
+              8_000,
+              [] as SoDEXKline[],
+            ),
+            withTimeout(
+              getOrderbook(symbol, 5).catch(() => null),
+              5_000,
+              null,
+            ),
+          ]);
+
+          if (klines.length > 0) {
+            klines.sort((a, b) => a.t - b.t);
+            klinesMap.set(base, klines);
+          }
+          if (orderbook) orderbooks.set(base, orderbook);
+        }),
+      );
+
+      const signals = generateLiquidityFlowSignals({
+        pairs: SIGNAL_PAIRS,
+        klinesMap,
+        orderbooks,
+        config: strategyConfig,
+      });
+      const dimensions = liquidityDimensionsFromSignals(signals);
+      const overall = Object.fromEntries(signals.map((signal) => [
+        signal.pair.split("/")[0],
+        signal.confidence,
+      ]));
+      const weights = Object.fromEntries(signals.map((signal) => [
+        signal.pair.split("/")[0],
+        { etfFlow: 0, sentiment: 0, macro: 0, momentum: 100, treasury: 0 },
+      ]));
+      const result = {
+        updated: Date.now(),
+        engine: "liquidity-flow",
+        strategy: toActiveStrategySummary(strategyConfig),
+        signals,
+        sources: {
+          etf: false,
+          macro: false,
+          treasuries: false,
+          treasuryActivity: false,
+          news: false,
+          snapshots: 0,
+          sodexKlines: klinesMap.size,
+          orderbooks: orderbooks.size,
+        },
+        indices: {},
+        dimensions,
+        overall,
+        weights,
+        capped: {},
+      };
+
+      setCachedResult(cacheKey, result);
+      return jsonNoCache(result);
+    }
+
     // Fetch all SoSoValue data in parallel
     const [currencies, etfSummary, macroEvents, btcTreasuries, hotNews] = await Promise.all([
       getCurrencies().catch(() => []),
@@ -265,7 +367,7 @@ export async function GET(request: Request) {
     }
 
     // Convert V2 signals to Signal type (backward compat)
-    const signals: Signal[] = v2Signals.map((s) => ({
+    const baseSignals: Signal[] = v2Signals.map((s) => ({
       ...s,
       action: s.action === "STRONG_LONG" || s.action === "LONG" || s.action === "WEAK_LONG"
         ? "LONG" as const
@@ -281,6 +383,7 @@ export async function GET(request: Request) {
       quality: s.quality,
       multiTF: multiTFResults.get(s.pair.split("/")[0]),
     }));
+    const signals = applyConfluenceStrategyPolicy(baseSignals, strategyConfig);
 
     // ── Build dimension data (backward compat) ──────────
     function buildDimensions(_currencyId: string | undefined, snap: MarketSnapshot | undefined) {
@@ -304,6 +407,7 @@ export async function GET(request: Request) {
     const result = {
       updated: Date.now(),
       engine: "v2",
+      strategy: toActiveStrategySummary(strategyConfig),
       signals,
       sources: {
         etf: (etfSummary as ETFSummaryItem[]).length > 0,
@@ -341,7 +445,7 @@ export async function GET(request: Request) {
       },
     };
 
-    cache = { data: result, ts: Date.now() };
+    setCachedResult(cacheKey, result);
     return jsonNoCache(result);
   } catch (err) {
     return jsonNoCache(

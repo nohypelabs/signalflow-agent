@@ -1,4 +1,5 @@
 import type { TradingType } from "./trading-type";
+import type { ActiveStrategySummary } from "../strategy/config";
 
 export interface DimensionScore {
   score: number;
@@ -134,6 +135,8 @@ export interface LiveSignalDimensions {
 
 export interface SignalsData {
   updated: number;
+  engine?: string;
+  strategy?: ActiveStrategySummary;
   signals?: Signal[];
   sources: Record<string, boolean | number>;
   dimensions: Record<string, LiveSignalDimensions>;

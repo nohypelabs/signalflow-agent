@@ -6,59 +6,22 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import ProgressBar from "@/components/ui/ProgressBar";
 import { TRADING_TYPE_LIST } from "@/lib/types/trading-type";
+import {
+  DEFAULT_STRATEGY_CONFIG as DEFAULT_CONFIG,
+  LIQUIDITY_FLOW_STRATEGY_CONFIG as LIQUIDITY_FLOW_CONFIG,
+  loadStrategyConfig as loadConfig,
+  saveStrategyConfig as saveConfig,
+  type StrategyConfig,
+  type StrategyEngineName,
+} from "@/lib/strategy/config";
 import { BarChartIcon, BriefcaseIcon, DataSourceIcon, DocumentIcon, TrendUpIcon } from "@/components/ui/icons";
 
-const STORAGE_KEY = "signalflow-strategy-config";
 type StrategyPresetName = "conservative" | "balanced" | "aggressive";
-type StrategyEngineName = "confluence" | "liquidityFlow";
-
-interface StrategyConfig {
-  engine: StrategyEngineName;
-  etfFlow: number;
-  sentiment: number;
-  macro: number;
-  momentum: number;
-  treasury: number;
-  minConfidence: number;
-  maxPositionSize: number;
-  autoExecute: boolean;
-  slippage: number;
-  maxDailyTrades: number;
-}
-
-const DEFAULT_CONFIG: StrategyConfig = {
-  engine: "confluence",
-  etfFlow: 30,
-  sentiment: 25,
-  macro: 20,
-  momentum: 15,
-  treasury: 10,
-  minConfidence: 70,
-  maxPositionSize: 5,
-  autoExecute: true,
-  slippage: 0.5,
-  maxDailyTrades: 10,
-};
 
 const PRESETS: Record<StrategyPresetName, StrategyConfig> = {
   conservative: { ...DEFAULT_CONFIG, etfFlow: 35, sentiment: 15, macro: 25, momentum: 10, treasury: 15, minConfidence: 80, maxPositionSize: 3, autoExecute: false, slippage: 0.3, maxDailyTrades: 5 },
   balanced: { ...DEFAULT_CONFIG, etfFlow: 30, sentiment: 25, macro: 20, momentum: 15, treasury: 10, minConfidence: 70, maxPositionSize: 5, autoExecute: true, slippage: 0.5, maxDailyTrades: 10 },
   aggressive: { ...DEFAULT_CONFIG, etfFlow: 20, sentiment: 30, macro: 10, momentum: 30, treasury: 10, minConfidence: 55, maxPositionSize: 10, autoExecute: true, slippage: 1.0, maxDailyTrades: 25 },
-};
-
-const LIQUIDITY_FLOW_CONFIG: StrategyConfig = {
-  ...DEFAULT_CONFIG,
-  engine: "liquidityFlow",
-  etfFlow: 0,
-  sentiment: 0,
-  macro: 0,
-  momentum: 100,
-  treasury: 0,
-  minConfidence: 72,
-  maxPositionSize: 0.5,
-  autoExecute: false,
-  slippage: 0.03,
-  maxDailyTrades: 8,
 };
 
 const PRESET_META: Record<StrategyPresetName, { label: string; badge: string; desc: string; tone: string; bullets: string[] }> = {
@@ -86,22 +49,6 @@ const PRESET_META: Record<StrategyPresetName, { label: string; badge: string; de
 };
 
 const PRESET_ORDER: StrategyPresetName[] = ["conservative", "balanced", "aggressive"];
-
-function loadConfig(): StrategyConfig {
-  if (typeof window === "undefined") return DEFAULT_CONFIG;
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
-  } catch {}
-  return DEFAULT_CONFIG;
-}
-
-function saveConfig(config: StrategyConfig) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-  } catch {}
-}
 
 function getPresetName(config: StrategyConfig): StrategyPresetName | null {
   for (const name of PRESET_ORDER) {
