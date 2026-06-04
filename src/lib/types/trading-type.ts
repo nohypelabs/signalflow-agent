@@ -136,6 +136,7 @@ export const TRADING_TYPE_LIST = Object.values(TRADING_TYPES);
 
 // localStorage key
 export const TRADING_TYPE_STORAGE_KEY = "signalflow-trading-type";
+export const TRADING_TYPE_EVENT = "signalflow:trading-type-changed";
 
 // Load from localStorage (client-side only)
 export function loadTradingType(): TradingType | null {
@@ -152,6 +153,7 @@ export function saveTradingType(type: TradingType): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(TRADING_TYPE_STORAGE_KEY, type);
+    window.dispatchEvent(new CustomEvent(TRADING_TYPE_EVENT));
   } catch {}
 }
 
@@ -160,6 +162,7 @@ export function clearTradingType(): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.removeItem(TRADING_TYPE_STORAGE_KEY);
+    window.dispatchEvent(new CustomEvent(TRADING_TYPE_EVENT));
   } catch {}
 }
 

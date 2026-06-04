@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/types/trade";
 import type { LiveSignalDimensions } from "@/lib/types/signal";
+import type { TradingType } from "@/lib/types/trading-type";
 import SignalTypeBadge from "./SignalTypeBadge";
 import ConfidenceBadge from "./ConfidenceBadge";
 import SignalAnalysisDrawer from "./SignalAnalysisDrawer";
@@ -17,9 +18,10 @@ interface Props {
   overallScore?: number | null;
   weights?: Record<string, number> | null;
   cappedDims?: string[] | null;
+  tradingType?: TradingType | null;
 }
 
-export default function SignalCompactRow({ signal, ticker, liveDims, overallScore, weights, cappedDims }: Props) {
+export default function SignalCompactRow({ signal, ticker, liveDims, overallScore, weights, cappedDims, tradingType }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const router = useRouter();
 
@@ -74,7 +76,9 @@ export default function SignalCompactRow({ signal, ticker, liveDims, overallScor
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                router.push(`/trading?signal=${signal.id}`);
+                const params = new URLSearchParams({ signal: signal.id });
+                if (tradingType) params.set("type", tradingType);
+                router.push(`/trading?${params.toString()}`);
               }}
               className={`text-[9px] font-bold px-2 py-1 rounded transition-all cursor-pointer ${
                 signal.action === "SHORT"

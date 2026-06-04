@@ -5,8 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { useDashboard } from "@/lib/dashboard-context";
 import type { Signal } from "@/lib/types/signal";
 import type { TradingType } from "@/lib/types/trading-type";
+import { TRADING_TYPES } from "@/lib/types/trading-type";
 import TradingChart from "@/components/TradingChart";
 import OrderForm from "@/components/OrderForm";
+import TradeProfileBar from "@/components/TradeProfileBar";
+import TraderTypeModal from "@/components/TraderTypeModal";
 import OrderbookDepth from "@/components/OrderbookDepth";
 import OpenOrders from "@/components/OpenOrders";
 import RecentTrades from "@/components/RecentTrades";
@@ -17,6 +20,7 @@ import HighLowRange from "@/components/HighLowRange";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { ClipboardIcon, BarChartIcon, BriefcaseIcon, DocumentIcon } from "@/components/ui/icons";
 import { usePaperTrading } from "@/lib/hooks/usePaperTrading";
+import { useTradingType } from "@/lib/hooks/useTradingType";
 import type { PaperTrade } from "@/lib/hooks/usePaperTrading";
 
 /* ── Types ── */
@@ -31,6 +35,7 @@ type BottomTab = "orders" | "trades" | "positions" | "stats" | "live";
 /* ── Helpers ── */
 function formatPrice(price: number): string { if (price >= 10000) return price.toLocaleString("en-US", { maximumFractionDigits: 0 }); if (price >= 100) return price.toFixed(2); if (price >= 1) return price.toFixed(3); return price.toFixed(5); }
 function formatUsd(value: number): string { const abs = Math.abs(value); const f = abs >= 1000 ? abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : abs.toFixed(2); return `${value < 0 ? "-" : ""}$${f}`; }
+function parseTradingType(value: string | null): TradingType | null { return value && value in TRADING_TYPES ? value as TradingType : null; }
 
 /* ── Default widths (percentage) ── */
 const DEFAULT_WIDTHS = { chart: 65, book: 18, form: 17 };
@@ -166,6 +171,8 @@ export default function TradingPageContent() {
   const [bottomTab, setBottomTab] = useState<BottomTab>("positions");
   const [bookTab, setBookTab] = useState<BookTab>("book");
   const [isMobile, setIsMobile] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const { tradingType, hydrated: tradingTypeHydrated, setTradingType } = useTradingType();
   const paper = usePaperTrading(d.isConnected ? d.address : undefined);
   const checkPaperTpSl = paper.checkTpSl;
 
@@ -174,6 +181,7 @@ export default function TradingPageContent() {
   const [bottomHeight, setBottomHeight] = useState(loadBottomHeight);
   const containerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const appliedTypeParamRef = useRef<string | null>(null);
 
   const handleResize = useCallback((which: "chart" | "book", deltaPx: number) => {
     const container = containerRef.current;
@@ -218,8 +226,24 @@ export default function TradingPageContent() {
   }, []);
 
   /* ── Trading logic (unchanged) ── */
-  const tradingTypeParam = searchParams.get("type");
-  const tradingType: TradingType | null = tradingTypeParam && ["scalping", "intraday", "swing", "position"].includes(tradingTypeParam) ? tradingTypeParam as TradingType : null;
+  const tradingTypeParam = parseTradingType(searchParams.get("type"));
+
+  useEffect(() => {
+    if (!tradingTypeHydrated) return;
+    if (!tradingTypeParam) appliedTypeParamRef.current = null;
+    if (tradingTypeParam && appliedTypeParamRef.current !== tradingTypeParam) {
+      appliedTypeParamRef.current = tradingTypeParam;
+      setTradingType(tradingTypeParam);
+      setShowProfileModal(false);
+      return;
+    }
+    setShowProfileModal(!tradingType);
+  }, [setTradingType, tradingType, tradingTypeHydrated, tradingTypeParam]);
+
+  const handleProfileSelect = useCallback((type: TradingType) => {
+    setTradingType(type);
+    setShowProfileModal(false);
+  }, [setTradingType]);
 
   const signalContext = useMemo(() => { const id = searchParams.get("signal"); if (!id) return null; return d.liveSignals.find((s) => s.id === id) ?? null; }, [searchParams, d.liveSignals]);
 
@@ -250,6 +274,12 @@ export default function TradingPageContent() {
     const tp = parseFloat(order.takeProfit) || 0;
     const sl = parseFloat(order.stopLoss) || 0;
     setTradeError(null);
+
+    if (!tradingType) {
+      setTradeError("Choose an active Trade Profile before opening a position.");
+      setShowProfileModal(true);
+      return;
+    }
 
     if (!ep || ep <= 0) {
       const msg = "Market price is not available. Wait for ticker data.";
@@ -329,8 +359,9 @@ export default function TradingPageContent() {
 
   return (
     <div ref={rootRef} className="flex flex-col bg-background" style={{ minHeight: "100vh" }}>
+      {showProfileModal && <TraderTypeModal purpose="trading" currentType={tradingType} onSelect={handleProfileSelect} />}
       {notice && <TradeExecutionModal notice={notice} onClose={() => setNotice(null)} />}
-      {pendingAction && <TradeConfirmationModal action={pendingAction} onCancel={() => setPendingAction(null)} onConfirm={handleConfirm} />}
+      {pendingAction && <TradeConfirmationModal action={pendingAction} tradingType={tradingType} onCancel={() => setPendingAction(null)} onConfirm={handleConfirm} />}
 
       {isMobile ? (
         <div className="md:hidden flex-1 overflow-y-auto p-2 pb-20 space-y-2">
@@ -369,6 +400,7 @@ export default function TradingPageContent() {
           </div>
 
           <div className="bg-card border border-border-default rounded-lg overflow-hidden">
+            <TradeProfileBar tradingType={tradingType} onReview={() => setShowProfileModal(true)} />
             <ErrorBoundary name="Order Form">
               <OrderForm
                 pair={pair}
@@ -454,6 +486,7 @@ export default function TradingPageContent() {
 
         {/* Column C: Order Form */}
         <div className="min-w-0 flex flex-col overflow-y-auto scrollbar-none bg-card" style={{ width: `${widths.form}%` }}>
+          <TradeProfileBar tradingType={tradingType} onReview={() => setShowProfileModal(true)} />
           <ErrorBoundary name="Order Form">
             <OrderForm pair={pair} coin={coin} currentPrice={currentPrice} signal={signalContext} isConnected={d.isConnected} paperBalance={paper.capitalConfigured ? paper.balance.available : undefined} isPaperCapitalConfigured={paper.capitalConfigured} mode={tradeMode} tradingType={tradingType} error={tradeError} onModeChange={setTradeMode} onExecute={handleExecute} />
           </ErrorBoundary>
@@ -501,12 +534,13 @@ export default function TradingPageContent() {
    SUB-COMPONENTS
    ══════════════════════════════════════════════════════ */
 
-function TradeConfirmationModal({ action, onCancel, onConfirm }: { action: PendingTradeAction; onCancel: () => void; onConfirm: () => void }) {
+function TradeConfirmationModal({ action, tradingType, onCancel, onConfirm }: { action: PendingTradeAction; tradingType: TradingType | null; onCancel: () => void; onConfirm: () => void }) {
   const isOpen = action.kind === "open";
   const side = isOpen ? action.order.side : action.trade.side;
   const sideTone = side === "LONG" ? "text-buy" : "text-sell";
+  const profileLabel = tradingType ? TRADING_TYPES[tradingType].label : "Not selected";
   const rows = isOpen
-    ? [{ l: "Pair", v: action.pair }, { l: "Side", v: side }, { l: "Entry", v: `$${formatPrice(action.entryPrice)}` }, { l: "Margin", v: formatUsd(action.order.margin) }, { l: "Leverage", v: `${action.order.leverage}x` }, { l: "Liq", v: `$${formatPrice(action.liquidationPrice)}` }]
+    ? [{ l: "Profile", v: profileLabel }, { l: "Pair", v: action.pair }, { l: "Side", v: side }, { l: "Entry", v: `$${formatPrice(action.entryPrice)}` }, { l: "Margin", v: formatUsd(action.order.margin) }, { l: "Leverage", v: `${action.order.leverage}x` }, { l: "Liq", v: `$${formatPrice(action.liquidationPrice)}` }]
     : [{ l: "Pair", v: action.trade.pair }, { l: "Side", v: side }, { l: "Entry", v: `$${formatPrice(action.trade.entryPrice)}` }, { l: "Exit", v: `$${formatPrice(action.markPrice)}` }, { l: "PnL", v: `${action.pnl >= 0 ? "+" : ""}${formatUsd(action.pnl)}` }, { l: "ROI", v: `${action.roi >= 0 ? "+" : ""}${action.roi.toFixed(2)}%` }];
 
   return (

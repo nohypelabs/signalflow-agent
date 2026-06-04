@@ -5,8 +5,6 @@ import type { TradingType } from "@/lib/types/trading-type";
 import {
   TRADING_TYPES,
   TRADING_TYPE_LIST,
-  saveTradingType,
-  clearTradingType,
 } from "@/lib/types/trading-type";
 import TradingTypeIcon from "@/components/TradingTypeIcon";
 import { DataSourceIcon } from "@/components/ui/icons";
@@ -18,7 +16,12 @@ interface Props {
   attention?: boolean;
 }
 
-export default function TypeSwitcher({ currentType, onTypeChange, compact = false, attention = false }: Props) {
+export default function TypeSwitcher({
+  currentType,
+  onTypeChange,
+  compact = false,
+  attention = false,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [dropdownAlign, setDropdownAlign] = useState<"left" | "right">("right");
   const ref = useRef<HTMLDivElement>(null);
@@ -48,11 +51,6 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
   const current = currentType ? TRADING_TYPES[currentType] : null;
 
   const handleSelect = (type: TradingType | null) => {
-    if (type) {
-      saveTradingType(type);
-    } else {
-      clearTradingType();
-    }
     onTypeChange(type);
     setOpen(false);
   };
@@ -63,7 +61,7 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
       <button
         onClick={() => setOpen(!open)}
         className={`
-          flex items-center gap-2 rounded-lg border transition-all leading-none
+          flex items-center gap-2 rounded-lg border transition-all leading-none cursor-pointer
           ${attention ? "px-4 py-2 shadow-[0_0_18px_rgba(255,136,0,0.18)]" : "px-3 py-1.5"}
           ${current
             ? attention
@@ -129,7 +127,7 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
                 key={config.id}
                 onClick={() => handleSelect(config.id)}
                 className={`
-                  w-full flex items-center gap-3 px-3 py-2 text-left transition-colors
+                  w-full flex items-center gap-3 px-3 py-2 text-left transition-colors cursor-pointer
                   ${currentType === config.id
                     ? "bg-elevated/40"
                     : "hover:bg-elevated/25"
@@ -170,7 +168,7 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
             <button
               onClick={() => handleSelect(null)}
               className={`
-                w-full flex items-center gap-3 px-3 py-2 text-left transition-colors
+                w-full flex items-center gap-3 px-3 py-2 text-left transition-colors cursor-pointer
                 ${!currentType ? "bg-elevated/40" : "hover:bg-elevated/25"}
               `}
             >
@@ -195,7 +193,7 @@ export default function TypeSwitcher({ currentType, onTypeChange, compact = fals
                 // Dispatch custom event to reopen modal
                 window.dispatchEvent(new CustomEvent("reopen-trader-type-modal"));
               }}
-              className="text-[10px] text-txt-dim hover:text-txt-secondary transition-colors underline underline-offset-2"
+              className="text-[10px] text-txt-dim hover:text-txt-secondary transition-colors underline underline-offset-2 cursor-pointer"
             >
               Change style with onboarding
             </button>

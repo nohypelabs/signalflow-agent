@@ -5,6 +5,7 @@ import type { Signal } from "../types/signal";
 import type { AIConfig } from "../types/datasource";
 import { getProvider } from "../ai-providers";
 import { useSignals } from "../hooks/useSignals";
+import { useTradingType } from "../hooks/useTradingType";
 import { useSignalGeneration } from "../hooks/useSignalGeneration";
 import { useSignalHistory } from "../hooks/useSignalHistory";
 
@@ -16,7 +17,8 @@ export function useSignalProviderState(
   aiConfig: AIConfig,
   tickers: { symbol: string; lastPx: string }[] | null,
 ) {
-  const { data: signalsData, loading: signalsLoading, error: signalsError } = useSignals();
+  const { tradingType } = useTradingType();
+  const { data: signalsData, loading: signalsLoading, error: signalsError } = useSignals(tradingType);
 
   const {
     phase: signalPhase,

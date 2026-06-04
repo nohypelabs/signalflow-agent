@@ -5,17 +5,18 @@ import type { TradingType, TradingTypeConfig } from "@/lib/types/trading-type";
 import {
   TRADING_TYPE_LIST,
   TRADING_TYPES,
-  saveTradingType,
 } from "@/lib/types/trading-type";
 
 interface Props {
   onSelect: (type: TradingType) => void;
-  onSkip: () => void;
+  onSkip?: () => void;
+  purpose?: "signals" | "trading";
+  currentType?: TradingType | null;
 }
 
-export default function TraderTypeModal({ onSelect, onSkip }: Props) {
+export default function TraderTypeModal({ onSelect, onSkip, purpose = "signals", currentType = null }: Props) {
   const [hoveredType, setHoveredType] = useState<TradingType | null>(null);
-  const [selectedType, setSelectedType] = useState<TradingType | null>(null);
+  const [selectedType, setSelectedType] = useState<TradingType | null>(currentType);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -27,16 +28,16 @@ export default function TraderTypeModal({ onSelect, onSkip }: Props) {
     setSelectedType(type);
     // Small delay for visual feedback
     setTimeout(() => {
-      saveTradingType(type);
       onSelect(type);
     }, 300);
   };
 
   const handleSkip = () => {
-    onSkip();
+    onSkip?.();
   };
 
   const hoveredConfig = hoveredType ? TRADING_TYPES[hoveredType] : null;
+  const isTrading = purpose === "trading";
 
   return (
     <div
@@ -58,15 +59,16 @@ export default function TraderTypeModal({ onSelect, onSkip }: Props) {
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 mb-4">
             <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
             <span className="text-[10px] text-accent font-semibold uppercase tracking-wider">
-              Personalize Your Experience
+              {isTrading ? "Risk Profile Required" : "Personalize Your Experience"}
             </span>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-txt-primary tracking-tight">
-            What&apos;s Your Trading Style?
+            {isTrading ? "Choose Your Trade Profile" : "What's Your Trading Style?"}
           </h1>
           <p className="text-sm text-txt-secondary mt-2 max-w-lg mx-auto">
-            SignalFlow adapts signals, risk parameters, and recommendations
-            to match your strategy. Choose your style below.
+            {isTrading
+              ? "Select the execution profile that will govern leverage, holding horizon, and risk limits before opening a position."
+              : "SignalFlow adapts signals, risk parameters, and recommendations to match your strategy. Choose your style below."}
           </p>
         </div>
 
@@ -105,17 +107,25 @@ export default function TraderTypeModal({ onSelect, onSkip }: Props) {
           )}
         </div>
 
-        {/* Skip button */}
+        {/* Footer */}
         <div className="text-center mt-4">
-          <button
-            onClick={handleSkip}
-            className="text-xs text-txt-dim hover:text-txt-secondary transition-colors underline underline-offset-2"
-          >
-            Skip — Show All Signals
-          </button>
-          <p className="text-[10px] text-txt-faint mt-1.5">
-            You can change your style anytime from the signals page
-          </p>
+          {!isTrading && onSkip ? (
+            <>
+              <button
+                onClick={handleSkip}
+                className="text-xs text-txt-dim hover:text-txt-secondary transition-colors underline underline-offset-2 cursor-pointer"
+              >
+                Skip — Show All Signals
+              </button>
+              <p className="text-[10px] text-txt-faint mt-1.5">
+                You can change your style anytime from the signals page
+              </p>
+            </>
+          ) : (
+            <p className="text-[10px] text-hold">
+              A Trade Profile is required before SignalFlow can open a position.
+            </p>
+          )}
         </div>
       </div>
     </div>

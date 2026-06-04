@@ -6,7 +6,8 @@ import type { SoDEXTicker } from "@/lib/types/trade";
 import type { LiveSignalDimensions } from "@/lib/types/signal";
 import type { TradingType } from "@/lib/types/trading-type";
 import type { ActiveStrategySummary } from "@/lib/strategy/config";
-import { loadTradingType, TRADING_TYPES, getRecommendedType } from "@/lib/types/trading-type";
+import { TRADING_TYPES, getRecommendedType } from "@/lib/types/trading-type";
+import { useTradingType } from "@/lib/hooks/useTradingType";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import Skeleton from "@/components/ui/Skeleton";
 import SignalsPageHeader from "./signals/SignalsPageHeader";
@@ -38,20 +39,16 @@ export default function SignalsPage({
   activeStrategy,
 }: Props) {
   // ── Trader Type State ──────────────────────────────────
-  const [tradingType, setTradingType] = useState<TradingType | null>(null);
+  const { tradingType, hydrated: tradingTypeHydrated, setTradingType } = useTradingType();
   const [showModal, setShowModal] = useState(false);
   const [modalChecked, setModalChecked] = useState(false);
 
-  // Check localStorage on mount
+  // Show optional signals onboarding only on the first hydrated check.
   useEffect(() => {
-    const saved = loadTradingType();
-    if (saved) {
-      setTradingType(saved);
-    } else {
-      setShowModal(true);
-    }
+    if (!tradingTypeHydrated || modalChecked) return;
+    if (!tradingType) setShowModal(true);
     setModalChecked(true);
-  }, []);
+  }, [modalChecked, tradingType, tradingTypeHydrated]);
 
   // Listen for reopen modal event
   useEffect(() => {
@@ -63,11 +60,11 @@ export default function SignalsPage({
   const handleTypeSelect = useCallback((type: TradingType) => {
     setTradingType(type);
     setShowModal(false);
-  }, []);
+  }, [setTradingType]);
 
   const handleTypeChange = useCallback((type: TradingType | null) => {
     setTradingType(type);
-  }, []);
+  }, [setTradingType]);
 
   const handleSkipModal = useCallback(() => {
     setShowModal(false);
@@ -202,6 +199,7 @@ export default function SignalsPage({
         <TraderTypeModal
           onSelect={handleTypeSelect}
           onSkip={handleSkipModal}
+          currentType={tradingType}
         />
       )}
 
@@ -422,6 +420,7 @@ export default function SignalsPage({
                     overallScore={overallScore}
                     weights={coinWeights}
                     cappedDims={coinCapped}
+                    tradingType={tradingType}
                   />
                 );
               })}
