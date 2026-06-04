@@ -77,6 +77,19 @@ export function useWallet() {
       }
     }
     await disconnectAsync();
+
+    // Clear wagmi persisted state so next connect shows the wallet modal
+    // instead of auto-reconnecting to the last wallet.
+    try {
+      const keys = Object.keys(localStorage);
+      for (const key of keys) {
+        if (key.startsWith("wagmi") || key.startsWith("wc:") || key.startsWith("walletconnect")) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch {
+      // localStorage unavailable, silently ignore
+    }
   };
 
   const shortAddress = address
