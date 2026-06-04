@@ -459,80 +459,82 @@ export default function TradingPageContent() {
           </div>
         </div>
       ) : (
-      /* ═══ THREE-COLUMN BODY ═══ */
-      <>
-      <div ref={containerRef} className="h-[645px] min-h-[645px] shrink-0 flex overflow-hidden">
-        {/* Column A: Chart */}
-        <div className="min-w-0 flex flex-col" style={{ width: `${widths.chart}%` }}>
-          <ErrorBoundary name="Trading Chart">
-            <TradingChart klines={d.klines} symbol={pair} currentPrice={currentPrice} liveSignals={d.liveSignals} tickerMap={d.tickerMap} tradeMode={tradeMode} onModeChange={setTradeMode} onPairChange={setPair} preferredTimeframe={preferredChartTimeframe} />
-          </ErrorBoundary>
+      /* ═══ DESKTOP TRADING WORKSPACE ═══ */
+      <div ref={containerRef} className="flex shrink-0 items-stretch overflow-hidden">
+        <div className="flex min-w-0 flex-col" style={{ width: `${widths.chart + widths.book}%` }}>
+          <div className="flex h-[645px] min-h-[645px] shrink-0 overflow-hidden">
+            {/* Column A: Chart */}
+            <div className="min-w-0 flex flex-col" style={{ width: `${(widths.chart / (widths.chart + widths.book)) * 100}%` }}>
+              <ErrorBoundary name="Trading Chart">
+                <TradingChart klines={d.klines} symbol={pair} currentPrice={currentPrice} liveSignals={d.liveSignals} tickerMap={d.tickerMap} tradeMode={tradeMode} onModeChange={setTradeMode} onPairChange={setPair} preferredTimeframe={preferredChartTimeframe} />
+              </ErrorBoundary>
+            </div>
+
+            {/* Resize handle: Chart ↔ Orderbook */}
+            <ResizeHandle onDrag={(dx) => handleResize("chart", dx)} onDoubleClick={resetWidths} />
+
+            {/* Column B: Orderbook + Trades */}
+            <div className="min-w-0 flex flex-1 flex-col">
+              {/* Spread + Range */}
+              <div className="shrink-0 px-2 py-1.5 border-b border-border-default bg-inset/30 space-y-1">
+                <SpreadIndicator ticker={ticker} />
+                <HighLowRange ticker={ticker} />
+              </div>
+              <div className="shrink-0 flex items-center border-b border-border-default bg-inset/30">
+                <button onClick={() => setBookTab("book")} className={`flex-1 text-[11px] py-2 font-medium cursor-pointer transition-colors border-b-2 ${bookTab === "book" ? "text-accent border-accent bg-accent/5" : "text-txt-dim border-transparent hover:text-txt-secondary"}`}>Order Book</button>
+                <button onClick={() => setBookTab("trades")} className={`flex-1 text-[11px] py-2 font-medium cursor-pointer transition-colors border-b-2 ${bookTab === "trades" ? "text-accent border-accent bg-accent/5" : "text-txt-dim border-transparent hover:text-txt-secondary"}`}>Trades</button>
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto scrollbar-none">
+                {bookTab === "book" ? <ErrorBoundary name="Orderbook"><OrderbookDepth symbol={sodexSymbol || "vBTC_vUSDC"} coin={coin} /></ErrorBoundary>
+                  : <ErrorBoundary name="Recent Trades"><RecentTrades orders={d.orders} loading={d.ordersLoading} paperTrades={paper.trades} /></ErrorBoundary>}
+              </div>
+            </div>
+          </div>
+
+          {/* Resize handle: Chart/Orderbook ↔ Bottom Panel */}
+          <ResizeHandleH onDrag={handleVerticalResize} onDoubleClick={resetBottomHeight} />
+
+          {/* Bottom panel stops at the orderbook edge */}
+          <div className="shrink-0 border-t border-border-default bg-card/50 flex flex-col" style={{ height: `${bottomHeight}px` }}>
+            <div className="flex items-center gap-0 px-3 border-b border-border-default bg-inset/30 shrink-0">
+              {tabCfg.map((tab) => (
+                <button key={tab.id} onClick={() => setBottomTab(tab.id)} className={`flex items-center gap-1.5 px-3 py-2 text-[11px] font-medium cursor-pointer border-b-2 transition-colors ${bottomTab === tab.id ? "text-accent border-accent bg-accent/5" : "text-txt-dim border-transparent hover:text-txt-secondary hover:bg-elevated/20"}`}>
+                  {tab.icon} {tab.label}
+                  {tab.count > 0 && <span className={`text-[9px] px-1.5 py-0 rounded-full font-bold ${bottomTab === tab.id ? "bg-accent/20 text-accent" : "bg-elevated text-txt-faint"}`}>{tab.count}</span>}
+                </button>
+              ))}
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              {bottomTab === "orders" && <ErrorBoundary name="Open Orders"><OpenOrders orders={d.orders} loading={d.ordersLoading} error={d.ordersError} onCancel={d.cancelOrder} /></ErrorBoundary>}
+              {bottomTab === "trades" && <ErrorBoundary name="Recent Trades"><RecentTrades orders={d.orders} loading={d.ordersLoading} paperTrades={paper.trades} /></ErrorBoundary>}
+              {bottomTab === "positions" && (
+                <ErrorBoundary name="Open Paper Positions">
+                  {tradeMode === "paper" && paper.loaded ? (
+                    openPaperTrades.length > 0 ? (
+                      <div className="divide-y divide-border-default">
+                        {openPaperTrades.map((t) => { const b = t.pair.split("/")[0]; const mp = currentPrices.get(b) ?? currentPrices.get(t.pair) ?? t.entryPrice; return <PosRow key={t.id} trade={t} mp={mp} active={t.pair === pair} onSel={setPair} onClose={handleClosePaperTrade} />; })}
+                      </div>
+                    ) : <div className="flex items-center justify-center h-full"><div className="text-center"><BriefcaseIcon size={20} className="text-txt-faint mx-auto mb-2" /><p className="text-xs text-txt-muted">No open positions</p></div></div>
+                  ) : <div className="flex items-center justify-center h-full"><p className="text-xs text-txt-dim">Switch to Paper mode</p></div>}
+                </ErrorBoundary>
+              )}
+              {bottomTab === "stats" && <ErrorBoundary name="Paper Stats">{paper.loaded ? <PaperTradingStats stats={paper.stats} balance={paper.balance} trades={paper.trades} onReset={paper.reset} isWalletConnected={d.isConnected} isCapitalConfigured={paper.capitalConfigured} onConfigureCapital={paper.configureCapital} /> : <div className="flex items-center justify-center h-full"><p className="text-xs text-txt-dim">Loading…</p></div>}</ErrorBoundary>}
+              {bottomTab === "live" && <ErrorBoundary name="Live Trades"><RecentTradesList symbol={sodexSymbol} limit={50} /></ErrorBoundary>}
+            </div>
+          </div>
         </div>
 
-        {/* Resize handle: Chart ↔ Orderbook */}
-        <ResizeHandle onDrag={(dx) => handleResize("chart", dx)} onDoubleClick={resetWidths} />
-
-        {/* Column B: Orderbook + Trades */}
-        <div className="min-w-0 flex flex-col" style={{ width: `${widths.book}%` }}>
-          {/* Spread + Range */}
-          <div className="shrink-0 px-2 py-1.5 border-b border-border-default bg-inset/30 space-y-1">
-            <SpreadIndicator ticker={ticker} />
-            <HighLowRange ticker={ticker} />
-          </div>
-          <div className="shrink-0 flex items-center border-b border-border-default bg-inset/30">
-            <button onClick={() => setBookTab("book")} className={`flex-1 text-[11px] py-2 font-medium cursor-pointer transition-colors border-b-2 ${bookTab === "book" ? "text-accent border-accent bg-accent/5" : "text-txt-dim border-transparent hover:text-txt-secondary"}`}>Order Book</button>
-            <button onClick={() => setBookTab("trades")} className={`flex-1 text-[11px] py-2 font-medium cursor-pointer transition-colors border-b-2 ${bookTab === "trades" ? "text-accent border-accent bg-accent/5" : "text-txt-dim border-transparent hover:text-txt-secondary"}`}>Trades</button>
-          </div>
-          <div className="flex-1 min-h-0 overflow-y-auto scrollbar-none">
-            {bookTab === "book" ? <ErrorBoundary name="Orderbook"><OrderbookDepth symbol={sodexSymbol || "vBTC_vUSDC"} coin={coin} /></ErrorBoundary>
-              : <ErrorBoundary name="Recent Trades"><RecentTrades orders={d.orders} loading={d.ordersLoading} paperTrades={paper.trades} /></ErrorBoundary>}
-          </div>
-        </div>
-
-        {/* Resize handle: Orderbook ↔ Order Form */}
+        {/* Resize handle: Market workspace ↔ Order Form */}
         <ResizeHandle onDrag={(dx) => handleResize("book", dx)} onDoubleClick={resetWidths} />
 
-        {/* Column C: Order Form */}
-        <div className="min-w-0 flex flex-col overflow-y-auto scrollbar-none bg-card" style={{ width: `${widths.form}%` }}>
+        {/* Right rail spans chart and bottom panel without internal scrolling */}
+        <div className="min-w-0 flex flex-1 flex-col bg-card">
           <TradeProfileBar tradingType={tradingType} onReview={() => setShowProfileModal(true)} />
           <ErrorBoundary name="Order Form">
             <OrderForm pair={pair} coin={coin} currentPrice={currentPrice} signal={signalContext} isConnected={d.isConnected} paperBalance={paper.capitalConfigured ? paper.balance.available : undefined} isPaperCapitalConfigured={paper.capitalConfigured} mode={tradeMode} tradingType={tradingType} error={tradeError} onModeChange={setTradeMode} onExecute={handleExecute} />
           </ErrorBoundary>
         </div>
       </div>
-
-      {/* ═══ RESIZE HANDLE: Chart ↔ Bottom Panel ═══ */}
-      <ResizeHandleH onDrag={handleVerticalResize} onDoubleClick={resetBottomHeight} />
-
-      {/* ═══ BOTTOM PANEL ═══ */}
-      <div className="shrink-0 border-t border-border-default bg-card/50 flex flex-col" style={{ height: `${bottomHeight}px` }}>
-        <div className="flex items-center gap-0 px-3 border-b border-border-default bg-inset/30 shrink-0">
-          {tabCfg.map((tab) => (
-            <button key={tab.id} onClick={() => setBottomTab(tab.id)} className={`flex items-center gap-1.5 px-3 py-2 text-[11px] font-medium cursor-pointer border-b-2 transition-colors ${bottomTab === tab.id ? "text-accent border-accent bg-accent/5" : "text-txt-dim border-transparent hover:text-txt-secondary hover:bg-elevated/20"}`}>
-              {tab.icon} {tab.label}
-              {tab.count > 0 && <span className={`text-[9px] px-1.5 py-0 rounded-full font-bold ${bottomTab === tab.id ? "bg-accent/20 text-accent" : "bg-elevated text-txt-faint"}`}>{tab.count}</span>}
-            </button>
-          ))}
-        </div>
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          {bottomTab === "orders" && <ErrorBoundary name="Open Orders"><OpenOrders orders={d.orders} loading={d.ordersLoading} error={d.ordersError} onCancel={d.cancelOrder} /></ErrorBoundary>}
-          {bottomTab === "trades" && <ErrorBoundary name="Recent Trades"><RecentTrades orders={d.orders} loading={d.ordersLoading} paperTrades={paper.trades} /></ErrorBoundary>}
-          {bottomTab === "positions" && (
-            <ErrorBoundary name="Open Paper Positions">
-              {tradeMode === "paper" && paper.loaded ? (
-                openPaperTrades.length > 0 ? (
-                  <div className="divide-y divide-border-default">
-                    {openPaperTrades.map((t) => { const b = t.pair.split("/")[0]; const mp = currentPrices.get(b) ?? currentPrices.get(t.pair) ?? t.entryPrice; return <PosRow key={t.id} trade={t} mp={mp} active={t.pair === pair} onSel={setPair} onClose={handleClosePaperTrade} />; })}
-                  </div>
-                ) : <div className="flex items-center justify-center h-full"><div className="text-center"><BriefcaseIcon size={20} className="text-txt-faint mx-auto mb-2" /><p className="text-xs text-txt-muted">No open positions</p></div></div>
-              ) : <div className="flex items-center justify-center h-full"><p className="text-xs text-txt-dim">Switch to Paper mode</p></div>}
-            </ErrorBoundary>
-          )}
-          {bottomTab === "stats" && <ErrorBoundary name="Paper Stats">{paper.loaded ? <PaperTradingStats stats={paper.stats} balance={paper.balance} trades={paper.trades} onReset={paper.reset} isWalletConnected={d.isConnected} isCapitalConfigured={paper.capitalConfigured} onConfigureCapital={paper.configureCapital} /> : <div className="flex items-center justify-center h-full"><p className="text-xs text-txt-dim">Loading…</p></div>}</ErrorBoundary>}
-          {bottomTab === "live" && <ErrorBoundary name="Live Trades"><RecentTradesList symbol={sodexSymbol} limit={50} /></ErrorBoundary>}
-        </div>
-      </div>
-      </>
       )}
     </div>
   );
