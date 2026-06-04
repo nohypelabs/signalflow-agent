@@ -626,21 +626,24 @@ export default function TradingChart({
 
           <div className="flex items-center gap-3 shrink-0">
           {/* Market info compact */}
-          {displayPrice != null && currentTicker && (
+          {(fundingData?.markPrice || displayPrice != null) && (
             <div className="hidden md:flex items-center gap-3 text-[11px] font-mono text-txt-muted">
-              <span>Mark <span className="text-txt-secondary font-semibold">{fmtPrice(displayPrice)}</span></span>
-              <span>Vol <span className="text-txt-secondary font-semibold">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span></span>
+              <span>Mark <span className="text-txt-secondary font-semibold">{fmtPrice(fundingData?.markPrice || displayPrice || 0)}</span></span>
+              {currentTicker && <span>Vol <span className="text-txt-secondary font-semibold">{fmtCompactVol(parseFloat(currentTicker.quoteVolume || currentTicker.volume || "0"))}</span></span>}
             </div>
           )}
           {/* Funding rate */}
           {fundingData && (
-            <div className="hidden md:flex items-center gap-1.5 text-[11px] font-mono">
+            <div className="hidden md:flex items-center gap-1.5 text-[11px] font-mono" title={fundingData.comparison ? `Hyperliquid comparison: ${(fundingData.comparison.fundingRate * 100).toFixed(4)}% funding` : "SoDEX perpetual market data"}>
               <span className="text-txt-muted">Funding</span>
               <span className={`font-semibold tabular-nums ${
                 fundingData.fundingRate > 0 ? "text-buy" : fundingData.fundingRate < 0 ? "text-sell" : "text-txt-muted"
               }`}>
                 {fundingData.fundingRate > 0 ? "+" : ""}{(fundingData.fundingRate * 100).toFixed(4)}%
               </span>
+              <span className="rounded border border-accent/20 bg-accent/5 px-1 py-0.5 text-[8px] font-semibold text-accent">SoDEX</span>
+              <span className="text-[8px] text-txt-faint">OI {fmtCompactVol(fundingData.openInterest)}</span>
+              {fundingData.comparison && <span className="text-[8px] text-txt-faint">vs Hyperliquid</span>}
             </div>
           )}
           {/* Trade plan compact */}
@@ -655,7 +658,7 @@ export default function TradingChart({
           {tradeMode && onModeChange && (
               <div className="flex items-center gap-0.5 bg-inset rounded-md p-0.5 border border-border-default">
                 <button onClick={() => onModeChange("paper")} className={`text-[9px] px-1.5 py-0.5 rounded cursor-pointer font-semibold transition-colors ${tradeMode === "paper" ? "bg-accent/15 text-accent border border-accent/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Paper</button>
-                <button onClick={() => onModeChange("live")} className={`text-[9px] px-1.5 py-0.5 rounded cursor-pointer font-semibold transition-colors ${tradeMode === "live" ? "bg-sell/15 text-sell border border-sell/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Live</button>
+                <button onClick={() => onModeChange("live")} className={`text-[9px] px-1.5 py-0.5 rounded cursor-pointer font-semibold transition-colors ${tradeMode === "live" ? "bg-hold/15 text-hold border border-hold/20" : "text-txt-faint hover:text-txt-muted border border-transparent"}`}>Live read-only</button>
               </div>
             )}
           </div>

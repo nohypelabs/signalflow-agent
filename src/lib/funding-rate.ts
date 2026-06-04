@@ -1,107 +1,112 @@
-// Funding rate data from public perpetual DEX API
-// Used as reference for market sentiment
+import { getPerpsTickers, perpsBaseSymbol } from "./sodex-perps";
 
-export interface FundingRateData {
-  symbol: string;
-  fundingRate: number; // Per 8h (e.g., 0.0000125 = 0.00125%)
+export interface VenueComparisonData {
+  source: "Hyperliquid";
+  fundingRate: number;
   openInterest: number;
   markPrice: number;
 }
 
-// Map SoDEX symbols to Hyperliquid symbols
-const SYMBOL_MAP: Record<string, string> = {
-  "BTC": "BTC",
-  "ETH": "ETH",
-  "SOL": "SOL",
-  "AVAX": "AVAX",
-  "LINK": "LINK",
-  "DOGE": "DOGE",
-  "ADA": "ADA",
-  "XRP": "XRP",
-  "BNB": "BNB",
-  "MATIC": "MATIC",
-  "DOT": "DOT",
-  "LTC": "LTC",
-  "UNI": "UNI",
-  "ATOM": "ATOM",
-  "FIL": "FIL",
-  "APT": "APT",
-  "NEAR": "NEAR",
-  "ARB": "ARB",
-  "OP": "OP",
-  "SUI": "SUI",
-  "SEI": "SEI",
-  "TIA": "TIA",
-  "WLD": "WLD",
-  "PEPE": "PEPE",
-  "SHIB": "SHIB",
-};
+export interface FundingRateData {
+  symbol: string;
+  marketSymbol: string;
+  source: "SoDEX Perps";
+  fundingRate: number;
+  openInterest: number;
+  markPrice: number;
+  indexPrice: number;
+  nextFundingTime: number;
+  comparison?: VenueComparisonData;
+}
 
-// Cache in memory
 let cachedData: Map<string, FundingRateData> = new Map();
 let lastFetchTime = 0;
-const CACHE_TTL = 60_000; // 1 minute
+let cachedComparison: Map<string, VenueComparisonData> = new Map();
+let comparisonFetchTime = 0;
+const CACHE_TTL = 60_000;
 
-export async function fetchFundingRates(): Promise<Map<string, FundingRateData>> {
-  // Return cached if fresh
-  if (cachedData.size > 0 && Date.now() - lastFetchTime < CACHE_TTL) {
-    return cachedData;
+async function fetchHyperliquidComparison(): Promise<Map<string, VenueComparisonData>> {
+  if (cachedComparison.size > 0 && Date.now() - comparisonFetchTime < CACHE_TTL) {
+    return cachedComparison;
   }
 
   try {
-    const res = await fetch("https://api.hyperliquid.xyz/info", {
+    const response = await fetch("https://api.hyperliquid.xyz/info", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "metaAndAssetCtxs" }),
+      cache: "no-store",
     });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const data = await res.json();
+    if (!response.ok) throw new Error(`Hyperliquid ${response.status}`);
+    const data = await response.json();
     if (!Array.isArray(data) || data.length < 2) throw new Error("Invalid response");
 
-    const meta = data[0];
-    const ctxs = data[1];
-    const universe = meta?.universe || [];
-
-    const newCache = new Map<string, FundingRateData>();
-
+    const universe = data[0]?.universe ?? [];
+    const contexts = data[1] ?? [];
+    const comparison = new Map<string, VenueComparisonData>();
     for (let i = 0; i < universe.length; i++) {
-      const asset = universe[i];
-      const ctx = ctxs[i];
+      const asset = universe[i] as { name?: string } | undefined;
+      const ctx = contexts[i] as {
+        funding?: string;
+        openInterest?: string;
+        markPx?: string;
+      } | undefined;
       if (!asset || !ctx) continue;
+      const symbol = asset.name?.toUpperCase();
+      const markPrice = Number(ctx.markPx ?? 0);
+      if (!symbol || !Number.isFinite(markPrice) || markPrice <= 0) continue;
+      comparison.set(symbol, {
+        source: "Hyperliquid",
+        fundingRate: Number(ctx.funding ?? 0),
+        openInterest: Number(ctx.openInterest ?? 0),
+        markPrice,
+      });
+    }
+    cachedComparison = comparison;
+    comparisonFetchTime = Date.now();
+  } catch (error) {
+    console.error("Failed to fetch Hyperliquid comparison data:", error);
+  }
+  return cachedComparison;
+}
 
-      const hlSymbol = asset.name;
-      // Find matching SoDEX symbol
-      const sodexSymbol = Object.entries(SYMBOL_MAP).find(([, v]) => v === hlSymbol)?.[0];
-      if (!sodexSymbol) continue;
+export async function fetchFundingRates(): Promise<Map<string, FundingRateData>> {
+  if (cachedData.size > 0 && Date.now() - lastFetchTime < CACHE_TTL) return cachedData;
 
-      const fundingRate = parseFloat(ctx.funding || "0");
-      const openInterest = parseFloat(ctx.openInterest || "0");
-      const markPrice = parseFloat(ctx.markPx || "0");
+  try {
+    const [tickers, comparisons] = await Promise.all([
+      getPerpsTickers(),
+      fetchHyperliquidComparison(),
+    ]);
+    const next = new Map<string, FundingRateData>();
 
-      if (markPrice > 0) {
-        newCache.set(sodexSymbol, {
-          symbol: sodexSymbol,
-          fundingRate,
-          openInterest,
-          markPrice,
-        });
-      }
+    for (const ticker of tickers) {
+      const symbol = perpsBaseSymbol(ticker.symbol);
+      const markPrice = Number(ticker.markPrice);
+      if (!Number.isFinite(markPrice) || markPrice <= 0) continue;
+      next.set(symbol, {
+        symbol,
+        marketSymbol: ticker.symbol,
+        source: "SoDEX Perps",
+        fundingRate: Number(ticker.fundingRate ?? 0),
+        openInterest: Number(ticker.openInterest ?? 0),
+        markPrice,
+        indexPrice: Number(ticker.indexPrice ?? 0),
+        nextFundingTime: ticker.nextFundingTime,
+        comparison: comparisons.get(symbol),
+      });
     }
 
-    cachedData = newCache;
+    cachedData = next;
     lastFetchTime = Date.now();
-    return cachedData;
-  } catch (err) {
-    console.error("Failed to fetch funding rates:", err);
-    // Return stale cache if available
-    return cachedData;
+  } catch (error) {
+    console.error("Failed to fetch SoDEX perps market data:", error);
   }
+  return cachedData;
 }
 
 export async function getFundingRate(symbol: string): Promise<FundingRateData | null> {
   const rates = await fetchFundingRates();
-  const base = symbol.replace(/^v/, "").replace(/_vUSDC$/, "").split("/")[0].toUpperCase();
+  const base = perpsBaseSymbol(symbol);
   return rates.get(base) ?? null;
 }

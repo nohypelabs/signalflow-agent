@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useDashboard } from "@/lib/dashboard-context";
-import type { Signal } from "@/lib/types/signal";
 import type { TradingType } from "@/lib/types/trading-type";
 import { TRADING_TYPES } from "@/lib/types/trading-type";
 import TradingChart from "@/components/TradingChart";
@@ -16,12 +15,14 @@ import RecentTrades from "@/components/RecentTrades";
 import RecentTradesList from "@/components/RecentTradesList";
 import PaperTradingStats from "@/components/PaperTradingStats";
 import SpreadIndicator from "@/components/SpreadIndicator";
+import PerpsPositions from "@/components/PerpsPositions";
 import HighLowRange from "@/components/HighLowRange";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { ClipboardIcon, BarChartIcon, BriefcaseIcon, DocumentIcon } from "@/components/ui/icons";
 import { usePaperTrading } from "@/lib/hooks/usePaperTrading";
 import { useTradingType } from "@/lib/hooks/useTradingType";
 import type { PaperTrade } from "@/lib/hooks/usePaperTrading";
+import { useFundingRate } from "@/lib/hooks/useFundingRate";
 
 /* ── Types ── */
 type TradeNotice = { id: number; kind: "success" | "error" | "info"; title: string; detail: string; rows?: { label: string; value: string; tone?: "buy" | "sell" | "accent" | "muted" }[] };
@@ -258,7 +259,9 @@ export default function TradingPageContent() {
   const coin = pair.split("/")[0];
   const sodexSymbol = `v${coin}_vUSDC`;
   const ticker = sodexSymbol ? d.tickerMap.get(sodexSymbol) : undefined;
-  const currentPrice = ticker ? parseFloat(ticker.lastPx) : null;
+  const { data: perpsMarket } = useFundingRate(pair);
+  const spotPrice = ticker ? parseFloat(ticker.lastPx) : null;
+  const currentPrice = perpsMarket?.markPrice && perpsMarket.markPrice > 0 ? perpsMarket.markPrice : spotPrice;
   const preferredChartTimeframe = tradingType ? TRADE_PROFILE_CHART_TIMEFRAME[tradingType] : undefined;
 
   const currentPrices = useMemo(() => {
@@ -285,6 +288,13 @@ export default function TradingPageContent() {
     if (!tradingType) {
       setTradeError("Choose an active Trade Profile before opening a position.");
       setShowProfileModal(true);
+      return;
+    }
+
+    if (tradeMode === "live") {
+      const msg = "Live SoDEX perps execution is locked until wallet-signature authentication and order ownership checks are implemented.";
+      setTradeError(msg);
+      setNotice({ id: Date.now(), kind: "info", title: "Live execution locked", detail: msg });
       return;
     }
 
@@ -330,8 +340,7 @@ export default function TradingPageContent() {
       if (!t) { const msg = paper.error ?? "Paper trade rejected."; setTradeError(msg); setNotice({ id: Date.now(), kind: "error", title: "Trade rejected", detail: msg }); }
       else { setNotice({ id: Date.now(), kind: "success", title: "Paper position opened", detail: `${t.side} ${t.pair} ${t.leverage}x at $${formatPrice(t.entryPrice)}`, rows: [{ label: "Pair", value: t.pair }, { label: "Side", value: t.side, tone: t.side === "LONG" ? "buy" : "sell" }, { label: "Entry", value: `$${formatPrice(t.entryPrice)}` }, { label: "Margin", value: formatUsd(t.margin) }, { label: "Leverage", value: `${t.leverage}x`, tone: "accent" }, { label: "Liq", value: `$${formatPrice(t.liquidationPrice)}`, tone: "sell" }] }); }
     } else {
-      d.handleExecuteSignal({ id: `manual-${Date.now()}`, pair: a.pair, action: order.side, confidence: 0, price: entryPrice, change24h: ticker?.changePct ?? 0, reasoning: "Manual trade", dimensions: { etfFlow: 0, sentiment: 0, macro: 0, momentum: 0, treasury: 0 }, dimensionDetails: { etfFlow: { score: 0, detail: "" }, sentiment: { score: 0, detail: "" }, macro: { score: 0, detail: "" }, momentum: { score: 0, detail: "" }, treasury: { score: 0, detail: "" } }, execution: { orderType: "Market", entry: entryPrice, takeProfit: tp, stopLoss: sl, positionSize: order.quantity.toString(), riskReward: "" }, sources: ["Manual"], timeAgo: "just now" } as Signal);
-      setNotice({ id: Date.now(), kind: "info", title: "Live order submitted", detail: `${order.side} ${a.pair} sent to live execution.`, rows: [{ label: "Pair", value: a.pair }, { label: "Side", value: order.side, tone: order.side === "LONG" ? "buy" : "sell" }, { label: "Entry", value: `$${formatPrice(entryPrice)}` }] });
+      setNotice({ id: Date.now(), kind: "info", title: "Live execution locked", detail: "No order was submitted. Wallet-signature authentication and order ownership checks are required first." });
     }
   };
 
@@ -361,7 +370,7 @@ export default function TradingPageContent() {
     { id: "trades", label: "Trades", icon: <BarChartIcon size={13} />, count: 0 },
     { id: "positions", label: "Positions", icon: <BriefcaseIcon size={13} />, count: openPaperTrades.length },
     { id: "stats", label: "Paper Stats", icon: <DocumentIcon size={13} />, count: paper.stats.totalTrades },
-    { id: "live", label: "Live Trades", icon: <BarChartIcon size={13} />, count: 0 },
+    { id: "live", label: "SoDEX Spot Tape", icon: <BarChartIcon size={13} />, count: 0 },
   ];
 
   return (
@@ -450,11 +459,11 @@ export default function TradingPageContent() {
                         {openPaperTrades.map((t) => { const b = t.pair.split("/")[0]; const mp = currentPrices.get(b) ?? currentPrices.get(t.pair) ?? t.entryPrice; return <PosRow key={t.id} trade={t} mp={mp} active={t.pair === pair} onSel={setPair} onClose={handleClosePaperTrade} />; })}
                       </div>
                     ) : <div className="flex items-center justify-center h-28"><p className="text-xs text-txt-muted">No open positions</p></div>
-                  ) : <div className="flex items-center justify-center h-28"><p className="text-xs text-txt-dim">Switch to Paper mode</p></div>}
+                  ) : <PerpsPositions address={d.address} />}
                 </ErrorBoundary>
               )}
               {bottomTab === "stats" && <ErrorBoundary name="Paper Stats">{paper.loaded ? <PaperTradingStats stats={paper.stats} balance={paper.balance} trades={paper.trades} onReset={paper.reset} isWalletConnected={d.isConnected} isCapitalConfigured={paper.capitalConfigured} onConfigureCapital={paper.configureCapital} /> : <div className="flex items-center justify-center h-28"><p className="text-xs text-txt-dim">Loading…</p></div>}</ErrorBoundary>}
-              {bottomTab === "live" && <ErrorBoundary name="Live Trades"><RecentTradesList symbol={sodexSymbol} limit={50} /></ErrorBoundary>}
+              {bottomTab === "live" && <ErrorBoundary name="SoDEX Spot Tape"><RecentTradesList symbol={sodexSymbol} limit={50} /></ErrorBoundary>}
             </div>
           </div>
         </div>
@@ -515,11 +524,11 @@ export default function TradingPageContent() {
                         {openPaperTrades.map((t) => { const b = t.pair.split("/")[0]; const mp = currentPrices.get(b) ?? currentPrices.get(t.pair) ?? t.entryPrice; return <PosRow key={t.id} trade={t} mp={mp} active={t.pair === pair} onSel={setPair} onClose={handleClosePaperTrade} />; })}
                       </div>
                     ) : <div className="flex items-center justify-center h-full"><div className="text-center"><BriefcaseIcon size={20} className="text-txt-faint mx-auto mb-2" /><p className="text-xs text-txt-muted">No open positions</p></div></div>
-                  ) : <div className="flex items-center justify-center h-full"><p className="text-xs text-txt-dim">Switch to Paper mode</p></div>}
+                  ) : <PerpsPositions address={d.address} />}
                 </ErrorBoundary>
               )}
               {bottomTab === "stats" && <ErrorBoundary name="Paper Stats">{paper.loaded ? <PaperTradingStats stats={paper.stats} balance={paper.balance} trades={paper.trades} onReset={paper.reset} isWalletConnected={d.isConnected} isCapitalConfigured={paper.capitalConfigured} onConfigureCapital={paper.configureCapital} /> : <div className="flex items-center justify-center h-full"><p className="text-xs text-txt-dim">Loading…</p></div>}</ErrorBoundary>}
-              {bottomTab === "live" && <ErrorBoundary name="Live Trades"><RecentTradesList symbol={sodexSymbol} limit={50} /></ErrorBoundary>}
+              {bottomTab === "live" && <ErrorBoundary name="SoDEX Spot Tape"><RecentTradesList symbol={sodexSymbol} limit={50} /></ErrorBoundary>}
             </div>
           </div>
         </div>

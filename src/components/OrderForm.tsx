@@ -123,6 +123,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
     const entry = currentPrice ?? 0;
     const tp = parseFloat(takeProfit) || 0;
     const sl = parseFloat(stopLoss) || 0;
+    if (mode === "live") return "Live SoDEX perps execution is locked until wallet-signature authentication and order ownership checks are implemented.";
     if (!entry) return "Market price is not available.";
     if (!marginNum) return null;
     if (mode === "paper" && !isPaperCapitalConfigured) return "Choose paper capital before opening paper positions.";
@@ -156,7 +157,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
   const walletRequiredError = !isConnected ? "Connect wallet before opening paper or live positions." : null;
   const paperCapitalRequiredError = mode === "paper" && isConnected && !isPaperCapitalConfigured ? "Choose paper capital from $100 to $10,000 before opening paper positions." : null;
   const isSubmitDisabled = !isConnected || (mode === "paper" && !isPaperCapitalConfigured) || !marginNum || !currentPrice || Boolean(validationError);
-  const displayedError = error ?? walletRequiredError ?? paperCapitalRequiredError ?? (marginNum > 0 ? validationError : null);
+  const displayedError = error ?? walletRequiredError ?? paperCapitalRequiredError ?? (mode === "live" || marginNum > 0 ? validationError : null);
   const sideAccent = side === "LONG" ? "text-buy" : "text-sell";
 
   return (
@@ -170,7 +171,7 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
           <span className={`rounded-full border px-2 py-1 text-[9px] font-bold uppercase tracking-wider ${
             mode === "paper" ? "border-hold/25 bg-hold/10 text-hold" : "border-border-muted bg-elevated/40 text-txt-secondary"
           }`}>
-            {mode} mode
+            {mode === "live" ? "live read-only" : "paper mode"}
           </span>
         </div>
 
@@ -444,6 +445,8 @@ export default function OrderForm({ pair, coin, currentPrice, signal, isConnecte
           }`}>
           {!isConnected
             ? "Connect Wallet to Trade"
+            : mode === "live"
+              ? "Live Execution Locked"
             : mode === "paper" && !isPaperCapitalConfigured
               ? "Set Paper Capital"
               : !marginNum || !currentPrice

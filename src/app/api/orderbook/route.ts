@@ -1,4 +1,4 @@
-import { getOrderbook } from "@/lib/sodex";
+import { getPerpsOrderbook, toPerpsSymbol } from "@/lib/sodex-perps";
 import { jsonNoCache } from "@/lib/api/no-cache";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,16 @@ export async function GET(req: Request) {
   if (!symbol) return jsonNoCache({ error: "symbol required" }, { status: 400 });
 
   const limit = url.searchParams.get("limit") ? Number(url.searchParams.get("limit")) : undefined;
-  const cacheKey = `${symbol}:${limit ?? "default"}`;
+  let perpsSymbol: string;
+  try {
+    perpsSymbol = toPerpsSymbol(symbol);
+  } catch (error) {
+    return jsonNoCache(
+      { error: error instanceof Error ? error.message : "invalid symbol" },
+      { status: 400 },
+    );
+  }
+  const cacheKey = `${perpsSymbol}:${limit ?? "default"}`;
 
   // Check cache
   const cached = cache.get(cacheKey);
@@ -22,7 +31,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const data = await getOrderbook(symbol, limit);
+    const data = await getPerpsOrderbook(perpsSymbol, limit);
     cache.set(cacheKey, { data, ts: Date.now() });
     return jsonNoCache(data);
   } catch (err) {

@@ -40,9 +40,9 @@ export default function RecentTradesList({ symbol, limit = 30 }: Props) {
       <div className="px-3 py-2 border-b border-border-default flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs">📜</span>
-          <h3 className="text-xs font-semibold text-txt-primary">Recent Trades</h3>
+          <h3 className="text-xs font-semibold text-txt-primary">SoDEX Spot Tape</h3>
         </div>
-        <Badge variant="live" size="sm">Live</Badge>
+        <Badge variant="live" size="sm">Public market data</Badge>
       </div>
 
       {/* Header */}

@@ -107,8 +107,8 @@ function Overview() {
           desc="Every signal includes entry price, stop-loss, and take-profit targets. Actionable intelligence, not just scores."
         />
         <PrincipleCard
-          title="Not just a dashboard — execution"
-          desc="Trade directly on SoDEX with EIP-712 signing. No third-party middleman, non-custodial execution."
+          title="Not just a dashboard — validation"
+          desc="Validate signals with paper futures and live SoDEX spot/perps market intelligence. Live order submission remains security-gated."
         />
         <PrincipleCard
           title="Not just one AI — your choice"
@@ -901,9 +901,9 @@ function DataPipeline() {
             ["GET /markets/:symbol/klines", "Public", "OHLCV candles with configurable interval (1m, 5m, 15m, 1h, 4h, 1d)"],
             ["GET /markets/symbols", "Public", "Available trading pairs with base/quote asset details"],
             ["GET /markets/:symbol/orderbook", "Public", "Bid/ask depth with price and quantity levels"],
-            ["POST /orders", "x-api-key", "Place new order (EIP-712 signed). Returns order with status, filled qty, avg price"],
-            ["GET /orders", "x-api-key", "List all orders for authenticated account"],
-            ["DELETE /orders/:id", "x-api-key", "Cancel an open order by ID"],
+            ["POST /orders", "Security-gated", "Disabled until wallet-signature authentication and order ownership checks are implemented"],
+            ["GET /orders", "Security-gated", "Disabled until authenticated account ownership is implemented"],
+            ["DELETE /orders/:id", "Security-gated", "Disabled until authenticated order ownership is implemented"],
             ["GET /accounts/:address/state", "x-api-key", "Account state including balances array"],
           ].map(([e, a, d]) => (
             <tr key={e} className="border-b border-[#1E293B20]">
@@ -1261,13 +1261,13 @@ function APIReference() {
       </table>
 
       <h3 className="text-lg font-bold text-white mt-8">GET /api/orders</h3>
-      <p className="text-[#aaaacc]">Fetches all orders for the authenticated account via SoDEX.</p>
+      <p className="text-[#aaaacc]">Security-gated until authenticated account ownership is implemented.</p>
 
       <h3 className="text-lg font-bold text-white mt-6">POST /api/orders</h3>
-      <p className="text-[#aaaacc]">Places a new order on SoDEX with EIP-712 signature.</p>
+      <p className="text-[#aaaacc]">Returns 403 until wallet-signature authentication and order ownership checks are implemented.</p>
 
       <h3 className="text-lg font-bold text-white mt-6">DELETE /api/orders/[id]</h3>
-      <p className="text-[#aaaacc]">Cancels an open order by ID on SoDEX.</p>
+      <p className="text-[#aaaacc]">Security-gated until authenticated order ownership is implemented.</p>
 
       <h3 className="text-lg font-bold text-white mt-8">GET /api/balance</h3>
       <p className="text-[#aaaacc]">
@@ -1403,17 +1403,17 @@ function Roadmap() {
         ))}
       </ul>
 
-      <h3 className="text-lg font-bold text-accent mt-8">Wave 2 — Execution (Complete)</h3>
+      <h3 className="text-lg font-bold text-accent mt-8">Wave 2 — Validation & Execution Safety</h3>
       <ul className="text-[#aaaacc] space-y-1 ml-4 mt-2">
         {[
           "Wallet connection — MetaMask (desktop) + WalletConnect v2 (mobile)",
-          "EIP-712 trade execution on SoDEX via typed data signing",
+          "SoDEX spot/perps live market intelligence with explicit venue attribution",
           "Multi-AI provider — 11 providers (DeepSeek, OpenAI, Claude, Gemini, Grok, MiMo, Qwen, GLM, Mistral, Groq, OpenRouter) with user API keys",
           "Explainable signals — per-dimension reasoning, key factors, execution plans",
           "Live balance display with 25/50/75/100% quick-fill",
           "PWA support — installable, offline-capable, custom app icons",
           "Mobile responsive — bottom tab nav, slide-in drawer, compact header",
-          "Order management — place, view, cancel SoDEX orders",
+          "Live order submission locked pending wallet authentication and order ownership",
           "Wrong network handling — switch chain or disconnect option",
           "Wallet panel — address copy, balance view, clear disconnect button",
           "Dynamic weight engine with outlier capping",

@@ -164,7 +164,8 @@ export default function OrderbookDepth({ symbol = "vBTC_vUSDC", coin = "BTC" }: 
           <div className="flex items-center gap-2">
             <ChartBarIcon size={16} className="text-accent" />
             <h3 className="text-sm font-semibold text-txt-primary">Orderbook</h3>
-            <span className="text-[9px] text-txt-faint font-mono">{coin}/USDC</span>
+            <span className="text-[9px] text-txt-faint font-mono">{coin}-USD</span>
+            <span className="rounded border border-accent/20 bg-accent/5 px-1.5 py-0.5 text-[8px] font-semibold text-accent">SoDEX Perps</span>
           </div>
           <div className="flex items-center gap-2">
             <select

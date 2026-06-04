@@ -75,7 +75,7 @@ export default function WelcomeExperience({
 
       <div className="pointer-events-none absolute left-[13%] bottom-[18%] z-10 hidden sm:block">
         <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/45">
-          paper validation / live execution
+          paper validation / live market intelligence
         </span>
       </div>
 
@@ -127,7 +127,7 @@ export default function WelcomeExperience({
           <div className="mt-7 flex items-center justify-center gap-3 text-center text-[10px] uppercase tracking-[0.22em] text-white/48">
             <span>paper futures first</span>
             <span className="h-1 w-1 rounded-full bg-white/30" />
-            <span>live execution optional</span>
+            <span>live execution security-gated</span>
           </div>
         </div>
 

@@ -6,7 +6,7 @@
 
 **[signalflowagent.vercel.app](https://signalflowagent.vercel.app)**
 
-SignalFlow Agent transforms multi-dimensional market data into explainable, executable trade signals. Wave 2 moves the product beyond a read-only dashboard into a signal-to-execution trading platform with wallet connectivity, live order management, paper futures validation, a Bloomberg-style command center, and production-grade mobile/PWA support.
+SignalFlow Agent transforms multi-dimensional market data into explainable trade signals, with wallet-aware paper futures validation, a Bloomberg-style command center, and production-grade mobile/PWA support.
 
 ---
 
@@ -16,7 +16,7 @@ SignalFlow Agent transforms multi-dimensional market data into explainable, exec
 
 - **Not just signals — styles.** Choose your trading style (Scalper, Intraday, Swing, Position) and the engine adapts weights, TP/SL, and confidence thresholds to match.
 - **Not just one timeframe — confluence.** Signals analyzed across 1H, 4H, and 1D timeframes with alignment scoring for higher conviction.
-- **Not just a dashboard — execution.** Paper futures trading, ValueChain wallet connectivity, SoDEX order signing, and live order management support the full signal-to-execution loop.
+- **Not just a dashboard — validation.** Paper futures trading and ValueChain wallet connectivity support a transparent signal-to-validation loop while live execution remains security-gated.
 - **Not just guesses — validation.** Built-in backtest engine that replays historical signals and measures accuracy by regime and trading type.
 
 ---
@@ -139,17 +139,18 @@ Access via `/performance` page → Backtest panel.
 - TP/SL/Liquidation auto-close on price ticks
 - Per-type performance stats (win rate, PnL, avg leverage by type)
 
-### Wallet & Live Trading
+### Wallet & Execution Safety
 - MetaMask + WalletConnect v2 support on ValueChain mainnet (chain ID 286623, SOSO currency)
 - Smart connector detects `window.ethereum` on desktop and falls back to WalletConnect QR/deep links on mobile
-- EIP-712 typed-data signing for SoDEX spot market orders using the ValueChain domain and SoDEX backend struct
-- Trade execution modal with ticker price, wallet balance, 25/50/75/100% quick fill, estimated cost, and Sign & Submit flow
-- Order management via `/api/orders` and balance lookup via `/api/balance`
-- Wallet dropdown with full address copy, network badge, live balances, wrong-network handling, and disconnect with permission revocation
+- Live spot and perps order submission remains disabled until wallet-signature authentication and order ownership checks are implemented
+- Read-only SoDEX perps positions are loaded directly for the connected wallet
+- Wallet dropdown includes full address copy, network badge, balances, wrong-network handling, and disconnect
 
 ### Market Intelligence
 - SoSoValue API: ETF flows, news sentiment, macro events, BTC treasuries, index snapshots
-- SoDEX API: live tickers, multi-timeframe klines, orderbooks
+- SoDEX Spot API: live tickers and multi-timeframe klines
+- SoDEX Perps API: funding rate, mark/index price, open interest, orderbook, and wallet positions
+- Hyperliquid public API: explicitly labeled cross-venue funding/open-interest comparison only
 - 5 trading pairs: BTC, ETH, SOL, AVAX, LINK
 
 ### AI Signal Enhancement
@@ -188,11 +189,11 @@ Access via `/performance` page → Backtest panel.
 ### Wave 2 (Current)
 **Core Platform:**
 - Wallet connection — MetaMask (desktop) + WalletConnect v2 (mobile)
-- EIP-712 trade execution on SoDEX via typed data signing
+- SoDEX market-data integration with live order submission security-gated
 - Multi-AI provider — Deepseek, OpenAI, OpenRouter with user API keys
 - PWA support — installable, offline-capable, custom app icons
 - Mobile responsive — bottom tab nav, slide-in drawer, compact header
-- Order management dashboard — place market orders, view open/filled/canceled status, cancel pending orders
+- Read-only order surfaces retained while authenticated order ownership is implemented
 - Wallet panel — address copy, ValueChain network badge, live balances, disconnect, wrong-network handling
 
 **Signal Engine V2:**

@@ -3,12 +3,7 @@
 import { useState, useEffect } from "react";
 import { parseApiResponse } from "@/lib/api/client";
 
-export interface FundingRateData {
-  symbol: string;
-  fundingRate: number;
-  openInterest: number;
-  markPrice: number;
-}
+import type { FundingRateData } from "@/lib/funding-rate";
 
 export function useFundingRate(symbol: string) {
   const [data, setData] = useState<FundingRateData | null>(null);
@@ -26,7 +21,7 @@ export function useFundingRate(symbol: string) {
       setError(null);
 
       try {
-        const res = await fetch("/api/funding");
+        const res = await fetch(`/api/funding?symbol=${encodeURIComponent(base)}`);
         const data = await parseApiResponse<Record<string, FundingRateData>>(res);
 
         if (!cancelled) {
