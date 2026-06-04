@@ -101,8 +101,17 @@ export async function GET(req: NextRequest) {
   const limited = checkRateLimit(req, "orders");
   if (limited) return limited;
 
-  const auth = await requireTradingAuthorization(req);
-  if (auth instanceof Response) return auth;
+  // GET returns perp positions (read-only, no auth required)
+  const address = req.nextUrl.searchParams.get("address")?.trim();
+  if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
+    return jsonNoCache({ orders: [], source: "SoDEX Perps" });
+  }
 
-  return jsonNoCache({ error: "GET /api/orders not yet implemented for perps" }, { status: 501 });
+  try {
+    const { getPerpsPositions } = await import("@/lib/sodex-perps");
+    const data = await getPerpsPositions(address);
+    return jsonNoCache({ orders: data.positions ?? [], source: "SoDEX Perps" });
+  } catch {
+    return jsonNoCache({ orders: [], source: "SoDEX Perps" });
+  }
 }
