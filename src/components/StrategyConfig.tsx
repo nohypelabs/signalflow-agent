@@ -225,18 +225,27 @@ export default function StrategyConfig() {
               {STRATEGY_ENGINE_ORDER.map((engine) => {
                 const meta = STRATEGY_ENGINES[engine];
                 const selected = config.engine === engine;
+                const isLiquidityFlow = engine === "liquidityFlow";
+                const interactionTone = isLiquidityFlow
+                  ? selected
+                    ? "border-info bg-info/10 shadow-[0_0_32px_rgba(0,212,255,0.16)]"
+                    : "border-border-default bg-inset/40 hover:border-info/70 hover:bg-info/10 hover:shadow-[0_0_32px_rgba(0,212,255,0.18)] focus-visible:ring-info/60"
+                  : selected
+                    ? "border-accent bg-accent/10 shadow-[0_0_32px_rgba(255,136,0,0.14)]"
+                    : "border-border-default bg-inset/40 hover:border-accent/70 hover:bg-accent/10 hover:shadow-[0_0_32px_rgba(255,136,0,0.16)] focus-visible:ring-accent/60";
                 return (
                   <button
+                    type="button"
                     key={engine}
                     onClick={() => selectEngine(engine, true)}
-                    className={`group rounded-xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:border-border-strong hover:bg-elevated/70 ${
-                      selected ? "border-accent bg-accent/10" : "border-border-default bg-inset/40"
-                    }`}
+                    className={`group cursor-pointer rounded-xl border p-4 text-left transition-all duration-200 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-card active:translate-y-0 ${interactionTone}`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <div className="text-lg font-bold text-txt-primary">{meta.label}</div>
-                        <div className="mt-1 text-xs leading-5 text-txt-secondary">{meta.desc}</div>
+                        <div className={`text-lg font-bold text-txt-primary transition-colors ${isLiquidityFlow ? "group-hover:text-info" : "group-hover:text-accent"}`}>
+                          {meta.label}
+                        </div>
+                        <div className="mt-1 text-xs leading-5 text-txt-secondary transition-colors group-hover:text-txt-primary">{meta.desc}</div>
                       </div>
                       <span className={`shrink-0 rounded-md border px-2 py-1 text-[9px] font-bold uppercase ${meta.tone}`}>
                         {meta.badge}
@@ -244,14 +253,18 @@ export default function StrategyConfig() {
                     </div>
                     <div className="mt-4 space-y-2">
                       {meta.checks.slice(0, 4).map((check) => (
-                        <div key={check} className="flex items-center gap-2 text-[11px] text-txt-tertiary">
-                          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                        <div key={check} className="flex items-center gap-2 text-[11px] text-txt-tertiary transition-colors group-hover:text-txt-secondary">
+                          <span className={`h-1.5 w-1.5 rounded-full transition-all group-hover:shadow-[0_0_10px_currentColor] ${isLiquidityFlow ? "bg-info text-info" : "bg-accent text-accent"}`} />
                           {check}
                         </div>
                       ))}
                     </div>
-                    <p className="mt-4 min-h-10 text-[10px] leading-5 text-txt-dim">{meta.thesis}</p>
-                    <div className="mt-4 rounded-lg border border-border-default bg-card/70 px-3 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-txt-primary group-hover:border-accent/40">
+                    <p className="mt-4 min-h-10 text-[10px] leading-5 text-txt-dim transition-colors group-hover:text-txt-secondary">{meta.thesis}</p>
+                    <div className={`mt-4 rounded-lg border border-border-default bg-card/70 px-3 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-txt-primary transition-all ${
+                      isLiquidityFlow
+                        ? "group-hover:border-info/60 group-hover:bg-info/15 group-hover:text-info"
+                        : "group-hover:border-accent/60 group-hover:bg-accent/15 group-hover:text-accent"
+                    }`}>
                       Select {meta.label}
                     </div>
                   </button>
