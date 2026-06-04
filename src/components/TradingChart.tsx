@@ -137,6 +137,7 @@ interface Props {
   tradeMode?: "paper" | "live";
   onModeChange?: (mode: "paper" | "live") => void;
   onPairChange?: (pair: string) => void;
+  preferredTimeframe?: Timeframe;
   compact?: boolean;
 }
 
@@ -151,6 +152,7 @@ export default function TradingChart({
   tradeMode,
   onModeChange,
   onPairChange,
+  preferredTimeframe,
   compact = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -162,9 +164,15 @@ export default function TradingChart({
   const markerLinesRef = useRef<IPriceLine[]>([]);
   const markersPluginRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
 
-  const [tf, setTf] = useState<Timeframe>("1h");
+  const [tf, setTf] = useState<Timeframe>(preferredTimeframe ?? "1h");
   const [pair, setPair] = useState(initialSymbol);
   const [showModal, setShowModal] = useState(false);
+
+  // Apply the active Trade Profile's anchor timeframe when the profile changes.
+  // Manual timeframe buttons remain fully available afterward.
+  useEffect(() => {
+    if (preferredTimeframe) setTf(preferredTimeframe);
+  }, [preferredTimeframe]);
 
   // Sync pair when parent changes it (e.g., from MarketSelectorModal)
   useEffect(() => {

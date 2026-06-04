@@ -36,6 +36,12 @@ type BottomTab = "orders" | "trades" | "positions" | "stats" | "live";
 function formatPrice(price: number): string { if (price >= 10000) return price.toLocaleString("en-US", { maximumFractionDigits: 0 }); if (price >= 100) return price.toFixed(2); if (price >= 1) return price.toFixed(3); return price.toFixed(5); }
 function formatUsd(value: number): string { const abs = Math.abs(value); const f = abs >= 1000 ? abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : abs.toFixed(2); return `${value < 0 ? "-" : ""}$${f}`; }
 function parseTradingType(value: string | null): TradingType | null { return value && value in TRADING_TYPES ? value as TradingType : null; }
+const TRADE_PROFILE_CHART_TIMEFRAME = {
+  scalping: "5m",
+  intraday: "4h",
+  swing: "1D",
+  position: "1W",
+} as const satisfies Record<TradingType, "5m" | "4h" | "1D" | "1W">;
 
 /* ── Default widths (percentage) ── */
 const DEFAULT_WIDTHS = { chart: 65, book: 18, form: 17 };
@@ -253,6 +259,7 @@ export default function TradingPageContent() {
   const sodexSymbol = `v${coin}_vUSDC`;
   const ticker = sodexSymbol ? d.tickerMap.get(sodexSymbol) : undefined;
   const currentPrice = ticker ? parseFloat(ticker.lastPx) : null;
+  const preferredChartTimeframe = tradingType ? TRADE_PROFILE_CHART_TIMEFRAME[tradingType] : undefined;
 
   const currentPrices = useMemo(() => {
     const base = pair.split("/")[0]; const prices = new Map<string, number>();
@@ -376,6 +383,7 @@ export default function TradingPageContent() {
                 tradeMode={tradeMode}
                 onModeChange={setTradeMode}
                 onPairChange={setPair}
+                preferredTimeframe={preferredChartTimeframe}
                 compact
               />
             </ErrorBoundary>
@@ -457,7 +465,7 @@ export default function TradingPageContent() {
         {/* Column A: Chart */}
         <div className="min-w-0 flex flex-col" style={{ width: `${widths.chart}%` }}>
           <ErrorBoundary name="Trading Chart">
-            <TradingChart klines={d.klines} symbol={pair} currentPrice={currentPrice} liveSignals={d.liveSignals} tickerMap={d.tickerMap} tradeMode={tradeMode} onModeChange={setTradeMode} onPairChange={setPair} />
+            <TradingChart klines={d.klines} symbol={pair} currentPrice={currentPrice} liveSignals={d.liveSignals} tickerMap={d.tickerMap} tradeMode={tradeMode} onModeChange={setTradeMode} onPairChange={setPair} preferredTimeframe={preferredChartTimeframe} />
           </ErrorBoundary>
         </div>
 
