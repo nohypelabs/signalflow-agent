@@ -68,10 +68,14 @@ async function perpsFetch<T>(
     if (value !== undefined) url.searchParams.set(key, value);
   });
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+
   const response = await fetch(url.toString(), {
     headers: { Accept: "application/json" },
     cache: "no-store",
-  });
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout));
   const body = await response.json().catch(() => null) as {
     code?: number;
     error?: string;

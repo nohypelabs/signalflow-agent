@@ -17,10 +17,15 @@ async function sodexFetch<T>(
       if (v !== undefined) url.searchParams.set(k, v);
     });
   }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+
   const res = await fetch(url.toString(), {
     headers: { Accept: "application/json", ...init?.headers },
+    signal: controller.signal,
     ...init,
-  });
+  }).finally(() => clearTimeout(timeout));
+
   if (!res.ok) {
     throw new Error(`SoDEX ${res.status}: ${await res.text().catch(() => "")}`);
   }
