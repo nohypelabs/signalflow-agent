@@ -30,4 +30,8 @@ export const config = createConfig({
   transports: {
     [valuechain.id]: http(),
   },
+  // Disable auto-reconnect so users see the wallet modal on every connect.
+  // Without this, wagmi reconnects to the last wallet from localStorage
+  // even after disconnect — making it impossible to switch wallets.
+  reconnectOnMount: false,
 });
