@@ -561,7 +561,7 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
               <button
                 onClick={onGenerate}
                 disabled={d.analyzing}
-                className="flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold hover:bg-opacity-80 disabled:opacity-60"
+                className="flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold hover:bg-opacity-80 hover:scale-[1.03] active:scale-[0.97] transition-all duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ 
                   borderColor: signalColor.main + '80', 
                   color: signalColor.main,
@@ -584,7 +584,7 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
               <button
                 onClick={execute}
                 disabled={!currentSignal || decision.action === "NO TRADE"}
-                className="flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-bold text-black hover:opacity-90 disabled:bg-[#334155] disabled:text-[#64748b] disabled:cursor-not-allowed"
+                className="flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-bold text-black hover:opacity-90 hover:scale-[1.03] active:scale-[0.97] transition-all duration-150 cursor-pointer disabled:bg-[#334155] disabled:text-[#64748b] disabled:cursor-not-allowed"
                 style={{ backgroundColor: signalColor.main }}
               >
                 <Play size={14} fill="currentColor" />

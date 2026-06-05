@@ -5,6 +5,7 @@ import { useDashboard } from "@/lib/dashboard-context";
 import type { StrategyEngineName } from "@/lib/strategy/config";
 import { loadStrategyConfig, serializeStrategyConfig } from "@/lib/strategy/config";
 import { toast } from "sonner";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface GenerationSession {
   id: string;
@@ -167,8 +168,6 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
     setMinimized(!minimized);
   };
 
-  if (!open) return null;
-
   if (minimized) {
     const hasSuccess = Object.values(sessions).some(s => s.status === "success");
     const hasRunning = Object.values(sessions).some(s => s.status === "running");
@@ -186,113 +185,131 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70">
-      <div className="w-full max-w-2xl rounded-xl border border-border-default bg-[#0B1020] p-4 text-sm mt-[-800px]">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <div className="font-semibold text-lg">Generate Signal — Choose Strategy</div>
-            <div className="text-[10px] text-txt-muted">Transparency mode for judges & users</div>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={toggleMinimize} className="text-xs px-2 py-1 border border-border-default rounded hover:bg-inset">Minimize</button>
-            <button onClick={() => setCustomizeOpen(!customizeOpen)} className="text-xs px-2 py-1 border border-border-default rounded hover:bg-inset">Customize</button>
-            <button onClick={onClose} className="text-xs px-2 py-1 text-txt-muted hover:text-white">Close</button>
-          </div>
-        </div>
-
-        {/* Strategy selection */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-          {strategies.map((s) => {
-            const isSelected = selectedStrategies.includes(s.name);
-            return (
-              <div
-                key={s.name}
-                onClick={() => toggleStrategy(s.name)}
-                className={`cursor-pointer rounded-lg border p-3 transition ${isSelected ? "border-accent bg-accent/5" : "border-border-default hover:border-txt-muted"}`}
-              >
-                <div className="font-medium flex items-center gap-2">
-                  <input type="checkbox" checked={isSelected} readOnly className="accent-accent" />
-                  {s.label}
-                </div>
-                <div className="text-[11px] text-txt-secondary mt-1">{s.description}</div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Customize section */}
-        {customizeOpen && (
-          <div className="mb-4 rounded border border-border-default p-3 bg-inset/30 text-xs">
-            <div className="font-medium mb-2">Customize Parameters (per generation)</div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="text-txt-muted mb-1">LiquidityFlow</div>
-                <label className="block">Min Spread (bps): <input type="number" value={customOptions.liquidityFlow.minSpreadBps} onChange={e => setCustomOptions(p => ({...p, liquidityFlow: {...p.liquidityFlow, minSpreadBps: parseFloat(e.target.value)}}))} className="bg-[#111827] w-16 px-1 rounded" /></label>
-                <label className="flex items-center gap-1 mt-1"><input type="checkbox" checked={customOptions.liquidityFlow.includeFunding} onChange={e => setCustomOptions(p => ({...p, liquidityFlow: {...p.liquidityFlow, includeFunding: e.target.checked}}))} /> Include Funding Rate</label>
-              </div>
-              <div>
-                <div className="text-txt-muted mb-1">Confluence V2</div>
-                <label>Min Confidence: <input type="number" value={customOptions.confluence.minConfidence} onChange={e => setCustomOptions(p => ({...p, confluence: {...p.confluence, minConfidence: parseInt(e.target.value)}}))} className="bg-[#111827] w-16 px-1 rounded" /></label>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Active generations / logs */}
-        <div className="mb-3">
-          <div className="text-xs uppercase tracking-wider text-txt-muted mb-1">Live Generation Logs</div>
-          {Object.keys(sessions).length === 0 && (
-            <div className="text-xs text-txt-secondary italic">Select strategy above and click Generate to start. Logs will appear here in real time.</div>
-          )}
-          {Object.values(sessions).map((sess) => (
-            <div key={sess.id} className="mb-2 border border-border-default rounded p-2 bg-black/30">
-              <div className="flex justify-between text-xs mb-1">
-                <span className="font-medium">{sess.strategy} — {sess.status}</span>
-                <span className="text-txt-muted">{((Date.now() - sess.startedAt) / 1000).toFixed(1)}s</span>
-              </div>
-              <div className="max-h-32 overflow-auto text-[10px] font-mono bg-inset/40 p-1 rounded">
-                {sess.logs.map((log, i) => (
-                  <div key={i} className="whitespace-pre-wrap">{log}</div>
-                ))}
-                {sess.status === "running" && <div className="text-accent animate-pulse">...</div>}
-              </div>
-              {sess.error && <div className="text-rose-500 text-xs mt-1">Error: {sess.error}</div>}
-
-              {sess.status === "success" && (
-                <div className="mt-2 p-3 bg-emerald-500/10 border border-emerald-500/40 rounded-lg">
-                  <div className="flex items-center gap-2 text-emerald-500 font-semibold text-sm">
-                    ✅ Signal successfully generated!
-                  </div>
-                  <div className="text-[11px] text-txt-secondary mt-1 mb-2">
-                    Signal has been successfully generated. Please return to the Live Decision Score panel to view the results.
-                  </div>
-                  <button
-                    onClick={onClose}
-                    className="w-full rounded bg-emerald-500 hover:bg-emerald-600 text-black py-1.5 text-sm font-medium transition-colors"
-                  >
-                    Back to Live Decision Score
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        <div className="flex gap-2 justify-end">
-          <button
-            onClick={handleGenerateSelected}
-            disabled={selectedStrategies.length === 0}
-            className="rounded bg-accent text-black px-3 py-1 text-sm font-medium disabled:opacity-50"
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={onClose}
+        >
+          <motion.div
+            className="w-full max-w-2xl rounded-xl border border-border-default bg-[#0B1020] p-4 text-sm mt-[-800px]"
+            initial={{ opacity: 0, scale: 0.96, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 30 }}
+            transition={{ type: "spring", stiffness: 320, damping: 26, mass: 0.7 }}
+            onClick={(e) => e.stopPropagation()}
           >
-            Generate Selected Strategies
-          </button>
-          <button onClick={onClose} className="rounded border border-border-default px-3 py-1 text-sm">Close</button>
-        </div>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <div className="font-semibold text-lg">Generate Signal — Choose Strategy</div>
+                <div className="text-[10px] text-txt-muted">Transparency mode for judges & users</div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={toggleMinimize} className="text-xs px-2 py-1 border border-border-default rounded hover:bg-inset active:scale-[0.98] transition-all cursor-pointer">Minimize</button>
+                <button onClick={() => setCustomizeOpen(!customizeOpen)} className="text-xs px-2 py-1 border border-border-default rounded hover:bg-inset active:scale-[0.98] transition-all cursor-pointer">Customize</button>
+                <button onClick={onClose} className="text-xs px-2 py-1 text-txt-muted hover:text-white active:scale-[0.98] transition-all cursor-pointer">Close</button>
+              </div>
+            </div>
 
-        <div className="mt-3 text-[10px] text-txt-muted">
-          Each strategy runs its own screening pipeline. After success, click the button in the success banner to return to the main panel.
-        </div>
-      </div>
-    </div>
+            {/* Strategy selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+              {strategies.map((s) => {
+                const isSelected = selectedStrategies.includes(s.name);
+                return (
+                  <div
+                    key={s.name}
+                    onClick={() => toggleStrategy(s.name)}
+                    className={`cursor-pointer rounded-lg border p-3 transition-all hover:scale-[1.015] active:scale-[0.985] ${isSelected ? "border-accent bg-accent/5" : "border-border-default hover:border-accent/50"}`}
+                  >
+                    <div className="font-medium flex items-center gap-2">
+                      <input type="checkbox" checked={isSelected} readOnly className="accent-accent" />
+                      {s.label}
+                    </div>
+                    <div className="text-[11px] text-txt-secondary mt-1">{s.description}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Customize section */}
+            {customizeOpen && (
+              <div className="mb-4 rounded border border-border-default p-3 bg-inset/30 text-xs">
+                <div className="font-medium mb-2">Customize Parameters (per generation)</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-txt-muted mb-1">LiquidityFlow</div>
+                    <label className="block">Min Spread (bps): <input type="number" value={customOptions.liquidityFlow.minSpreadBps} onChange={e => setCustomOptions(p => ({...p, liquidityFlow: {...p.liquidityFlow, minSpreadBps: parseFloat(e.target.value)}}))} className="bg-[#111827] w-16 px-1 rounded" /></label>
+                    <label className="flex items-center gap-1 mt-1"><input type="checkbox" checked={customOptions.liquidityFlow.includeFunding} onChange={e => setCustomOptions(p => ({...p, liquidityFlow: {...p.liquidityFlow, includeFunding: e.target.checked}}))} /> Include Funding Rate</label>
+                  </div>
+                  <div>
+                    <div className="text-txt-muted mb-1">Confluence V2</div>
+                    <label>Min Confidence: <input type="number" value={customOptions.confluence.minConfidence} onChange={e => setCustomOptions(p => ({...p, confluence: {...p.confluence, minConfidence: parseInt(e.target.value)}}))} className="bg-[#111827] w-16 px-1 rounded" /></label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Active generations / logs */}
+            <div className="mb-3">
+              <div className="text-xs uppercase tracking-wider text-txt-muted mb-1">Live Generation Logs</div>
+              {Object.keys(sessions).length === 0 && (
+                <div className="text-xs text-txt-secondary italic">Select strategy above and click Generate to start. Logs will appear here in real time.</div>
+              )}
+              {Object.values(sessions).map((sess) => (
+                <div key={sess.id} className="mb-2 border border-border-default rounded p-2 bg-black/30">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="font-medium">{sess.strategy} — {sess.status}</span>
+                    <span className="text-txt-muted">{((Date.now() - sess.startedAt) / 1000).toFixed(1)}s</span>
+                  </div>
+                  <div className="max-h-32 overflow-auto text-[10px] font-mono bg-inset/40 p-1 rounded">
+                    {sess.logs.map((log, i) => (
+                      <div key={i} className="whitespace-pre-wrap">{log}</div>
+                    ))}
+                    {sess.status === "running" && <div className="text-accent animate-pulse">...</div>}
+                  </div>
+                  {sess.error && <div className="text-rose-500 text-xs mt-1">Error: {sess.error}</div>}
+
+                  {sess.status === "success" && (
+                    <div className="mt-2 p-3 bg-emerald-500/10 border border-emerald-500/40 rounded-lg">
+                      <div className="flex items-center gap-2 text-emerald-500 font-semibold text-sm">
+                        ✅ Signal successfully generated!
+                      </div>
+                      <div className="text-[11px] text-txt-secondary mt-1 mb-2">
+                        Signal has been successfully generated. Please return to the Live Decision Score panel to view the results.
+                      </div>
+                      <button
+                        onClick={onClose}
+                        className="w-full rounded bg-emerald-500 hover:bg-emerald-600 text-black py-1.5 text-sm font-medium transition-all duration-150 hover:scale-[1.01] active:scale-[0.985] cursor-pointer"
+                      >
+                        Back to Live Decision Score
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={handleGenerateSelected}
+                disabled={selectedStrategies.length === 0}
+                className="rounded bg-accent text-black px-3 py-1 text-sm font-medium disabled:opacity-50 hover:bg-emerald-400 active:scale-[0.985] transition-all duration-150 cursor-pointer"
+              >
+                Generate Selected Strategies
+              </button>
+              <button onClick={onClose} className="rounded border border-border-default px-3 py-1 text-sm hover:bg-inset active:scale-[0.985] transition-all duration-150 cursor-pointer">Close</button>
+            </div>
+
+            <div className="mt-3 text-[10px] text-txt-muted">
+              Each strategy runs its own screening pipeline. After success, click the button in the success banner to return to the main panel.
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
