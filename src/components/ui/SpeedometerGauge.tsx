@@ -8,6 +8,7 @@ interface Props {
   showLabel?: boolean;
   label?: string;
   sweeping?: boolean;
+  color?: string; // dynamic color from signal strength
 }
 
 // True semicircle: 180° arc, left → right
@@ -43,10 +44,10 @@ function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: nu
   return `M ${start.x} ${start.y} A ${r} ${r} 0 ${large} 1 ${end.x} ${end.y}`;
 }
 
-export default function SpeedometerGauge({ value, size = "md", showLabel = true, label, sweeping = false }: Props) {
+export default function SpeedometerGauge({ value, size = "md", showLabel = true, label, sweeping = false, color: propColor }: Props) {
   const { w, h, cx, cy, r, sw, needleLen, tickLen, labelSize, subSize } = sizes[size];
   const clamped = Math.max(0, Math.min(100, value));
-  const color = getColor(clamped);
+  const color = propColor || getColor(clamped);
 
   // Animate needle
   const [displayAngle, setDisplayAngle] = useState(-180);

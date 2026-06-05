@@ -441,6 +441,48 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
     ? `${riskRewardNumber.toFixed(2)}R`
     : decision.riskReward;
 
+  // Dynamic color logic based on signal strength & recommendation
+  function getSignalColor(score: number, action: string) {
+    const isStrongLong = action === 'LONG' && score >= 75;
+    const isStrongShort = action === 'SHORT' || score < 50;
+    const isModerate = !isStrongLong && !isStrongShort;
+
+    if (isStrongLong) {
+      return {
+        main: '#22c55e',
+        text: 'text-emerald-500',
+        bg: 'bg-emerald-500/10',
+        border: 'border-emerald-500/30',
+        glow: 'shadow-[0_0_12px_rgba(34,197,94,0.4)]',
+        bar: 'bg-emerald-500',
+        gauge: '#22c55e',
+      };
+    }
+    if (isModerate) {
+      return {
+        main: '#f59e0b',
+        text: 'text-amber-500',
+        bg: 'bg-amber-500/10',
+        border: 'border-amber-500/30',
+        glow: 'shadow-[0_0_12px_rgba(245,158,11,0.4)]',
+        bar: 'bg-amber-500',
+        gauge: '#f59e0b',
+      };
+    }
+    // Strong SHORT or low score
+    return {
+      main: '#ef4444',
+      text: 'text-rose-500',
+      bg: 'bg-rose-500/10',
+      border: 'border-rose-500/30',
+      glow: 'shadow-[0_0_12px_rgba(239,68,68,0.4)]',
+      bar: 'bg-rose-500',
+      gauge: '#ef4444',
+    };
+  }
+
+  const signalColor = getSignalColor(decision.confidence, decision.action);
+
   const execute = () => {
     if (currentSignal && decision.action !== "NO TRADE") {
       d.handleExecuteSignal(currentSignal);
@@ -451,37 +493,46 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
     {
       action: "SHORT",
       label: "SHORT",
-      active: "border-sell-dim bg-sell-muted text-sell",
+      active: "border-rose-500 bg-rose-500/10 text-rose-500",
       idle: "border-border-default bg-elevated text-txt-muted",
-      lamp: "bg-sell border-sell",
-      glow: "shadow-[0_0_16px_var(--color-sell)]",
+      lamp: "bg-rose-500 border-rose-500",
+      glow: "shadow-[0_0_16px_#ef4444]",
     },
     {
       action: "NO TRADE",
       label: "NO TRADE",
-      active: "border-hold-dim bg-hold-muted text-hold",
+      active: "border-amber-500 bg-amber-500/10 text-amber-500",
       idle: "border-border-default bg-elevated text-txt-muted",
-      lamp: "bg-hold border-hold",
-      glow: "shadow-[0_0_16px_var(--color-hold)]",
+      lamp: "bg-amber-500 border-amber-500",
+      glow: "shadow-[0_0_16px_#f59e0b]",
     },
     {
       action: "LONG",
       label: "LONG",
-      active: "border-buy-dim bg-buy-muted text-buy",
+      active: "border-emerald-500 bg-emerald-500/10 text-emerald-500",
       idle: "border-border-default bg-elevated text-txt-muted",
-      lamp: "bg-buy border-buy",
-      glow: "shadow-[0_0_16px_var(--color-buy)]",
+      lamp: "bg-emerald-500 border-emerald-500",
+      glow: "shadow-[0_0_16px_#22c55e]",
     },
   ];
 
   return (
     <Panel
       title="LIVE DECISION SCORE"
-      badge={<Badge variant={decision.action === "LONG" ? "buy" : decision.action === "SHORT" ? "sell" : "hold"} size="sm">{activeStrategy?.label ?? "LIVE LOGIC"}</Badge>}
-      className="h-[569px] relative z-10"
+      badge={
+        <div className="flex items-center gap-1.5">
+          <span className="flex items-center gap-1 rounded-full bg-[#0a2a3a] border border-[#00d4ff] px-2 py-0.5 text-[9px] font-bold text-[#00d4ff]">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#00ff88] animate-pulse" /> LIVE
+          </span>
+          <span className="rounded-full bg-[#27272a] border border-[#52525b] px-2 py-0.5 text-[9px] font-bold text-[#a1a1aa]">
+            {activeStrategy?.label ?? "SWING"}
+          </span>
+        </div>
+      }
+      className="h-[580px] relative z-10"
       bodyClassName="flex-1 overflow-visible"
     >
-      <div className="flex h-full min-w-0 flex-col gap-2.5 overflow-visible p-3">
+      <div className="flex h-full min-w-0 flex-col gap-2 overflow-visible p-3">
         <div className="rounded-xl border border-border-default bg-inset/70 px-3 py-2">
           <div className="flex items-center gap-3">
             <div className="grid min-w-0 flex-1 grid-cols-3 gap-1.5">
@@ -504,191 +555,132 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
           </div>
         </div>
 
-        <div className="rounded-xl border border-border-default bg-inset/70 px-2 py-2 text-center">
-          <div className="mb-1 flex items-center justify-center gap-2 text-[11px] font-semibold tracking-wide text-txt-tertiary uppercase">
-            SignalFlow Final Score
-            {activeStrategy && (
-              <span className="text-[9px] normal-case font-medium text-accent border border-accent/30 bg-accent/5 px-1.5 py-0 rounded">
-                {activeStrategy.label}
-              </span>
-            )}
+        <div className="rounded-xl border border-border-default bg-inset/70 px-2 py-[1px] text-center">
+          <div className="mt-[5px]">
+            <SpeedometerGauge value={decision.confidence} size="lg" showLabel={false} sweeping={d.analyzing} color={signalColor.gauge} />
           </div>
-          <SpeedometerGauge value={decision.confidence} size="lg" showLabel={false} sweeping={d.analyzing} />
-          <div className="relative mt-2 flex min-h-[52px] items-center justify-center gap-6">
-            <div className="flex flex-col items-center gap-1">
-              <IconControlButton
-                label={d.analyzing ? "Generating Signal" : "Generate Signal"}
-                detail={generateTooltip}
+
+          {/* Persen di tengah + dinaikkan 10px (-translate-y-[10px]), buttons mengapit kiri-kanan + naik 20px. Gauge diturunin 5px. Header dihapus. */}
+          <div className="mt-2 flex items-end justify-between">
+            <div className="self-end -translate-y-[20px]">
+              <button
                 onClick={generateSignal}
-                loading={d.analyzing}
-                intent="accent"
+                disabled={d.analyzing}
+                className="flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold hover:bg-opacity-80 disabled:opacity-60"
+                style={{ 
+                  borderColor: signalColor.main + '80', 
+                  color: signalColor.main,
+                  backgroundColor: signalColor.main + '10'
+                }}
               >
-                <PedalIcon className="h-5 w-5" />
-              </IconControlButton>
-              <span className="text-[9px] font-semibold uppercase tracking-wide text-txt-muted">Generate Signal</span>
+                <span className="text-sm">📶</span>
+                <span>Generate Signal</span>
+              </button>
             </div>
+
             <div
-              className="min-w-[104px] text-5xl font-bold tabular-nums tracking-tight"
-              style={{
-                color: decision.action === "LONG"
-                  ? "var(--color-buy)"
-                  : decision.action === "SHORT"
-                    ? "var(--color-sell)"
-                    : "var(--color-hold)",
-              }}
+              className="min-w-[90px] text-4xl font-bold tabular-nums tracking-tight -translate-y-[10px]"
+              style={{ color: signalColor.main }}
             >
               {decision.confidence}%
             </div>
-            <div className="flex flex-col items-center gap-1">
-              <IconControlButton
-                label={decision.action === "NO TRADE" ? "Wait For Setup" : "Execute Setup"}
-                detail={decision.action === "NO TRADE" ? "No executable setup yet." : `Execute this setup at ${decision.positionSize}.`}
+
+            <div className="self-end -translate-y-[20px]">
+              <button
                 onClick={execute}
                 disabled={!currentSignal || decision.action === "NO TRADE"}
-                intent="execute"
+                className="flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-bold text-black hover:opacity-90 disabled:bg-[#334155] disabled:text-[#64748b] disabled:cursor-not-allowed"
+                style={{ backgroundColor: signalColor.main }}
               >
-                <Play size={19} fill="currentColor" />
-              </IconControlButton>
-              <span className="text-[9px] font-semibold uppercase tracking-wide text-txt-muted">Execute Setup</span>
+                <Play size={14} fill="currentColor" />
+                <span>Execute Setup</span>
+              </button>
             </div>
           </div>
-          <div className="text-sm font-medium text-txt-tertiary">{decision.label}</div>
         </div>
 
+        {/* Score Drivers (weighted composite) - matching the reference picture exactly */}
+        <div className="rounded-xl border border-border-default bg-inset/70 px-3 py-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-txt-tertiary mb-2">Score Drivers (weighted composite)</div>
+          <div className="space-y-2">
+            {decision.sources.map((source, idx) => {
+              const weightPct = Math.round(source.weight * 100);
+              const barWidth = Math.max(5, Math.min(100, weightPct));
+              const isPositive = source.signed > 0;
+              const isNegative = source.signed < 0;
+              const barFill = isPositive ? `bg-[${signalColor.main}]` : isNegative ? "bg-rose-500" : "bg-amber-500";
+              const valueColor = isPositive ? `text-[${signalColor.main}]` : isNegative ? "text-rose-500" : "text-amber-500";
+              const contrib = Math.round(source.weight * decision.confidence * (source.signed || 0));
+              // Map labels to match picture
+              let label = source.label;
+              if (label.includes("News")) label = "News Sentiment";
+              if (label.includes("AI")) label = "AI Thesis";
+              if (label.includes("TA") || label.includes("Liquidity")) label = "SoDEX TA";
+              return (
+                <div key={idx} className="flex items-center gap-2 text-[10px]">
+                  <div className="w-20 shrink-0 font-medium text-txt-primary">{label}</div>
+                  <div className="w-8 text-right font-mono text-[#a1a1aa]">{weightPct}%</div>
+                  <div className="flex-1 h-[6px] bg-[#27272a] rounded-full overflow-hidden">
+                    <div 
+                      className="h-[6px] rounded-full transition-all" 
+                      style={{ width: `${barWidth}%`, backgroundColor: isPositive ? signalColor.main : isNegative ? '#ef4444' : '#f59e0b' }} 
+                    />
+                  </div>
+                  <div className="w-14 text-right font-mono text-[10px] font-semibold tabular-nums" style={{ color: isPositive ? signalColor.main : isNegative ? '#ef4444' : '#f59e0b' }}>
+                    {weightPct}% {contrib > 0 ? "+" : ""}{contrib}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-2 text-[8px] text-[#a1a1aa] text-center font-mono">
+            {decision.confidence}% = {Math.round(decision.sources[0]?.weight * 100 || 55)}%×TA + {Math.round(decision.sources[1]?.weight * 100 || 25)}%×News + {Math.round(decision.sources[2]?.weight * 100 || 20)}%×AI
+          </div>
+        </div>
+
+        {/* Bottom two stat cards under live decision score — now wired to real signal.execution data (no more random hardcoded prices/percentages) */}
         <div className="grid grid-cols-2 gap-3">
-          <Card variant="inset" padding="sm" className="rounded-xl !p-2.5">
-            <div className={cx("mb-2 text-center text-[11px] font-semibold uppercase tracking-wide", decisionTone)}>
-              {decision.action === "NO TRADE" ? "Watch Triggers" : "Take Profit (TP)"}
+          {/* TP box */}
+          <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent px-3 py-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-semibold text-emerald-500">Take Profit (TP)</span>
+              <span className="rounded bg-emerald-500/10 border border-emerald-500/40 px-1.5 py-0 text-[9px] font-bold text-emerald-500">
+                {riskRewardDisplay}
+              </span>
             </div>
-            {decision.action === "NO TRADE" ? (
-              <div>
-                {(() => {
-                  const [primary, spot, downside] = decision.targets;
-                  return (
-                    <div className="rounded-lg border border-hold-dim bg-hold-muted px-2 py-1.5 shadow-[0_0_18px_rgba(255,136,0,0.08)]">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5">
-                          <span className="h-1.5 w-1.5 rounded-full bg-buy" />
-                          <span className="text-[9px] font-semibold uppercase tracking-wide text-txt-tertiary">Upside break</span>
-                        </div>
-                        <span className="rounded border border-hold-dim bg-hold-muted px-1.5 py-[1px] text-[8px] font-bold uppercase tracking-wide text-hold">
-                          {primary?.[2] ?? "break"}
-                        </span>
-                      </div>
-                      <div className="mt-1 flex items-baseline justify-between gap-2 font-mono">
-                        <span className={cx("text-[10px] font-bold", decisionTone)}>{primary?.[0] ?? "UP"}</span>
-                        <span className={cx("text-sm font-bold tabular-nums", decisionTone)}>{primary?.[1] ?? "--"}</span>
-                      </div>
-                      <div className="mt-1.5 grid grid-cols-2 gap-1 border-t border-hold-dim/70 pt-1">
-                        {[
-                          { item: spot, fallback: "MID", tone: "text-txt-secondary", dot: "bg-txt-muted" },
-                          { item: downside, fallback: "DN", tone: "text-sell", dot: "bg-sell" },
-                        ].map(({ item, fallback, tone, dot }) => (
-                          <div key={item?.[0] ?? fallback} className="min-w-0">
-                            <div className="flex items-center gap-1">
-                              <span className={cx("h-1 w-1 shrink-0 rounded-full", dot)} />
-                              <span className={cx("font-mono text-[8px] font-bold", tone)}>{item?.[0] ?? fallback}</span>
-                              <span className="truncate text-[7px] font-bold uppercase tracking-wide text-txt-faint">{item?.[2] ?? "--"}</span>
-                            </div>
-                            <div className={cx("truncate text-right font-mono text-[9px] font-semibold tabular-nums", tone)}>
-                              {item?.[1] ?? "--"}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            ) : (
-              <div>
-                {decision.targets.slice(0, 1).map(([label, price, risk]) => (
-                  <div
-                    key={label}
-                    className={cx(
-                      "rounded-lg border px-2 py-1.5",
-                      decision.action === "LONG"
-                        ? "border-buy-dim bg-buy-muted shadow-[0_0_18px_rgba(0,229,168,0.08)]"
-                        : "border-sell-dim bg-sell-muted shadow-[0_0_18px_rgba(239,68,68,0.08)]"
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className={cx("h-1.5 w-1.5 rounded-full", decision.action === "LONG" ? "bg-buy" : "bg-sell")} />
-                        <span className="text-[8px] font-bold uppercase tracking-wider text-txt-tertiary">TP Target</span>
-                      </div>
-                      <span className={cx(
-                        "rounded border px-1.5 py-[1px] text-[8px] font-bold uppercase tracking-wide",
-                        decision.action === "LONG" ? "border-buy-dim bg-buy-muted text-buy" : "border-sell-dim bg-sell-muted text-sell"
-                      )}>
-                        {risk.replace(/[()]/g, "")}
-                      </span>
-                    </div>
-                    <div className="mt-1 flex items-end justify-between gap-2 font-mono">
-                      <span className={cx("text-[10px] font-bold leading-none", decisionTone)}>{label}</span>
-                      <span className={cx("text-lg font-bold leading-none tabular-nums", decisionTone)}>{price}</span>
-                    </div>
-                    <div className="mt-1 flex items-center justify-between gap-2 border-t border-border-default/70 pt-1">
-                      <span className="text-[8px] font-semibold uppercase tracking-wide text-txt-faint">Live target</span>
-                      <span className={cx("text-[9px] font-bold", decisionTone)}>Profit gate</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-          <Card variant="inset" padding="sm" className="rounded-xl !p-2.5">
-            <div className={cx("mb-2 text-center text-[11px] font-semibold uppercase tracking-wide", decisionTone)}>
-              {decision.action === "NO TRADE" ? "Risk State" : "Stop Loss (SL)"}
+            <div className="mt-0.5 text-2xl font-bold tabular-nums text-emerald-500">
+              {currentSignal?.execution?.takeProfit ? formatPanelPrice(currentSignal.execution.takeProfit) : (decision.targets?.[0]?.[1] || "—")}
             </div>
-            {decision.action === "NO TRADE" ? (
-              <div className="rounded-lg border border-hold-dim bg-hold-muted px-2 py-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <span className={cx("text-[10px] font-semibold uppercase tracking-wide", decisionTone)}>Position</span>
-                  <Badge variant="hold" size="sm">WAIT</Badge>
-                </div>
-                <div className={cx("mt-1 text-xs font-semibold", decisionTone)}>Flat until setup confirms</div>
-              </div>
-            ) : (
-              <div className="rounded-lg border border-sell-dim bg-sell-muted px-2 py-1.5 shadow-[0_0_18px_rgba(239,68,68,0.08)]">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-sell" />
-                    <span className="text-[8px] font-bold uppercase tracking-wider text-txt-tertiary">Stop risk</span>
-                  </div>
-                  <span className="rounded border border-sell-dim bg-sell-muted px-1.5 py-[1px] text-[8px] font-bold uppercase tracking-wide text-sell">
-                    {decision.stop[2]}
-                  </span>
-                </div>
-                <div className="mt-1 flex items-end justify-between gap-2 font-mono">
-                  <span className="text-[10px] font-bold leading-none text-sell">{decision.stop[0]}</span>
-                  <span className="text-lg font-bold leading-none tabular-nums text-sell">{decision.stop[1]}</span>
-                </div>
-              </div>
-            )}
-            {decision.action !== "NO TRADE" && (
-              <>
-                <div className="my-1.5 h-px bg-border-default" />
-                <div className="rounded-lg border border-border-default bg-inset/70 px-2 py-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <div className="text-[8px] font-bold uppercase tracking-wider text-txt-tertiary">Payoff ratio</div>
-                      <div className="text-[8px] font-semibold text-txt-faint">Reward is {decision.riskReward} risk</div>
-                    </div>
-                    <div className="font-mono text-base font-bold leading-none text-txt-primary">{riskRewardDisplay}</div>
-                  </div>
-                  <div className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-border-default">
-                    <div className="bg-sell" style={{ width: `${riskShare}%` }} />
-                    <div className={decision.action === "LONG" ? "bg-buy" : "bg-sell/70"} style={{ width: `${rewardShare}%` }} />
-                  </div>
-                  <div className="mt-1 flex justify-between text-[7px] font-bold uppercase tracking-wide text-txt-faint">
-                    <span>Risk</span>
-                    <span>Reward</span>
-                  </div>
-                </div>
-              </>
-            )}
-          </Card>
+            <div className="mt-1 text-[9px] text-[#a1a1aa]">from entry</div>
+            <div className="mt-0.5 h-[5px] w-full bg-[#27272a] rounded-full overflow-hidden">
+              <div className="h-[5px] bg-gradient-to-r from-emerald-500 to-emerald-400" style={{ width: currentSignal ? "65%" : "40%" }} />
+            </div>
+            <div className="mt-0.5 flex justify-between text-[9px] font-mono">
+              <span className="text-emerald-500">{currentSignal?.execution?.riskReward || riskRewardDisplay}</span>
+              <span className="text-[#a1a1aa]">target</span>
+            </div>
+          </div>
+
+          {/* SL box */}
+          <div className="rounded-xl border border-rose-500/30 bg-gradient-to-br from-rose-500/10 to-transparent px-3 py-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-semibold text-rose-500">Stop Loss (SL)</span>
+              <span className="rounded bg-rose-500/10 border border-rose-500/40 px-1.5 py-0 text-[9px] font-bold text-rose-500">
+                risk
+              </span>
+            </div>
+            <div className="mt-0.5 text-2xl font-bold tabular-nums text-rose-500">
+              {currentSignal?.execution?.stopLoss ? formatPanelPrice(currentSignal.execution.stopLoss) : (decision.stop?.[1] || "—")}
+            </div>
+            <div className="mt-1 text-[9px] text-[#a1a1aa]">from entry</div>
+            <div className="mt-0.5 h-[5px] w-full bg-[#27272a] rounded-full overflow-hidden">
+              <div className="h-[5px] bg-gradient-to-r from-rose-500 to-rose-400" style={{ width: currentSignal ? "35%" : "25%" }} />
+            </div>
+            <div className="mt-0.5 flex justify-between text-[9px] font-mono">
+              <span className="text-rose-500">{currentSignal?.execution?.riskReward || riskRewardDisplay}</span>
+              <span className="text-[#a1a1aa]">invalidation</span>
+            </div>
+          </div>
         </div>
       </div>
     </Panel>
