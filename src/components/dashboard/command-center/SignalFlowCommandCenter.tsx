@@ -334,7 +334,7 @@ function buildStop(action: DecisionAction, entry: number, signal: Signal | null)
   return ["SL", formatPanelPrice(signal?.execution.stopLoss ?? entry * (1 + dir * 0.01)), "risk"];
 }
 
-function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null }) {
+function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsResponse | null; onGenerate?: () => void }) {
   const d = useDashboard();
   const currentSignal = d.liveSignals.find((s) => normalizePair(s.pair) === normalizePair(pair)) ?? null;
   const aiSignal = d.aiSignal && normalizePair(d.aiSignal.pair) === normalizePair(pair) ? d.aiSignal : null;
@@ -555,11 +555,11 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
             <SpeedometerGauge value={decision.confidence} size="lg" showLabel={false} sweeping={d.analyzing} color={signalColor.gauge} />
           </div>
 
-          {/* Persen, button Generate, dan button Execute Setup diturunin 10px + 3px lagi. Buttons -translate-y-[7px]. Persen diturunin lagi 1.5px (translate-y-[1.5px]). Gauge diturunin 5px. Frame/card inner gauge+buttons udah cocok (jangan ubah lagi). Header dihapus. */}
+          {/* Persen, button Generate, dan button Execute Setup diturunin 10px + 3px lagi. Buttons -translate-y-[7px]. Persen diturunin lagi 1.5px (translate-y-[1.5px]). Gauge diturunin 5px. Frame/card inner gauge+buttons udah cocok (jangan ubah lagi). Header dihapus. Success CTA ditambahkan di modal. */}
           <div className="mt-[-17px] flex items-end justify-between">
             <div className="self-end -translate-y-[7px]">
               <button
-                onClick={() => openGenerateModal(coin)}
+                onClick={onGenerate}
                 disabled={d.analyzing}
                 className="flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold hover:bg-opacity-80 disabled:opacity-60"
                 style={{ 
@@ -2111,6 +2111,7 @@ export default function SignalFlowCommandCenter() {
     ? d.selectedPair.replace(/^v/, "").replace(/_vUSDC$/, "")
     : d.selectedPair.split("/")[0];
   const pair = `${pairBase}/USDC`;
+  const coin = pairBase;  // for passing to modal
 
   useEffect(() => {
     fetch("/api/news?pageSize=8")
@@ -2144,7 +2145,7 @@ export default function SignalFlowCommandCenter() {
       </div>
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,2.68fr)_minmax(280px,1.3fr)_minmax(280px,1.32fr)]">
         <MarketCanvas pair={pair} />
-        <DecisionPanel pair={pair} news={news} />
+        <DecisionPanel pair={pair} news={news} onGenerate={() => openGenerateModal(coin)} />
         <NewsSentimentPanel />
       </div>
       <MarketStatsBar />

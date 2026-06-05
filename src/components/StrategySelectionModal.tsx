@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useDashboard } from "@/lib/dashboard-context";
 import type { StrategyEngineName } from "@/lib/strategy/config";
 import { loadStrategyConfig, serializeStrategyConfig } from "@/lib/strategy/config";
+import { toast } from "sonner";
 
 interface GenerationSession {
   id: string;
@@ -130,6 +131,14 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
       });
 
       onGenerateComplete?.(strategy, result);
+
+      toast.success(`Signal ${strategy} berhasil digenerate`, {
+        description: "Signal sudah berhasil digenerate. Silahkan kembali ke panel decision live score untuk melihat hasilnya.",
+        action: {
+          label: "Tutup Modal",
+          onClick: onClose,
+        },
+      });
     } catch (err: any) {
       setSessions((prev) => {
         const sess = prev[sessionId];
@@ -161,9 +170,15 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
   if (!open) return null;
 
   if (minimized) {
+    const hasSuccess = Object.values(sessions).some(s => s.status === "success");
+    const hasRunning = Object.values(sessions).some(s => s.status === "running");
     return (
       <div className="fixed bottom-4 right-4 z-[100] bg-[#0B1020] border border-border-default rounded-lg px-3 py-2 text-xs shadow-lg flex items-center gap-2">
-        <span className="text-txt-secondary">Generating signals...</span>
+        {hasSuccess && !hasRunning ? (
+          <span className="text-emerald-500">✅ Generation complete</span>
+        ) : (
+          <span className="text-txt-secondary">Generating signals...</span>
+        )}
         <button onClick={toggleMinimize} className="text-accent hover:underline">Expand</button>
         <button onClick={onClose} className="text-txt-muted hover:text-white">×</button>
       </div>
@@ -172,7 +187,7 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70">
-      <div className="w-full max-w-2xl rounded-xl border border-border-default bg-[#0B1020] p-4 text-sm">
+      <div className="w-full max-w-2xl rounded-xl border border-border-default bg-[#0B1020] p-4 text-sm mt-[-800px]">
         <div className="flex items-center justify-between mb-3">
           <div>
             <div className="font-semibold text-lg">Generate Signal — Choose Strategy</div>
@@ -242,6 +257,23 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
                 {sess.status === "running" && <div className="text-accent animate-pulse">...</div>}
               </div>
               {sess.error && <div className="text-rose-500 text-xs mt-1">Error: {sess.error}</div>}
+
+              {sess.status === "success" && (
+                <div className="mt-2 p-3 bg-emerald-500/10 border border-emerald-500/40 rounded-lg">
+                  <div className="flex items-center gap-2 text-emerald-500 font-semibold text-sm">
+                    ✅ Signal berhasil digenerate!
+                  </div>
+                  <div className="text-[11px] text-txt-secondary mt-1 mb-2">
+                    Signal sudah berhasil digenerate. Silahkan kembali ke panel decision live score untuk melihat hasilnya.
+                  </div>
+                  <button
+                    onClick={onClose}
+                    className="w-full rounded bg-emerald-500 hover:bg-emerald-600 text-black py-1.5 text-sm font-medium transition-colors"
+                  >
+                    Kembali ke Live Decision Score
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -258,7 +290,7 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
         </div>
 
         <div className="mt-3 text-[10px] text-txt-muted">
-          Each strategy runs its own screening pipeline. Logs are streamed for transparency.
+          Setiap strategi menjalankan pipeline screening sendiri. Setelah berhasil, klik tombol di banner sukses untuk kembali ke panel utama.
         </div>
       </div>
     </div>
