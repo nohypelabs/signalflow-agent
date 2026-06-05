@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useWallet } from "@/lib/hooks/useWallet";
 import { useSwitchChain } from "wagmi";
 import { valuechain } from "@/lib/wallet-config";
@@ -20,17 +20,12 @@ export default function WalletButton() {
     walletConnectConfigured,
   } = useWallet();
   const { switchChainAsync } = useSwitchChain();
-  const [mounted, setMounted] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const correctChain = chainId === valuechain.id;
-  const walletConnectMissing = mounted && !hasInjectedProvider && !walletConnectConfigured;
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const walletConnectMissing = !hasInjectedProvider && !walletConnectConfigured;
 
   const handleConnect = async () => {
     setConnecting(true);

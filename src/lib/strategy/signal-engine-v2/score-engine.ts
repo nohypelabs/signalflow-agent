@@ -554,7 +554,7 @@ function scoreTreasuryCompat(
   if (purchaseHistory && purchaseHistory.length > 0) {
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     const recent = purchaseHistory.filter(
-      (p) => new Date(p.date).getTime() > thirtyDaysAgo && p.btc_acq > 0,
+      (p) => new Date(p.date).getTime() > thirtyDaysAgo && Number(p.btc_acq) > 0,
     );
     if (recent.length > 0) {
       baseScore = Math.min(100, baseScore + Math.min(20, recent.length * 4));

@@ -101,17 +101,19 @@ export async function GET(req: NextRequest) {
   const limited = checkRateLimit(req, "orders");
   if (limited) return limited;
 
-  // GET returns perp positions (read-only, no auth required)
+  // GET returns open orders / positions list as plain array to match fetchOrders() contract.
+  // (Currently falls back to perps positions when address provided; real open orders fetch
+  // can be added later by calling the authenticated /trade/orders list endpoint.)
   const address = req.nextUrl.searchParams.get("address")?.trim();
   if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
-    return jsonNoCache({ orders: [], source: "SoDEX Perps" });
+    return jsonNoCache([]);
   }
 
   try {
     const { getPerpsPositions } = await import("@/lib/sodex-perps");
     const data = await getPerpsPositions(address);
-    return jsonNoCache({ orders: data.positions ?? [], source: "SoDEX Perps" });
+    return jsonNoCache(data.positions ?? []);
   } catch {
-    return jsonNoCache({ orders: [], source: "SoDEX Perps" });
+    return jsonNoCache([]);
   }
 }

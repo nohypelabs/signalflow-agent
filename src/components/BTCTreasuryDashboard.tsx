@@ -40,7 +40,16 @@ export default function BTCTreasuryDashboard() {
         if (cancelled) return;
         // The signals API includes BTC treasury data
         setTreasuries(d.btcTreasuries ?? []);
-        setHistory(d.purchaseHistory ?? []);
+        // Normalize purchase history defensively (external API can return numeric strings)
+        const ph = (d.purchaseHistory ?? []).map((p: any) => ({
+          date: String(p?.date ?? ""),
+          ticker: String(p?.ticker ?? ""),
+          btc_holding: Number(p?.btc_holding) || 0,
+          btc_acq: Number(p?.btc_acq) || 0,
+          acq_cost: Number(p?.acq_cost) || 0,
+          avg_btc_cost: Number(p?.avg_btc_cost) || 0,
+        }));
+        setHistory(ph);
       })
       .catch((e) => {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed");
@@ -76,14 +85,14 @@ export default function BTCTreasuryDashboard() {
     );
   }
 
-  // Aggregate stats
-  const totalBtc = history.reduce((s, h) => s + h.btc_holding, 0);
-  const totalCost = history.reduce((s, h) => s + h.acq_cost, 0);
+  // Aggregate stats (defensive against non-numeric external data)
+  const totalBtc = history.reduce((s, h) => s + (Number(h.btc_holding) || 0), 0);
+  const totalCost = history.reduce((s, h) => s + (Number(h.acq_cost) || 0), 0);
   const avgCost = totalBtc > 0 ? totalCost / totalBtc : 0;
 
   // Recent purchases
   const recentPurchases = history
-    .filter((h) => h.btc_acq > 0)
+    .filter((h) => (Number(h.btc_acq) || 0) > 0)
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 10);
 
@@ -168,10 +177,10 @@ export default function BTCTreasuryDashboard() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-[10px] font-mono text-[#00ff88]">
-                      +{p.btc_acq.toFixed(1)} BTC
+                      +{(Number(p.btc_acq) || 0).toFixed(1)} BTC
                     </span>
                     <span className="text-[10px] font-mono text-txt-faint">
-                      ${(p.acq_cost / 1e6).toFixed(1)}M
+                      ${((Number(p.acq_cost) || 0) / 1e6).toFixed(1)}M
                     </span>
                   </div>
                 </div>

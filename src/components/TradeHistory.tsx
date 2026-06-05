@@ -52,9 +52,10 @@ export default function TradeHistory({
   const tickerMap = new Map<string, SoDEXTicker>();
   if (tickers) tickers.forEach((t) => tickerMap.set(t.symbol, t));
 
-  const openOrders = orders.filter((o) => o.status === "NEW" || o.status === "PARTIALLY_FILLED");
-  const filledOrders = orders.filter((o) => o.status === "FILLED");
-  const historyOrders = orders.filter((o) => o.status !== "NEW" && o.status !== "PARTIALLY_FILLED");
+  const safeOrders = Array.isArray(orders) ? orders : [];
+  const openOrders = safeOrders.filter((o) => o.status === "NEW" || o.status === "PARTIALLY_FILLED");
+  const filledOrders = safeOrders.filter((o) => o.status === "FILLED");
+  const historyOrders = safeOrders.filter((o) => o.status !== "NEW" && o.status !== "PARTIALLY_FILLED");
   const closedPaperTrades = paperTrades
     .filter((trade) => trade.status !== "OPEN")
     .sort((a, b) => (b.closedAt ?? 0) - (a.closedAt ?? 0));
@@ -86,7 +87,7 @@ export default function TradeHistory({
               </div>
               <div className="min-w-0 pb-1">
                 <div className="text-sm font-semibold text-txt-primary">closed paper P&L</div>
-                <div className="truncate text-[11px] text-txt-tertiary">{closedPaperTrades.length} closed paper trades · {orders.length} live orders</div>
+                <div className="truncate text-[11px] text-txt-tertiary">{closedPaperTrades.length} closed paper trades · {safeOrders.length} live orders</div>
               </div>
             </div>
           </div>

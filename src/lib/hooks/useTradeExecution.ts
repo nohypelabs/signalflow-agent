@@ -16,9 +16,15 @@ export function useTradeExecution(autoRefresh = false) {
     setError(null);
     try {
       const data = await fetchOrders();
-      setOrders(data);
+      // External API can return [] , array of orders, or wrapped {orders: []} during transitions.
+      // Always coerce to array to prevent .filter crashes (see hydration + perps migration).
+      const list: SoDEXOrder[] = Array.isArray(data)
+        ? data
+        : (data as any)?.orders ?? [];
+      setOrders(list);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch orders");
+      setOrders([]); // keep state as array on error
     } finally {
       setLoading(false);
     }
@@ -35,7 +41,7 @@ export function useTradeExecution(autoRefresh = false) {
 
   const cancel = useCallback(async (orderId: number) => {
     await apiCancelOrder(orderId);
-    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    setOrders((prev) => (Array.isArray(prev) ? prev.filter((o) => o.id !== orderId) : []));
   }, []);
 
   useEffect(() => {
@@ -46,9 +52,9 @@ export function useTradeExecution(autoRefresh = false) {
     }
   }, [autoRefresh, refresh]);
 
-  const openOrders = orders.filter(
-    (o) => o.status === "NEW" || o.status === "PARTIALLY_FILLED",
-  );
+  const openOrders = Array.isArray(orders)
+    ? orders.filter((o) => o.status === "NEW" || o.status === "PARTIALLY_FILLED")
+    : [];
 
   return { orders, openOrders, loading, error, refresh, placeOrder, cancel };
 }

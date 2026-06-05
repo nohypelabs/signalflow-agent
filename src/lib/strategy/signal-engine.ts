@@ -75,12 +75,12 @@ export function scoreTreasury(
     // Analyze recent purchases (last 30 days)
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     const recentPurchases = purchaseHistory.filter(
-      (p) => new Date(p.date).getTime() > thirtyDaysAgo && p.btc_acq > 0,
+      (p) => new Date(p.date).getTime() > thirtyDaysAgo && Number(p.btc_acq) > 0,
     );
 
     if (recentPurchases.length > 0) {
-      const totalAcquired = recentPurchases.reduce((s, p) => s + p.btc_acq, 0);
-      const totalCost = recentPurchases.reduce((s, p) => s + p.acq_cost, 0);
+      const totalAcquired = recentPurchases.reduce((s, p) => s + Number(p.btc_acq), 0);
+      const totalCost = recentPurchases.reduce((s, p) => s + Number(p.acq_cost), 0);
       // Boost score based on recent accumulation
       baseScore = Math.min(100, baseScore + Math.min(20, recentPurchases.length * 4));
       recentActivity = ` Recent: ${recentPurchases.length} purchases (${totalAcquired.toFixed(0)} BTC, $${(totalCost / 1e6).toFixed(0)}M).`;

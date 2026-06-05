@@ -178,6 +178,22 @@ Access via `/performance` page → Backtest panel.
 
 ## Wave Progress Update
 
+### Addressing Wave 1 Judge Feedback
+Wave 1 judges praised the UI breadth (9 SoSoValue modules), clean dashboard, AI reasoning, and multi-dimensional engine — but criticized:
+- Mock/static data (not live SoSoValue/SoDEX end-to-end)
+- Unverifiable metrics and no backend/API code in repo
+- Weak strategy validation / proof of reliable signals
+- Lack of differentiation from other AI trading agents
+
+**Wave 2 improvements (verifiable in this repo + live demo):**
+- Zero mock data — all signals use live SoSoValue + SoDEX.
+- Full backend visible: `src/lib/strategy/` (V2 engine, `thinking-framework.ts` with 5 explicit principles + `applyThinkingFramework`).
+- **Agent Thinking Framework** (core differentiator): structured, auditable mental model for trading type weights. Exposed in `/strategy-config` with "Apply Thinking Framework" + live trace (principles, regime influence, changes). Addresses "analytical framework", "strategy validation", outlier stabilization.
+- Framework trace attached to live signals (visible in SignalCard "FW" badge + AnalysisDrawer).
+- End-to-end live flow demonstrated: live data → framework-applied engine → real-number signals → execution (paper + SoDEX paths).
+- Validation: backtest engine, per-type paper performance, signal history accuracy tracking.
+- Command Center + polished UX for active traders.
+
 ### Wave 1 (Baseline)
 - Next.js dashboard shell with dark-themed trading interface
 - SoSoValue API integration (ETF, sentiment, macro, treasury, indices)

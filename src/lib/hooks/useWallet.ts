@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import type { Connector } from "wagmi";
 
@@ -24,7 +25,13 @@ export function useWallet() {
   const { connectAsync, connectors } = useConnect();
   const { disconnectAsync } = useDisconnect();
 
-  const hasInjectedProvider = typeof window !== "undefined" && "ethereum" in window;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isConnectedSafe = mounted ? isConnected : false;
+  const hasInjectedProvider = mounted && typeof window !== "undefined" && "ethereum" in window;
   const walletConnectConfigured = Boolean(walletConnectProjectId);
 
   const getConnector = (preference?: WalletConnectionPreference) => {
@@ -99,7 +106,7 @@ export function useWallet() {
   return {
     address,
     shortAddress,
-    isConnected,
+    isConnected: isConnectedSafe,
     chainId,
     connect,
     disconnect,

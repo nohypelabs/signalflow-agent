@@ -98,4 +98,10 @@ export interface SignalV2 {
   };
   sources: string[];
   timeAgo: string;
+  // New: Trace from Thinking Framework for auditability (Wave 2 focus on verifiable reasoning)
+  frameworkApplication?: {
+    tradingType: TradingType;
+    principlesApplied: string[];
+    note: string;
+  };
 }

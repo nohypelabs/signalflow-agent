@@ -72,13 +72,14 @@ export default function ChartDrawingToolbar({
   pendingFirstClick,
 }: Props) {
   return (
-    <div className="absolute top-2 left-12 z-20 flex items-center gap-0.5 bg-[#0B1020]/90 backdrop-blur-sm border border-border-default rounded-lg px-1 py-0.5 shadow-lg">
+    <div className="absolute top-2 left-2 z-30 flex flex-col items-center gap-0.5 bg-[#0B1020]/95 backdrop-blur border border-border-default rounded-md p-0.5 shadow-xl">
+      <div className="text-[7px] text-txt-faint font-mono tracking-wider mb-0.5 select-none">DRAW</div>
       {tools.map((t) => (
         <button
           key={t.id}
           onClick={() => onSelectTool(t.id)}
           title={t.label}
-          className={`relative p-1.5 rounded transition-all cursor-pointer ${
+          className={`relative p-1 rounded transition-all cursor-pointer ${
             activeTool === t.id
               ? "bg-accent/15 text-accent border border-accent/30"
               : "text-txt-dim hover:text-txt-secondary hover:bg-elevated/60 border border-transparent"
@@ -86,25 +87,25 @@ export default function ChartDrawingToolbar({
         >
           {t.icon}
           {activeTool === t.id && pendingFirstClick && (
-            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+            <span className="absolute -top-0.5 -right-0.5 w-1 h-1 rounded-full bg-accent animate-pulse" />
           )}
         </button>
       ))}
 
       {/* Separator */}
-      <div className="w-px h-5 bg-border-default mx-0.5" />
+      <div className="h-px w-5 bg-border-default my-0.5" />
 
       {/* Hide toggle */}
       <button
         onClick={onToggleHidden}
         title={hidden ? "Show drawings" : "Hide drawings"}
-        className={`p-1.5 rounded transition-all cursor-pointer ${
+        className={`p-1 rounded transition-all cursor-pointer ${
           hidden
             ? "text-hold bg-hold/10 border border-hold/20"
             : "text-txt-dim hover:text-txt-secondary hover:bg-elevated/60 border border-transparent"
         }`}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           {hidden ? (
             <><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" /><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" /><line x1="1" y1="1" x2="23" y2="23" /></>
           ) : (
@@ -118,18 +119,18 @@ export default function ChartDrawingToolbar({
         <button
           onClick={onClear}
           title={`Clear ${drawingCount} drawing${drawingCount !== 1 ? "s" : ""}`}
-          className="p-1.5 rounded transition-all cursor-pointer text-txt-dim hover:text-sell hover:bg-sell/10 border border-transparent"
+          className="p-1 rounded transition-all cursor-pointer text-txt-dim hover:text-sell hover:bg-sell/10 border border-transparent"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
           </svg>
         </button>
       )}
 
-      {/* Pending instruction */}
+      {/* Pending instruction - below the toolbar */}
       {pendingFirstClick && (
-        <span className="text-[9px] text-accent ml-1 animate-pulse whitespace-nowrap">
-          Click 2nd point
+        <span className="text-[8px] text-accent mt-0.5 animate-pulse whitespace-nowrap text-center leading-none">
+          2nd pt
         </span>
       )}
     </div>

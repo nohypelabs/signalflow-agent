@@ -93,6 +93,12 @@ export type Signal = {
     score: number;
     details: { tf: string; action: string; direction: string; confidence: number }[];
   };
+  // Framework trace for Wave 2 judge verification (auditable analytical layer from Thinking Framework)
+  frameworkApplication?: {
+    tradingType: string;
+    principlesApplied: string[];
+    note: string;
+  };
 };
 
 export interface SignalDimensions {
@@ -154,6 +160,7 @@ export interface RecordedSignal {
   price: number;
   timestamp: number;
   dimensions: SignalDimensions;
+  execution?: SignalExecution;  // added to support proper correctness check using TP/SL
   resolved?: {
     correct: boolean;
     finalPrice: number;

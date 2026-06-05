@@ -36,9 +36,35 @@ function save(history: RecordedSignal[]) {
 }
 
 function isSignalCorrect(signal: RecordedSignal, currentPrice: number): boolean {
+  const exec = signal.execution;
+
+  if (exec) {
+    const { entry, takeProfit, stopLoss } = exec;
+
+    if (signal.action === "LONG") {
+      // Correct if the plan's take profit target was reached (or better) by resolution time.
+      // This validates the signal's specific prediction rather than just any upward move.
+      if (takeProfit != null) {
+        return currentPrice >= takeProfit;
+      }
+      // Fallback: at least moved in the right direction from entry
+      return currentPrice > entry;
+    }
+
+    if (signal.action === "SHORT") {
+      if (takeProfit != null) {
+        return currentPrice <= takeProfit;
+      }
+      return currentPrice < entry;
+    }
+
+    // HOLD: price didn't move much from entry
+    return Math.abs(currentPrice - entry) / entry <= 0.02;
+  }
+
+  // Legacy fallback (for old history entries without execution)
   if (signal.action === "LONG") return currentPrice > signal.price;
   if (signal.action === "SHORT") return currentPrice < signal.price;
-  // HOLD — correct if price stays within 2%
   return Math.abs(currentPrice - signal.price) / signal.price <= 0.02;
 }
 
@@ -332,6 +358,7 @@ export function useSignalHistory() {
             treasury: signal.dimensions.treasury,
           }
         : { etfFlow: 0, sentiment: 0, macro: 0, momentum: 0, treasury: 0 },
+      execution: signal.execution,  // store the full plan for accurate correctness evaluation
     };
 
     setHistory((prev) => {

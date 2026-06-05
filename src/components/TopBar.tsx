@@ -14,7 +14,6 @@ import {
   BarChartIcon,
   BellIcon,
   ChartIcon,
-  DocsIcon,
   DocumentIcon,
   HistoryIcon,
   HomeIcon,
@@ -66,7 +65,6 @@ const navGroupLabels: Record<keyof typeof navGroups, string> = {
 
 const systemItems = [
   { href: "/settings", label: "Settings", Icon: SettingsIcon, description: "Preferences & configuration" },
-  { href: "/docs", label: "Docs", Icon: DocsIcon, description: "In-app documentation" },
 ];
 
 const directNavItems = [
@@ -246,7 +244,7 @@ export default function TopBar({
 
           <div className="hidden sm:block h-5 w-px bg-border-default" />
 
-          <nav className="flex items-center gap-1 rounded-xl border border-border-default bg-elevated/20 px-1.5 py-1 lg:ml-0 ml-[-15%]">
+          <nav className="flex items-center gap-1 rounded-xl border border-border-default bg-elevated/20 px-1.5 py-0.5 lg:ml-0 ml-[-15%]">
             {directNavItems.map(({ href, label, Icon }) => {
               const itemActive = pathname === href;
               return (
@@ -254,7 +252,7 @@ export default function TopBar({
                   key={href}
                   type="button"
                   onClick={() => navigate(href)}
-                  className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors ${
+                  className={`flex h-7 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors ${
                     itemActive
                       ? "border-accent/35 bg-accent/10 text-accent"
                       : "border-transparent text-txt-secondary hover:border-accent/25 hover:bg-accent/10 hover:text-txt-primary"
@@ -310,7 +308,10 @@ export default function TopBar({
               {tickerCount} PAIRS
             </span>
           )}
-          <span className="hidden lg:inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold text-txt-muted">
+          <span
+            className="hidden lg:inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold text-txt-muted"
+            suppressHydrationWarning
+          >
             {timeStr}
             <span className="text-txt-dim">UTC+7</span>
             <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />

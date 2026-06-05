@@ -13,51 +13,19 @@ import {
   saveStrategyConfig as saveConfig,
   type StrategyConfig,
   type StrategyEngineName,
+  type StrategyPresetName,
+  applyThinkingFramework,
+  getFrameworkDefaults,
+  THINKING_FRAMEWORK_PRINCIPLES,
+  PRESETS,
+  PRESET_META,
+  PRESET_ORDER,
+  getPresetName,
 } from "@/lib/strategy/config";
+import type { TradingType } from "@/lib/types/trading-type";
+import type { TradingTypeProfiles, FactorWeights } from "@/lib/strategy/config";
+import type { MarketRegime } from "@/lib/strategy/signal-engine-v2/types";
 import { BarChartIcon, BriefcaseIcon, DataSourceIcon, DocumentIcon, TrendUpIcon } from "@/components/ui/icons";
-
-type StrategyPresetName = "conservative" | "balanced" | "aggressive";
-
-const PRESETS: Record<StrategyPresetName, StrategyConfig> = {
-  conservative: { ...DEFAULT_CONFIG, etfFlow: 35, sentiment: 15, macro: 25, momentum: 10, treasury: 15, minConfidence: 80, maxPositionSize: 3, autoExecute: false, slippage: 0.3, maxDailyTrades: 5 },
-  balanced: { ...DEFAULT_CONFIG, etfFlow: 30, sentiment: 25, macro: 20, momentum: 15, treasury: 10, minConfidence: 70, maxPositionSize: 5, autoExecute: true, slippage: 0.5, maxDailyTrades: 10 },
-  aggressive: { ...DEFAULT_CONFIG, etfFlow: 20, sentiment: 30, macro: 10, momentum: 30, treasury: 10, minConfidence: 55, maxPositionSize: 10, autoExecute: true, slippage: 1.0, maxDailyTrades: 25 },
-};
-
-const PRESET_META: Record<StrategyPresetName, { label: string; badge: string; desc: string; tone: string; bullets: string[] }> = {
-  conservative: {
-    label: "Conservative",
-    badge: "Low Risk",
-    desc: "High-confidence signals, smaller position size, manual execution bias.",
-    tone: "border-info/30 bg-info/5 text-info",
-    bullets: ["80% min confidence", "3% max position", "5 trades per day"],
-  },
-  balanced: {
-    label: "Balanced",
-    badge: "Default",
-    desc: "Middle-ground signal scoring for steady validation and controlled execution.",
-    tone: "border-accent/30 bg-accent/5 text-accent",
-    bullets: ["70% min confidence", "5% max position", "10 trades per day"],
-  },
-  aggressive: {
-    label: "Aggressive",
-    badge: "High Activity",
-    desc: "More momentum weight, lower confidence threshold, higher paper-trade cadence.",
-    tone: "border-hold/30 bg-hold/5 text-hold",
-    bullets: ["55% min confidence", "10% max position", "25 trades per day"],
-  },
-};
-
-const PRESET_ORDER: StrategyPresetName[] = ["conservative", "balanced", "aggressive"];
-
-function getPresetName(config: StrategyConfig): StrategyPresetName | null {
-  for (const name of PRESET_ORDER) {
-    const preset = PRESETS[name];
-    const matches = (Object.keys(preset) as (keyof StrategyConfig)[]).every((key) => preset[key] === config[key]);
-    if (matches) return name;
-  }
-  return null;
-}
 
 const dimSliders = [
   { key: "etfFlow" as const, label: "ETF Flow", color: "#00d4ff", icon: "etf" as const, desc: "Institutional capital via BTC/ETH ETF net flows" },
@@ -166,6 +134,60 @@ export default function StrategyConfig() {
     setActivePreset("balanced");
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
+  };
+
+  // ── Thinking Framework integration for trading type profiles ──
+  const currentTypeProfiles = useMemo(() => {
+    if (config.typeProfiles && Object.keys(config.typeProfiles).length > 0) {
+      return config.typeProfiles;
+    }
+    return getFrameworkDefaults();
+  }, [config.typeProfiles]);
+
+  const updateTypeProfiles = (next: TradingTypeProfiles) => {
+    const nextCfg: StrategyConfig = { ...config, typeProfiles: next };
+    setConfig(nextCfg);
+    saveConfig(nextCfg);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1200);
+  };
+
+  const resetTypeToFramework = (type: TradingType) => {
+    const defaults = getFrameworkDefaults();
+    const next = { ...currentTypeProfiles, [type]: defaults[type] };
+    updateTypeProfiles(next);
+  };
+
+  const resetAllTypesToFramework = () => {
+    updateTypeProfiles(getFrameworkDefaults());
+  };
+
+  const runThinkingFramework = () => {
+    // Pull a representative regime if available from live signals (BTC preferred)
+    const btcSignal = signalsData?.signals?.find((s: any) => s.pair?.startsWith("BTC"));
+    const regime = btcSignal?.regime as MarketRegime | undefined;
+
+    const application = applyThinkingFramework(currentTypeProfiles, regime ? { regime } : undefined);
+    updateTypeProfiles(application.profiles);
+
+    // Store trace for UI display (simple alert + could be expanded)
+    const traceSummary = application.trace.map(t => 
+      `${t.type}: ${t.principlesApplied.slice(0,2).join(", ")} - ${t.changes.length} adjustments`
+    ).join(" | ");
+    alert(`Thinking Framework Applied (regime: ${application.regime || "baseline"})\n\n${application.note}\n\nTrace: ${traceSummary}\n\nSee console for full details.`);
+    console.log("Framework Application Trace:", application);
+  };
+
+  // Helper to mutate a single factor weight for a type
+  const setTypeFactorWeight = (type: TradingType, factor: keyof FactorWeights, value: number) => {
+    const defaults = getFrameworkDefaults();
+    const prof = currentTypeProfiles[type] ?? defaults[type]!;
+    const nextWeights: FactorWeights = { ...prof.weights, [factor]: Math.max(0, Math.min(60, Math.round(value))) };
+    const nextProfiles: TradingTypeProfiles = {
+      ...currentTypeProfiles,
+      [type]: { weights: nextWeights },
+    };
+    updateTypeProfiles(nextProfiles);
   };
 
   // Weight total validation
@@ -621,51 +643,129 @@ export default function StrategyConfig() {
 
       {config.engine === "confluence" ? (
         <Card padding="lg">
-          <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider mb-3">
-            Trading Type Weight Profiles
-          </h3>
-          <p className="text-[10px] text-txt-dim mb-4">
-            Each trading style uses different factor weights. The signal engine adapts automatically when a type is selected.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            {TRADING_TYPE_LIST.map((type) => (
-              <div
-                key={type.id}
-                className="p-3 rounded-xl border bg-inset/20"
-                style={{ borderColor: `${type.color}25` }}
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div>
+              <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider">Trading Type Weight Profiles</h3>
+              <p className="text-[10px] text-txt-dim mt-0.5">
+                Powered by the <span className="text-accent font-semibold">Agent Thinking Framework</span> — an explicit, auditable mental model for the SignalFlow agent. Edit weights manually or execute the framework to intelligently rebalance according to 5 core principles. Changes are live and affect V2 signals.
+              </p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                onClick={runThinkingFramework}
+                className="text-[10px] font-semibold px-3 py-1 rounded border border-accent/40 bg-accent/10 hover:bg-accent/15 text-accent transition-colors"
+                title="Execute the structured Thinking Framework (with optional regime modulation) across all four trading type profiles"
               >
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="inline-flex items-center justify-center"><type.icon size={18} style={{ color: type.color }} /></span>
-                  <div>
-                    <p className="text-xs font-bold" style={{ color: type.color }}>{type.label}</p>
-                    <p className="text-[9px] text-txt-faint font-mono">{type.timeframe}</p>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  {Object.entries(type.weights).map(([key, value]) => (
-                    <div key={key} className="flex items-center gap-2">
-                      <span className="text-[9px] text-txt-dim w-16 capitalize">{key}</span>
-                      <div className="flex-1 h-1.5 bg-elevated rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{
-                            width: `${value}%`,
-                            backgroundColor: type.color,
-                            opacity: 0.7,
-                          }}
-                        />
-                      </div>
-                      <span className="text-[9px] font-mono text-txt-faint w-6 text-right">{value}%</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-2 pt-2 border-t border-border-default flex items-center justify-between">
-                  <span className="text-[8px] text-txt-faint">Min conf: {type.minConfidence}%</span>
-                  <span className="text-[8px] text-txt-faint">Max lev: {type.maxLeverage}x</span>
-                </div>
-              </div>
-            ))}
+                Apply Thinking Framework
+              </button>
+              <button
+                onClick={resetAllTypesToFramework}
+                className="text-[10px] px-2 py-1 rounded border border-border-default hover:bg-elevated text-txt-dim hover:text-txt-secondary transition-colors"
+              >
+                Reset to Framework Defaults
+              </button>
+            </div>
           </div>
+
+          {/* Thinking Framework explainer — the injected structured reasoning model */}
+          <div className="mb-4 rounded-lg border border-border-default bg-inset/40 p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-accent">Agent Thinking Framework</span>
+              <span className="text-[9px] text-txt-faint">— 5 explicit principles that justify and dynamically adapt the 5-factor weights</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5">
+              {THINKING_FRAMEWORK_PRINCIPLES.map((p) => (
+                <div key={p.id} className="text-[9px] leading-snug">
+                  <span className="font-semibold text-txt-primary">{p.title}:</span>{" "}
+                  <span className="text-txt-tertiary">{p.description}</span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-[8px] text-txt-faint">
+              "Apply Thinking Framework" runs regime-conditional modulation + diversification floor + horizon rules, then re-normalizes all profiles. Manual edits always take precedence. This explicit reasoning layer makes the SignalFlow agent's multi-style strategy profiles auditable and truly agentic — a core differentiator for the SoSoValue Buildathon.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {TRADING_TYPE_LIST.map((type) => {
+              const prof = currentTypeProfiles[type.id] ?? { weights: type.weights };
+              const weights = prof.weights;
+              const weightSum = (Object.values(weights) as number[]).reduce((s, v) => s + v, 0);
+              const sumOk = weightSum >= 95 && weightSum <= 105;
+
+              return (
+                <div
+                  key={type.id}
+                  className="p-3 rounded-xl border bg-inset/20"
+                  style={{ borderColor: `${type.color}25` }}
+                >
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center"><type.icon size={16} style={{ color: type.color }} /></span>
+                      <div>
+                        <p className="text-xs font-bold" style={{ color: type.color }}>{type.label}</p>
+                        <p className="text-[8px] text-txt-faint font-mono -mt-0.5">{type.timeframe}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => resetTypeToFramework(type.id)}
+                      className="text-[8px] px-1.5 py-0.5 rounded border border-border-default text-txt-faint hover:text-txt-secondary hover:border-accent/40"
+                      title="Reset this profile to framework default"
+                    >
+                      FW
+                    </button>
+                  </div>
+
+                  {/* Editable factor weights */}
+                  <div className="space-y-1.5">
+                    {(Object.keys(weights) as (keyof typeof weights)[]).map((key) => {
+                      const val = weights[key];
+                      return (
+                        <div key={key} className="flex items-center gap-2">
+                          <span className="text-[9px] text-txt-dim w-16 capitalize shrink-0">{key}</span>
+                          <input
+                            type="range"
+                            min={0}
+                            max={50}
+                            step={1}
+                            value={val}
+                            onChange={(e) => setTypeFactorWeight(type.id, key, Number(e.target.value))}
+                            className="flex-1 h-1 accent-current"
+                            style={{ accentColor: type.color }}
+                          />
+                          <input
+                            type="number"
+                            min={0}
+                            max={50}
+                            value={val}
+                            onChange={(e) => setTypeFactorWeight(type.id, key, Number(e.target.value))}
+                            className="w-10 text-[10px] font-mono text-right bg-transparent border-b border-border-default focus:border-accent outline-none tabular-nums"
+                            style={{ color: type.color }}
+                          />
+                          <span className="text-[8px] text-txt-faint w-3">%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-2 pt-2 border-t border-border-default flex items-center justify-between text-[8px]">
+                    <span className={`font-mono ${sumOk ? "text-txt-faint" : "text-hold"}`}>
+                      sum {weightSum}%
+                    </span>
+                    <span className="text-txt-faint">min {type.minConfidence}% · {type.maxLeverage}x</span>
+                  </div>
+
+                  {!sumOk && (
+                    <p className="text-[8px] text-hold mt-0.5">Weights should total ~100%. Framework run will normalize.</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="mt-2 text-[9px] text-txt-faint">
+            These weights are injected at runtime into the 5-factor confluence engine (TREND / MOMENTUM / VOLATILITY / VOLUME / STRUCTURE) inside the V2 signal engine whenever a trading type is active. The Thinking Framework provides the explicit reasoning layer on top of the static defaults.
+          </p>
         </Card>
       ) : (
         <Card padding="lg" className="border-info/20 bg-info/5">

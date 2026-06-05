@@ -23,7 +23,7 @@ interface Props {
   eventName?: string;
 }
 
-export default function MacroSurprise({ eventName = "Federal Funds Rate" }: Props) {
+export default function MacroSurprise({ eventName = "CPI (MoM)" }: Props) {
   const [data, setData] = useState<MacroEventItem[]>([]);
   const [upcoming, setUpcoming] = useState<MacroCalendarDay[]>([]);
   const [loading, setLoading] = useState(true);

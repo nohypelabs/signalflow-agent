@@ -15,7 +15,7 @@ export const valuechain = defineChain({
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
 
 const connectors: CreateConnectorFn[] = [injected()];
-if (typeof window !== "undefined" && "indexedDB" in window && projectId) {
+if (projectId && typeof globalThis !== "undefined" && globalThis.indexedDB) {
   connectors.push(
     walletConnect({
       projectId,
@@ -30,8 +30,4 @@ export const config = createConfig({
   transports: {
     [valuechain.id]: http(),
   },
-  // Disable auto-reconnect so users see the wallet modal on every connect.
-  // Without this, wagmi reconnects to the last wallet from localStorage
-  // even after disconnect — making it impossible to switch wallets.
-  reconnectOnMount: false,
 });

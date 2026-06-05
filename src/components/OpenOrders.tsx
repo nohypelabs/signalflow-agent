@@ -26,7 +26,8 @@ function statusConfig(status: string): { variant: string; label: string } {
   }
 }
 
-export default function OpenOrders({ orders, loading, error, onCancel }: Props) {
+export default function OpenOrders({ orders: incomingOrders, loading, error, onCancel }: Props) {
+  const orders = Array.isArray(incomingOrders) ? incomingOrders : [];
   const [cancelling, setCancelling] = useState<number | null>(null);
 
   const handleCancel = async (id: number) => {
@@ -92,31 +93,32 @@ export default function OpenOrders({ orders, loading, error, onCancel }: Props) 
               </tr>
             </thead>
             <tbody>
-              {orders.map((o) => {
-                const sc = statusConfig(o.status);
+              {orders.map((o, idx) => {
+                const safeId = (o as any).id ?? (o as any).orderID ?? idx;
+                const sc = statusConfig((o as any).status ?? "UNKNOWN");
                 return (
-                  <tr key={o.id} className="border-b border-border-default hover:bg-elevated/30 transition-colors">
+                  <tr key={safeId} className="border-b border-border-default hover:bg-elevated/30 transition-colors">
                     <td className="p-3 text-txt-primary font-semibold font-mono">
-                      {o.symbol.replace(/^v/, "").replace(/_vUSDC$/, "/USDC")}
+                      {String((o as any).symbol || "").replace(/^v/, "").replace(/_vUSDC$/, "/USDC") || "—"}
                     </td>
                     <td className="p-3">
-                      <Badge variant={o.side === "BUY" ? "buy" : "sell"} size="sm">{o.side}</Badge>
+                      <Badge variant={(o as any).side === "BUY" ? "buy" : "sell"} size="sm">{(o as any).side || "—"}</Badge>
                     </td>
-                    <td className="p-3 text-right text-txt-secondary font-mono">{o.quantity}</td>
+                    <td className="p-3 text-right text-txt-secondary font-mono">{(o as any).quantity ?? (o as any).size ?? "—"}</td>
                     <td className="p-3 text-right text-txt-secondary font-mono">
-                      ${parseFloat(o.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                      ${parseFloat(String((o as any).price ?? 0)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                     </td>
                     <td className="p-3 text-center">
                       <Badge variant={sc.variant} size="sm">{sc.label}</Badge>
                     </td>
                     <td className="p-3 text-right">
-                      {o.status === "NEW" && (
+                      {(o as any).status === "NEW" && (
                         <Button
                           variant="danger"
                           size="sm"
-                          onClick={() => handleCancel(o.id)}
-                          disabled={cancelling === o.id}
-                          loading={cancelling === o.id}
+                          onClick={() => handleCancel(Number(safeId))}
+                          disabled={cancelling === safeId}
+                          loading={cancelling === safeId}
                         >
                           Cancel
                         </Button>

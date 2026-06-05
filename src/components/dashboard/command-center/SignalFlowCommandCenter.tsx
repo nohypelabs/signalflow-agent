@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Target, Layers, Activity, Play, TrendingUp, Database, Box, Brain, GitMerge, Landmark, BarChart3, Grid2x2, MessageSquare, CheckCircle, CircleDot } from "lucide-react";
+import { Target, Layers, Activity, Play, TrendingUp, TrendingDown, Database, Box, Brain, GitMerge, Landmark, BarChart3, Grid2x2, MessageSquare, CheckCircle, CircleDot, Newspaper, Minus } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import IndexROIDashboard from "@/components/IndexROIDashboard";
@@ -9,7 +9,9 @@ import BTCTreasuryDashboard from "@/components/BTCTreasuryDashboard";
 import MacroSurprise from "@/components/MacroSurprise";
 import SpeedometerGauge from "@/components/ui/SpeedometerGauge";
 import TradingChart from "@/components/TradingChart";
+import StrategySwitcher from "@/components/StrategySwitcher";
 import { useDashboard } from "@/lib/dashboard-context";
+import { useMarketaux } from "@/lib/hooks/useMarketaux";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import { getCoinIcon } from "@/lib/coin-icons";
 import { getStockIcon } from "@/lib/stock-icons";
@@ -207,7 +209,7 @@ function MarketCanvas({ pair }: { pair: string }) {
   const currentPrice = ticker ? parseFloat(ticker.lastPx) : null;
 
   return (
-    <Card variant="default" padding="none" className="rounded-xl overflow-hidden h-[598px] flex flex-col">
+    <Card variant="default" padding="none" className="rounded-xl overflow-hidden h-[579px] flex flex-col">
       <TradingChart
         klines={d.klines}
         symbol={pair}
@@ -476,7 +478,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
     <Panel
       title="LIVE DECISION SCORE"
       badge={<Badge variant={decision.action === "LONG" ? "buy" : decision.action === "SHORT" ? "sell" : "hold"} size="sm">{activeStrategy?.label ?? "LIVE LOGIC"}</Badge>}
-      className="h-[598px] relative z-10"
+      className="h-[579px] relative z-10"
       bodyClassName="flex-1 overflow-visible"
     >
       <div className="flex h-full min-w-0 flex-col gap-2.5 overflow-visible p-3">
@@ -503,7 +505,14 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
         </div>
 
         <div className="rounded-xl border border-border-default bg-inset/70 px-2 py-2 text-center">
-          <div className="mb-1 text-[11px] font-semibold tracking-wide text-txt-tertiary uppercase">SignalFlow Final Score</div>
+          <div className="mb-1 flex items-center justify-center gap-2 text-[11px] font-semibold tracking-wide text-txt-tertiary uppercase">
+            SignalFlow Final Score
+            {activeStrategy && (
+              <span className="text-[9px] normal-case font-medium text-accent border border-accent/30 bg-accent/5 px-1.5 py-0 rounded">
+                {activeStrategy.label}
+              </span>
+            )}
+          </div>
           <SpeedometerGauge value={decision.confidence} size="lg" showLabel={false} sweeping={d.analyzing} />
           <div className="relative mt-2 flex min-h-[52px] items-center justify-center gap-6">
             <div className="flex flex-col items-center gap-1">
@@ -721,183 +730,203 @@ function sentimentVariant(label: string): string {
   return "muted";
 }
 
-interface CatalystEvent {
-  id: string;
-  time: number;
-  type: "SIGNAL" | "MARKET" | "RISK" | "DATA" | "NEWS";
-  title: string;
-  detail: string;
-  tone: "buy" | "sell" | "hold" | "accent" | "muted";
+/* ── Marketaux News Sentiment Panel ── */
+
+import type { CryptoSentimentResult } from "@/lib/marketaux";
+
+function SentimentGauge({ score, label }: { score: number; label: string }) {
+  const normalized = Math.round((score + 1) * 50); // -1..1 → 0..100
+  const tone = score > 0.1 ? "text-buy" : score < -0.1 ? "text-sell" : "text-hold";
+  const bgTone = score > 0.1 ? "bg-buy" : score < -0.1 ? "bg-sell" : "bg-hold";
+
+  return (
+    <div className="rounded-xl border border-border-default bg-inset/70 p-3">
+      <p className="text-[9px] uppercase font-semibold text-txt-muted tracking-wide">Crypto Sentiment</p>
+      <div className="mt-2 flex items-end gap-2">
+        <span className={`font-mono text-3xl font-bold leading-none tabular-nums ${tone}`}>
+          {score > 0 ? "+" : ""}{(score * 100).toFixed(0)}
+        </span>
+        <span className={`text-[10px] font-semibold uppercase ${tone}`}>{label}</span>
+      </div>
+      <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-border-default/30">
+        <div
+          className={`h-full rounded-full transition-all duration-700 ${bgTone}`}
+          style={{ width: `${Math.min(100, Math.max(0, normalized))}%` }}
+        />
+      </div>
+      <div className="mt-1 flex justify-between text-[8px] text-txt-faint">
+        <span>Bearish</span>
+        <span>Neutral</span>
+        <span>Bullish</span>
+      </div>
+    </div>
+  );
 }
 
-function catalystToneClasses(tone: CatalystEvent["tone"]): string {
-  if (tone === "buy") return "border-buy-dim bg-buy-muted text-buy";
-  if (tone === "sell") return "border-sell-dim bg-sell-muted text-sell";
-  if (tone === "hold") return "border-hold-dim bg-hold-muted text-hold";
-  if (tone === "accent") return "border-accent-dim bg-accent-muted text-accent";
-  return "border-border-default bg-elevated text-txt-secondary";
+function ArticleCard({ article }: { article: { uuid: string; url: string; source: string; title: string; entities: Array<{ symbol: string; sentiment_score: number }> } }) {
+  return (
+    <a
+      href={article.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block rounded-lg border border-border-default bg-elevated/10 px-2.5 py-2 transition-colors hover:bg-elevated/30"
+    >
+      <div className="flex items-center gap-1.5 mb-1">
+        <span className="text-[8px] text-txt-faint font-mono">{article.source}</span>
+        {article.entities.slice(0, 2).map((e) => (
+          <span
+            key={e.symbol}
+            className={cx(
+              "rounded px-1 py-0.5 text-[7px] font-bold",
+              e.sentiment_score > 0.1
+                ? "bg-buy-muted text-buy"
+                : e.sentiment_score < -0.1
+                  ? "bg-sell-muted text-sell"
+                  : "bg-elevated text-txt-muted"
+            )}
+          >
+            {e.symbol}
+          </span>
+        ))}
+      </div>
+      <p className="text-[10px] font-semibold text-txt-primary leading-snug line-clamp-2">{article.title}</p>
+    </a>
+  );
 }
 
-function signalTone(action: Signal["action"]): CatalystEvent["tone"] {
-  if (action === "LONG") return "buy";
-  if (action === "SHORT") return "sell";
-  return "hold";
-}
+function NewsSentimentPanel() {
+  const { data, loading, error } = useMarketaux(10);
 
-function CatalystMonitor({ news, fetchError }: { news: NewsResponse | null; fetchError: boolean }) {
-  const d = useDashboard();
-  const apiError = news?.error;
-  const hasData = news && news.list.length > 0;
-  const now = Date.now();
-  const selectedBase = d.selectedPair.split("/")[0].replace(/^v/, "").replace(/_vUSDC$/, "");
-  const selectedSignal = d.liveSignals.find((s) => normalizePair(s.pair) === normalizePair(d.selectedPair)) ?? null;
-  const activeTickers = (d.tickers ?? [])
-    .map((t) => ({
-      symbol: t.symbol.replace(/^v/, "").replace(/_vUSDC$/, ""),
-      price: toFiniteNumber(t.lastPx),
-      change: toFiniteNumber(t.changePct),
-      volume: toFiniteNumber(t.quoteVolume),
-    }))
-    .filter((t) => t.price > 0);
-  const cryptoTickers = activeTickers.filter((t) => !isStockOrIndex(t.symbol));
-  const topMover = [...cryptoTickers].sort((a, b) => Math.abs(b.change) - Math.abs(a.change))[0];
-  const volumeLeader = [...cryptoTickers].sort((a, b) => b.volume - a.volume)[0];
-  const advancing = cryptoTickers.filter((t) => t.change > 0).length;
-  const declining = cryptoTickers.filter((t) => t.change < 0).length;
-  const topSignals = [...d.liveSignals].sort((a, b) => b.confidence - a.confidence).slice(0, 4);
-
-  const events: CatalystEvent[] = [];
-
-  if (selectedSignal) {
-    events.push({
-      id: `selected-${selectedSignal.pair}`,
-      time: now,
-      type: "SIGNAL",
-      title: `${selectedSignal.pair} ${selectedSignal.action} ${selectedSignal.confidence}%`,
-      detail: selectedSignal.reasoning || "Selected pair signal is driving Live Decision Score.",
-      tone: signalTone(selectedSignal.action),
-    });
-  } else {
-    events.push({
-      id: "selected-waiting",
-      time: now,
-      type: "RISK",
-      title: `${selectedBase}/USDC no executable signal`,
-      detail: d.signalsLoading ? "Signal engine is syncing selected pair." : "Current pair is waiting for confirmation.",
-      tone: "hold",
-    });
-  }
-
-  topSignals
-    .filter((s) => !selectedSignal || normalizePair(s.pair) !== normalizePair(selectedSignal.pair))
-    .slice(0, 2)
-    .forEach((signal, index) => {
-      events.push({
-        id: `signal-${signal.pair}-${index}`,
-        time: now - (index + 1) * 45000,
-        type: "SIGNAL",
-        title: `${signal.pair} ${signal.action} ${signal.confidence}%`,
-        detail: signal.actionV2?.replaceAll("_", " ") ?? signal.regime ?? "Signal engine update.",
-        tone: signalTone(signal.action),
-      });
-    });
-
-  if (topMover) {
-    events.push({
-      id: `mover-${topMover.symbol}`,
-      time: now - 120000,
-      type: "MARKET",
-      title: `${topMover.symbol} ${changeArrow(topMover.change)} ${Math.abs(topMover.change).toFixed(2)}%`,
-      detail: `Largest live crypto move. Breadth ${advancing} advancing / ${declining} declining.`,
-      tone: topMover.change > 0 ? "buy" : topMover.change < 0 ? "sell" : "muted",
-    });
-  }
-
-  if (volumeLeader) {
-    events.push({
-      id: `volume-${volumeLeader.symbol}`,
-      time: now - 180000,
-      type: "MARKET",
-      title: `${volumeLeader.symbol} liquidity leader`,
-      detail: `${fmtUsd(volumeLeader.volume)} 24H quote volume on the current tape.`,
-      tone: "accent",
-    });
-  }
-
-  events.push({
-    id: "data-sodex",
-    time: now - 240000,
-    type: "DATA",
-    title: `SoDEX ${d.sodexStatus}`,
-    detail: d.marketError ?? `${activeTickers.length} instruments streaming into SignalFlow.`,
-    tone: d.sodexStatus === "connected" ? "buy" : d.sodexStatus === "loading" ? "hold" : "sell",
-  });
-
-  if (fetchError || apiError) {
-    events.push({
-      id: "data-news-degraded",
-      time: now - 300000,
-      type: "DATA",
-      title: "SoSoValue news layer degraded",
-      detail: apiError ?? "News endpoint unreachable. Signal tape remains live from market and engine data.",
-      tone: "hold",
-    });
-  } else if (hasData && news?.sentiment) {
-    events.push({
-      id: "news-sentiment",
-      time: now - 300000,
-      type: "NEWS",
-      title: `${news.sentiment.label} news sentiment ${news.sentiment.score}`,
-      detail: `${news.list.length} SoSoValue stories available for narrative context.`,
-      tone: sentimentVariant(news.sentiment.label) as CatalystEvent["tone"],
-    });
-  } else {
-    events.push({
-      id: "data-news-waiting",
-      time: now - 300000,
-      type: "DATA",
-      title: "News layer waiting",
-      detail: "Market and signal catalysts stay active while narrative data loads.",
-      tone: "muted",
-    });
-  }
+  const sentiment = data?.avgSentiment ?? 0;
+  const label = data?.sentimentLabel ?? "Neutral";
+  const articleCount = data?.articleCount ?? 0;
+  const mostBullish = data?.mostBullish;
+  const mostBearish = data?.mostBearish;
+  const trending = data?.trendingEntities ?? [];
+  const articles = data?.articles ?? [];
 
   return (
     <Panel
-      title="CATALYST MONITOR"
-      badge={<Badge variant={apiError || fetchError ? "hold" : "buy"} size="sm">{events.length} LIVE</Badge>}
-      className="h-[598px]"
+      title="NEWS SENTIMENT"
+      badge={
+        <Badge variant={loading ? "muted" : error ? "hold" : sentiment > 0.1 ? "buy" : sentiment < -0.1 ? "sell" : "muted"} size="sm">
+          {loading ? "..." : error ? "ERROR" : label.toUpperCase()}
+        </Badge>
+      }
+      className="h-[579px]"
     >
-      <div className="divide-y divide-border-default">
-        {events.map((event) => (
-          <div
-            key={event.id}
-            className="px-3 py-2.5 transition-colors hover:bg-elevated/30"
-          >
-            <div className="flex items-center gap-2">
-              <span className="w-9 font-mono text-[10px] text-txt-muted">{timeAgo(event.time)}</span>
-              <span className={cx("rounded border px-1.5 py-0.5 text-[9px] font-bold", catalystToneClasses(event.tone))}>
-                {event.type}
-              </span>
-            </div>
-            <p className="mt-1 text-xs font-semibold text-txt-primary leading-snug">{event.title}</p>
-            <p className="mt-0.5 text-[10px] leading-snug text-txt-tertiary line-clamp-2">{event.detail}</p>
+      <div className="flex flex-col gap-2.5 p-3">
+        {/* Sentiment Gauge */}
+        {loading ? (
+          <div className="rounded-xl border border-border-default bg-inset/70 p-3 animate-pulse">
+            <div className="h-3 w-24 rounded bg-elevated" />
+            <div className="mt-3 h-8 w-16 rounded bg-elevated" />
+            <div className="mt-3 h-1.5 w-full rounded-full bg-elevated" />
           </div>
-        ))}
-        {hasData && news?.list.slice(0, 2).map((item) => (
-          <div key={`news-${item.id}`} className="px-3 py-2.5 transition-colors hover:bg-elevated/30">
-            <div className="flex items-center gap-2">
-              <span className="w-9 font-mono text-[10px] text-txt-muted">{timeAgo(item.release_time)}</span>
-              <span className="rounded border border-accent-dim bg-accent-muted px-1.5 py-0.5 text-[9px] font-bold text-accent">NEWS</span>
-              {item.matched_currencies?.slice(0, 2).map((c) => (
-                <span key={c.symbol} className="rounded bg-elevated px-1.5 py-0.5 text-[9px] font-semibold text-txt-secondary">
-                  {c.symbol}
-                </span>
+        ) : (
+          <SentimentGauge score={sentiment} label={label} />
+        )}
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-3 gap-1.5">
+          <div className="rounded-lg border border-border-default bg-elevated/20 px-2 py-2 text-center">
+            <p className="font-mono text-sm font-bold text-txt-primary tabular-nums">{loading ? "..." : articleCount}</p>
+            <p className="text-[8px] uppercase text-txt-muted">articles</p>
+          </div>
+          <div className="rounded-lg border border-buy-dim/30 bg-buy-muted/10 px-2 py-2 text-center">
+            <p className="font-mono text-sm font-bold text-buy tabular-nums truncate">
+              {loading ? "..." : mostBullish?.symbol ?? "—"}
+            </p>
+            <p className="text-[8px] uppercase text-txt-muted">bullish</p>
+          </div>
+          <div className="rounded-lg border border-sell-dim/30 bg-sell-muted/10 px-2 py-2 text-center">
+            <p className="font-mono text-sm font-bold text-sell tabular-nums truncate">
+              {loading ? "..." : mostBearish?.symbol ?? "—"}
+            </p>
+            <p className="text-[8px] uppercase text-txt-muted">bearish</p>
+          </div>
+        </div>
+
+        {/* Trending Entities */}
+        {trending.length > 0 && (
+          <div className="rounded-xl border border-border-default bg-inset/50 p-2.5">
+            <p className="text-[9px] font-semibold uppercase tracking-wide text-txt-muted mb-2">Trending Mentions</p>
+            <div className="space-y-1.5">
+              {trending.slice(0, 4).map((entity) => {
+                const entityTone = entity.avgSentiment > 0.1
+                  ? "text-buy"
+                  : entity.avgSentiment < -0.1
+                    ? "text-sell"
+                    : "text-txt-secondary";
+                return (
+                  <div key={entity.symbol} className="flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-semibold text-txt-primary">{entity.symbol}</span>
+                      <span className="text-[9px] text-txt-muted ml-1.5">{entity.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="font-mono text-[9px] text-txt-muted tabular-nums">{entity.mentions}×</span>
+                      <span className={`font-mono text-[10px] font-bold tabular-nums ${entityTone}`}>
+                        {entity.avgSentiment > 0 ? "+" : ""}{(entity.avgSentiment * 100).toFixed(0)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Recent Articles — auto-scroll if >3 articles */}
+        <div className="flex-1 min-h-0">
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[9px] font-semibold uppercase tracking-wide text-txt-muted">Latest Headlines</p>
+            {!loading && !error && articles.length > 0 && (
+              <span className="text-[8px] text-txt-faint font-mono">{articles.length} articles</span>
+            )}
+          </div>
+          {loading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="animate-pulse rounded-lg border border-border-default bg-elevated/10 px-2.5 py-2">
+                  <div className="h-2.5 w-20 rounded bg-elevated" />
+                  <div className="mt-1.5 h-3 w-full rounded bg-elevated" />
+                  <div className="mt-1 h-3 w-3/4 rounded bg-elevated" />
+                </div>
               ))}
             </div>
-            <p className="mt-1 text-xs font-semibold text-txt-primary leading-snug line-clamp-2">{item.title}</p>
-          </div>
-        ))}
+          ) : error ? (
+            <div className="flex min-h-[100px] flex-col items-center justify-center gap-2 text-center">
+              <Newspaper size={18} className="text-txt-muted" />
+              <p className="text-[10px] text-txt-muted">{error}</p>
+            </div>
+          ) : articles.length === 0 ? (
+            <div className="flex min-h-[100px] flex-col items-center justify-center gap-2 text-center">
+              <Newspaper size={18} className="text-txt-muted" />
+              <p className="text-[10px] text-txt-muted">No crypto news found</p>
+            </div>
+          ) : articles.length <= 3 ? (
+            /* Few articles — static list, no scroll needed */
+            <div className="space-y-1.5">
+              {articles.map((article) => (
+                <ArticleCard key={article.uuid} article={article} />
+              ))}
+            </div>
+          ) : (
+            /* Many articles — vertical auto-scroll with pause on hover */
+            <div
+              className="news-scroll-container h-[200px]"
+              style={{ "--scroll-duration": `${articles.length * 5}s` } as React.CSSProperties}
+            >
+              <div className="news-scroll-track space-y-1.5">
+                {/* Duplicate articles for seamless loop */}
+                {[...articles, ...articles].map((article, i) => (
+                  <ArticleCard key={`${article.uuid}-${i}`} article={article} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </Panel>
   );
@@ -1041,21 +1070,26 @@ function ChangeBar({ change, maxAbs }: { change: number; maxAbs: number }) {
   );
 }
 
-function TopMoversCard() {
+function MarketPressureCard() {
   const d = useDashboard();
-  const tickers = d.tickers ?? [];
+
+  // Use best available ticker data (benefits from command center fallback polling for real-time)
+  const tickers = d.tickers && d.tickers.length > 0
+    ? d.tickers
+    : Array.from(d.tickerMap?.values?.() || []);
 
   const parsed = tickers
     .map((t) => ({
       symbol: t.symbol.replace(/^v/, "").replace(/_vUSDC$/, ""),
       change: toFiniteNumber(t.changePct),
       price: toFiniteNumber(t.lastPx),
+      volume: toFiniteNumber(t.quoteVolume),
     }))
     .filter((t) => t.price > 0 && !isStockOrIndex(t.symbol))
     .sort((a, b) => b.change - a.change);
 
-  const top3 = parsed.slice(0, 3);
-  const bottom3 = parsed.slice(-3).reverse();
+  const topMovers = parsed.slice(0, 7);
+  const bottomMovers = parsed.slice(-7).reverse();
   const maxAbs = Math.max(...parsed.map((t) => Math.abs(t.change)), 1);
   const advancing = parsed.filter((t) => t.change > 0).length;
   const declining = parsed.filter((t) => t.change < 0).length;
@@ -1064,20 +1098,44 @@ function TopMoversCard() {
   const pressureScore = parsed.length > 0 ? Math.round(((advancing - declining) / parsed.length) * 100) : 0;
   const pressureTone = pressureScore > 10 ? "text-buy" : pressureScore < -10 ? "text-sell" : "text-hold";
   const pressureLabel = pressureScore > 10 ? "bid-led" : pressureScore < -10 ? "offer-led" : "balanced";
-  const leadGainer = top3[0] ?? null;
-  const leadLoser = bottom3[0] ?? null;
+  const leadGainer = topMovers[0] ?? null;
+  const leadLoser = bottomMovers[0] ?? null;
+
+  // High volume movers (small dedicated section)
+  const highVolumeMovers = [...parsed]
+    .sort((a, b) => b.volume - a.volume)
+    .slice(0, 4);
+
+  // Correlate with live signals
+  const getSignalFor = (sym: string) => {
+    const target = normalizePair(sym + '/USDC');
+    return (d.liveSignals || []).find((s: any) => normalizePair(s.pair) === target) || null;
+  };
+  const moversWithSignals = [...topMovers, ...bottomMovers].filter(t => {
+    const sig = getSignalFor(t.symbol);
+    return sig && sig.action !== 'HOLD';
+  }).length;
+
+  // For filling space: visual pressure distribution
+  const totalPairs = Math.max(1, parsed.length);
+  const advPct = Math.round((advancing / totalPairs) * 100);
+  const decPct = Math.round((declining / totalPairs) * 100);
+  const flatPct = Math.max(0, 100 - advPct - decPct);
 
   return (
     <Card variant="default" padding="none" className="rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between border-b border-border-default px-4 py-2.5">
-        <h3 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-txt-secondary">
-          <TrendingUp size={12} className="text-buy" />
-          Market Pressure
-        </h3>
-        <span className={cx("text-[9px] font-mono uppercase tabular-nums", parsed.length > 0 ? pressureTone : "text-txt-muted")}>
+      <div className="flex items-center justify-between border-b border-border-default px-3 py-2">
+        <div className="flex items-center gap-2">
+          <TrendingUp size={14} className="text-buy" aria-hidden="true" />
+          <h3 className="text-sm font-semibold text-txt-primary">Market Pressure</h3>
+          <Badge variant="info" size="sm">LIVE</Badge>
+          <span className="inline-block w-1 h-1 rounded-full bg-buy animate-pulse" aria-hidden="true" />
+        </div>
+        <span className={cx("font-mono text-[9px] uppercase tabular-nums", parsed.length > 0 ? pressureTone : "text-txt-muted")}>
           {parsed.length === 0 ? "waiting" : pressureLabel}
         </span>
       </div>
+
       {parsed.length === 0 ? (
         <EvidenceEmptyState
           icon={<TrendingUp size={18} />}
@@ -1085,96 +1143,203 @@ function TopMoversCard() {
           detail={d.marketError ?? "Waiting for tradable pair prices before ranking pressure."}
         />
       ) : (
-      <div className="p-3">
-        <div className="grid grid-cols-[1fr_auto] gap-3">
+        <div className="p-3 space-y-3">
+          {/* Pressure impulse + advancing context (wider layout) */}
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className={cx("font-mono text-3xl font-bold leading-none tabular-nums", pressureTone)}>
+                {pressureScore > 0 ? "+" : ""}{pressureScore}
+              </p>
+              <p className="mt-0.5 text-[9px] uppercase tracking-wide text-txt-muted">Pressure impulse</p>
+            </div>
+            <div className="text-right">
+              <p className="font-mono text-sm font-bold text-txt-primary tabular-nums">{breadth ?? 0}%</p>
+              <p className="text-[8px] text-txt-muted -mt-px">advancing breadth</p>
+            </div>
+          </div>
+
+          {/* Breadth counts */}
+          <div className="grid grid-cols-3 gap-1.5 text-center">
+            <div className="rounded-lg border border-buy-dim/30 bg-buy-muted/10 px-2 py-1.5">
+              <p className="font-mono text-sm font-bold text-buy tabular-nums">{advancing}</p>
+              <p className="text-[8px] uppercase text-txt-muted">adv</p>
+            </div>
+            <div className="rounded-lg border border-border-default bg-elevated/20 px-2 py-1.5">
+              <p className="font-mono text-sm font-bold text-txt-secondary tabular-nums">{unchanged}</p>
+              <p className="text-[8px] uppercase text-txt-muted">flat</p>
+            </div>
+            <div className="rounded-lg border border-sell-dim/30 bg-sell-muted/10 px-2 py-1.5">
+              <p className="font-mono text-sm font-bold text-sell tabular-nums">{declining}</p>
+              <p className="text-[8px] uppercase text-txt-muted">dec</p>
+            </div>
+          </div>
+
+          {/* Tape Leaders — richer rows with volume to fill vertical space */}
           <div>
-            <p className={cx("font-mono text-3xl font-bold leading-none tabular-nums", pressureTone)}>
-              {pressureScore > 0 ? "+" : ""}{pressureScore}
-            </p>
-            <p className="mt-1 text-[9px] uppercase tracking-wide text-txt-muted">Pressure impulse</p>
-          </div>
-          <div className="min-w-[104px] rounded-lg border border-buy-dim/30 bg-buy-muted/10 p-2 text-right">
-            <p className="font-mono text-sm font-bold text-txt-primary tabular-nums">{breadth ?? 0}%</p>
-            <p className="mt-0.5 text-[9px] text-txt-muted">advancing</p>
-          </div>
-        </div>
+            <div className="mb-1 flex items-center justify-between">
+              <span className="text-[9px] font-semibold uppercase tracking-wide text-txt-muted">Tape Leaders</span>
+              <span className="font-mono text-[9px] text-txt-muted tabular-nums">
+                {parsed.length} pairs • {moversWithSignals} w/ signals
+              </span>
+            </div>
 
-        <div className="mt-3 grid grid-cols-3 gap-1.5 text-center">
-          <div className="rounded-lg border border-buy-dim/30 bg-buy-muted/10 px-2 py-1.5">
-            <p className="font-mono text-sm font-bold text-buy tabular-nums">{advancing}</p>
-            <p className="text-[8px] uppercase text-txt-muted">adv</p>
-          </div>
-          <div className="rounded-lg border border-border-default bg-elevated/20 px-2 py-1.5">
-            <p className="font-mono text-sm font-bold text-txt-secondary tabular-nums">{unchanged}</p>
-            <p className="text-[8px] uppercase text-txt-muted">flat</p>
-          </div>
-          <div className="rounded-lg border border-sell-dim/30 bg-sell-muted/10 px-2 py-1.5">
-            <p className="font-mono text-sm font-bold text-sell tabular-nums">{declining}</p>
-            <p className="text-[8px] uppercase text-txt-muted">dec</p>
-          </div>
-        </div>
-
-        <div className="mt-3 rounded-lg border border-border-default bg-inset/50 p-2.5">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <span className="text-[9px] font-semibold uppercase tracking-wide text-txt-muted">Tape Leaders</span>
-            <span className="font-mono text-[9px] text-txt-muted tabular-nums">{parsed.length} pairs</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <div className="mb-1.5 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-buy" />
-                  <span className="text-[9px] font-semibold text-buy tracking-wide">Bid</span>
-                </div>
-                <span className="font-mono text-[9px] text-buy tabular-nums">
-                  {leadGainer ? `+${Math.abs(leadGainer.change).toFixed(2)}%` : "--"}
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                {top3.slice(0, 2).map((t, i) => (
-                  <div key={t.symbol} className="flex items-center gap-2">
-                    <span className="w-4 text-right font-mono text-[9px] text-txt-dim tabular-nums">{i + 1}</span>
-                    <CoinAvatar symbol={t.symbol} size={18} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-[10px] font-semibold text-txt-primary">{t.symbol}</span>
-                        <span className="shrink-0 font-mono text-[9px] font-bold tabular-nums text-buy">+{Math.abs(t.change).toFixed(2)}%</span>
-                      </div>
-                      <ChangeBar change={t.change} maxAbs={maxAbs} />
+            <div className="rounded-lg border border-border-default bg-inset/40 p-1">
+              <div className="grid grid-cols-2 gap-2">
+                {/* Bid side - 7 per side for max content */}
+                <div>
+                  <div className="mb-1 flex items-center justify-between gap-2 px-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-buy" />
+                      <span className="text-[9px] font-semibold text-buy tracking-wide">Bid (Gainers)</span>
                     </div>
+                    <span className="font-mono text-[9px] text-buy tabular-nums">
+                      {leadGainer ? `+${Math.abs(leadGainer.change).toFixed(2)}%` : "—"}
+                    </span>
                   </div>
-                ))}
+                  <div className="space-y-px">
+                    {topMovers.map((t, i) => {
+                      const isTop = i === 0;
+                      const sig = getSignalFor(t.symbol);
+                      const hasSignal = sig && sig.action !== 'HOLD';
+                      const sigColor = hasSignal ? (sig.action === 'LONG' ? 'bg-buy text-white' : 'bg-sell text-white') : '';
+                      return (
+                        <div
+                          key={t.symbol}
+                          className={`flex items-center gap-1 rounded px-1 py-[1px] text-[9px] ${isTop ? "bg-buy-muted/10" : "hover:bg-elevated/30"}`}
+                        >
+                          <span className="w-2.5 text-right font-mono text-[8px] text-txt-dim tabular-nums">{i + 1}</span>
+                          <CoinAvatar symbol={t.symbol} size={13} />
+                          <span className="min-w-0 flex-1 truncate font-semibold text-txt-primary">{t.symbol}</span>
+                          <span className="font-mono text-[8px] text-txt-faint tabular-nums">${t.price.toFixed(2)}</span>
+                          {hasSignal && (
+                            <span className={`font-mono text-[7px] px-0.5 rounded font-bold tabular-nums ${sigColor}`}>
+                              {sig.action[0]}{Math.round(sig.confidence)}
+                            </span>
+                          )}
+                          <span className="font-mono text-[8px] font-bold tabular-nums text-buy">+{Math.abs(t.change).toFixed(1)}%</span>
+                          <span className="font-mono text-[7px] text-txt-dim tabular-nums w-[32px] text-right">
+                            {t.volume > 0 ? `$${(t.volume / 1e6).toFixed(1)}M` : ""}
+                          </span>
+                          <div className="w-6 shrink-0">
+                            <ChangeBar change={t.change} maxAbs={maxAbs} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Offer side */}
+                <div>
+                  <div className="mb-1 flex items-center justify-between gap-2 px-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-sell" />
+                      <span className="text-[9px] font-semibold text-sell tracking-wide">Offer (Losers)</span>
+                    </div>
+                    <span className="font-mono text-[9px] text-sell tabular-nums">
+                      {leadLoser ? `${leadLoser.change.toFixed(2)}%` : "—"}
+                    </span>
+                  </div>
+                  <div className="space-y-px">
+                    {bottomMovers.map((t, i) => {
+                      const isTop = i === 0;
+                      const sig = getSignalFor(t.symbol);
+                      const hasSignal = sig && sig.action !== 'HOLD';
+                      const sigColor = hasSignal ? (sig.action === 'LONG' ? 'bg-buy text-white' : 'bg-sell text-white') : '';
+                      return (
+                        <div
+                          key={t.symbol}
+                          className={`flex items-center gap-1 rounded px-1 py-[1px] text-[9px] ${isTop ? "bg-sell-muted/10" : "hover:bg-elevated/30"}`}
+                        >
+                          <span className="w-2.5 text-right font-mono text-[8px] text-txt-dim tabular-nums">{i + 1}</span>
+                          <CoinAvatar symbol={t.symbol} size={13} />
+                          <span className="min-w-0 flex-1 truncate font-semibold text-txt-primary">{t.symbol}</span>
+                          <span className="font-mono text-[8px] text-txt-faint tabular-nums">${t.price.toFixed(2)}</span>
+                          {hasSignal && (
+                            <span className={`font-mono text-[7px] px-0.5 rounded font-bold tabular-nums ${sigColor}`}>
+                              {sig.action[0]}{Math.round(sig.confidence)}
+                            </span>
+                          )}
+                          <span className="font-mono text-[8px] font-bold tabular-nums text-sell">{t.change.toFixed(1)}%</span>
+                          <span className="font-mono text-[7px] text-txt-dim tabular-nums w-[32px] text-right">
+                            {t.volume > 0 ? `$${(t.volume / 1e6).toFixed(1)}M` : ""}
+                          </span>
+                          <div className="w-6 shrink-0">
+                            <ChangeBar change={t.change} maxAbs={maxAbs} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
-            <div>
-              <div className="mb-1.5 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-sell" />
-                  <span className="text-[9px] font-semibold text-sell tracking-wide">Offer</span>
-                </div>
-                <span className="font-mono text-[9px] text-sell tabular-nums">
-                  {leadLoser ? `${leadLoser.change.toFixed(2)}%` : "--"}
-                </span>
+          </div>
+
+          {/* Small High Volume Movers section */}
+          {highVolumeMovers.length > 0 && (
+            <div className="mt-1">
+              <div className="mb-0.5 flex items-center justify-between">
+                <span className="text-[8px] font-semibold uppercase tracking-wide text-txt-muted">High Volume Movers</span>
               </div>
-              <div className="space-y-1.5">
-                {bottom3.slice(0, 2).map((t, i) => (
-                  <div key={t.symbol} className="flex items-center gap-2">
-                    <span className="w-4 text-right font-mono text-[9px] text-txt-dim tabular-nums">{i + 1}</span>
-                    <CoinAvatar symbol={t.symbol} size={18} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-[10px] font-semibold text-txt-primary">{t.symbol}</span>
-                        <span className="shrink-0 font-mono text-[9px] font-bold tabular-nums text-sell">{Math.abs(t.change).toFixed(2)}%</span>
-                      </div>
-                      <ChangeBar change={t.change} maxAbs={maxAbs} />
+              <div className="grid grid-cols-4 gap-x-2 gap-y-0.5 text-[8px]">
+                {highVolumeMovers.map((t) => {
+                  const sig = getSignalFor(t.symbol);
+                  const hasSignal = sig && sig.action !== 'HOLD';
+                  return (
+                    <div key={t.symbol} className="flex items-center gap-1 truncate">
+                      <CoinAvatar symbol={t.symbol} size={12} />
+                      <span className="font-semibold text-txt-primary truncate">{t.symbol}</span>
+                      <span className="font-mono text-txt-faint tabular-nums">$${(t.volume / 1e6).toFixed(1)}M</span>
+                      {hasSignal && (
+                        <span className={`text-[6px] px-0.5 rounded font-bold ${sig.action === 'LONG' ? 'bg-buy text-white' : 'bg-sell text-white'}`}>
+                          {sig.action[0]}
+                        </span>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+            </div>
+          )}
+
+          {/* Different visual for Pressure Distribution: side-by-side bars + integrated % for better fill and clarity */}
+          <div className="mt-1">
+            <div className="mb-0.5 flex items-center justify-between">
+              <span className="text-[8px] font-semibold uppercase tracking-wide text-txt-muted">Pressure Distribution</span>
+              <span className="text-[7px] text-txt-muted">{totalPairs} pairs</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-[7px]">
+              {/* Advancing bar */}
+              <div>
+                <div className="flex justify-between text-buy mb-0.5">
+                  <span>Advancing</span>
+                  <span className="font-mono tabular-nums">{advPct}% ({advancing})</span>
+                </div>
+                <div className="h-2.5 bg-buy/20 rounded overflow-hidden">
+                  <div className="h-2.5 bg-buy transition-all" style={{ width: `${advPct}%` }} />
+                </div>
+              </div>
+
+              {/* Declining bar */}
+              <div>
+                <div className="flex justify-between text-sell mb-0.5">
+                  <span>Declining</span>
+                  <span className="font-mono tabular-nums">{decPct}% ({declining})</span>
+                </div>
+                <div className="h-2.5 bg-sell/20 rounded overflow-hidden">
+                  <div className="h-2.5 bg-sell transition-all" style={{ width: `${decPct}%` }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Flat as small note */}
+            <div className="mt-0.5 text-center text-[7px] text-txt-secondary tabular-nums">
+              {flatPct}% flat ({unchanged} pairs)
             </div>
           </div>
         </div>
-      </div>
       )}
     </Card>
   );
@@ -1932,7 +2097,7 @@ function MarketBreadthCard() {
 function MarketStatsBar() {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <TopMoversCard />
+      <IndexROIDashboard />
       <SignalAccuracyCard />
       <MarketBreadthCard />
       <MarketStatsCard />
@@ -1967,17 +2132,28 @@ export default function SignalFlowCommandCenter() {
 
   return (
     <div className="space-y-3 px-2 lg:px-3 pt-2 lg:pt-3">
+      {/* Global Strategy Control - subtle header for quick strategy switching.
+          Changes instantly affect live signals, decision score, and catalyst.
+          Full editor in /strategy-config. */}
+      <div className="flex items-center gap-3 rounded-lg border border-border-default bg-inset/40 px-3 py-1.5 text-sm">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-txt-muted">Strategy</span>
+        <StrategySwitcher />
+        <span className="ml-auto text-[9px] text-txt-faint hidden lg:inline">
+          Live effect on all panels. <a href="/strategy-config" className="text-accent hover:underline">Full config</a>
+        </span>
+      </div>
+
       <div className="overflow-x-auto">
         <PipelineFlow />
       </div>
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,2.8fr)_minmax(280px,1.3fr)_minmax(280px,1.2fr)]">
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,2.68fr)_minmax(280px,1.3fr)_minmax(280px,1.32fr)]">
         <MarketCanvas pair={pair} />
         <DecisionPanel pair={pair} news={news} />
-        <CatalystMonitor news={news} fetchError={newsFetchError} />
+        <NewsSentimentPanel />
       </div>
       <MarketStatsBar />
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <IndexROIDashboard />
+        <MarketPressureCard />
         <BTCTreasuryDashboard />
         <MacroSurprise />
       </div>

@@ -269,6 +269,7 @@ export async function GET(request: Request) {
     if (sol && snapshots[sol.currency_id]) snapshotMap.set("SOL", snapshots[sol.currency_id]);
 
     // ── Generate signals with V2 engine (batch) ─────────
+    // Pass typeProfiles so custom Thinking Framework weights from StrategyConfig are respected
     const v2Signals = generateSignalsV2({
       pairs: SIGNAL_PAIRS,
       klinesMap,
@@ -279,6 +280,7 @@ export async function GET(request: Request) {
       purchaseHistory,
       snapshots: snapshotMap,
       tradingType: tradingType ?? undefined,
+      typeProfiles: strategyConfig.typeProfiles,
     });
 
     // ── Multi-Timeframe Confluence ───────────────────────
@@ -293,6 +295,7 @@ export async function GET(request: Request) {
       purchaseHistory,
       snapshots: snapshotMap,
       tradingType: tradingType ?? undefined,
+      typeProfiles: strategyConfig.typeProfiles,
     });
 
     const v2Signals1D = generateSignalsV2({
@@ -305,6 +308,7 @@ export async function GET(request: Request) {
       purchaseHistory,
       snapshots: snapshotMap,
       tradingType: tradingType ?? undefined,
+      typeProfiles: strategyConfig.typeProfiles,
     });
 
     // Build maps for quick lookup
@@ -443,6 +447,8 @@ export async function GET(request: Request) {
         ETH: ethWeighted.capped,
         SOL: solWeighted.capped,
       },
+      btcTreasuries: btcTreasuries as { ticker: string; name: string }[],
+      purchaseHistory,
     };
 
     setCachedResult(cacheKey, result);

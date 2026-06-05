@@ -50,7 +50,10 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#05070D] text-[#F8FAFC]">
+      <body
+        className="min-h-full flex flex-col bg-[#05070D] text-[#F8FAFC]"
+        suppressHydrationWarning
+      >
         <Providers>{children}</Providers>
         <Toast />
         <ServiceWorkerCleanup />

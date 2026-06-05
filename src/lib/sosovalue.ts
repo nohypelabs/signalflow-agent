@@ -4,23 +4,44 @@ function apiKey(): string {
   return process.env.SOSOVALUE_API_KEY || "";
 }
 
-async function sosoFetch<T>(path: string, params?: Record<string, string>): Promise<T> {
+async function sosoFetch<T>(path: string, params?: Record<string, string>, retries = 3): Promise<T> {
   const url = new URL(`${BASE}${path}`);
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined) url.searchParams.set(k, v);
     });
   }
-  const res = await fetch(url.toString(), {
-    headers: { "x-soso-api-key": apiKey(), Accept: "application/json" },
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`SoSoValue ${res.status}: ${text}`);
+
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    if (attempt > 0) {
+      // Exponential backoff: 5s, 10s, 20s for rate limits
+      await new Promise((r) => setTimeout(r, 5000 * Math.pow(2, attempt - 1)));
+    }
+
+    const res = await fetch(url.toString(), {
+      headers: { "x-soso-api-key": apiKey(), Accept: "application/json" },
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      lastError = new Error(`SoSoValue ${res.status}: ${text}`);
+      continue;
+    }
+
+    const json = await res.json();
+
+    // Rate limit: code 402901 — retry with backoff
+    if (json.code === 402901 && attempt < retries) {
+      lastError = new Error(json.message || "Rate limited");
+      continue;
+    }
+
+    if (json.code !== 0) throw new Error(json.message || "SoSoValue error");
+    return json.data as T;
   }
-  const json = await res.json();
-  if (json.code !== 0) throw new Error(json.message || "SoSoValue error");
-  return json.data as T;
+
+  throw lastError ?? new Error("SoSoValue fetch failed");
 }
 
 // ── Types ──────────────────────────────────────────────
@@ -149,10 +170,23 @@ export function getBTCTreasuries() {
   return sosoFetch<BTCTreasuryCompany[]>("/btc-treasuries");
 }
 
-export function getBTCPurchaseHistory(ticker: string, limit = 50) {
-  return sosoFetch<BTCPurchaseHistory[]>(
+function toFiniteNumber(v: unknown): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+export async function getBTCPurchaseHistory(ticker: string, limit = 50): Promise<BTCPurchaseHistory[]> {
+  const raw = await sosoFetch<any[]>(
     `/btc-treasuries/${ticker}/purchase-history?limit=${limit}`,
-  );
+  ).catch(() => [] as any[]);
+  return (raw || []).map((p: any) => ({
+    date: String(p?.date ?? ""),
+    ticker: String(p?.ticker ?? ""),
+    btc_holding: toFiniteNumber(p?.btc_holding),
+    btc_acq: toFiniteNumber(p?.btc_acq),
+    acq_cost: toFiniteNumber(p?.acq_cost),
+    avg_btc_cost: toFiniteNumber(p?.avg_btc_cost),
+  }));
 }
 
 // ── News ───────────────────────────────────────────────

@@ -14,7 +14,7 @@ export function useTradingProviderState() {
   } = useTradeExecution(true);
 
   const openOrders = useMemo(
-    () => orders.filter((order) => order.status === "NEW" || order.status === "PARTIALLY_FILLED"),
+    () => (Array.isArray(orders) ? orders.filter((order) => order.status === "NEW" || order.status === "PARTIALLY_FILLED") : []),
     [orders],
   );
 

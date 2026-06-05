@@ -44,10 +44,6 @@ export function useSignalProviderState(
 
   const aiProviderLabel = getProvider(aiConfig.providerId)?.name || "Deepseek";
 
-  const generate = useCallback(async (coin: string, includeAIOverride?: boolean) => {
-    return generateRaw(coin, includeAIOverride ?? includeAI);
-  }, [generateRaw, includeAI]);
-
   const {
     history,
     hydrated: historyHydrated,
@@ -65,6 +61,16 @@ export function useSignalProviderState(
     setResolutionWindow,
     exportCSV,
   } = useSignalHistory();
+
+  const generate = useCallback(async (coin: string, includeAIOverride?: boolean) => {
+    const sig = await generateRaw(coin, includeAIOverride ?? includeAI);
+    if (sig) {
+      // Record every generated signal so that the Signal Reliability / accuracy tracking
+      // in the statcard actually sees live "Generate Signal" actions and can resolve them later.
+      recordSignal(sig);
+    }
+    return sig;
+  }, [generateRaw, includeAI, recordSignal]);
 
   const resolvePending = useCallback(() => {
     if (!tickers || !historyHydrated) return;

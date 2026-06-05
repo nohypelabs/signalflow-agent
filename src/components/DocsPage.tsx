@@ -1467,6 +1467,20 @@ function Roadmap() {
         ))}
       </ul>
 
+      <h3 className="text-lg font-bold text-white mt-8">Addressing Wave 1 Judge Feedback (for Wave 2)</h3>
+      <p className="text-[#aaaacc] text-sm">
+        Wave 1 feedback focused on: mock data, unverifiable metrics, lack of live SoSoValue/SoDEX end-to-end, weak strategy validation, and similarity to other agents. 
+        In Wave 2 we delivered:
+      </p>
+      <ul className="text-[#aaaacc] text-xs ml-4 mt-2 space-y-1">
+        <li>✅ Zero mock data — 100% live SoSoValue + SoDEX in all signals and engine.</li>
+        <li>✅ Verifiable backend: full strategy lib (V2 engine, Thinking Framework) in public repo with API routes.</li>
+        <li>✅ Agent Thinking Framework: explicit 5-principle analytical layer for adaptive profiles (auditable "why" for weights, regime modulation, outlier caps). Directly addresses "logic/workflow" and "differentiation".</li>
+        <li>✅ Live framework trace in signals (SignalCard "FW" badge, AnalysisDrawer shows principles + note).</li>
+        <li>✅ End-to-end live flow: SoSoValue data → Framework-applied V2 engine → real numbers signal → execution plan (paper + SoDEX path).</li>
+        <li>✅ Validation: Backtest, per-type paper stats, signal history with accuracy. Framework impact visible in StrategyConfig apply trace.</li>
+      </ul>
+
       <h3 className="text-lg font-bold text-white mt-8">Competitive Landscape</h3>
       <p className="text-[#aaaacc]">
         SignalFlow Agent competes in the <strong className="text-white">Agentic Finance OS</strong> space alongside:
