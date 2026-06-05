@@ -28,7 +28,7 @@ export function useAISignal(aiConfig?: AIConfig) {
         }
       }
 
-      const result = await fetchAISignal(coin, { ...opts, includeAI: true });
+      const result = await fetchAISignal(coin, { ...opts, includeAI: true /* strategy can be passed if needed */ });
 
       // Use baseSignal from the new API response
       const signal: Signal = {

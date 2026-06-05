@@ -355,6 +355,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
   const generateSignal = async () => {
     d.setAiCoin(coin);
     d.setIncludeAI(true);
+    // Strategy is automatically injected by the provider (so liquidityFlow screening is used when active)
     await d.generate(coin, true);
   };
 
@@ -529,7 +530,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
           </span>
         </div>
       }
-      className="h-[580px] relative z-10"
+      className="h-[570px] relative z-10"
       bodyClassName="flex-1 overflow-visible"
     >
       <div className="flex h-full min-w-0 flex-col gap-2 overflow-visible p-3">
@@ -560,9 +561,9 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
             <SpeedometerGauge value={decision.confidence} size="lg" showLabel={false} sweeping={d.analyzing} color={signalColor.gauge} />
           </div>
 
-          {/* Persen di tengah + dinaikkan 10px (-translate-y-[10px]), buttons mengapit kiri-kanan + naik 20px. Gauge diturunin 5px. Header dihapus. */}
-          <div className="mt-2 flex items-end justify-between">
-            <div className="self-end -translate-y-[20px]">
+          {/* Persen, button Generate, dan button Execute Setup diturunin 10px + 3px lagi. Buttons -translate-y-[7px]. Persen diturunin lagi 1.5px (translate-y-[1.5px]). Gauge diturunin 5px. Frame/card inner gauge+buttons udah cocok (jangan ubah lagi). Header dihapus. */}
+          <div className="mt-[-17px] flex items-end justify-between">
+            <div className="self-end -translate-y-[7px]">
               <button
                 onClick={generateSignal}
                 disabled={d.analyzing}
@@ -579,13 +580,13 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
             </div>
 
             <div
-              className="min-w-[90px] text-4xl font-bold tabular-nums tracking-tight -translate-y-[10px]"
+              className="min-w-[90px] text-4xl font-bold tabular-nums tracking-tight translate-y-[1.5px]"
               style={{ color: signalColor.main }}
             >
               {decision.confidence}%
             </div>
 
-            <div className="self-end -translate-y-[20px]">
+            <div className="self-end -translate-y-[7px]">
               <button
                 onClick={execute}
                 disabled={!currentSignal || decision.action === "NO TRADE"}
@@ -638,8 +639,8 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
           </div>
         </div>
 
-        {/* Bottom two stat cards under live decision score — now wired to real signal.execution data (no more random hardcoded prices/percentages) */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Bottom two stat cards under live decision score — now wired to real signal.execution data (no more random hardcoded prices/percentages). Grid lowered 2px (mt-[2px]) so top/bottom gaps inside the score card are equal. */}
+        <div className="grid grid-cols-2 gap-3 mt-[2px]">
           {/* TP box */}
           <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent px-3 py-2">
             <div className="flex items-center justify-between">

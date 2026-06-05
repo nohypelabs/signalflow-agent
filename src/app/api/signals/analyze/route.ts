@@ -18,9 +18,12 @@ import {
   getNewsHot,
   getCurrencies,
 } from "@/lib/sosovalue";
-import { getTickers, getKlines } from "@/lib/sodex";
+import { getTickers, getKlines, getOrderbook } from "@/lib/sodex";
+import type { OrderBook } from "@/lib/sodex";
 import { generateSignal } from "@/lib/strategy/signal-engine";
 import { pairToSodexSymbol } from "@/lib/pair-map";
+import { deserializeStrategyConfig } from "@/lib/strategy/config";
+import { generateLiquidityFlowSignals } from "@/lib/strategy/policy-engine";
 
 // ── Data fetching (reuse heuristic scoring as AI reference) ──
 
@@ -173,16 +176,38 @@ export async function POST(req: NextRequest) {
     const includeAI = body.includeAI !== false; // default true for backward compat
     const marketData = await gatherMarketData(coin);
 
-    // ── Base signal from TA engine (always generated) ──
-    const baseSignal = generateSignal({
-      pair: `${coin}/USDC`,
-      klines: marketData.klines,
-      news: marketData.news,
-      etfSummary: marketData.etfSummary,
-      macroEvents: marketData.macroEvents,
-      btcTreasuries: marketData.btcTreasuries,
-      snapshot: marketData.snap ?? undefined,
-    });
+    // ── Base signal: respect active strategy (liquidityFlow uses orderbook + EMA + RSI screening) ──
+    const strategyConfig = body.strategy ? deserializeStrategyConfig(body.strategy) : undefined;
+    const isLiquidity = strategyConfig?.engine === "liquidityFlow";
+
+    let baseSignal: any = null;
+
+    if (isLiquidity) {
+      const sodexSymbol = pairToSodexSymbol(`${coin}/USDC`) || `v${coin.toUpperCase()}_vUSDC`;
+      const orderbook = await getOrderbook(sodexSymbol).catch(() => null as OrderBook | null);
+
+      const klinesMap = new Map([[coin, marketData.klines]]);
+      const orderbooksMap = new Map<string, OrderBook>(orderbook ? [[coin, orderbook]] : []);
+
+      const liqSignals = generateLiquidityFlowSignals({
+        pairs: [`${coin}/USDC`],
+        klinesMap,
+        orderbooks: orderbooksMap,
+        config: strategyConfig!,
+      });
+      baseSignal = liqSignals[0] ?? null;
+    } else {
+      // Original confluence / heuristic path
+      baseSignal = generateSignal({
+        pair: `${coin}/USDC`,
+        klines: marketData.klines,
+        news: marketData.news,
+        etfSummary: marketData.etfSummary,
+        macroEvents: marketData.macroEvents,
+        btcTreasuries: marketData.btcTreasuries,
+        snapshot: marketData.snap ?? undefined,
+      });
+    }
 
     if (!baseSignal) {
       return jsonNoCache(

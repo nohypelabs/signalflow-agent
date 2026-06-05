@@ -32,14 +32,20 @@ export function useSignalGeneration(aiConfig?: AIConfig) {
 
   const analyzing = phase === "fetching_market_data" || phase === "computing_signal" || phase === "generating_ai_thesis";
 
-  async function generate(coin: string, includeAI: boolean) {
+  async function generate(coin: string, includeAI: boolean, strategySerialized?: string) {
     setPhase("fetching_market_data");
     setAiError(null);
     setAiThesis(null);
 
     try {
       // Build provider opts if user has configured AI
-      let opts: { provider?: Provider; model?: string; apiKey?: string; includeAI?: boolean } = { includeAI };
+      let opts: { 
+        provider?: Provider; 
+        model?: string; 
+        apiKey?: string; 
+        includeAI?: boolean;
+        strategy?: string;
+      } = { includeAI };
       if (includeAI && aiConfig?.apiKey) {
         const provider = getAllowedProvider(aiConfig.providerId);
         if (provider) {
@@ -53,6 +59,10 @@ export function useSignalGeneration(aiConfig?: AIConfig) {
         }
       } else {
         console.log(`[SignalGen] No user API key, using server default. includeAI=${includeAI} hasKey=${!!aiConfig?.apiKey}`);
+      }
+
+      if (strategySerialized) {
+        opts.strategy = strategySerialized;
       }
 
       setPhase(includeAI ? "generating_ai_thesis" : "computing_signal");

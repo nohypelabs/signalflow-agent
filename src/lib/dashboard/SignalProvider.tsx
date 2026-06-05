@@ -8,6 +8,7 @@ import { useSignals } from "../hooks/useSignals";
 import { useTradingType } from "../hooks/useTradingType";
 import { useSignalGeneration } from "../hooks/useSignalGeneration";
 import { useSignalHistory } from "../hooks/useSignalHistory";
+import { loadStrategyConfig, serializeStrategyConfig } from "../strategy/config";
 
 function pairToCoin(pair: string): string {
   return pair.split("/")[0];
@@ -62,8 +63,10 @@ export function useSignalProviderState(
     exportCSV,
   } = useSignalHistory();
 
-  const generate = useCallback(async (coin: string, includeAIOverride?: boolean) => {
-    const sig = await generateRaw(coin, includeAIOverride ?? includeAI);
+  const generate = useCallback(async (coin: string, includeAIOverride?: boolean, strategySerialized?: string) => {
+    // Always pass the current strategy so generate respects e.g. liquidityFlow (orderbook/EMA screening etc.)
+    const strategyToUse = strategySerialized ?? serializeStrategyConfig(loadStrategyConfig());
+    const sig = await generateRaw(coin, includeAIOverride ?? includeAI, strategyToUse);
     if (sig) {
       // Record every generated signal so that the Signal Reliability / accuracy tracking
       // in the statcard actually sees live "Generate Signal" actions and can resolve them later.

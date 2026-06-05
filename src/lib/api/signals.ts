@@ -19,7 +19,13 @@ export async function fetchSignals(
 
 export async function fetchAISignal(
   coin: string,
-  opts?: { provider?: Provider; model?: string; apiKey?: string; includeAI?: boolean },
+  opts?: { 
+    provider?: Provider; 
+    model?: string; 
+    apiKey?: string; 
+    includeAI?: boolean;
+    strategy?: string; // pass serialized strategy to respect engine (e.g. liquidityFlow)
+  },
 ): Promise<SignalGenerationResult> {
   const body: Record<string, unknown> = { coin };
   if (opts?.includeAI !== undefined) {
@@ -29,6 +35,9 @@ export async function fetchAISignal(
     body.provider = opts.provider;
     body.model = opts.model ?? "";
     body.apiKey = opts.apiKey;
+  }
+  if (opts?.strategy) {
+    body.strategy = opts.strategy;
   }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 90_000); // 90s (server needs 60s for AI + buffer)

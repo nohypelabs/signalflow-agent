@@ -34,7 +34,7 @@ export interface DashboardState {
   analyzing: boolean;
   includeAI: boolean;
   setIncludeAI: (v: boolean) => void;
-  generate: (coin: string, includeAIOverride?: boolean) => Promise<Signal | null>;
+  generate: (coin: string, includeAIOverride?: boolean, strategySerialized?: string) => Promise<Signal | null>;
   clearAISignal: () => void;
   aiCoin: string;
   setAiCoin: (c: string) => void;
