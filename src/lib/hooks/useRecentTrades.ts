@@ -35,9 +35,12 @@ export function useRecentTrades(symbol: string, limit = 50): UseRecentTradesRetu
   }, [symbol, limit]);
 
   useEffect(() => {
+    const ac = new AbortController();
     fetchData();
     const interval = setInterval(fetchData, 5_000);
-    return () => clearInterval(interval);
+    const onVis = () => { if (!document.hidden) fetchData(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { ac.abort(); clearInterval(interval); document.removeEventListener("visibilitychange", onVis); };
   }, [fetchData]);
 
   return { data, loading, error, refetch: fetchData };

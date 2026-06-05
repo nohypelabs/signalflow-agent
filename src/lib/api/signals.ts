@@ -7,13 +7,14 @@ import { parseApiResponse } from "./client";
 export async function fetchSignals(
   tradingType?: TradingType | null,
   strategyConfig?: StrategyConfig,
+  signal?: AbortSignal,
 ): Promise<SignalsData> {
   const params = new URLSearchParams();
   if (tradingType) params.set("type", tradingType);
   if (strategyConfig) params.set("strategy", serializeStrategyConfig(strategyConfig));
   const query = params.toString();
   const url = query ? `/api/signals?${query}` : "/api/signals";
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(url, { cache: "no-store", signal });
   return parseApiResponse(res);
 }
 

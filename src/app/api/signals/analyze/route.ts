@@ -24,39 +24,51 @@ import { generateSignal } from "@/lib/strategy/signal-engine";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import { deserializeStrategyConfig } from "@/lib/strategy/config";
 import { generateLiquidityFlowSignals } from "@/lib/strategy/policy-engine";
+import type { Signal } from "@/lib/types/signal";
 
 // ── Data fetching (reuse heuristic scoring as AI reference) ──
 
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string, signal?: AbortSignal): Promise<T> {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), ms);
+  const onAbort = () => ac.abort();
+  signal?.addEventListener("abort", onAbort, { once: true });
+
   return Promise.race([
-    promise,
+    promise.finally(() => { clearTimeout(t); signal?.removeEventListener("abort", onAbort); }),
     new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms),
+      setTimeout(() => {
+        clearTimeout(t);
+        signal?.removeEventListener("abort", onAbort);
+        reject(new Error(`${label} timed out after ${ms}ms`));
+      }, ms),
     ),
   ]);
 }
 
-async function gatherMarketData(coin: string) {
+async function gatherMarketData(coin: string, signal?: AbortSignal) {
   const DATA_TIMEOUT = 15_000; // 15s for all external data
 
   const [currencies, etfSummary, macroEvents, btcTreasuries, hotNews] = await withTimeout(
     Promise.all([
-      getCurrencies().catch(() => []),
-      getETFSummary("BTC", "US", 5).catch(() => []),
-      getMacroEvents().catch(() => []),
-      getBTCTreasuries().catch(() => []),
-      getNewsHot(1, 20).catch(() => ({ list: [], page: 1, page_size: 20, total: 0 })),
+      getCurrencies(signal).catch(() => []),
+      getETFSummary("BTC", "US", 5, signal).catch(() => []),
+      getMacroEvents(signal).catch(() => []),
+      getBTCTreasuries(signal).catch(() => []),
+      getNewsHot(1, 20, signal).catch(() => ({ list: [], page: 1, page_size: 20, total: 0 })),
     ]),
     DATA_TIMEOUT,
     "SoSoValue data gathering",
+    signal,
   );
 
   const currency = currencies.find((c) => c.symbol.toLowerCase() === coin.toLowerCase());
   const snap = currency
     ? await withTimeout(
-        getMarketSnapshot(currency.currency_id).catch(() => null),
+        getMarketSnapshot(currency.currency_id, signal).catch(() => null),
         DATA_TIMEOUT,
         "Market snapshot",
+        signal,
       )
     : null;
   const newsList = "list" in hotNews ? hotNews.list : [];
@@ -70,6 +82,7 @@ async function gatherMarketData(coin: string) {
     ]),
     DATA_TIMEOUT,
     "SoDEX data gathering",
+    signal,
   );
   const ticker = tickers.find((t) => t.symbol === sodexSymbol);
 
@@ -141,8 +154,8 @@ Return ONLY valid JSON (no markdown, no code fences) with this exact structure:
   "execution": {
     "orderType": "<Limit Buy on SoDEX | Limit Sell on SoDEX | No action>",
     "entry": <current price>,
-    "takeProfit": <0 if HOLD, else price * 1.05 for BUY or price * 0.95 for SELL>,
-    "stopLoss": <0 if HOLD, else price * 0.95 for BUY or price * 1.05 for SELL>,
+    "takeProfit": <0 if HOLD, else your best estimate of a realistic target based on recent volatility and structure levels>,
+    "stopLoss": <0 if HOLD, else your best estimate of an invalidation level based on recent structure>,
     "positionSize": "<X% of portfolio | —>",
     "riskReward": "<1 : X.XX | —>"
   }
@@ -174,13 +187,19 @@ export async function POST(req: NextRequest) {
     }
 
     const includeAI = body.includeAI !== false; // default true for backward compat
-    const marketData = await gatherMarketData(coin);
+
+    // Abort wiring for upstreams
+    const ac = new AbortController();
+    const reqSignal = (req as Request & { signal?: AbortSignal }).signal;
+    if (reqSignal) reqSignal.addEventListener("abort", () => ac.abort(), { once: true });
+
+    const marketData = await gatherMarketData(coin, ac.signal);
 
     // ── Base signal: respect active strategy (liquidityFlow uses orderbook + EMA + RSI screening) ──
     const strategyConfig = body.strategy ? deserializeStrategyConfig(body.strategy) : undefined;
     const isLiquidity = strategyConfig?.engine === "liquidityFlow";
 
-    let baseSignal: any = null;
+    let baseSignal: Signal | null = null;
 
     if (isLiquidity) {
       const sodexSymbol = pairToSodexSymbol(`${coin}/USDC`) || `v${coin.toUpperCase()}_vUSDC`;
@@ -271,6 +290,20 @@ export async function POST(req: NextRequest) {
         throw new Error("AI response missing required fields");
       }
 
+      // Override AI's TP/SL with signal engine's ATR-based execution.
+      // The AI is good at reasoning but bad at precise price levels —
+      // the signal engine computes proper TP/SL from ATR, regime, and structure.
+      const baseExec = baseSignal.execution;
+      const aiExec = parsed.execution;
+      const mergedExecution = {
+        orderType: aiExec.orderType || baseExec.orderType,
+        entry: baseExec.entry || aiExec.entry || marketData.price,
+        takeProfit: baseExec.takeProfit || aiExec.takeProfit || 0,
+        stopLoss: baseExec.stopLoss || aiExec.stopLoss || 0,
+        positionSize: baseExec.positionSize || aiExec.positionSize || "—",
+        riskReward: baseExec.riskReward || aiExec.riskReward || "—",
+      };
+
       const aiThesis = {
         reasoning: parsed.reasoning as string,
         dimensionDetails: {
@@ -280,7 +313,7 @@ export async function POST(req: NextRequest) {
           momentum: { score: parsed.dimensions.momentum.score, detail: parsed.dimensions.momentum.detail },
           treasury: { score: parsed.dimensions.treasury.score, detail: parsed.dimensions.treasury.detail },
         },
-        execution: parsed.execution,
+        execution: mergedExecution,
       };
 
       return jsonNoCache({

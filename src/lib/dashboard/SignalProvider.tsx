@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Signal } from "../types/signal";
 import type { AIConfig } from "../types/datasource";
 import { getProvider } from "../ai-providers";
@@ -37,11 +37,12 @@ export function useSignalProviderState(
 
   const aiSignal = baseSignal;
   const displaySignal = aiSignal ?? selectedSignal;
-  const liveSignals: Signal[] = signalsData?.signals ?? [];
-  const liveDims =
+  const liveSignals: Signal[] = useMemo(() => signalsData?.signals ?? [], [signalsData?.signals]);
+  const liveDims = useMemo(() =>
     signalsData && displaySignal
       ? signalsData.dimensions[pairToCoin(displaySignal.pair)] ?? null
-      : null;
+      : null,
+  [signalsData, displaySignal]);
 
   const aiProviderLabel = getProvider(aiConfig.providerId)?.name || "Deepseek";
 

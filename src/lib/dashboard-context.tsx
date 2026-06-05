@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useMemo,
   type ReactNode,
 } from "react";
 import { useAIConfig } from "./hooks/useAIConfig";
@@ -26,7 +27,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const executingSodSym = ui.executingSignal ? pairToSodexSymbol(ui.executingSignal.pair) : "";
   const executingTicker = executingSodSym ? market.tickerMap.get(executingSodSym) ?? null : null;
 
-  const value: DashboardState = {
+  // Memoize to avoid new object identity on every sub-state change (reduces re-render cascade to all useDashboard() consumers)
+  const value: DashboardState = useMemo(() => ({
     ...market,
     ...signal,
     ...wallet,
@@ -35,7 +37,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     executingTicker,
     aiConfig,
     updateAIConfig,
-  };
+  }), [
+    market, signal, wallet, trading, ui, executingTicker, aiConfig, updateAIConfig,
+  ]);
 
   return (
     <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>

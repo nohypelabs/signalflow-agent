@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useMemo } from "react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
 import { LineChart } from "lucide-react";
-import { unwrapApiResponse } from "@/lib/api/client";
+import { useTickers } from "@/lib/hooks/useTickers";
 import type { SoDEXTicker } from "@/lib/types/trade";
 
 interface IndexData {
@@ -35,70 +35,38 @@ function toneForChange(value: number): string {
 }
 
 export default function IndexROIDashboard() {
-  const [data, setData] = useState<IndexData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const dataRef = useRef<IndexData[]>([]);
+  const { tickers, loading: tickersLoading, error: tickersError } = useTickers();
 
-  useEffect(() => {
-    dataRef.current = data;
-  }, [data]);
+  const { data, loading, error } = useMemo(() => {
+    if (!tickers || tickers.length === 0) {
+      return { data: [] as IndexData[], loading: tickersLoading, error: tickersError };
+    }
 
-  useEffect(() => {
-    let cancelled = false;
+    const mapped = INDICES.map((meta) => {
+      const syms = [
+        `v${meta.ticker}_vUSDC`,
+        `v${meta.ticker.toLowerCase()}_vUSDC`,
+        `v${meta.ticker.toUpperCase()}_vUSDC`,
+      ];
+      const t = tickers.find((tt: SoDEXTicker) =>
+        syms.some((s) => tt.symbol === s || tt.symbol.toUpperCase() === s.toUpperCase())
+      );
+      if (!t) return null;
+      return {
+        ticker: meta.ticker,
+        label: meta.label,
+        price: parseFloat(t.lastPx) || 0,
+        change24h: Number(t.changePct) || 0,
+        changeAbs: parseFloat(t.change) || 0,
+      };
+    }).filter(Boolean) as IndexData[];
 
-    const load = async () => {
-      const isFirstLoad = dataRef.current.length === 0;
-      if (isFirstLoad) setLoading(true);
-
-      try {
-        const res = await fetch(`/api/market/tickers`, { cache: "no-store" });
-        const json = await res.json();
-        const allTickers = unwrapApiResponse<SoDEXTicker[] | null>(json) || [];
-
-        if (cancelled) return;
-
-        const mapped = INDICES.map((meta) => {
-          const syms = [
-            `v${meta.ticker}_vUSDC`,
-            `v${meta.ticker.toLowerCase()}_vUSDC`,
-            `v${meta.ticker.toUpperCase()}_vUSDC`,
-          ];
-          const t = allTickers.find((tt) =>
-            syms.some((s) => tt.symbol === s || tt.symbol.toUpperCase() === s.toUpperCase())
-          );
-          if (!t) return null;
-          return {
-            ticker: meta.ticker,
-            label: meta.label,
-            price: parseFloat(t.lastPx) || 0,
-            change24h: Number(t.changePct) || 0,
-            changeAbs: parseFloat(t.change) || 0,
-          };
-        }).filter(Boolean) as IndexData[];
-
-        setData(mapped);
-        setError(null);
-      } catch (e) {
-        if (!cancelled) {
-          if (dataRef.current.length === 0) {
-            setError(e instanceof Error ? e.message : "Failed to fetch index data");
-          }
-          // keep previous data on refresh errors (real-time resilience)
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+    return {
+      data: mapped,
+      loading: tickersLoading && mapped.length === 0,
+      error: tickersError,
     };
-
-    load();
-    const interval = setInterval(load, 15000); // real-time: 15s refresh for live index prints
-
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, []);
+  }, [tickers, tickersLoading, tickersError]);
 
   if (loading && data.length === 0) {
     return (

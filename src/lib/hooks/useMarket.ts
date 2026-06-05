@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { SoDEXTicker, SoDEXKline } from "../types/trade";
-import { fetchTickers, fetchKlines } from "../api/datasources";
+import { fetchKlines } from "../api/datasources";
+import { useTickers } from "./useTickers";
 
 interface MarketState {
   tickers: SoDEXTicker[] | null;
@@ -11,35 +12,32 @@ interface MarketState {
   error: string | null;
 }
 
-export function useMarket(symbol: string, interval = "1h", klineLimit = 30) {
-  const [state, setState] = useState<MarketState>({
-    tickers: null,
-    klines: null,
-    loading: true,
-    error: null,
+export function useMarket(symbol: string, interval = "1h", klineLimit = 30): MarketState {
+  const tickersQ = useTickers();
+
+  const klinesQ = useQuery<SoDEXKline[] | null, Error>({
+    queryKey: ["market-klines", symbol, interval, klineLimit],
+    queryFn: () => fetchKlines(symbol, interval, klineLimit),
+    enabled: !!symbol,
+    staleTime: 15_000,
+    refetchInterval: 30_000, // moderate refresh for selected pair candles (last bar may update)
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    retry: 2,
   });
 
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchData() {
-      try {
-        const [tickers, klines] = await Promise.all([
-          fetchTickers(),
-          fetchKlines(symbol, interval, klineLimit),
-        ]);
-        if (!cancelled) setState({ tickers, klines, loading: false, error: null });
-      } catch (err) {
-        if (!cancelled)
-          setState((s) => ({
-            ...s,
-            loading: false,
-            error: err instanceof Error ? err.message : "Failed to fetch market data",
-          }));
-      }
-    }
-    fetchData();
-    return () => { cancelled = true; };
-  }, [symbol, interval, klineLimit]);
+  const tickers = tickersQ.tickers;
+  const klines = klinesQ.data ?? null;
 
-  return state;
+  const loading = tickersQ.loading || klinesQ.isLoading || (klinesQ.isFetching && klines === null);
+  const error =
+    tickersQ.error ||
+    (klinesQ.error ? (klinesQ.error instanceof Error ? klinesQ.error.message : "Failed to fetch klines") : null);
+
+  return {
+    tickers,
+    klines,
+    loading,
+    error,
+  };
 }

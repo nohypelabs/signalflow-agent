@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { SignalsData } from "../types/signal";
 import type { TradingType } from "../types/trading-type";
 import { fetchSignals } from "../api/signals";
@@ -9,15 +10,13 @@ import {
   STRATEGY_CONFIG_EVENT,
   STRATEGY_CONFIG_STORAGE_KEY,
   loadStrategyConfig,
+  strategyConfigKey,
 } from "../strategy/config";
 
 export type { SignalsData };
 export type { LiveSignalDimensions as SignalDimensions, DimensionData } from "../types/signal";
 
 export function useSignals(tradingType?: TradingType | null) {
-  const [data, setData] = useState<SignalsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [strategyConfig, setStrategyConfig] = useState(DEFAULT_STRATEGY_CONFIG);
   const [strategyReady, setStrategyReady] = useState(false);
 
@@ -39,29 +38,30 @@ export function useSignals(tradingType?: TradingType | null) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!strategyReady) return;
-    let cancelled = false;
-    async function load() {
-      try {
-        const json = await fetchSignals(tradingType, strategyConfig);
-        if (!cancelled) {
-          setData(json);
-          setError(null);
-        }
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Signal fetch failed");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    load();
-    const interval = setInterval(load, 60_000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [strategyConfig, strategyReady, tradingType]);
+  // Derived stable key for RQ (includes strategy so config changes trigger correct fetch + cache isolation)
+  const strategyKey = useMemo(() => strategyConfigKey(strategyConfig), [strategyConfig]);
+
+  const signalsQuery = useQuery<SignalsData | null, Error>({
+    queryKey: ["signals", tradingType ?? "all", strategyKey],
+    queryFn: async ({ signal }) => {
+      // Pass RQ abort signal for proper cancellation on unmount / route change
+      return fetchSignals(tradingType, strategyConfig, signal);
+    },
+    enabled: strategyReady,
+    staleTime: 8_000,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    retry: 2,
+  });
+
+  const data = signalsQuery.data ?? null;
+  const loading = !strategyReady || signalsQuery.isPending || (signalsQuery.isFetching && data === null);
+  const error = signalsQuery.error
+    ? signalsQuery.error instanceof Error
+      ? signalsQuery.error.message
+      : "Signal fetch failed"
+    : null;
 
   return { data, loading, error, strategyConfig };
 }

@@ -65,6 +65,9 @@ model WalletProfile {
   paperAccount     PaperAccount?
   tradeJournal     TradeJournal[]
   backtestRuns     BacktestRun[]
+  subscription     Subscription?
+  apiKeys          ApiKey[]
+  usageLogs        UsageLog[]
 
   @@index([normalizedWallet])
 }
@@ -188,4 +191,102 @@ model BacktestRun {
 
   @@index([walletProfileId, startedAt])
   @@index([engine, symbol, timeframe])
+}
+
+// ──────────────────────────────────────────────
+// Paid API — Subscription, API Key, Usage
+// ──────────────────────────────────────────────
+
+enum SubscriptionTier {
+  FREE
+  PRO
+  WHALE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+  TRIAL
+}
+
+enum ApiKeyStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum ApiEndpoint {
+  SYSTEM_DATA
+  SIGNALS
+  SIGNALS_ANALYZE
+  MARKET_TICKERS
+  MARKET_KLINES
+  MARKET_ORDERBOOK
+  ETF_FLOW
+  MACRO
+  NEWS
+  PERFORMANCE
+  CORRELATION
+  SCREENER
+  FUNDING
+  BACKTEST
+}
+
+model Subscription {
+  id                    String             @id @default(cuid())
+  walletProfileId       String             @unique
+  walletProfile         WalletProfile      @relation(fields: [walletProfileId], references: [id], onDelete: Cascade)
+  tier                  SubscriptionTier   @default(FREE)
+  status                SubscriptionStatus @default(ACTIVE)
+  lemonSqueezyId        String?            @unique
+  lemonSqueezyOrderId   String?
+  lemonSqueezyProductId String?
+  lemonSqueezyVariantId String?
+  lemonSqueezyCustomerId String?
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  cancelAtPeriodEnd     Boolean            @default(false)
+  trialEndsAt           DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([walletProfileId, status])
+  @@index([lemonSqueezyId])
+  @@index([status, currentPeriodEnd])
+}
+
+model ApiKey {
+  id              String        @id @default(cuid())
+  walletProfileId String
+  walletProfile   WalletProfile @relation(fields: [walletProfileId], references: [id], onDelete: Cascade)
+  name            String
+  keyPrefix       String        // First 8 chars of raw key for display (e.g. "sf_live_")
+  keyHash         String        @unique // SHA-256 hash of the full key
+  status          ApiKeyStatus  @default(ACTIVE)
+  lastUsedAt      DateTime?
+  expiresAt       DateTime?
+  createdAt       DateTime      @default(now())
+  revokedAt       DateTime?
+
+  @@unique([walletProfileId, name])
+  @@index([keyHash])
+  @@index([walletProfileId, status])
+}
+
+model UsageLog {
+  id              String       @id @default(cuid())
+  walletProfileId String
+  walletProfile   WalletProfile @relation(fields: [walletProfileId], references: [id], onDelete: Cascade)
+  endpoint        ApiEndpoint
+  requestDate     DateTime     @db.Date
+  requestCount    Int           @default(0)
+  lastRequestAt   DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([walletProfileId, endpoint, requestDate])
+  @@index([walletProfileId, requestDate])
+  @@index([requestDate, endpoint])
 }

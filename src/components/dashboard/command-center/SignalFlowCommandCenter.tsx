@@ -448,8 +448,10 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
     ? `${riskRewardNumber.toFixed(2)}R`
     : decision.riskReward;
 
-  // Effective execution for display (prefer aiSignal from generate, fallback to live currentSignal)
-  const execForDisplay = aiSignal?.execution || currentSignal?.execution || null;
+  // Effective execution for display (prefer signal engine's ATR-based execution,
+  // fallback to aiSignal's execution). Signal engine computes proper TP/SL from
+  // ATR, regime, and structure — AI is good at reasoning but bad at precise levels.
+  const execForDisplay = currentSignal?.execution || aiSignal?.execution || null;
   const dispEntry = execForDisplay?.entry || currentPrice || 0;
   const dispTP = execForDisplay?.takeProfit || 0;
   const dispSL = execForDisplay?.stopLoss || 0;
@@ -675,14 +677,14 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-semibold text-emerald-500">Take Profit (TP)</span>
               <span className="rounded bg-emerald-500/10 border border-emerald-500/40 px-1.5 py-0 text-[9px] font-bold text-emerald-500">
-                {aiSignal?.execution?.riskReward || currentSignal?.execution?.riskReward || riskRewardDisplay}
+                {currentSignal?.execution?.riskReward || aiSignal?.execution?.riskReward || riskRewardDisplay}
               </span>
             </div>
             <div className="mt-0.5 text-2xl font-bold tabular-nums text-emerald-500">
-              {aiSignal?.execution?.takeProfit 
-                ? formatPanelPrice(aiSignal.execution.takeProfit) 
-                : currentSignal?.execution?.takeProfit 
-                  ? formatPanelPrice(currentSignal.execution.takeProfit) 
+              {currentSignal?.execution?.takeProfit
+                ? formatPanelPrice(currentSignal.execution.takeProfit)
+                : aiSignal?.execution?.takeProfit
+                  ? formatPanelPrice(aiSignal.execution.takeProfit)
                   : (decision.targets?.[0]?.[1] || "—")}
             </div>
             <div className="mt-1 text-[9px] text-[#a1a1aa]">from entry</div>
@@ -704,10 +706,10 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
               </span>
             </div>
             <div className="mt-0.5 text-2xl font-bold tabular-nums text-rose-500">
-              {aiSignal?.execution?.stopLoss 
-                ? formatPanelPrice(aiSignal.execution.stopLoss) 
-                : currentSignal?.execution?.stopLoss 
-                  ? formatPanelPrice(currentSignal.execution.stopLoss) 
+              {currentSignal?.execution?.stopLoss
+                ? formatPanelPrice(currentSignal.execution.stopLoss)
+                : aiSignal?.execution?.stopLoss
+                  ? formatPanelPrice(aiSignal.execution.stopLoss)
                   : (decision.stop?.[1] || "—")}
             </div>
             <div className="mt-1 text-[9px] text-[#a1a1aa]">from entry</div>

@@ -20,6 +20,7 @@ import {
   BellIcon,
   DocumentIcon,
   BarChartIcon,
+  ShieldIcon,
 } from "@/components/ui/icons";
 
 const groups = [
@@ -58,6 +59,7 @@ const groups = [
     label: "System",
     items: [
       { href: "/settings", label: "Settings", Icon: SettingsIcon },
+      { href: "/api-keys", label: "API Keys", Icon: ShieldIcon },
       { href: "/docs", label: "Docs", Icon: DocsIcon },
     ],
   },
