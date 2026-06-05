@@ -1,0 +1,266 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useDashboard } from "@/lib/dashboard-context";
+import type { StrategyEngineName } from "@/lib/strategy/config";
+import { loadStrategyConfig, serializeStrategyConfig } from "@/lib/strategy/config";
+
+interface GenerationSession {
+  id: string;
+  strategy: StrategyEngineName;
+  status: "running" | "success" | "error";
+  logs: string[];
+  result?: any;
+  error?: string;
+  startedAt: number;
+}
+
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  coin: string;
+  onGenerateComplete?: (strategy: StrategyEngineName, result: any) => void;
+}
+
+export default function StrategySelectionModal({ open, onClose, coin, onGenerateComplete }: Props) {
+  const d = useDashboard();
+  const [selectedStrategies, setSelectedStrategies] = useState<StrategyEngineName[]>([]);
+  const [minimized, setMinimized] = useState(false);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  const [sessions, setSessions] = useState<Record<string, GenerationSession>>({});
+
+  // Mock customization options
+  const [customOptions, setCustomOptions] = useState({
+    liquidityFlow: { minSpreadBps: 3, includeFunding: true },
+    confluence: { minConfidence: 70 },
+  });
+
+  const strategies: { name: StrategyEngineName; label: string; description: string }[] = [
+    {
+      name: "liquidityFlow",
+      label: "Liquidity Flow",
+      description: "Orderbook screening, orderflow (imbalance), funding rate, EMA 9 & 21, RSI, spread gate ≤3bps, etc.",
+    },
+    {
+      name: "confluence",
+      label: "Confluence V2",
+      description: "5-factor confluence (Trend/Momentum/Volatility/Volume/Structure), multi-timeframe, AI optional.",
+    },
+  ];
+
+  const toggleStrategy = (name: StrategyEngineName) => {
+    setSelectedStrategies((prev) =>
+      prev.includes(name) ? prev.filter((s) => s !== name) : [...prev, name]
+    );
+  };
+
+  const startGeneration = async (strategy: StrategyEngineName) => {
+    const sessionId = `${strategy}-${Date.now()}`;
+    const newSession: GenerationSession = {
+      id: sessionId,
+      strategy,
+      status: "running",
+      logs: [`[${new Date().toLocaleTimeString()}] Starting ${strategy} generation for ${coin}`],
+      startedAt: Date.now(),
+    };
+
+    setSessions((prev) => ({ ...prev, [sessionId]: newSession }));
+
+    // Simulate live logs based on strategy
+    const logSteps = strategy === "liquidityFlow"
+      ? [
+          "Fetching orderbook & klines...",
+          "Analyzing orderbook imbalance & spread...",
+          "Computing EMA 9 / EMA 21...",
+          "Checking funding rate & RSI alignment...",
+          "Running liquidity gates (spread ≤3bps, imbalance)...",
+          "Generating base signal...",
+          "Optional AI thesis enrichment...",
+        ]
+      : [
+          "Fetching multi-timeframe market data...",
+          "Computing 5-factor confluence scores...",
+          "Regime detection (TRENDING/RANGING/VOLATILE)...",
+          "Multi-TF confluence calculation...",
+          "Volatility-adjusted TP/SL...",
+          "Applying min confluence filters...",
+          "Optional AI thesis...",
+        ];
+
+    let logIndex = 0;
+    const interval = setInterval(() => {
+      if (logIndex < logSteps.length) {
+        setSessions((prev) => {
+          const sess = prev[sessionId];
+          if (!sess) return prev;
+          return {
+            ...prev,
+            [sessionId]: {
+              ...sess,
+              logs: [...sess.logs, `[${new Date().toLocaleTimeString()}] ${logSteps[logIndex]}`],
+            },
+          };
+        });
+        logIndex++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 800);
+
+    try {
+      // Call the real generate with specific strategy
+      const currentCfg = loadStrategyConfig();
+      const forcedCfg = { ...currentCfg, engine: strategy };
+      const serialized = serializeStrategyConfig(forcedCfg);
+
+      const result = await d.generate(coin, true, serialized);
+
+      setSessions((prev) => {
+        const sess = prev[sessionId];
+        if (!sess) return prev;
+        return {
+          ...prev,
+          [sessionId]: {
+            ...sess,
+            status: "success",
+            result,
+            logs: [...sess.logs, `[${new Date().toLocaleTimeString()}] Generation completed successfully.`],
+          },
+        };
+      });
+
+      onGenerateComplete?.(strategy, result);
+    } catch (err: any) {
+      setSessions((prev) => {
+        const sess = prev[sessionId];
+        if (!sess) return prev;
+        return {
+          ...prev,
+          [sessionId]: {
+            ...sess,
+            status: "error",
+            error: err?.message || "Generation failed",
+            logs: [...sess.logs, `[${new Date().toLocaleTimeString()}] ERROR: ${err?.message || "Unknown error"}`],
+          },
+        };
+      });
+    }
+  };
+
+  const handleGenerateSelected = () => {
+    selectedStrategies.forEach((strat) => {
+      startGeneration(strat);
+    });
+    // Keep modal open so user can see logs (or minimize)
+  };
+
+  const toggleMinimize = () => {
+    setMinimized(!minimized);
+  };
+
+  if (!open) return null;
+
+  if (minimized) {
+    return (
+      <div className="fixed bottom-4 right-4 z-[100] bg-[#0B1020] border border-border-default rounded-lg px-3 py-2 text-xs shadow-lg flex items-center gap-2">
+        <span className="text-txt-secondary">Generating signals...</span>
+        <button onClick={toggleMinimize} className="text-accent hover:underline">Expand</button>
+        <button onClick={onClose} className="text-txt-muted hover:text-white">×</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70">
+      <div className="w-full max-w-2xl rounded-xl border border-border-default bg-[#0B1020] p-4 text-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="font-semibold text-lg">Generate Signal — Choose Strategy</div>
+            <div className="text-[10px] text-txt-muted">Transparency mode for judges & users</div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={toggleMinimize} className="text-xs px-2 py-1 border border-border-default rounded hover:bg-inset">Minimize</button>
+            <button onClick={() => setCustomizeOpen(!customizeOpen)} className="text-xs px-2 py-1 border border-border-default rounded hover:bg-inset">Customize</button>
+            <button onClick={onClose} className="text-xs px-2 py-1 text-txt-muted hover:text-white">Close</button>
+          </div>
+        </div>
+
+        {/* Strategy selection */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          {strategies.map((s) => {
+            const isSelected = selectedStrategies.includes(s.name);
+            return (
+              <div
+                key={s.name}
+                onClick={() => toggleStrategy(s.name)}
+                className={`cursor-pointer rounded-lg border p-3 transition ${isSelected ? "border-accent bg-accent/5" : "border-border-default hover:border-txt-muted"}`}
+              >
+                <div className="font-medium flex items-center gap-2">
+                  <input type="checkbox" checked={isSelected} readOnly className="accent-accent" />
+                  {s.label}
+                </div>
+                <div className="text-[11px] text-txt-secondary mt-1">{s.description}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Customize section */}
+        {customizeOpen && (
+          <div className="mb-4 rounded border border-border-default p-3 bg-inset/30 text-xs">
+            <div className="font-medium mb-2">Customize Parameters (per generation)</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="text-txt-muted mb-1">LiquidityFlow</div>
+                <label className="block">Min Spread (bps): <input type="number" value={customOptions.liquidityFlow.minSpreadBps} onChange={e => setCustomOptions(p => ({...p, liquidityFlow: {...p.liquidityFlow, minSpreadBps: parseFloat(e.target.value)}}))} className="bg-[#111827] w-16 px-1 rounded" /></label>
+                <label className="flex items-center gap-1 mt-1"><input type="checkbox" checked={customOptions.liquidityFlow.includeFunding} onChange={e => setCustomOptions(p => ({...p, liquidityFlow: {...p.liquidityFlow, includeFunding: e.target.checked}}))} /> Include Funding Rate</label>
+              </div>
+              <div>
+                <div className="text-txt-muted mb-1">Confluence V2</div>
+                <label>Min Confidence: <input type="number" value={customOptions.confluence.minConfidence} onChange={e => setCustomOptions(p => ({...p, confluence: {...p.confluence, minConfidence: parseInt(e.target.value)}}))} className="bg-[#111827] w-16 px-1 rounded" /></label>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Active generations / logs */}
+        <div className="mb-3">
+          <div className="text-xs uppercase tracking-wider text-txt-muted mb-1">Live Generation Logs</div>
+          {Object.keys(sessions).length === 0 && (
+            <div className="text-xs text-txt-secondary italic">Select strategy above and click Generate to start. Logs will appear here in real time.</div>
+          )}
+          {Object.values(sessions).map((sess) => (
+            <div key={sess.id} className="mb-2 border border-border-default rounded p-2 bg-black/30">
+              <div className="flex justify-between text-xs mb-1">
+                <span className="font-medium">{sess.strategy} — {sess.status}</span>
+                <span className="text-txt-muted">{((Date.now() - sess.startedAt) / 1000).toFixed(1)}s</span>
+              </div>
+              <div className="max-h-32 overflow-auto text-[10px] font-mono bg-inset/40 p-1 rounded">
+                {sess.logs.map((log, i) => (
+                  <div key={i} className="whitespace-pre-wrap">{log}</div>
+                ))}
+                {sess.status === "running" && <div className="text-accent animate-pulse">...</div>}
+              </div>
+              {sess.error && <div className="text-rose-500 text-xs mt-1">Error: {sess.error}</div>}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={handleGenerateSelected}
+            disabled={selectedStrategies.length === 0}
+            className="rounded bg-accent text-black px-3 py-1 text-sm font-medium disabled:opacity-50"
+          >
+            Generate Selected Strategies
+          </button>
+          <button onClick={onClose} className="rounded border border-border-default px-3 py-1 text-sm">Close</button>
+        </div>
+
+        <div className="mt-3 text-[10px] text-txt-muted">
+          Each strategy runs its own screening pipeline. Logs are streamed for transparency.
+        </div>
+      </div>
+    </div>
+  );
+}

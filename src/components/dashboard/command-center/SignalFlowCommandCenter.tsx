@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import StrategySelectionModal from "@/components/StrategySelectionModal";
 import { Target, Layers, Activity, Play, TrendingUp, TrendingDown, Database, Box, Brain, GitMerge, Landmark, BarChart3, Grid2x2, MessageSquare, CheckCircle, CircleDot, Newspaper, Minus } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
@@ -352,13 +353,6 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
       ? `Generate a fresh decision from the active ${activeStrategy?.label ?? "SignalFlow"} policy.`
       : "Generate a fresh decision from the live data currently available while external layers recover.";
 
-  const generateSignal = async () => {
-    d.setAiCoin(coin);
-    d.setIncludeAI(true);
-    // Strategy is automatically injected by the provider (so liquidityFlow screening is used when active)
-    await d.generate(coin, true);
-  };
-
   const decision = useMemo(() => {
     const systemAction = actionFromSignal(currentSignal);
     const systemConfidence = currentSignal?.confidence ?? 0;
@@ -565,7 +559,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
           <div className="mt-[-17px] flex items-end justify-between">
             <div className="self-end -translate-y-[7px]">
               <button
-                onClick={generateSignal}
+                onClick={() => openGenerateModal(coin)}
                 disabled={d.analyzing}
                 className="flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold hover:bg-opacity-80 disabled:opacity-60"
                 style={{ 
@@ -2104,6 +2098,15 @@ export default function SignalFlowCommandCenter() {
   const d = useDashboard();
   const [news, setNews] = useState<NewsResponse | null>(null);
   const [newsFetchError, setNewsFetchError] = useState(false);
+
+  // Strategy modal state for Generate Signal (per user agenda)
+  const [showStrategyModal, setShowStrategyModal] = useState(false);
+  const [modalCoin, setModalCoin] = useState("");
+
+  const openGenerateModal = (c: string) => {
+    setModalCoin(c);
+    setShowStrategyModal(true);
+  };
   const pairBase = d.selectedPair.startsWith("v")
     ? d.selectedPair.replace(/^v/, "").replace(/_vUSDC$/, "")
     : d.selectedPair.split("/")[0];
@@ -2150,6 +2153,17 @@ export default function SignalFlowCommandCenter() {
         <BTCTreasuryDashboard />
         <MacroSurprise />
       </div>
+
+      {/* Strategy modal for Generate Signal - per agenda: choice, minimize, customize, live logs per strategy */}
+      <StrategySelectionModal
+        open={showStrategyModal}
+        onClose={() => setShowStrategyModal(false)}
+        coin={modalCoin}
+        onGenerateComplete={(strat, res) => {
+          // result is already handled inside the modal via d.generate
+          // optionally force refresh or close modal
+        }}
+      />
     </div>
   );
 }
