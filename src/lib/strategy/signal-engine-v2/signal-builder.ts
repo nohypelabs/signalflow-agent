@@ -174,13 +174,26 @@ export function generateSignalV2(input: {
   };
 
   let reasoning = `[${actionLabel}] on ${pair} — Setup: ${setup.label}. ` +
-    `Confluence ${confluence.score}/100, Regime: ${regimeLabel[regime]}. ` +
+    `Confluence ${confluence.score}/100 (bullishFactors:${confluence.bullishCount} bearishFactors:${confluence.bearishCount}), Regime: ${regimeLabel[regime]}. ` +
     `${setup.thesis} `;
 
   if (quality.blockedReasons.length > 0) {
     reasoning += `Execution blocked: ${quality.blockedReasons.join(" ")} `;
   } else {
     reasoning += `Lesson: ${quality.lesson.note} `;
+  }
+
+  if (action === "HOLD" || action.startsWith("WEAK_")) {
+    // Always surface the "why neutral / weak" for user visibility in Command Center & history
+    const topFactors = factors
+      .slice()
+      .sort((a, b) => Math.abs(b.score - 50) - Math.abs(a.score - 50))
+      .slice(0, 3)
+      .map((f) => `${f.name}:${f.score}`);
+    reasoning += `Key drivers: ${topFactors.join(", ")}. `;
+    if (regime === "RANGING" && (confluence.score > 52 || confluence.score < 48)) {
+      reasoning += `Note: Regime RANGING overrode directional factors (common when ADX<=20 or EMA stack incomplete). `;
+    }
   }
 
   if (bullishFactors.length > 0) {

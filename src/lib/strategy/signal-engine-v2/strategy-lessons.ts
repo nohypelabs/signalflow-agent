@@ -3,8 +3,8 @@ import type { StrategyLesson } from "./types";
 export const COVERAGE_GUARDRAIL = {
   minWatchableCoveragePct: 8,
   minWatchableSignals: 1,
-  weakLongScore: 52,
-  weakShortScore: 48,
+  weakLongScore: 50, // allow weak bias earlier
+  weakShortScore: 50,
 } as const;
 
 export const BASELINE_LESSONS: StrategyLesson[] = [
@@ -15,10 +15,10 @@ export const BASELINE_LESSONS: StrategyLesson[] = [
     sampleSize: 0,
     winRate: null,
     profitFactor: null,
-    confidenceAdjustment: 4,
-    minConfidence: 64,
+    confidenceAdjustment: 5,
+    minConfidence: 58,
     status: "trusted",
-    note: "Long trend continuation is allowed when trend, momentum, and volume agree.",
+    note: "Long trend continuation is allowed when trend + at least one confirmation factor align in TRENDING_UP regime.",
   },
   {
     setupType: "trend_continuation",
@@ -27,10 +27,10 @@ export const BASELINE_LESSONS: StrategyLesson[] = [
     sampleSize: 0,
     winRate: null,
     profitFactor: null,
-    confidenceAdjustment: 4,
-    minConfidence: 64,
+    confidenceAdjustment: 5,
+    minConfidence: 58,
     status: "trusted",
-    note: "Short trend continuation is allowed when trend, momentum, and volume agree.",
+    note: "Short trend continuation is allowed when trend + at least one confirmation factor align in TRENDING_DOWN regime.",
   },
   {
     setupType: "breakout",
@@ -75,9 +75,9 @@ export const BASELINE_LESSONS: StrategyLesson[] = [
     sampleSize: 0,
     winRate: null,
     profitFactor: null,
-    confidenceAdjustment: -35,
-    minConfidence: 99,
-    status: "blocked",
-    note: "No-edge signals must stay as HOLD until the setup can be explained and tested.",
+    confidenceAdjustment: -12,
+    minConfidence: 62,
+    status: "watch",
+    note: "Limited edge; only act if other confluence (e.g. multi-TF alignment or strong regime) compensates. Watch-grade only.",
   },
 ];

@@ -605,6 +605,19 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
           </div>
         </div>
 
+        {/* Diagnostic for NO TRADE / weak bias — helps user understand "why neutral" without digging into full reasoning */}
+        {decision.action === "NO TRADE" && currentSignal && (
+          <div className="rounded-lg border border-hold/30 bg-hold/5 px-2.5 py-1.5 text-[10px] text-txt-secondary">
+            <span className="font-semibold text-hold">Why neutral: </span>
+            {currentSignal.regime === "RANGING" && "Regime detected as RANGING (ADX or EMA stack not decisive). "}
+            {currentSignal.confluence != null && `Confluence ${currentSignal.confluence}/100. `}
+            {currentSignal.quality?.blockedReasons?.length
+              ? currentSignal.quality.blockedReasons.slice(0, 1).join(" ")
+              : currentSignal.actionV2 === "HOLD" ? "V2 classifier returned HOLD (factors not aligned enough)." : ""}
+            {" "}See full trace in signal history or /signals for factor details.
+          </div>
+        )}
+
         {/* Score Drivers (weighted composite) - matching the reference picture exactly */}
         <div className="rounded-xl border border-border-default bg-inset/70 px-3 py-2">
           <div className="text-[10px] font-semibold uppercase tracking-wide text-txt-tertiary mb-2">Score Drivers (weighted composite)</div>

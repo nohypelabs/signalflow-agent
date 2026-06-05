@@ -48,8 +48,10 @@ export function applyConfluenceStrategyPolicy(
     const directionalSupport = signal.action === "SHORT"
       ? 100 - bullishPolicyScore
       : bullishPolicyScore;
+    // Blend external policy dims, but if they are near-neutral (~50) don't drag down a strong TA signal.
+    const externalBias = Math.abs(directionalSupport - 50) <= 8 ? 0.08 : 0.22;
     const policyConfidence = isDirectional(signal.action)
-      ? Math.round(signal.confidence * 0.8 + directionalSupport * 0.2)
+      ? Math.round(signal.confidence * (1 - externalBias) + directionalSupport * externalBias)
       : signal.confidence;
     const blockedByThreshold = isDirectional(signal.action)
       && policyConfidence < config.minConfidence;

@@ -76,7 +76,7 @@ export function classifyTradeSetup(input: {
   let invalidation = "Wait for at least three aligned factors or a clearer regime transition.";
   let confidenceBias = -12;
 
-  if (direction === "neutral" || conflictCount >= 2 || (supportCount < 2 && !isWeakAction(action))) {
+  if (direction === "neutral" || conflictCount >= 3 || (supportCount < 2 && !isWeakAction(action))) {
     type = "no_edge";
   } else if (
     regime === "BREAKOUT" &&
@@ -92,7 +92,7 @@ export function classifyTradeSetup(input: {
     ((direction === "long" && regime === "TRENDING_UP") ||
       (direction === "short" && regime === "TRENDING_DOWN")) &&
     trendDirection === direction &&
-    supportCount >= 3
+    supportCount >= 2
   ) {
     type = "trend_continuation";
     thesis = "Trend, momentum, and confirmation factors support joining the active trend.";

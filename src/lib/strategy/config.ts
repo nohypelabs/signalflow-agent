@@ -41,7 +41,7 @@ export const DEFAULT_STRATEGY_CONFIG: StrategyConfig = {
   macro: 20,
   momentum: 15,
   treasury: 10,
-  minConfidence: 70,
+  minConfidence: 62, // lowered from 70 — engine is multi-gate; 70 was causing chronic HOLD even on clear trends
   maxPositionSize: 5,
   autoExecute: true,
   slippage: 0.5,
@@ -69,7 +69,7 @@ export type StrategyPresetName = "conservative" | "balanced" | "aggressive";
 
 export const PRESETS: Record<StrategyPresetName, StrategyConfig> = {
   conservative: { ...DEFAULT_STRATEGY_CONFIG, etfFlow: 35, sentiment: 15, macro: 25, momentum: 10, treasury: 15, minConfidence: 80, maxPositionSize: 3, autoExecute: false, slippage: 0.3, maxDailyTrades: 5 },
-  balanced: { ...DEFAULT_STRATEGY_CONFIG, etfFlow: 30, sentiment: 25, macro: 20, momentum: 15, treasury: 10, minConfidence: 70, maxPositionSize: 5, autoExecute: true, slippage: 0.5, maxDailyTrades: 10 },
+  balanced: { ...DEFAULT_STRATEGY_CONFIG, etfFlow: 30, sentiment: 25, macro: 20, momentum: 15, treasury: 10, minConfidence: 62, maxPositionSize: 5, autoExecute: true, slippage: 0.5, maxDailyTrades: 10 },
   aggressive: { ...DEFAULT_STRATEGY_CONFIG, etfFlow: 20, sentiment: 30, macro: 10, momentum: 30, treasury: 10, minConfidence: 55, maxPositionSize: 10, autoExecute: true, slippage: 1.0, maxDailyTrades: 25 },
 };
 

@@ -436,25 +436,21 @@ export function calculateConfluence(factors: ConfluenceFactor[]): ConfluenceResu
 export function classifySignal(confluence: ConfluenceResult): SignalActionV2 {
   const { score, bullishCount, bearishCount } = confluence;
 
-  // STRONG_BUY: confluence > 75 AND 3+ factors bullish (score > 60)
+  // STRONG: very high confluence + strong factor support
   if (score > 75 && bullishCount >= 3) return "STRONG_LONG";
-
-  // BUY: confluence > 60 AND 2+ factors bullish
-  if (score > 60 && bullishCount >= 2) return "LONG";
-
-  // STRONG_SELL: confluence < 25 AND 3+ factors bearish (score < 40)
   if (score < 25 && bearishCount >= 3) return "STRONG_SHORT";
 
-  // SELL: confluence < 40 AND 2+ factors bearish (score < 40)
-  if (score < 40 && bearishCount >= 2) return "SHORT";
+  // LONG: solid confluence. Allow high-score single-factor conviction or 2+ normal.
+  if ((score > 60 && bullishCount >= 2) || (score > 68 && bullishCount >= 1)) return "LONG";
 
-  // WEAK_BUY: confluence > 55 but conflicting factors
-  if (score > 55) return "WEAK_LONG";
+  // SHORT: symmetric
+  if ((score < 40 && bearishCount >= 2) || (score < 32 && bearishCount >= 1)) return "SHORT";
 
-  // WEAK_SELL: confluence < 45 but conflicting factors
-  if (score < 45) return "WEAK_SHORT";
+  // WEAK: directional bias present but not full confluence
+  if (score > 54) return "WEAK_LONG";
+  if (score < 46) return "WEAK_SHORT";
 
-  // HOLD: confluence 40-55 OR regime = RANGING
+  // HOLD: close to neutral (46-54)
   return "HOLD";
 }
 
@@ -472,12 +468,14 @@ export function applyCoverageGuardrail(confluence: ConfluenceResult, action: Sig
 }
 
 export function passesFilter(confluence: ConfluenceResult, action: SignalActionV2): boolean {
-  // Strong/normal signals need two aligned factors. Weak signals are allowed
-  // as watchlist candidates when one side has at least a small edge.
+  // Allow decisive signals on very high confluence even with 1 strong factor.
+  // Normal signals still prefer 2+ aligned. Weak are tolerant.
   if (action === "STRONG_LONG" || action === "LONG") {
+    if (confluence.score > 68) return confluence.bullishCount >= 1;
     return confluence.bullishCount >= 2;
   }
   if (action === "STRONG_SHORT" || action === "SHORT") {
+    if (confluence.score < 32) return confluence.bearishCount >= 1;
     return confluence.bearishCount >= 2;
   }
   if (action === "WEAK_LONG") {
