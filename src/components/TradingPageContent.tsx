@@ -7,6 +7,7 @@ import type { TradingType } from "@/lib/types/trading-type";
 import { TRADING_TYPES } from "@/lib/types/trading-type";
 import TradingChart from "@/components/TradingChart";
 import OrderForm from "@/components/OrderForm";
+import FuturesFundingPanel from "@/components/FuturesFundingPanel";
 import TradeProfileBar from "@/components/TradeProfileBar";
 import TraderTypeModal from "@/components/TraderTypeModal";
 import OrderbookDepth from "@/components/OrderbookDepth";
@@ -478,6 +479,9 @@ export default function TradingPageContent() {
                 onExecute={handleExecute}
               />
             </ErrorBoundary>
+            <ErrorBoundary name="Futures Funding">
+              <FuturesFundingPanel address={d.address} isConnected={d.isConnected} />
+            </ErrorBoundary>
           </div>
 
           <div className="bg-card/70 border border-border-default rounded-lg overflow-hidden">
@@ -583,8 +587,13 @@ export default function TradingPageContent() {
         {/* Right rail spans chart and bottom panel without internal scrolling */}
         <div className="min-w-0 flex flex-1 flex-col bg-card">
           <TradeProfileBar tradingType={tradingType} onReview={() => setShowProfileModal(true)} />
-          <ErrorBoundary name="Order Form">
-            <OrderForm pair={pair} coin={coin} currentPrice={currentPrice} signal={signalContext} isConnected={d.isConnected} paperBalance={paper.capitalConfigured ? paper.balance.available : undefined} isPaperCapitalConfigured={paper.capitalConfigured} mode={tradeMode} tradingType={tradingType} error={tradeError} onModeChange={setTradeMode} onExecute={handleExecute} />
+          <div className="min-h-0 shrink">
+            <ErrorBoundary name="Order Form">
+              <OrderForm pair={pair} coin={coin} currentPrice={currentPrice} signal={signalContext} isConnected={d.isConnected} paperBalance={paper.capitalConfigured ? paper.balance.available : undefined} isPaperCapitalConfigured={paper.capitalConfigured} mode={tradeMode} tradingType={tradingType} error={tradeError} onModeChange={setTradeMode} onExecute={handleExecute} />
+            </ErrorBoundary>
+          </div>
+          <ErrorBoundary name="Futures Funding">
+            <FuturesFundingPanel address={d.address} isConnected={d.isConnected} />
           </ErrorBoundary>
         </div>
       </div>
