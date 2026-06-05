@@ -132,10 +132,10 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
 
       onGenerateComplete?.(strategy, result);
 
-      toast.success(`Signal ${strategy} berhasil digenerate`, {
-        description: "Signal sudah berhasil digenerate. Silahkan kembali ke panel decision live score untuk melihat hasilnya.",
+      toast.success(`Signal ${strategy} successfully generated`, {
+        description: "Signal has been successfully generated. Please return to the Live Decision Score panel to view the results.",
         action: {
-          label: "Tutup Modal",
+          label: "Close Modal",
           onClick: onClose,
         },
       });
@@ -261,16 +261,16 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
               {sess.status === "success" && (
                 <div className="mt-2 p-3 bg-emerald-500/10 border border-emerald-500/40 rounded-lg">
                   <div className="flex items-center gap-2 text-emerald-500 font-semibold text-sm">
-                    ✅ Signal berhasil digenerate!
+                    ✅ Signal successfully generated!
                   </div>
                   <div className="text-[11px] text-txt-secondary mt-1 mb-2">
-                    Signal sudah berhasil digenerate. Silahkan kembali ke panel decision live score untuk melihat hasilnya.
+                    Signal has been successfully generated. Please return to the Live Decision Score panel to view the results.
                   </div>
                   <button
                     onClick={onClose}
                     className="w-full rounded bg-emerald-500 hover:bg-emerald-600 text-black py-1.5 text-sm font-medium transition-colors"
                   >
-                    Kembali ke Live Decision Score
+                    Back to Live Decision Score
                   </button>
                 </div>
               )}
@@ -290,7 +290,7 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
         </div>
 
         <div className="mt-3 text-[10px] text-txt-muted">
-          Setiap strategi menjalankan pipeline screening sendiri. Setelah berhasil, klik tombol di banner sukses untuk kembali ke panel utama.
+          Each strategy runs its own screening pipeline. After success, click the button in the success banner to return to the main panel.
         </div>
       </div>
     </div>

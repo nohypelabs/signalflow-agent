@@ -555,7 +555,7 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
             <SpeedometerGauge value={decision.confidence} size="lg" showLabel={false} sweeping={d.analyzing} color={signalColor.gauge} />
           </div>
 
-          {/* Persen, button Generate, dan button Execute Setup diturunin 10px + 3px lagi. Buttons -translate-y-[7px]. Persen diturunin lagi 1.5px (translate-y-[1.5px]). Gauge diturunin 5px. Frame/card inner gauge+buttons udah cocok (jangan ubah lagi). Header dihapus. Success CTA ditambahkan di modal. */}
+          {/* Percent, Generate button, and Execute Setup button lowered 10px + 3px more. Buttons -translate-y-[7px]. Percent lowered another 1.5px (translate-y-[1.5px]). Gauge lowered 5px. Inner gauge+buttons frame size is good (don't change again). Header removed. Success CTA added to modal. */}
           <div className="mt-[-17px] flex items-end justify-between">
             <div className="self-end -translate-y-[7px]">
               <button
