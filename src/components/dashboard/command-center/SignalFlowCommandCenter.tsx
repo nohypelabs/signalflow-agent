@@ -209,7 +209,7 @@ function MarketCanvas({ pair }: { pair: string }) {
   const currentPrice = ticker ? parseFloat(ticker.lastPx) : null;
 
   return (
-    <Card variant="default" padding="none" className="rounded-xl overflow-hidden h-[579px] flex flex-col">
+    <Card variant="default" padding="none" className="rounded-xl overflow-hidden h-[569px] flex flex-col">
       <TradingChart
         klines={d.klines}
         symbol={pair}
@@ -478,7 +478,7 @@ function DecisionPanel({ pair, news }: { pair: string; news: NewsResponse | null
     <Panel
       title="LIVE DECISION SCORE"
       badge={<Badge variant={decision.action === "LONG" ? "buy" : decision.action === "SHORT" ? "sell" : "hold"} size="sm">{activeStrategy?.label ?? "LIVE LOGIC"}</Badge>}
-      className="h-[579px] relative z-10"
+      className="h-[569px] relative z-10"
       bodyClassName="flex-1 overflow-visible"
     >
       <div className="flex h-full min-w-0 flex-col gap-2.5 overflow-visible p-3">
@@ -813,7 +813,7 @@ function NewsSentimentPanel() {
           {loading ? "..." : error ? "ERROR" : label.toUpperCase()}
         </Badge>
       }
-      className="h-[579px]"
+      className="h-[569px]"
     >
       <div className="flex flex-col gap-2.5 p-3">
         {/* Sentiment Gauge */}
