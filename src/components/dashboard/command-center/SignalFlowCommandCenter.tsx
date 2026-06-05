@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import StrategySelectionModal from "@/components/StrategySelectionModal";
 import { Target, Layers, Activity, Play, TrendingUp, TrendingDown, Database, Box, Brain, GitMerge, Landmark, BarChart3, Grid2x2, MessageSquare, CheckCircle, CircleDot, Newspaper, Minus } from "lucide-react";
 import Card from "@/components/ui/Card";
@@ -9,7 +10,6 @@ import IndexROIDashboard from "@/components/IndexROIDashboard";
 import BTCTreasuryDashboard from "@/components/BTCTreasuryDashboard";
 import MacroSurprise from "@/components/MacroSurprise";
 import SpeedometerGauge from "@/components/ui/SpeedometerGauge";
-import TradingChart from "@/components/TradingChart";
 import StrategySwitcher from "@/components/StrategySwitcher";
 import { useDashboard } from "@/lib/dashboard-context";
 import { useMarketaux } from "@/lib/hooks/useMarketaux";
@@ -18,6 +18,17 @@ import { getCoinIcon } from "@/lib/coin-icons";
 import { getStockIcon } from "@/lib/stock-icons";
 import { unwrapApiResponse } from "@/lib/api/client";
 import type { Signal } from "@/lib/types/signal";
+
+// Lazy load heavy chart lib (lightweight-charts) so it doesn't bloat the main
+// dashboard chunk and slow down initial route compilation.
+const TradingChart = dynamic(() => import("@/components/TradingChart"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[420px] flex items-center justify-center rounded-lg border border-border-default bg-inset/50 text-xs text-txt-muted">
+      Loading chart…
+    </div>
+  ),
+});
 
 /* ── Pipeline Model ── */
 
