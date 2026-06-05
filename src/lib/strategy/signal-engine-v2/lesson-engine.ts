@@ -154,10 +154,10 @@ export function getStrategyLesson(
       sampleSize: 0,
       winRate: null,
       profitFactor: null,
-      confidenceAdjustment: -6,
-      minConfidence: 70,
+      confidenceAdjustment: -3,
+      minConfidence: 55,
       status: "watch",
-      note: "No measured lesson for this setup yet; apply conservative confidence.",
+      note: "No measured lesson for this setup yet; apply moderate confidence.",
     }
   );
 }

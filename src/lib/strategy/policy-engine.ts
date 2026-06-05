@@ -1,4 +1,13 @@
+// SignalFlow Agent — Strategy Policy Engine
+// ─────────────────────────────────────────────────────────────
+// Two strategies: Confluence V2 (TA-based) and Liquidity Flow
+// (order flow / microstructure-based). Liquidity Flow uses
+// orderbook depth, trade flow, funding rate, and OI as PRIMARY
+// signal source. TA is demoted to confirmation layer only.
+
 import type { OrderBook, SoDEXKline } from "../sodex-types";
+import type { SoDEXPerpsTicker } from "../sodex-perps";
+import type { SoDEXTrade } from "../types/trade";
 import type {
   LiveSignalDimensions,
   Signal,
@@ -8,6 +17,13 @@ import type {
 } from "../types/signal";
 import type { StrategyConfig } from "./config";
 import { ema, last, rsi } from "./indicators";
+import {
+  analyzeTradeFlow,
+  analyzeDepth,
+  analyzeFunding,
+  scoreOrderFlow,
+  type OrderFlowScore,
+} from "./order-flow-engine";
 
 const DIMENSION_KEYS: Array<keyof SignalDimensions> = [
   "etfFlow",
@@ -28,6 +44,8 @@ function numberValue(value: string | number | undefined): number {
 function isDirectional(action: SignalAction): action is "LONG" | "SHORT" {
   return action === "LONG" || action === "SHORT";
 }
+
+// ── Confluence V2 Policy ─────────────────────────────────────
 
 function configuredDimensionScore(signal: Signal, config: StrategyConfig): number {
   const totalWeight = DIMENSION_KEYS.reduce((sum, key) => sum + config[key], 0);
@@ -88,30 +106,7 @@ export function applyConfluenceStrategyPolicy(
   });
 }
 
-interface BookMetrics {
-  available: boolean;
-  midPrice: number;
-  spreadBps: number;
-  imbalance: number;
-}
-
-function analyzeOrderbook(book: OrderBook | undefined): BookMetrics {
-  const bids = book?.bids.slice(0, 5) ?? [];
-  const asks = book?.asks.slice(0, 5) ?? [];
-  const bestBid = numberValue(bids[0]?.[0]);
-  const bestAsk = numberValue(asks[0]?.[0]);
-  const midPrice = bestBid > 0 && bestAsk > 0 ? (bestBid + bestAsk) / 2 : 0;
-  const bidDepth = bids.reduce((sum, [, qty]) => sum + numberValue(qty), 0);
-  const askDepth = asks.reduce((sum, [, qty]) => sum + numberValue(qty), 0);
-  const totalDepth = bidDepth + askDepth;
-
-  return {
-    available: midPrice > 0 && totalDepth > 0,
-    midPrice,
-    spreadBps: midPrice > 0 ? ((bestAsk - bestBid) / midPrice) * 10_000 : Number.POSITIVE_INFINITY,
-    imbalance: totalDepth > 0 ? bidDepth / totalDepth : 0.5,
-  };
-}
+// ── Liquidity Flow — Microstructure-Based Signals ────────────
 
 function excludedDetail(label: string) {
   return { score: 50, detail: `${label} excluded by Liquidity Flow policy` };
@@ -139,13 +134,22 @@ function buildLiquidityDimensions(
   };
 }
 
-export function generateLiquidityFlowSignals(input: {
+export interface LiquidityFlowInput {
   pairs: string[];
   klinesMap: Map<string, SoDEXKline[]>;
   orderbooks: Map<string, OrderBook>;
   config: StrategyConfig;
-}): Signal[] {
+  // Enhanced data sources (microstructure)
+  perpsTickers?: Map<string, SoDEXPerpsTicker>;
+  recentTrades?: Map<string, SoDEXTrade[]>;
+  hlFundingRates?: Map<string, number>;
+}
+
+export function generateLiquidityFlowSignals(input: LiquidityFlowInput): Signal[] {
   const { pairs, klinesMap, orderbooks, config } = input;
+  const perpsTickers = input.perpsTickers ?? new Map();
+  const recentTrades = input.recentTrades ?? new Map();
+  const hlFunding = input.hlFundingRates ?? new Map();
 
   return pairs.flatMap((pair) => {
     const base = pair.split("/")[0];
@@ -155,71 +159,204 @@ export function generateLiquidityFlowSignals(input: {
     const closes = klines.map((kline) => numberValue(kline.c)).filter((value) => value > 0);
     if (closes.length < 30) return [];
 
-    const book = analyzeOrderbook(orderbooks.get(base));
+    // ── 1. ORDER FLOW (Primary Signal) ──────────────────
+    const trades = recentTrades.get(base) ?? [];
+    const tradeFlow = analyzeTradeFlow(trades);
+    const depth = analyzeDepth(orderbooks.get(base), 20);
+    const funding = analyzeFunding(
+      perpsTickers.get(base) ?? null,
+      hlFunding.get(base) ?? null,
+    );
+    const flowScore = scoreOrderFlow({ tradeFlow, depth, funding });
+
+    // ── 2. TA CONFIRMATION (Secondary) ──────────────────
     const ema9 = last(ema(closes, 9));
     const ema21 = last(ema(closes, 21));
     const rsi14 = last(rsi(closes, 14));
-    const price = book.midPrice || closes[closes.length - 1];
+    const price = depth.midPrice || flowScore.depth.midPrice || closes[closes.length - 1];
     const change24h = closes.length >= 24
       ? ((price - closes[closes.length - 24]) / closes[closes.length - 24]) * 100
       : 0;
-    const spreadScore = book.available ? clamp(100 - (book.spreadBps / 3) * 100, 0, 100) : 0;
-    const imbalanceStrength = clamp(Math.abs(book.imbalance - 0.5) * 200, 0, 100);
-    const trendStrength = ema21 > 0 ? clamp(Math.abs((ema9 - ema21) / ema21) * 10_000, 0, 100) : 0;
-    const rsiAlignment = clamp(100 - Math.abs(rsi14 - 50) * 2, 0, 100);
-    const rawConfidence = Math.round(clamp(
-      55 + imbalanceStrength * 0.2 + spreadScore * 0.1 + trendStrength * 0.1 + rsiAlignment * 0.1,
-      20,
-      98,
-    ));
 
-    const spreadPass = book.available && book.spreadBps <= 3;
-    const longPass = spreadPass && book.imbalance >= 0.55 && ema9 > ema21 && rsi14 >= 50 && rsi14 <= 72;
-    const shortPass = spreadPass && book.imbalance <= 0.45 && ema9 < ema21 && rsi14 <= 50 && rsi14 >= 28;
-    const directionalAction: SignalAction = longPass ? "LONG" : shortPass ? "SHORT" : "HOLD";
-    const action = directionalAction !== "HOLD" && rawConfidence >= config.minConfidence
-      ? directionalAction
-      : "HOLD";
-    const confidence = action === "HOLD" ? Math.min(69, rawConfidence) : rawConfidence;
-    const momentumDetail = `Spread ${book.available ? book.spreadBps.toFixed(2) : "N/A"} bps, imbalance ${(book.imbalance * 100).toFixed(1)}%, EMA9 ${ema9.toFixed(2)}, EMA21 ${ema21.toFixed(2)}, RSI14 ${rsi14.toFixed(1)}`;
-    const { dimensions, dimensionDetails } = buildLiquidityDimensions(confidence, momentumDetail);
+    const taBullish = ema9 > ema21 && rsi14 > 45 && rsi14 < 75;
+    const taBearish = ema9 < ema21 && rsi14 < 55 && rsi14 > 25;
+    const taAligned = (taBullish && flowScore.direction === "bullish")
+      || (taBearish && flowScore.direction === "bearish");
+    const taConflicts = (taBullish && flowScore.direction === "bearish")
+      || (taBearish && flowScore.direction === "bullish");
+
+    // ── 3. SIGNAL CLASSIFICATION ────────────────────────
+    let action: SignalAction = "HOLD";
+    let confidence = flowScore.confidence;
+    const reasons: string[] = [...flowScore.breakdown];
+
+    if (flowScore.direction === "bullish") {
+      if (taAligned) {
+        action = "LONG";
+        confidence = Math.min(98, confidence + 10);
+        reasons.push("✓ TA confirms bullish flow (EMA9>EMA21, RSI aligned)");
+      } else if (taConflicts) {
+        // Flow says long but TA says short — still actionable but lower confidence
+        if (flowScore.score > 60) {
+          action = "LONG";
+          confidence = Math.max(20, confidence - 12);
+          reasons.push("⚠ TA conflicts with flow — proceeding on microstructure strength");
+        } else {
+          action = "HOLD";
+          reasons.push("Flow bullish but weak + TA conflicts → stand aside");
+        }
+      } else {
+        // TA neutral
+        if (flowScore.score > 55) {
+          action = "LONG";
+          reasons.push("Flow bullish, TA neutral — microstructure leading");
+        } else {
+          action = "HOLD";
+          reasons.push("Flow mildly bullish, insufficient edge");
+        }
+      }
+    } else if (flowScore.direction === "bearish") {
+      if (taAligned) {
+        action = "SHORT";
+        confidence = Math.min(98, confidence + 10);
+        reasons.push("✓ TA confirms bearish flow (EMA9<EMA21, RSI aligned)");
+      } else if (taConflicts) {
+        if (flowScore.score < 40) {
+          action = "SHORT";
+          confidence = Math.max(20, confidence - 12);
+          reasons.push("⚠ TA conflicts with flow — proceeding on microstructure strength");
+        } else {
+          action = "HOLD";
+          reasons.push("Flow bearish but weak + TA conflicts → stand aside");
+        }
+      } else {
+        if (flowScore.score < 45) {
+          action = "SHORT";
+          reasons.push("Flow bearish, TA neutral — microstructure leading");
+        } else {
+          action = "HOLD";
+          reasons.push("Flow mildly bearish, insufficient edge");
+        }
+      }
+    } else {
+      reasons.push("Flow neutral — no directional edge from microstructure");
+    }
+
+    // Policy confidence gate
+    if (action !== "HOLD" && confidence < config.minConfidence) {
+      action = "HOLD";
+      confidence = Math.min(55, confidence);
+      reasons.push(`Policy gate: ${confidence}% < ${config.minConfidence}% min`);
+    }
+
+    // ── 4. TP/SL from microstructure ────────────────────
     const direction = action === "LONG" ? 1 : action === "SHORT" ? -1 : 0;
-    const stopDistance = price * 0.004;
-    const targetDistance = price * 0.008;
-    const gateReason = !book.available
-      ? "orderbook unavailable"
-      : !spreadPass
-        ? `spread ${book.spreadBps.toFixed(2)} bps exceeds 3 bps`
-        : directionalAction === "HOLD"
-          ? "imbalance, EMA, and RSI are not aligned"
-          : rawConfidence < config.minConfidence
-            ? `confidence ${rawConfidence}% is below ${config.minConfidence}% policy`
-            : "all liquidity and TA gates passed";
+    let stopDistance: number;
+    let targetDistance: number;
+
+    if (direction !== 0) {
+      // Use ATR if available from klines, else fixed % from spread
+      const atrMultiplier = 1.5;
+      const priceChanges = closes.slice(-14).map((c, i, arr) =>
+        i > 0 ? Math.abs(c - arr[i - 1]) : 0,
+      ).filter((v) => v > 0);
+      const avgRange = priceChanges.length > 0
+        ? priceChanges.reduce((s, v) => s + v, 0) / priceChanges.length
+        : price * 0.005;
+
+      // Stop: 1.5x avg range (below noise floor)
+      stopDistance = avgRange * atrMultiplier;
+      // Target: use risk/reward 2:1 minimum, or depth-based target
+      const rrRatio = taAligned ? 2.5 : 2.0;
+      targetDistance = stopDistance * rrRatio;
+
+      // If funding extreme, widen target (squeeze potential)
+      if (funding && (funding.regime === "extreme_long" || funding.regime === "extreme_short")) {
+        targetDistance *= 1.3;
+        reasons.push(" widened targets for funding squeeze potential");
+      }
+    } else {
+      stopDistance = price * 0.004;
+      targetDistance = price * 0.008;
+    }
+
+    // ── 5. Build Signal ─────────────────────────────────
+    const regime = action === "LONG"
+      ? "TRENDING_UP"
+      : action === "SHORT"
+        ? "TRENDING_DOWN"
+        : "RANGING";
+
+    const momentumDetail = reasons.join(". ");
+
+    const { dimensions, dimensionDetails } = buildLiquidityDimensions(
+      confidence,
+      momentumDetail,
+    );
+
+    // Build factors with microstructure data
+    const factors = [
+      {
+        name: "ORDER_FLOW",
+        score: flowScore.tradeFlow.buyPressure,
+        weight: 0.35,
+        detail: `Buy pressure ${flowScore.tradeFlow.buyPressure.toFixed(0)}%, ` +
+          `delta ${flowScore.tradeFlow.deltaVolume > 0 ? "+" : ""}${(flowScore.tradeFlow.deltaVolume).toFixed(0)} vol`,
+        bullish: flowScore.tradeFlow.buyPressure > 55,
+      },
+      {
+        name: "DEPTH",
+        score: flowScore.depth.imbalance * 100,
+        weight: 0.30,
+        detail: `Imbalance ${(flowScore.depth.imbalance * 100).toFixed(0)}% bid ` +
+          `(${flowScore.depth.levels} levels), spread ${flowScore.depth.spreadBps.toFixed(1)} bps`,
+        bullish: flowScore.depth.imbalance > 0.55,
+      },
+      ...(funding
+        ? [{
+            name: "FUNDING",
+            score: funding.regime === "extreme_short" || funding.regime === "short_heavy" ? 75
+              : funding.regime === "extreme_long" || funding.regime === "long_heavy" ? 25
+              : 50,
+            weight: 0.20,
+            detail: `Rate ${(funding.fundingRate * 100).toFixed(4)}%, OI ${funding.openInterest.toFixed(0)}, ${funding.regime}`,
+            bullish: funding.regime === "extreme_short" || funding.regime === "short_heavy",
+          }]
+        : []),
+      {
+        name: "TA_CONFIRM",
+        score: taBullish ? 70 : taBearish ? 30 : 50,
+        weight: 0.15,
+        detail: `EMA9 ${ema9 > ema21 ? ">" : "<"} EMA21, RSI ${rsi14.toFixed(0)}`,
+        bullish: taBullish,
+      },
+    ];
 
     return [{
       id: `liquidity-${base}-${Date.now()}`,
       pair,
       action,
-      actionV2: action,
+      actionV2: action as Signal["actionV2"],
       confidence,
       price,
       change24h,
-      reasoning: `[Liquidity Flow] ${gateReason}. ${momentumDetail}. News and AI are excluded from entry logic.`,
-      regime: action === "LONG" ? "TRENDING_UP" : action === "SHORT" ? "TRENDING_DOWN" : "RANGING",
-      factors: [
-        { name: "TREND", score: ema9 >= ema21 ? 75 : 25, weight: 0.3, detail: `EMA9 ${ema9 >= ema21 ? "above" : "below"} EMA21`, bullish: ema9 >= ema21 },
-        { name: "MOMENTUM", score: rsi14, weight: 0.2, detail: `RSI14 ${rsi14.toFixed(1)}`, bullish: rsi14 >= 50 },
-        { name: "VOLUME", score: book.imbalance * 100, weight: 0.3, detail: `Top-5 bid share ${(book.imbalance * 100).toFixed(1)}%`, bullish: book.imbalance >= 0.5 },
-        { name: "STRUCTURE", score: spreadScore, weight: 0.2, detail: `Spread ${book.available ? book.spreadBps.toFixed(2) : "N/A"} bps`, bullish: spreadPass },
-      ],
+      reasoning: `[Liquidity Flow] ${momentumDetail}`,
+      regime,
+      factors,
       confluence: confidence,
       setup: {
         type: action === "HOLD" ? "no_edge" : "trend_continuation",
         direction: action === "LONG" ? "long" : action === "SHORT" ? "short" : "neutral",
-        label: action === "HOLD" ? "Liquidity gate blocked" : "Liquidity continuation",
-        thesis: gateReason,
-        invalidation: "Spread widens above 3 bps or top-book imbalance reverses.",
-        evidence: [momentumDetail],
+        label: action === "HOLD"
+          ? "No microstructure edge"
+          : funding && (funding.regime === "extreme_long" || funding.regime === "extreme_short")
+            ? "Funding squeeze setup"
+            : "Order flow continuation",
+        thesis: reasons.slice(0, 3).join(". "),
+        invalidation: direction !== 0
+          ? `Depth imbalance reverses or spread widens above ${Math.max(10, depth.spreadBps * 3).toFixed(0)} bps`
+          : "N/A",
+        evidence: reasons,
         confidenceBias: confidence - 50,
       },
       dimensions,
@@ -230,9 +367,16 @@ export function generateLiquidityFlowSignals(input: {
         takeProfit: direction === 0 ? price : price + targetDistance * direction,
         stopLoss: direction === 0 ? price : price - stopDistance * direction,
         positionSize: `${config.maxPositionSize}% max`,
-        riskReward: action === "HOLD" ? "Stand aside" : "2:1",
+        riskReward: action === "HOLD" ? "Stand aside" : `${(targetDistance / stopDistance).toFixed(1)}:1`,
       },
-      sources: ["SoDEX Orderbook", "SoDEX Klines", "Strategy Config"],
+      sources: [
+        "SoDEX Orderbook",
+        "SoDEX Klines",
+        "Strategy Config",
+        ...(trades.length > 0 ? ["SoDEX Trades"] : []),
+        ...(funding ? ["SoDEX Perps", "Funding Rate"] : []),
+        ...(hlFunding.size > 0 ? ["Hyperliquid"] : []),
+      ],
       timeAgo: "Live",
     }];
   });

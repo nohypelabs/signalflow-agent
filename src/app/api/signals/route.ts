@@ -9,8 +9,11 @@ import {
   getCurrencies,
 } from "@/lib/sosovalue";
 import type { ETFSummaryItem, MarketSnapshot, NewsItem, MacroEvent, BTCPurchaseHistory } from "@/lib/sosovalue";
-import { getKlines as getSodexKlines, getOrderbook } from "@/lib/sodex";
+import { getKlines as getSodexKlines, getOrderbook, getRecentTrades } from "@/lib/sodex";
 import type { OrderBook, SoDEXKline } from "@/lib/sodex-types";
+import type { SoDEXTrade } from "@/lib/types/trade";
+import { getPerpsTickers } from "@/lib/sodex-perps";
+import type { SoDEXPerpsTicker } from "@/lib/sodex-perps";
 import { pairToSodexSymbol, SUPPORTED_SIGNAL_PAIRS } from "@/lib/pair-map";
 import { generateSignalsV2 } from "@/lib/strategy/signal-engine-v2";
 import {
@@ -42,6 +45,34 @@ export const dynamic = "force-dynamic";
 
 const SIGNAL_PAIRS = SUPPORTED_SIGNAL_PAIRS;
 
+// ── Trading Type → Primary Timeframe ─────────────────────
+
+const PRIMARY_TF: Record<TradingType, { interval: string; limit: number; label: string }> = {
+  scalping: { interval: "15m", limit: 250, label: "15M" },
+  intraday: { interval: "1h", limit: 250, label: "1H" },
+  swing: { interval: "4h", limit: 250, label: "4H" },
+  position: { interval: "1d", limit: 250, label: "1D" },
+};
+
+const CONFLUENCE_TF: Record<TradingType, Array<{ interval: string; limit: number; label: string }>> = {
+  scalping: [
+    { interval: "1h", limit: 120, label: "1H" },
+    { interval: "4h", limit: 60, label: "4H" },
+  ],
+  intraday: [
+    { interval: "4h", limit: 120, label: "4H" },
+    { interval: "1d", limit: 60, label: "1D" },
+  ],
+  swing: [
+    { interval: "1h", limit: 120, label: "1H" },
+    { interval: "1d", limit: 120, label: "1D" },
+  ],
+  position: [
+    { interval: "4h", limit: 120, label: "4H" },
+    { interval: "1h", limit: 120, label: "1H" },
+  ],
+};
+
 // ── In-memory cache ──────────────────────────────────────
 
 const cache = new Map<string, { data: unknown; ts: number }>();
@@ -62,12 +93,25 @@ function setCachedResult(key: string, data: unknown) {
   cache.set(key, { data, ts: now });
 }
 
-// ── Fetch with timeout ───────────────────────────────────
+// ── Fetch with timeout + abort ───────────────────────────
 
-function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T, signal?: AbortSignal): Promise<T> {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), ms);
+  const onAbort = () => controller.abort();
+  signal?.addEventListener("abort", onAbort, { once: true });
+
+  const timeoutP = new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms));
+
   return Promise.race([
-    promise,
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+    promise.finally(() => {
+      clearTimeout(t);
+      signal?.removeEventListener("abort", onAbort);
+    }),
+    timeoutP.finally(() => {
+      clearTimeout(t);
+      signal?.removeEventListener("abort", onAbort);
+    }),
   ]);
 }
 
@@ -77,7 +121,6 @@ export async function GET(request: Request) {
   const limited = checkRateLimit(request, "signals");
   if (limited) return limited;
 
-  // Parse trading type from query params
   const url = new URL(request.url);
   const typeParam = url.searchParams.get("type");
   const tradingType: TradingType | null =
@@ -92,12 +135,27 @@ export async function GET(request: Request) {
   if (cached && Date.now() - cached.ts < cacheTtl) {
     return jsonNoCache(cached.data);
   }
-  if (cached) cache.delete(cacheKey);
+
+  const ac = new AbortController();
+  const reqSignal = (request as unknown as { signal?: AbortSignal }).signal;
+  if (reqSignal) {
+    reqSignal.addEventListener("abort", () => ac.abort(), { once: true });
+  }
+
+  if (cached) {
+    const age = Date.now() - cached.ts;
+    if (age >= cacheTtl) {
+      setTimeout(() => cache.delete(cacheKey), 4000);
+    }
+    return jsonNoCache(cached.data);
+  }
 
   try {
+    // ── LIQUIDITY FLOW PATH ───────────────────────────────
     if (strategyConfig.engine === "liquidityFlow") {
       const klinesMap = new Map<string, SoDEXKline[]>();
       const orderbooks = new Map<string, OrderBook>();
+      const tradesMap = new Map<string, SoDEXTrade[]>();
 
       await Promise.all(
         SIGNAL_PAIRS.map(async (pair) => {
@@ -105,16 +163,24 @@ export async function GET(request: Request) {
           const symbol = pairToSodexSymbol(pair);
           if (!symbol) return;
 
-          const [klines, orderbook] = await Promise.all([
+          const [klines, orderbook, trades] = await Promise.all([
             withTimeout(
               getSodexKlines(symbol, "1h", 120).catch(() => []),
               8_000,
               [] as SoDEXKline[],
+              ac.signal,
             ),
             withTimeout(
-              getOrderbook(symbol, 5).catch(() => null),
+              getOrderbook(symbol, 20).catch(() => null),
               5_000,
               null,
+              ac.signal,
+            ),
+            withTimeout(
+              getRecentTrades(symbol, 200).catch(() => []),
+              5_000,
+              [] as SoDEXTrade[],
+              ac.signal,
             ),
           ]);
 
@@ -123,22 +189,67 @@ export async function GET(request: Request) {
             klinesMap.set(base, klines);
           }
           if (orderbook) orderbooks.set(base, orderbook);
+          if (trades.length > 0) tradesMap.set(base, trades);
         }),
       );
+
+      // Fetch perps tickers for funding rate + OI
+      const perpsTickersMap = new Map<string, SoDEXPerpsTicker>();
+      const hlFundingRates = new Map<string, number>();
+      try {
+        const perpsTickers = await withTimeout(
+          getPerpsTickers().catch(() => []),
+          5_000,
+          [] as SoDEXPerpsTicker[],
+          ac.signal,
+        );
+        for (const ticker of perpsTickers) {
+          const base = ticker.symbol.split("-")[0]?.toUpperCase();
+          if (base) perpsTickersMap.set(base, ticker);
+        }
+
+        // Hyperliquid cross-venue funding comparison
+        try {
+          const hlResponse = await fetch("https://api.hyperliquid.xyz/info", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "metaAndAssetCtxs" }),
+            cache: "no-store",
+            signal: ac.signal,
+          });
+          if (hlResponse.ok) {
+            const hlData = await hlResponse.json();
+            if (Array.isArray(hlData) && hlData.length >= 2) {
+              const universe = hlData[0]?.universe ?? [];
+              const contexts = hlData[1] ?? [];
+              for (let i = 0; i < universe.length; i++) {
+                const asset = universe[i] as { name?: string };
+                const ctx = contexts[i] as { funding?: string };
+                if (asset?.name && ctx?.funding) {
+                  hlFundingRates.set(asset.name.toUpperCase(), Number(ctx.funding));
+                }
+              }
+            }
+          }
+        } catch { /* Hyperliquid optional */ }
+      } catch { /* Perps optional */ }
 
       const signals = generateLiquidityFlowSignals({
         pairs: SIGNAL_PAIRS,
         klinesMap,
         orderbooks,
         config: strategyConfig,
+        perpsTickers: perpsTickersMap,
+        recentTrades: tradesMap,
+        hlFundingRates,
       });
       const dimensions = liquidityDimensionsFromSignals(signals);
-      const overall = Object.fromEntries(signals.map((signal) => [
-        signal.pair.split("/")[0],
-        signal.confidence,
+      const overall = Object.fromEntries(signals.map((s) => [
+        s.pair.split("/")[0],
+        s.confidence,
       ]));
-      const weights = Object.fromEntries(signals.map((signal) => [
-        signal.pair.split("/")[0],
+      const weights = Object.fromEntries(signals.map((s) => [
+        s.pair.split("/")[0],
         { etfFlow: 0, sentiment: 0, macro: 0, momentum: 100, treasury: 0 },
       ]));
       const result = {
@@ -155,6 +266,9 @@ export async function GET(request: Request) {
           snapshots: 0,
           sodexKlines: klinesMap.size,
           orderbooks: orderbooks.size,
+          trades: tradesMap.size,
+          perps: perpsTickersMap.size,
+          hyperliquid: hlFundingRates.size,
         },
         indices: {},
         dimensions,
@@ -167,13 +281,14 @@ export async function GET(request: Request) {
       return jsonNoCache(result);
     }
 
-    // Fetch all SoSoValue data in parallel
+    // ── CONFLUENCE V2 PATH ────────────────────────────────
+
     const [currencies, etfSummary, macroEvents, btcTreasuries, hotNews] = await Promise.all([
-      getCurrencies().catch(() => []),
-      getETFSummary("BTC", "US", 5).catch(() => []),
-      getMacroEvents().catch(() => []),
-      getBTCTreasuries().catch(() => []),
-      getNewsHot(1, 20).catch(() => ({ list: [], page: 1, page_size: 20, total: 0 })),
+      getCurrencies(ac.signal).catch(() => []),
+      getETFSummary("BTC", "US", 5, ac.signal).catch(() => []),
+      getMacroEvents(ac.signal).catch(() => []),
+      getBTCTreasuries(ac.signal).catch(() => []),
+      getNewsHot(1, 20, ac.signal).catch(() => ({ list: [], page: 1, page_size: 20, total: 0 })),
     ]);
 
     const btc = currencies.find((c) => c.symbol.toLowerCase() === "btc");
@@ -182,30 +297,30 @@ export async function GET(request: Request) {
 
     const newsList = "list" in hotNews ? hotNews.list : [];
 
-    // Fetch BTC purchase history + index snapshots (parallel)
     const topTickers = (btcTreasuries as { ticker: string; name: string }[]).slice(0, 5);
     const [purchaseHistory, btcIndex, ethIndex] = await Promise.all([
       Promise.all(
         topTickers.map((t) =>
           withTimeout(
-            getBTCPurchaseHistory(t.ticker, 30).catch(() => []),
+            getBTCPurchaseHistory(t.ticker, 30, ac.signal).catch(() => []),
             5_000,
             [] as BTCPurchaseHistory[],
+            ac.signal,
           ),
         ),
       ).then((results) => results.flat()),
-      withTimeout(getIndexSnapshot("BTC").catch(() => null), 5_000, null),
-      withTimeout(getIndexSnapshot("ETH").catch(() => null), 5_000, null),
+      withTimeout(getIndexSnapshot("BTC", ac.signal).catch(() => null), 5_000, null, ac.signal),
+      withTimeout(getIndexSnapshot("ETH", ac.signal).catch(() => null), 5_000, null, ac.signal),
     ]);
 
-    // Fetch market snapshots
     const snapshotCoins = [btc, eth, sol].filter(Boolean);
     const snapshotResults = await Promise.all(
       snapshotCoins.map((c) =>
         withTimeout(
-          getMarketSnapshot(c!.currency_id).then((s) => ({ id: c!.currency_id, s })),
+          getMarketSnapshot(c!.currency_id, ac.signal).then((s) => ({ id: c!.currency_id, s })),
           5_000,
           null,
+          ac.signal,
         ).catch(() => null),
       ),
     );
@@ -214,7 +329,11 @@ export async function GET(request: Request) {
       if (r) snapshots[r.id] = r.s;
     }
 
-    // ── Fetch SoDEX klines (250 for v2 engine — needs EMA200 data) ──
+    // ── Primary TF klines (trading-type-aware) ───────────
+    const effectiveType = tradingType ?? "intraday";
+    const primaryTF = PRIMARY_TF[effectiveType];
+    const confluenceTFs = CONFLUENCE_TF[effectiveType];
+
     const klinesMap = new Map<string, SoDEXKline[]>();
     await Promise.all(
       SIGNAL_PAIRS.map(async (pair) => {
@@ -222,9 +341,10 @@ export async function GET(request: Request) {
         const symbol = pairToSodexSymbol(pair);
         if (!symbol) return;
         const klines = await withTimeout(
-          getSodexKlines(symbol, "1h", 250).catch(() => []),
+          getSodexKlines(symbol, primaryTF.interval, primaryTF.limit).catch(() => []),
           8_000,
           [] as SoDEXKline[],
+          ac.signal,
         );
         if (klines.length > 0) {
           klines.sort((a, b) => a.t - b.t);
@@ -233,30 +353,24 @@ export async function GET(request: Request) {
       }),
     );
 
-    // ── Multi-Timeframe Confluence: fetch 4H and 1D klines ──
-    const MULTI_TF = [
-      { interval: "4h", limit: 120, label: "4H" },
-      { interval: "1d", limit: 60, label: "1D" },
-    ];
-
-    const klinesMap4H = new Map<string, SoDEXKline[]>();
-    const klinesMap1D = new Map<string, SoDEXKline[]>();
+    // ── Confluence TF klines ─────────────────────────────
+    const confluenceKlinesMaps = confluenceTFs.map(() => new Map<string, SoDEXKline[]>());
 
     await Promise.all(
       SIGNAL_PAIRS.flatMap((pair) => {
         const base = pair.split("/")[0];
         const symbol = pairToSodexSymbol(pair);
         if (!symbol) return [];
-        return MULTI_TF.map(async (tf) => {
+        return confluenceTFs.map(async (tf, idx) => {
           const klines = await withTimeout(
             getSodexKlines(symbol, tf.interval, tf.limit).catch(() => []),
             8_000,
             [] as SoDEXKline[],
+            ac.signal,
           );
           if (klines.length > 0) {
             klines.sort((a, b) => a.t - b.t);
-            if (tf.interval === "4h") klinesMap4H.set(base, klines);
-            if (tf.interval === "1d") klinesMap1D.set(base, klines);
+            confluenceKlinesMaps[idx].set(base, klines);
           }
         });
       }),
@@ -268,8 +382,7 @@ export async function GET(request: Request) {
     if (eth && snapshots[eth.currency_id]) snapshotMap.set("ETH", snapshots[eth.currency_id]);
     if (sol && snapshots[sol.currency_id]) snapshotMap.set("SOL", snapshots[sol.currency_id]);
 
-    // ── Generate signals with V2 engine (batch) ─────────
-    // Pass typeProfiles so custom Thinking Framework weights from StrategyConfig are respected
+    // ── Generate signals on PRIMARY TF ───────────────────
     const v2Signals = generateSignalsV2({
       pairs: SIGNAL_PAIRS,
       klinesMap,
@@ -283,39 +396,27 @@ export async function GET(request: Request) {
       typeProfiles: strategyConfig.typeProfiles,
     });
 
-    // ── Multi-Timeframe Confluence ───────────────────────
-    // Generate signals on 4H and 1D, then compute alignment score
-    const v2Signals4H = generateSignalsV2({
-      pairs: SIGNAL_PAIRS,
-      klinesMap: klinesMap4H,
-      news: newsList as NewsItem[],
-      etfSummary: etfSummary as ETFSummaryItem[],
-      macroEvents: macroEvents as MacroEvent[],
-      btcTreasuries: btcTreasuries as { ticker: string; name: string }[],
-      purchaseHistory,
-      snapshots: snapshotMap,
-      tradingType: tradingType ?? undefined,
-      typeProfiles: strategyConfig.typeProfiles,
-    });
+    // ── Generate confluence signals on each TF ───────────
+    const confluenceSignals = confluenceTFs.map((_tf, idx) =>
+      generateSignalsV2({
+        pairs: SIGNAL_PAIRS,
+        klinesMap: confluenceKlinesMaps[idx],
+        news: newsList as NewsItem[],
+        etfSummary: etfSummary as ETFSummaryItem[],
+        macroEvents: macroEvents as MacroEvent[],
+        btcTreasuries: btcTreasuries as { ticker: string; name: string }[],
+        purchaseHistory,
+        snapshots: snapshotMap,
+        tradingType: tradingType ?? undefined,
+        typeProfiles: strategyConfig.typeProfiles,
+      }),
+    );
 
-    const v2Signals1D = generateSignalsV2({
-      pairs: SIGNAL_PAIRS,
-      klinesMap: klinesMap1D,
-      news: newsList as NewsItem[],
-      etfSummary: etfSummary as ETFSummaryItem[],
-      macroEvents: macroEvents as MacroEvent[],
-      btcTreasuries: btcTreasuries as { ticker: string; name: string }[],
-      purchaseHistory,
-      snapshots: snapshotMap,
-      tradingType: tradingType ?? undefined,
-      typeProfiles: strategyConfig.typeProfiles,
-    });
+    const confluenceMaps = confluenceSignals.map((sgnls) =>
+      new Map(sgnls.map((s) => [s.pair.split("/")[0], s])),
+    );
 
-    // Build maps for quick lookup
-    const signal4HMap = new Map(v2Signals4H.map((s) => [s.pair.split("/")[0], s]));
-    const signal1DMap = new Map(v2Signals1D.map((s) => [s.pair.split("/")[0], s]));
-
-    // Compute multi-TF confluence per pair
+    // ── Compute Multi-TF Confluence ──────────────────────
     function getDirection(action: string): "bullish" | "bearish" | "neutral" {
       if (action === "STRONG_LONG" || action === "LONG" || action === "WEAK_LONG") return "bullish";
       if (action === "STRONG_SHORT" || action === "SHORT" || action === "WEAK_SHORT") return "bearish";
@@ -326,20 +427,27 @@ export async function GET(request: Request) {
       base: string,
       primary: typeof v2Signals[0],
     ): { score: number; details: { tf: string; action: string; direction: string; confidence: number }[] } {
-      const s4H = signal4HMap.get(base);
-      const s1D = signal1DMap.get(base);
+      const conDirs = confluenceTFs.map((_tf, idx) => {
+        const s = confluenceMaps[idx].get(base);
+        return s ? getDirection(s.action) : "neutral";
+      });
 
       const primaryDir = getDirection(primary.action);
-      const dir4H = s4H ? getDirection(s4H.action) : "neutral";
-      const dir1D = s1D ? getDirection(s1D.action) : "neutral";
 
       const details = [
-        { tf: "1H", action: primary.action, direction: primaryDir, confidence: primary.confidence },
-        ...(s4H ? [{ tf: "4H", action: s4H.action, direction: dir4H, confidence: s4H.confidence }] : []),
-        ...(s1D ? [{ tf: "1D", action: s1D.action, direction: dir1D, confidence: s1D.confidence }] : []),
+        { tf: primaryTF.label, action: primary.action, direction: primaryDir, confidence: primary.confidence },
+        ...confluenceTFs.map((tf, idx) => {
+          const s = confluenceMaps[idx].get(base);
+          return {
+            tf: tf.label,
+            action: s?.action ?? "HOLD",
+            direction: conDirs[idx],
+            confidence: s?.confidence ?? 50,
+          };
+        }),
       ];
 
-      const directions = [primaryDir, dir4H, dir1D].filter((d) => d !== "neutral");
+      const directions = [primaryDir, ...conDirs].filter((d) => d !== "neutral");
       if (directions.length === 0) return { score: 30, details };
 
       const bullish = directions.filter((d) => d === "bullish").length;
@@ -348,17 +456,16 @@ export async function GET(request: Request) {
 
       let score: number;
       if (total === 3) {
-        if (bullish === 3 || bearish === 3) score = 95; // All agree
-        else if (bullish === 2 || bearish === 2) score = 70; // 2/3 agree
-        else score = 30; // Mixed
+        if (bullish === 3 || bearish === 3) score = 95;
+        else if (bullish === 2 || bearish === 2) score = 70;
+        else score = 30;
       } else if (total === 2) {
-        if (bullish === 2 || bearish === 2) score = 80; // Both agree
-        else score = 40; // Mixed
+        if (bullish === 2 || bearish === 2) score = 80;
+        else score = 40;
       } else {
-        score = 50; // Only one TF has signal
+        score = 50;
       }
 
-      // Bonus: if primary TF confidence is high and aligned
       if (primary.confidence >= 80 && score >= 70) score = Math.min(100, score + 5);
 
       return { score, details };
@@ -421,6 +528,8 @@ export async function GET(request: Request) {
         news: (newsList as NewsItem[]).length > 0,
         snapshots: Object.keys(snapshots).length,
         sodexKlines: klinesMap.size,
+        primaryTF: primaryTF.label,
+        confluenceTFs: confluenceTFs.map((tf) => tf.label),
         indices: { btc: !!btcIndex, eth: !!ethIndex },
       },
       indices: {

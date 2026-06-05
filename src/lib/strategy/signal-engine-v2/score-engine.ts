@@ -80,20 +80,54 @@ export function scoreMomentum(closes: number[]): ConfluenceFactor {
   const rocVals = roc(closes, 12);
   const rocValue = last(rocVals);
 
+  // Trend context: detect if we're in an uptrend or downtrend
+  // Use 50-period EMA slope to determine trend direction
+  const ema50 = last(ema(closes, 50));
+  const ema20 = last(ema(closes, 20));
+  const price = closes[closes.length - 1];
+  const inUptrend = !isNaN(ema20) && !isNaN(ema50) && ema20 > ema50 && price > ema20;
+  const inDowntrend = !isNaN(ema20) && !isNaN(ema50) && ema20 < ema50 && price < ema20;
+
   let score = 50; // neutral base
 
-  // RSI scoring (up to ±25 points)
+  // RSI scoring (up to ±25 points) — TREND-AWARE
+  // In uptrend: RSI 50-70 is bullish (trend continuation), RSI <30 is concerning
+  // In downtrend: RSI 30-50 is bearish (trend continuation), RSI >70 is concerning
   if (!isNaN(rsiValue)) {
-    if (rsiValue < 30) {
-      score += 20 + (30 - rsiValue) * 0.5; // Oversold → bullish
-    } else if (rsiValue < 40) {
-      score += 10 + (40 - rsiValue) * 0.8;
-    } else if (rsiValue > 70) {
-      score -= 20 + (rsiValue - 70) * 0.5; // Overbought → bearish
-    } else if (rsiValue > 60) {
-      score -= 10 + (rsiValue - 60) * 0.8;
+    if (inUptrend) {
+      // Uptrend: RSI above 50 confirms trend. Don't treat "overbought" as bearish.
+      if (rsiValue >= 50 && rsiValue <= 75) {
+        score += 15 + (rsiValue - 50) * 0.4; // Trend continuation strength
+      } else if (rsiValue > 75) {
+        score += 5; // Still bullish in uptrend, just extended
+      } else if (rsiValue < 30) {
+        score -= 5; // Oversold in uptrend = potential weakness, NOT bullish reversal
+      } else {
+        score += 5; // RSI 30-50 in uptrend = mild pullback
+      }
+    } else if (inDowntrend) {
+      // Downtrend: RSI below 50 confirms trend. Don't treat "oversold" as bullish.
+      if (rsiValue <= 50 && rsiValue >= 25) {
+        score -= 15 + (50 - rsiValue) * 0.4; // Trend continuation strength
+      } else if (rsiValue < 25) {
+        score -= 5; // Still bearish in downtrend, just extended
+      } else if (rsiValue > 70) {
+        score += 5; // Overbought in downtrend = potential weakness, NOT bearish reversal
+      } else {
+        score -= 5; // RSI 50-70 in downtrend = mild bounce
+      }
+    } else {
+      // No clear trend: use traditional RSI interpretation
+      if (rsiValue < 30) {
+        score += 20 + (30 - rsiValue) * 0.5;
+      } else if (rsiValue < 40) {
+        score += 10 + (40 - rsiValue) * 0.8;
+      } else if (rsiValue > 70) {
+        score -= 20 + (rsiValue - 70) * 0.5;
+      } else if (rsiValue > 60) {
+        score -= 10 + (rsiValue - 60) * 0.8;
+      }
     }
-    // 40-60: neutral, no adjustment
   }
 
   // MACD histogram scoring (up to ±15 points)
@@ -173,23 +207,56 @@ export function scoreVolatility(
     ? validBbWidth.slice(-50).reduce((s, v) => s + v, 0) / Math.min(50, validBbWidth.length)
     : 0;
 
+  // Trend context for volatility interpretation
+  const price = closes[closes.length - 1];
+  const emaShort = last(ema(closes, 20));
+  const emaLong = last(ema(closes, 50));
+  const inTrend = !isNaN(emaShort) && !isNaN(emaLong) &&
+    Math.abs(emaShort - emaLong) / emaLong > 0.01; // >1% separation
+  const trendUp = inTrend && emaShort > emaLong;
+  const trendDown = inTrend && emaShort < emaLong;
+
   let score = 50; // neutral base
 
-  // BB %B position (up to ±25 points)
-  // %B < 0 → price below lower band (oversold, bullish)
-  // %B > 1 → price above upper band (overbought, bearish)
+  // BB %B position — TREND-AWARE
+  // In uptrend: upper band breaks are continuation, lower band touches are pullback buys
+  // In downtrend: lower band breaks are continuation, upper band touches are bounce sells
   if (!isNaN(bbPercentB)) {
-    if (bbPercentB < 0) {
-      score += 20 + Math.min(5, Math.abs(bbPercentB) * 25);
-    } else if (bbPercentB < 0.2) {
-      score += 15;
-    } else if (bbPercentB > 1) {
-      score -= 20 + Math.min(5, (bbPercentB - 1) * 25);
-    } else if (bbPercentB > 0.8) {
-      score -= 15;
+    if (trendUp) {
+      // Uptrend: band position = momentum strength
+      if (bbPercentB > 0.8) {
+        score += 15; // Strong momentum continuation
+      } else if (bbPercentB > 0.5) {
+        score += 10; // Healthy uptrend
+      } else if (bbPercentB < 0.2) {
+        score += 5; // Pullback to lower band = buy opportunity in uptrend
+      } else if (bbPercentB < 0) {
+        score -= 5; // Below lower band in uptrend = concerning, possible breakdown
+      }
+    } else if (trendDown) {
+      // Downtrend: band position = momentum strength
+      if (bbPercentB < 0.2) {
+        score -= 15; // Strong momentum continuation
+      } else if (bbPercentB < 0.5) {
+        score -= 10; // Healthy downtrend
+      } else if (bbPercentB > 0.8) {
+        score -= 5; // Bounce to upper band = sell opportunity in downtrend
+      } else if (bbPercentB > 1) {
+        score += 5; // Above upper band in downtrend = concerning, possible breakout
+      }
     } else {
-      // Within bands: slight lean toward mean reversion
-      score += (0.5 - bbPercentB) * 10;
+      // Ranging: use traditional mean-reversion interpretation
+      if (bbPercentB < 0) {
+        score += 20 + Math.min(5, Math.abs(bbPercentB) * 25);
+      } else if (bbPercentB < 0.2) {
+        score += 15;
+      } else if (bbPercentB > 1) {
+        score -= 20 + Math.min(5, (bbPercentB - 1) * 25);
+      } else if (bbPercentB > 0.8) {
+        score -= 15;
+      } else {
+        score += (0.5 - bbPercentB) * 10;
+      }
     }
   }
 
@@ -437,20 +504,20 @@ export function classifySignal(confluence: ConfluenceResult): SignalActionV2 {
   const { score, bullishCount, bearishCount } = confluence;
 
   // STRONG: very high confluence + strong factor support
-  if (score > 75 && bullishCount >= 3) return "STRONG_LONG";
-  if (score < 25 && bearishCount >= 3) return "STRONG_SHORT";
+  if (score > 70 && bullishCount >= 3) return "STRONG_LONG";
+  if (score < 30 && bearishCount >= 3) return "STRONG_SHORT";
 
   // LONG: solid confluence. Allow high-score single-factor conviction or 2+ normal.
-  if ((score > 60 && bullishCount >= 2) || (score > 68 && bullishCount >= 1)) return "LONG";
+  if ((score > 58 && bullishCount >= 2) || (score > 64 && bullishCount >= 1)) return "LONG";
 
   // SHORT: symmetric
-  if ((score < 40 && bearishCount >= 2) || (score < 32 && bearishCount >= 1)) return "SHORT";
+  if ((score < 42 && bearishCount >= 2) || (score < 36 && bearishCount >= 1)) return "SHORT";
 
   // WEAK: directional bias present but not full confluence
-  if (score > 54) return "WEAK_LONG";
-  if (score < 46) return "WEAK_SHORT";
+  if (score > 52) return "WEAK_LONG";
+  if (score < 48) return "WEAK_SHORT";
 
-  // HOLD: close to neutral (46-54)
+  // HOLD: close to neutral (48-52)
   return "HOLD";
 }
 
@@ -468,21 +535,21 @@ export function applyCoverageGuardrail(confluence: ConfluenceResult, action: Sig
 }
 
 export function passesFilter(confluence: ConfluenceResult, action: SignalActionV2): boolean {
-  // Allow decisive signals on very high confluence even with 1 strong factor.
-  // Normal signals still prefer 2+ aligned. Weak are tolerant.
+  // Single-factor conviction allowed at moderate confluence.
+  // Weak signals tolerant of single factor alignment.
   if (action === "STRONG_LONG" || action === "LONG") {
-    if (confluence.score > 68) return confluence.bullishCount >= 1;
+    if (confluence.score > 58) return confluence.bullishCount >= 1;
     return confluence.bullishCount >= 2;
   }
   if (action === "STRONG_SHORT" || action === "SHORT") {
-    if (confluence.score < 32) return confluence.bearishCount >= 1;
+    if (confluence.score < 42) return confluence.bearishCount >= 1;
     return confluence.bearishCount >= 2;
   }
   if (action === "WEAK_LONG") {
-    return confluence.bullishCount >= 1 && confluence.bearishCount <= 1;
+    return confluence.bullishCount >= 1;
   }
   if (action === "WEAK_SHORT") {
-    return confluence.bearishCount >= 1 && confluence.bullishCount <= 1;
+    return confluence.bearishCount >= 1;
   }
 
   return true;
