@@ -177,6 +177,7 @@ interface Props {
   symbol?: string;
   currentPrice?: number | null;
   liveSignals?: Signal[];
+  aiSignal?: Signal | null;
   tickerMap?: Map<string, SoDEXTicker>;
   tradeMode?: "paper" | "live";
   onModeChange?: (mode: "paper" | "live") => void;
@@ -192,6 +193,7 @@ export default function TradingChart({
   symbol: initialSymbol = "BTC/USDC",
   currentPrice,
   liveSignals = [],
+  aiSignal = null,
   tickerMap,
   tradeMode,
   onModeChange,
@@ -322,8 +324,14 @@ export default function TradingChart({
     return liveSignals.filter((s) => s.pair.startsWith(base));
   }, [liveSignals, pair]);
 
-  // Get the latest signal for entry/SL/TP lines
-  const latestSignal = useMemo(() => pairSignals[0] ?? null, [pairSignals]);
+  // Get the latest signal for entry/SL/TP lines — prefer aiSignal (from Generate Signal) if matches pair
+  const latestSignal = useMemo(() => {
+    const base = pair.split("/")[0];
+    const normalize = (p: string) => p.replace(/^v/, "").replace(/_vUSDC$/, "/USDC").toUpperCase();
+    const aiForPair = aiSignal && normalize(aiSignal.pair) === normalize(pair) ? aiSignal : null;
+    if (aiForPair?.execution) return aiForPair;
+    return pairSignals[0] ?? null;
+  }, [pairSignals, pair, aiSignal]);
 
   // Create chart (native Klines mode)
   useEffect(() => {

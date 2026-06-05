@@ -216,6 +216,7 @@ function MarketCanvas({ pair }: { pair: string }) {
         symbol={pair}
         currentPrice={currentPrice}
         liveSignals={d.liveSignals}
+        aiSignal={d.aiSignal}
         tickerMap={d.tickerMap}
         onPairChange={d.setSelectedPair}
       />
@@ -436,6 +437,16 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
     ? `${riskRewardNumber.toFixed(2)}R`
     : decision.riskReward;
 
+  // Effective execution for display (prefer aiSignal from generate, fallback to live currentSignal)
+  const execForDisplay = aiSignal?.execution || currentSignal?.execution || null;
+  const dispEntry = execForDisplay?.entry || currentPrice || 0;
+  const dispTP = execForDisplay?.takeProfit || 0;
+  const dispSL = execForDisplay?.stopLoss || 0;
+  const tpPct = dispEntry && dispTP ? ((dispTP - dispEntry) / dispEntry * 100) : 0;
+  const slPct = dispEntry && dispSL ? ((dispSL - dispEntry) / dispEntry * 100) : 0;
+  const tpBarWidth = Math.min(100, Math.max(5, Math.abs(tpPct) * 4));
+  const slBarWidth = Math.min(100, Math.max(5, Math.abs(slPct) * 4));
+
   // Dynamic color logic based on signal strength & recommendation
   function getSignalColor(score: number, action: string) {
     const isStrongLong = action === 'LONG' && score >= 75;
@@ -633,26 +644,30 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
           </div>
         </div>
 
-        {/* Bottom two stat cards under live decision score — now wired to real signal.execution data (no more random hardcoded prices/percentages). Grid lowered 2px (mt-[2px]) so top/bottom gaps inside the score card are equal. */}
+        {/* Bottom two stat cards under live decision score — wired to real execution from aiSignal (generate) or live currentSignal. Chart lines also prefer aiSignal for sync. Bars & % now calculated from actual entry/TP/SL distances (no mock/static). Grid lowered 2px for balanced gaps. */}
         <div className="grid grid-cols-2 gap-3 mt-[2px]">
           {/* TP box */}
           <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent px-3 py-2">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-semibold text-emerald-500">Take Profit (TP)</span>
               <span className="rounded bg-emerald-500/10 border border-emerald-500/40 px-1.5 py-0 text-[9px] font-bold text-emerald-500">
-                {riskRewardDisplay}
+                {aiSignal?.execution?.riskReward || currentSignal?.execution?.riskReward || riskRewardDisplay}
               </span>
             </div>
             <div className="mt-0.5 text-2xl font-bold tabular-nums text-emerald-500">
-              {currentSignal?.execution?.takeProfit ? formatPanelPrice(currentSignal.execution.takeProfit) : (decision.targets?.[0]?.[1] || "—")}
+              {aiSignal?.execution?.takeProfit 
+                ? formatPanelPrice(aiSignal.execution.takeProfit) 
+                : currentSignal?.execution?.takeProfit 
+                  ? formatPanelPrice(currentSignal.execution.takeProfit) 
+                  : (decision.targets?.[0]?.[1] || "—")}
             </div>
             <div className="mt-1 text-[9px] text-[#a1a1aa]">from entry</div>
             <div className="mt-0.5 h-[5px] w-full bg-[#27272a] rounded-full overflow-hidden">
-              <div className="h-[5px] bg-gradient-to-r from-emerald-500 to-emerald-400" style={{ width: currentSignal ? "65%" : "40%" }} />
+              <div className="h-[5px] bg-gradient-to-r from-emerald-500 to-emerald-400" style={{ width: `${tpBarWidth}%` }} />
             </div>
             <div className="mt-0.5 flex justify-between text-[9px] font-mono">
-              <span className="text-emerald-500">{currentSignal?.execution?.riskReward || riskRewardDisplay}</span>
-              <span className="text-[#a1a1aa]">target</span>
+              <span className="text-emerald-500">+{tpPct.toFixed(1)}%</span>
+              <span className="text-[#a1a1aa]">{aiSignal?.execution?.riskReward || currentSignal?.execution?.riskReward || riskRewardDisplay}</span>
             </div>
           </div>
 
@@ -665,15 +680,19 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
               </span>
             </div>
             <div className="mt-0.5 text-2xl font-bold tabular-nums text-rose-500">
-              {currentSignal?.execution?.stopLoss ? formatPanelPrice(currentSignal.execution.stopLoss) : (decision.stop?.[1] || "—")}
+              {aiSignal?.execution?.stopLoss 
+                ? formatPanelPrice(aiSignal.execution.stopLoss) 
+                : currentSignal?.execution?.stopLoss 
+                  ? formatPanelPrice(currentSignal.execution.stopLoss) 
+                  : (decision.stop?.[1] || "—")}
             </div>
             <div className="mt-1 text-[9px] text-[#a1a1aa]">from entry</div>
             <div className="mt-0.5 h-[5px] w-full bg-[#27272a] rounded-full overflow-hidden">
-              <div className="h-[5px] bg-gradient-to-r from-rose-500 to-rose-400" style={{ width: currentSignal ? "35%" : "25%" }} />
+              <div className="h-[5px] bg-gradient-to-r from-rose-500 to-rose-400" style={{ width: `${slBarWidth}%` }} />
             </div>
             <div className="mt-0.5 flex justify-between text-[9px] font-mono">
-              <span className="text-rose-500">{currentSignal?.execution?.riskReward || riskRewardDisplay}</span>
-              <span className="text-[#a1a1aa]">invalidation</span>
+              <span className="text-rose-500">{slPct.toFixed(1)}%</span>
+              <span className="text-[#a1a1aa]">{aiSignal?.execution?.riskReward || currentSignal?.execution?.riskReward || riskRewardDisplay}</span>
             </div>
           </div>
         </div>
