@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { BellIcon, CheckAllIcon, CloseIcon, ExternalLinkIcon } from "@/components/ui/icons";
-import type { Alert, PriceAlert, SignalAlert } from "@/lib/types/alert";
+import type { Alert, PriceAlert, SignalAlert, ManualSignalGeneratedAlert } from "@/lib/types/alert";
 
 interface Props {
   unreadCount: number;
@@ -94,6 +94,10 @@ export default function AlertBell({
       const pa = alert as PriceAlert;
       return `${pa.type === "price_above" ? "↑ Above" : "↓ Below"} $${pa.targetPrice.toLocaleString()}`;
     }
+    if (alert.type === "manual_signal_generated") {
+      const ma = alert as any;
+      return `Manual ${ma.action} ${ma.pair} @ ${ma.confidence}%${ma.strategy ? ` (${ma.strategy})` : ''}`;
+    }
     const sa = alert as SignalAlert;
     return `${sa.type === "signal_strong" ? "Strong" : "Reversal"}: ${sa.condition}`;
   };
@@ -102,6 +106,7 @@ export default function AlertBell({
     if (alert.type === "price_above") return "↑";
     if (alert.type === "price_below") return "↓";
     if (alert.type === "signal_strong") return "⚡";
+    if (alert.type === "manual_signal_generated") return "🔔";
     return "↻";
   };
 

@@ -1,4 +1,4 @@
-export type AlertType = 'price_above' | 'price_below' | 'signal_strong' | 'signal_reversal';
+export type AlertType = 'price_above' | 'price_below' | 'signal_strong' | 'signal_reversal' | 'manual_signal_generated';
 
 export interface PriceAlert {
   id: string;
@@ -21,7 +21,18 @@ export interface SignalAlert {
   triggeredAt?: number;
 }
 
-export type Alert = PriceAlert | SignalAlert;
+export interface ManualSignalGeneratedAlert {
+  id: string;
+  pair: string;
+  type: 'manual_signal_generated';
+  action: string;
+  confidence: number;
+  strategy?: string;
+  createdAt: number;
+  triggered: boolean;
+}
+
+export type Alert = PriceAlert | SignalAlert | ManualSignalGeneratedAlert;
 
 export interface AlertsState {
   alerts: Alert[];

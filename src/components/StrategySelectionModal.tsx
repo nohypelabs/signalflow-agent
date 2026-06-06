@@ -6,6 +6,7 @@ import type { StrategyEngineName } from "@/lib/strategy/config";
 import { loadStrategyConfig, serializeStrategyConfig } from "@/lib/strategy/config";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
+import { useAlerts } from "@/lib/hooks/useAlerts";
 
 interface GenerationSession {
   id: string;
@@ -26,6 +27,7 @@ interface Props {
 
 export default function StrategySelectionModal({ open, onClose, coin, onGenerateComplete }: Props) {
   const d = useDashboard();
+  const alertsApi = useAlerts();
   const [selectedStrategy, setSelectedStrategy] = useState<StrategyEngineName | null>(null);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [sessions, setSessions] = useState<Record<string, GenerationSession>>({});
@@ -131,10 +133,16 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
 
       onGenerateComplete?.(strategy, result);
 
-      toast.success(`Signal ${strategy} successfully generated`, {
-        description: "Signal has been successfully generated. Please return to the Live Decision Score panel to view the results.",
+      // Add floating notification to top-right via toast + feed the top bar AlertBell
+      const resSig = result?.signals?.[0] || result;
+      if (resSig) {
+        alertsApi.addManualSignalGenerated?.(resSig.pair || coin + '/USDC', resSig.action || 'LONG', resSig.confidence || 70, strategy === 'confluence' ? 'Confluence V3' : 'Liquidity Flow');
+      }
+
+      toast.success(`Signal ${strategy === 'confluence' ? 'Confluence V3' : 'Liquidity Flow'} generated`, {
+        description: `${resSig?.pair || coin} • ${resSig?.action || ''} @ ${resSig?.confidence || ''}% — added to history & alerts`,
         action: {
-          label: "Close Modal",
+          label: "View",
           onClick: onClose,
         },
       });

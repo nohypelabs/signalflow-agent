@@ -63,6 +63,25 @@ export function useAlerts(tickers?: SoDEXTicker[] | null) {
   const [permission, setPermission] = useState<NotificationPermission | "default">("default");
   const lastTriggeredRef = useRef<Set<string>>(new Set());
 
+  // Add manual signal generated notification (called from generate signal flow)
+  const addManualSignalGenerated = useCallback((pair: string, action: string, confidence: number, strategy?: string) => {
+    const newAlert: any = {
+      id: generateId(),
+      pair,
+      type: 'manual_signal_generated',
+      action,
+      confidence,
+      strategy,
+      createdAt: Date.now(),
+      triggered: true,
+    };
+    setAlerts(prev => {
+      const next = [newAlert, ...prev.filter((a: any) => a.id !== newAlert.id)].slice(0, MAX_ALERTS);
+      return next;
+    });
+    fireNotification(`Manual Signal: ${action} ${pair}`, `Conf ${confidence}%${strategy ? ` • ${strategy}` : ''}`);
+  }, []);
+
   // Hydrate from localStorage on mount
   useEffect(() => {
     setAlerts(loadFromStorage());
@@ -76,6 +95,16 @@ export function useAlerts(tickers?: SoDEXTicker[] | null) {
   useEffect(() => {
     if (hydrated) saveToStorage(alerts);
   }, [alerts, hydrated]);
+
+  // Listen for cross-component manual signal alerts (so bell updates immediately)
+  useEffect(() => {
+    const handler = () => {
+      const fresh = loadFromStorage();
+      setAlerts(fresh);
+    };
+    window.addEventListener('manual-signal-alert-added', handler);
+    return () => window.removeEventListener('manual-signal-alert-added', handler);
+  }, []);
 
   // Build ticker map from array
   const tickerMap = useMemo(() => {
@@ -274,6 +303,7 @@ export function useAlerts(tickers?: SoDEXTicker[] | null) {
     hydrated,
     addPriceAlert,
     addSignalAlert,
+    addManualSignalGenerated,
     removeAlert,
     clearTriggered,
     clearAll,
