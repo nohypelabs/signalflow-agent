@@ -30,6 +30,7 @@ export interface ManualSignalGeneratedAlert {
   strategy?: string;
   createdAt: number;
   triggered: boolean;
+  triggeredAt?: number;
 }
 
 export type Alert = PriceAlert | SignalAlert | ManualSignalGeneratedAlert;
