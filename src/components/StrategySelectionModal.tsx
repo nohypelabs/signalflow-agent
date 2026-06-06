@@ -229,7 +229,7 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
                   <div
                     key={s.name}
                     onClick={() => selectStrategy(s.name)}
-                    className={`rounded-lg border p-3 transition-all ${otherSelected ? 'opacity-40 pointer-events-none' : 'cursor-pointer hover:scale-[1.015] active:scale-[0.985]'} ${isSelected ? "border-accent bg-accent/5" : "border-border-default hover:border-accent/50"}`}
+                    className={`rounded-lg border p-3 transition-all ${otherSelected ? 'opacity-60 hover:opacity-100 cursor-pointer hover:scale-[1.015] active:scale-[0.985]' : 'cursor-pointer hover:scale-[1.015] active:scale-[0.985]'} ${isSelected ? "border-accent bg-accent/5" : "border-border-default hover:border-accent/50"}`}
                   >
                     <div className="font-medium flex items-center gap-2">
                       {/* Radio-style indicator instead of checkbox for single choice */}
@@ -240,7 +240,10 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
                     </div>
                     <div className="text-[11px] text-txt-secondary mt-1">{s.description}</div>
                     {otherSelected && (
-                      <div className="text-[10px] text-txt-muted mt-1">Disabled while other strategy is selected</div>
+                      <div className="text-[10px] text-accent mt-1">Click to switch to this</div>
+                    )}
+                    {isSelected && (
+                      <div className="text-[10px] text-txt-muted mt-1">Selected — click again to deselect</div>
                     )}
                   </div>
                 );
