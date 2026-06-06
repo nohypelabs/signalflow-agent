@@ -18,13 +18,17 @@ import {
   getNewsHot,
   getCurrencies,
 } from "@/lib/sosovalue";
-import { getTickers, getKlines, getOrderbook } from "@/lib/sodex";
+import { getTickers, getKlines, getOrderbook, getRecentTrades } from "@/lib/sodex";
 import type { OrderBook } from "@/lib/sodex";
+import type { SoDEXTrade } from "@/lib/types/trade";
 import { generateSignal } from "@/lib/strategy/signal-engine";
 import { pairToSodexSymbol } from "@/lib/pair-map";
 import { deserializeStrategyConfig } from "@/lib/strategy/config";
 import { generateLiquidityFlowSignals } from "@/lib/strategy/policy-engine";
+import { generateSignalsV2 } from "@/lib/strategy/signal-engine-v2";
 import type { Signal } from "@/lib/types/signal";
+import { getPerpsTickers } from "@/lib/sodex-perps";
+import type { SoDEXPerpsTicker } from "@/lib/sodex-perps";
 
 // ── Data fetching (reuse heuristic scoring as AI reference) ──
 
@@ -195,6 +199,16 @@ export async function POST(req: NextRequest) {
 
     const marketData = await gatherMarketData(coin, ac.signal);
 
+    // Always fetch micro for the coin (orderbook, trades, perps) so V3 can use it
+    const sodexSymbol = pairToSodexSymbol(`${coin}/USDC`) || `v${coin.toUpperCase()}_vUSDC`;
+    const [orderbook, recentTradesRaw, perpsList] = await Promise.all([
+      getOrderbook(sodexSymbol).catch(() => null as OrderBook | null),
+      getRecentTrades(sodexSymbol, 80).catch(() => [] as SoDEXTrade[]),
+      getPerpsTickers().catch(() => [] as SoDEXPerpsTicker[]),
+    ]);
+    const perpsTicker = perpsList.find((t: SoDEXPerpsTicker) => t.symbol?.toUpperCase().startsWith(coin)) || null;
+    const recentTrades = recentTradesRaw;
+
     // ── Base signal: respect active strategy (liquidityFlow is legacy; main path is Confluence V3 with micro fused) ──
     const strategyConfig = body.strategy ? deserializeStrategyConfig(body.strategy) : undefined;
     const isLiquidity = strategyConfig?.engine === "liquidityFlow";
@@ -202,11 +216,8 @@ export async function POST(req: NextRequest) {
     let baseSignal: Signal | null = null;
 
     if (isLiquidity) {
-      const sodexSymbol = pairToSodexSymbol(`${coin}/USDC`) || `v${coin.toUpperCase()}_vUSDC`;
-      const orderbook = await getOrderbook(sodexSymbol).catch(() => null as OrderBook | null);
-
       const klinesMap = new Map([[coin, marketData.klines]]);
-      const orderbooksMap = new Map<string, OrderBook>(orderbook ? [[coin, orderbook]] : []);
+      const orderbooksMap = orderbook ? new Map([[coin, orderbook]]) : new Map();
 
       const liqSignals = generateLiquidityFlowSignals({
         pairs: [`${coin}/USDC`],
@@ -216,16 +227,21 @@ export async function POST(req: NextRequest) {
       });
       baseSignal = liqSignals[0] ?? null;
     } else {
-      // Original confluence / heuristic path
-      baseSignal = generateSignal({
-        pair: `${coin}/USDC`,
-        klines: marketData.klines,
-        news: marketData.news,
-        etfSummary: marketData.etfSummary,
-        macroEvents: marketData.macroEvents,
-        btcTreasuries: marketData.btcTreasuries,
-        snapshot: marketData.snap ?? undefined,
+      // Confluence V3 unified path for manual "Generate Signal"
+      const klinesMap = new Map([[coin, marketData.klines]]);
+      const orderbooksMap = orderbook ? new Map([[coin, orderbook]]) : new Map();
+      const recentTradesMap = recentTrades.length > 0 ? new Map([[coin, recentTrades]]) : new Map();
+      const perpsTickersMap = perpsTicker ? new Map([[coin, perpsTicker]]) : new Map();
+
+      const v3Signals = generateSignalsV2({
+        pairs: [`${coin}/USDC`],
+        klinesMap,
+        orderbooks: orderbooksMap,
+        recentTrades: recentTradesMap,
+        perpsTickers: perpsTickersMap,
+        tradingType: "intraday",
       });
+      baseSignal = v3Signals[0] ?? null;
     }
 
     if (!baseSignal) {

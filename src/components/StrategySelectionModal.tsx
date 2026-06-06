@@ -35,7 +35,7 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
   // Mock customization options
   const [customOptions, setCustomOptions] = useState({
     liquidityFlow: { minSpreadBps: 3, includeFunding: true },
-    confluence: { minConfidence: 70 },
+    confluence: { minConfidence: 45 },
   });
 
   const strategies: { name: StrategyEngineName; label: string; description: string }[] = [
@@ -107,12 +107,18 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
       } else {
         clearInterval(interval);
       }
-    }, 800);
+    }, 250); // faster simulation so it doesn't feel like 1 minute
 
     try {
       // Call the real generate with specific strategy
+      // Force reasonably low minConfidence so we actually get signals instead of chronic HOLD/no-trade
       const currentCfg = loadStrategyConfig();
-      const forcedCfg = { ...currentCfg, engine: strategy };
+      let forcedCfg = { ...currentCfg, engine: strategy };
+      if (strategy === 'confluence') {
+        forcedCfg = { ...forcedCfg, minConfidence: Math.min(50, customOptions.confluence.minConfidence || 45) };
+      } else if (strategy === 'liquidityFlow') {
+        forcedCfg = { ...forcedCfg, minConfidence: 50 };
+      }
       const serialized = serializeStrategyConfig(forcedCfg);
 
       const result = await d.generate(coin, true, serialized);
