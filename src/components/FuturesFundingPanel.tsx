@@ -126,25 +126,33 @@ export default function FuturesFundingPanel({ address, isConnected }: Props) {
     setLoading(true);
     setError(null);
 
-    try {
-      const fundingResponse = await fetch(
-        `/api/perps/funding?address=${encodeURIComponent(address)}`,
-        { cache: "no-store" },
-      );
-      setFunding(await parseApiResponse<FundingSnapshot>(fundingResponse));
+    const fundingRequest = fetch(
+      `/api/perps/funding?address=${encodeURIComponent(address)}`,
+      { cache: "no-store" },
+    ).then((response) => parseApiResponse<FundingSnapshot>(response));
+    const positionsRequest = fetch(
+      `/api/perps/positions?address=${encodeURIComponent(address)}`,
+      { cache: "no-store" },
+    ).then((response) => parseApiResponse<PerpsAccountStatus>(response));
 
-      const positionsResponse = await fetch(
-        `/api/perps/positions?address=${encodeURIComponent(address)}`,
-        { cache: "no-store" },
-      );
-      setStatus(await parseApiResponse<PerpsAccountStatus>(positionsResponse));
-    } catch (loadError) {
+    const [fundingResult, positionsResult] = await Promise.allSettled([
+      fundingRequest,
+      positionsRequest,
+    ]);
+
+    if (fundingResult.status === "fulfilled") {
+      setFunding(fundingResult.value);
+    } else {
       setFunding(null);
-      setStatus(null);
-      setError(loadError instanceof Error ? loadError.message : "SoDEX funding status unavailable");
-    } finally {
-      setLoading(false);
+      setError(
+        fundingResult.reason instanceof Error
+          ? fundingResult.reason.message
+          : "SoDEX funding status unavailable",
+      );
     }
+
+    setStatus(positionsResult.status === "fulfilled" ? positionsResult.value : null);
+    setLoading(false);
   }, [address]);
 
   useEffect(() => {
@@ -171,14 +179,24 @@ export default function FuturesFundingPanel({ address, isConnected }: Props) {
   const destination = mode === "deposit" ? funding?.perps : funding?.spot;
   const sourceLabel = mode === "deposit" ? "Spot" : "Perps";
   const destinationLabel = mode === "deposit" ? "Perps" : "Spot";
-  const canSubmit = Boolean(
+  const canInteract = Boolean(
     isConnected
     && address
-    && funding
-    && source
-    && toNumber(amount) > 0
+    && !loading
     && !submitting,
   );
+
+  const buttonLabel = !isConnected || !address
+    ? "Connect Wallet for Funding"
+    : loading
+      ? "Loading SoDEX Account"
+      : submitting
+        ? "Confirming SoDEX Transfer"
+        : !funding || !source
+          ? "Check SoDEX Funding Account"
+          : toNumber(amount) <= 0
+            ? "Enter Amount to Continue"
+            : `Sign & ${mode === "deposit" ? "Deposit to Perps" : "Withdraw to Spot"}`;
 
   const selectMode = (nextMode: FundingDirection) => {
     setMode(nextMode);
@@ -188,7 +206,14 @@ export default function FuturesFundingPanel({ address, isConnected }: Props) {
   };
 
   const handleTransfer = async () => {
-    if (!canSubmit || !address || !source) return;
+    if (!isConnected || !address) {
+      setError("Connect your wallet before funding");
+      return;
+    }
+    if (!funding || !source) {
+      setError("SoDEX funding account is unavailable. Refresh balances or enable trading for this wallet first.");
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -392,19 +417,15 @@ export default function FuturesFundingPanel({ address, isConnected }: Props) {
       <button
         type="button"
         onClick={() => void handleTransfer()}
-        disabled={!canSubmit}
+        disabled={!canInteract}
         className={`flex w-full items-center justify-center gap-2 rounded-xl border py-2.5 text-xs font-bold transition-all ${
-          canSubmit
+          canInteract
             ? "cursor-pointer border-hold/35 bg-hold/10 text-hold hover:border-hold/50 hover:bg-hold/15 active:scale-[0.985]"
             : "cursor-not-allowed border-border-default bg-inset text-txt-dim"
         }`}
       >
         {submitting && <Loader2 size={13} className="animate-spin" />}
-        {!isConnected
-          ? "Connect Wallet for Funding"
-          : submitting
-            ? "Confirming SoDEX Transfer"
-            : `Sign & ${mode === "deposit" ? "Deposit to Perps" : "Withdraw to Spot"}`}
+        {buttonLabel}
       </button>
     </section>
   );
