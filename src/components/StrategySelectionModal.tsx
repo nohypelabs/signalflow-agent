@@ -46,7 +46,7 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
     {
       name: "confluence",
       label: "Confluence V3",
-      description: "5-factor confluence (Trend/Momentum/Volatility/Volume/Structure), multi-timeframe, AI optional.",
+      description: "Unified 8-factor (5 TA + Order Flow / Depth / Funding micro), regime-aware, multi-TF, policy gated. AI optional enrichment only.",
     },
   ];
 
@@ -62,7 +62,7 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
       id: sessionId,
       strategy,
       status: "running",
-      logs: [`[${new Date().toLocaleTimeString()}] Starting ${strategy} generation for ${coin}`],
+      logs: [`[${new Date().toLocaleTimeString()}] Starting ${strategy === 'confluence' ? 'Confluence V3' : 'Liquidity Flow (legacy)'} generation for ${coin}`],
       startedAt: Date.now(),
     };
 
@@ -80,13 +80,12 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
           "Optional AI thesis enrichment...",
         ]
       : [
-          "Fetching multi-timeframe market data...",
-          "Computing 5-factor confluence scores...",
-          "Regime detection (TRENDING/RANGING/VOLATILE)...",
-          "Multi-TF confluence calculation...",
-          "Volatility-adjusted TP/SL...",
-          "Applying min confluence filters...",
-          "Optional AI thesis...",
+          "Fetching multi-timeframe klines + microstructure (orderbook, trades, funding)...",
+          "Computing factors (Trend/Momentum/Vol/Volume/Structure + OrderFlow/Depth/Funding)...",
+          "Regime detection (TRENDING_UP/DOWN, RANGING, VOLATILE, BREAKOUT)...",
+          "Multi-TF confluence agreement scoring...",
+          "Volatility-adjusted TP/SL (ATR × regime × type)...",
+          "Classify + apply min-confluence / policy filters...",
         ];
 
     let logIndex = 0;
@@ -262,7 +261,7 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
               {Object.values(sessions).map((sess) => (
                 <div key={sess.id} className="mb-2 border border-border-default rounded p-2 bg-black/30">
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="font-medium">{sess.strategy} — {sess.status}</span>
+                    <span className="font-medium">{sess.strategy === 'confluence' ? 'Confluence V3' : 'Liquidity Flow (legacy)'} — {sess.status}</span>
                     <span className="text-txt-muted">{((Date.now() - sess.startedAt) / 1000).toFixed(1)}s</span>
                   </div>
                   <div className="max-h-32 overflow-auto text-[10px] font-mono bg-inset/40 p-1 rounded">
