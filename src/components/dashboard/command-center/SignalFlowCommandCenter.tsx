@@ -408,29 +408,37 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
             note: "Excluded by active strategy",
           },
         ]
-      : [
-          {
-            label: "SoDEX TA",
-            signed: signedFromSignal(currentSignal),
-            weight: 0.55,
-            available: !!currentSignal,
-            note: currentSignal?.actionV2?.replaceAll("_", " ") ?? currentSignal?.regime ?? "Waiting for TA",
-          },
-          {
-            label: "SoSoValue News",
-            signed: signedFromNews(news),
-            weight: 0.25,
-            available: !!news && !news.error,
-            note: news?.error ? "quota limited" : news?.sentiment?.label ?? "Waiting for news",
-          },
-          {
-            label: "AI Thesis",
-            signed: signedFromSignal(aiSignal),
-            weight: 0.2,
-            available: !!aiSignal,
-            note: aiSignal ? "AI signal active" : d.analyzing ? "analyzing" : "not generated",
-          },
-        ];
+      : currentSignal?.factors?.length
+        ? currentSignal.factors.map((f: any) => ({
+            label: f.name,
+            signed: f.bullish ? 1 : f.score > 50 ? 0.5 : -1,
+            weight: f.weight,
+            available: true,
+            note: f.detail?.slice(0, 80) || "",
+          }))
+        : [
+            {
+              label: "Core Confluence (TA + Micro)",
+              signed: signedFromSignal(currentSignal),
+              weight: 1.0,
+              available: !!currentSignal,
+              note: currentSignal?.actionV2?.replaceAll("_", " ") ?? currentSignal?.regime ?? "V3 unified factors",
+            },
+            {
+              label: "News Sentiment",
+              signed: signedFromNews(news),
+              weight: 0,
+              available: !!news && !news.error,
+              note: news?.error ? "quota limited" : (news?.sentiment?.label ?? "UI only - not in base score"),
+            },
+            {
+              label: "AI Thesis",
+              signed: 0,
+              weight: 0,
+              available: !!aiSignal,
+              note: aiSignal ? "Optional enrichment (separate /analyze call)" : "Not included in live score",
+            },
+          ];
 
     const action = systemAction;
     const confidence = currentSignal
@@ -616,7 +624,7 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
             {currentSignal.confluence != null && `Confluence ${currentSignal.confluence}/100. `}
             {currentSignal.quality?.blockedReasons?.length
               ? currentSignal.quality.blockedReasons.slice(0, 1).join(" ")
-              : currentSignal.actionV2 === "HOLD" ? "V2 classifier returned HOLD (factors not aligned enough)." : ""}
+              : currentSignal.actionV2 === "HOLD" ? "Classifier returned HOLD (factors not aligned enough)." : ""}
             {" "}See full trace in signal history or /signals for factor details.
           </div>
         )}
@@ -631,11 +639,14 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
               const isPositive = source.signed > 0;
               const isNegative = source.signed < 0;
               const contrib = Math.round(source.weight * decision.confidence * (source.signed || 0));
-              // Map labels to match picture
+              // Honest labels - prefer real factor names from v3 engine
               let label = source.label;
-              if (label.includes("News")) label = "News Sentiment";
-              if (label.includes("AI")) label = "AI Thesis";
-              if (label.includes("TA") || label.includes("Liquidity")) label = "SoDEX TA";
+              if (label === "ORDER_FLOW") label = "Order Flow";
+              if (label === "DEPTH") label = "Orderbook Depth";
+              if (label === "FUNDING") label = "Funding Rate";
+              if (label.includes("News")) label = "News Sentiment (UI)";
+              if (label.includes("AI")) label = "AI Thesis (optional)";
+              if (label.includes("Core Confluence")) label = "Core Confluence (TA+Micro)";
               return (
                 <div key={idx} className="flex items-center gap-2 text-[10px]">
                   <div className="w-20 shrink-0 font-medium text-txt-primary">{label}</div>
@@ -654,7 +665,7 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
             })}
           </div>
           <div className="mt-2 text-[8px] text-[#a1a1aa] text-center font-mono">
-            {decision.confidence}% = {Math.round(decision.sources[0]?.weight * 100 || 55)}%×TA + {Math.round(decision.sources[1]?.weight * 100 || 25)}%×News + {Math.round(decision.sources[2]?.weight * 100 || 20)}%×AI
+            {decision.confidence}% = real factor confluence (TA + Microstructure). AI/News are optional/UI only.
           </div>
         </div>
 
