@@ -28,14 +28,18 @@ export default function WelcomePage() {
       localStorage.setItem(WELCOME_STORAGE_KEY, "1");
     } catch {}
     setIsLeaving(true);
+
+    // Wait for exit animation to complete before navigating.
+    // This gives a smooth "mulu" transition out of welcome into dashboard.
+    setTimeout(() => {
+      router.replace("/dashboard");
+    }, 420);
   };
 
   return (
     <WelcomeExperience
       onEnter={enterDashboard}
-      className={`relative h-screen min-h-screen transition-[opacity,transform,filter] duration-[420ms] ease-out will-change-transform ${
-        isLeaving ? "scale-[1.012] opacity-0 blur-[2px]" : "scale-100 opacity-100 blur-0"
-      }`}
+      isLeaving={isLeaving}
     />
   );
 }

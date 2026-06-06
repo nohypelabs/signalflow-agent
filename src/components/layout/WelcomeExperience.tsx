@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const SignalFlow3DScene = dynamic(() => import("./SignalFlow3DScene"), {
   ssr: false,
@@ -22,11 +23,13 @@ const PIPELINE_STEPS = [
 
 interface WelcomeExperienceProps {
   onEnter: () => void;
+  isLeaving?: boolean;
   className?: string;
 }
 
 export default function WelcomeExperience({
   onEnter,
+  isLeaving = false,
   className = "fixed inset-0 z-[90]",
 }: WelcomeExperienceProps) {
   const [loadScene, setLoadScene] = useState(false);
@@ -47,7 +50,16 @@ export default function WelcomeExperience({
   }, []);
 
   return (
-    <div className={`${className} overflow-hidden bg-[#030712] text-white`}>
+    <motion.div
+      className={`${className} overflow-hidden bg-[#030712] text-white`}
+      initial={{ opacity: 0, scale: 0.985, filter: "blur(4px)" }}
+      animate={{
+        opacity: isLeaving ? 0 : 1,
+        scale: isLeaving ? 1.012 : 1,
+        filter: isLeaving ? "blur(2px)" : "blur(0px)",
+      }}
+      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+    >
       <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_50%_34%,rgba(255,136,0,0.11),transparent_27%),linear-gradient(180deg,#06101e_0%,#030712_58%,#02040a_100%)]" />
       <div className="absolute inset-x-0 top-[18%] z-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
       <div className="absolute left-1/2 top-[35%] z-0 h-[min(42vw,460px)] w-[min(42vw,460px)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#ff8800]/15 bg-[#ff8800]/[0.018] shadow-[0_0_54px_rgba(255,136,0,0.12)]" />
@@ -82,13 +94,23 @@ export default function WelcomeExperience({
       <div className="pointer-events-none absolute left-1/2 top-1/2 z-[15] h-[420px] w-[min(92vw,900px)] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(ellipse_at_center,rgba(3,7,18,0.88)_0%,rgba(3,7,18,0.7)_38%,rgba(3,7,18,0.18)_68%,transparent_100%)]" />
 
       <div className="relative z-20 flex h-full min-h-screen flex-col justify-between px-5 py-5 sm:px-8 sm:py-8">
-        <div className="flex items-start justify-between gap-4 text-[10px] uppercase tracking-[0.28em] text-white/70 sm:text-[11px]">
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
+          className="flex items-start justify-between gap-4 text-[10px] uppercase tracking-[0.28em] text-white/70 sm:text-[11px]"
+        >
           <div className="font-mono text-[#ffb04d]">signalflow</div>
           <div className="hidden font-mono sm:block">sodex / ai / execution</div>
-        </div>
+        </motion.div>
 
         <div className="mx-auto w-full max-w-4xl">
-          <div className="mx-auto mb-7 max-w-3xl text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.25 }}
+            className="mx-auto mb-7 max-w-3xl text-center"
+          >
             <p className="text-[10px] uppercase tracking-[0.36em] text-[#ff8800]">SignalFlow Agent</p>
             <h1 className="mx-auto mt-4 text-4xl font-semibold leading-[0.98] tracking-normal text-[#f8f3e4] drop-shadow-[0_10px_35px_rgba(0,0,0,0.8)] sm:text-6xl lg:text-7xl">
               Market tape in. Signal out.
@@ -96,18 +118,28 @@ export default function WelcomeExperience({
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-white/78 drop-shadow-[0_8px_24px_rgba(0,0,0,0.75)] sm:text-base">
               A fast paper-first command gate for SoDEX tape, AI reasoning, risk state, and controlled execution.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="mx-auto mb-6 grid max-w-2xl grid-cols-3 gap-2">
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, ease: "easeOut", delay: 0.45 }}
+            className="mx-auto mb-6 grid max-w-2xl grid-cols-3 gap-2"
+          >
             {PIPELINE_STEPS.map((step) => (
               <div key={step.label} className="rounded-lg border border-white/8 bg-white/[0.035] px-3 py-2 text-center backdrop-blur-[2px]">
                 <p className="truncate text-[9px] uppercase tracking-[0.2em] text-white/45">{step.label}</p>
                 <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/85">{step.value}</p>
               </div>
             ))}
-          </div>
+          </motion.div>
 
-          <div className="flex justify-center">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut", delay: 0.65 }}
+            className="flex justify-center"
+          >
             <a
               href="/dashboard"
               onClick={onEnter}
@@ -122,7 +154,7 @@ export default function WelcomeExperience({
                 <ArrowIcon />
               </span>
             </a>
-          </div>
+            </motion.div>
 
           <div className="mt-7 flex items-center justify-center gap-3 text-center text-[10px] uppercase tracking-[0.22em] text-white/48">
             <span>paper futures first</span>
@@ -131,7 +163,12 @@ export default function WelcomeExperience({
           </div>
         </div>
 
-        <div className="flex items-end justify-between gap-4 text-[11px] text-white/50">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut", delay: 0.85 }}
+          className="flex items-end justify-between gap-4 text-[11px] text-white/50"
+        >
           <p className="max-w-sm font-mono leading-5 text-white/55">
             AI-driven signals. Multi-timeframe confluence. Paper-first execution.
           </p>
@@ -142,9 +179,9 @@ export default function WelcomeExperience({
           >
             Skip Intro
           </a>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
