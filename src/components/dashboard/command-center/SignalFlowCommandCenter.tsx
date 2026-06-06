@@ -408,37 +408,33 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
             note: "Excluded by active strategy",
           },
         ]
-      : currentSignal?.factors?.length
-        ? currentSignal.factors.map((f: any) => ({
-            label: f.name,
-            signed: f.bullish ? 1 : f.score > 50 ? 0.5 : -1,
-            weight: f.weight,
-            available: true,
-            note: f.detail?.slice(0, 80) || "",
-          }))
-        : [
-            {
-              label: "Core Confluence (TA + Micro)",
-              signed: signedFromSignal(currentSignal),
-              weight: 1.0,
-              available: !!currentSignal,
-              note: currentSignal?.actionV2?.replaceAll("_", " ") ?? currentSignal?.regime ?? "V3 unified factors",
-            },
-            {
-              label: "News Sentiment",
-              signed: signedFromNews(news),
-              weight: 0,
-              available: !!news && !news.error,
-              note: news?.error ? "quota limited" : (news?.sentiment?.label ?? "UI only - not in base score"),
-            },
-            {
-              label: "AI Thesis",
-              signed: 0,
-              weight: 0,
-              available: !!aiSignal,
-              note: aiSignal ? "Optional enrichment (separate /analyze call)" : "Not included in live score",
-            },
-          ];
+      : [
+          // Always exactly 3 rows for this panel (to keep card height stable)
+          // Core is now the unified V3 engine (TA factors + micro ORDER_FLOW/DEPTH/FUNDING)
+          {
+            label: "Core Confluence (TA + Micro)",
+            signed: signedFromSignal(currentSignal),
+            weight: 1.0,
+            available: !!currentSignal,
+            note: currentSignal?.factors?.length 
+              ? `${currentSignal.factors.length} factors • ${currentSignal.regime ?? ''}` 
+              : (currentSignal?.actionV2?.replaceAll("_", " ") ?? currentSignal?.regime ?? "V3 engine"),
+          },
+          {
+            label: "News Sentiment",
+            signed: signedFromNews(news),
+            weight: 0,
+            available: !!news && !news.error,
+            note: news?.error ? "quota limited" : (news?.sentiment?.label ?? "UI only - not in decision"),
+          },
+          {
+            label: "AI Thesis",
+            signed: 0,
+            weight: 0,
+            available: !!aiSignal,
+            note: aiSignal ? "Optional (separate analyze)" : "Not in live score",
+          },
+        ];
 
     const action = systemAction;
     const confidence = currentSignal
@@ -639,14 +635,8 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
               const isPositive = source.signed > 0;
               const isNegative = source.signed < 0;
               const contrib = Math.round(source.weight * decision.confidence * (source.signed || 0));
-              // Honest labels - prefer real factor names from v3 engine
+              // Keep labels as constructed above (we force exactly 3 compact rows)
               let label = source.label;
-              if (label === "ORDER_FLOW") label = "Order Flow";
-              if (label === "DEPTH") label = "Orderbook Depth";
-              if (label === "FUNDING") label = "Funding Rate";
-              if (label.includes("News")) label = "News Sentiment (UI)";
-              if (label.includes("AI")) label = "AI Thesis (optional)";
-              if (label.includes("Core Confluence")) label = "Core Confluence (TA+Micro)";
               return (
                 <div key={idx} className="flex items-center gap-2 text-[10px]">
                   <div className="w-20 shrink-0 font-medium text-txt-primary">{label}</div>
