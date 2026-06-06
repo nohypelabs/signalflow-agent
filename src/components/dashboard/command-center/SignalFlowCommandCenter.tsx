@@ -408,33 +408,48 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
             note: "Excluded by active strategy",
           },
         ]
-      : [
-          // Always exactly 3 rows for this panel (to keep card height stable)
-          // Core is now the unified V3 engine (TA factors + micro ORDER_FLOW/DEPTH/FUNDING)
-          {
-            label: "Core Confluence (TA + Micro)",
-            signed: signedFromSignal(currentSignal),
-            weight: 1.0,
-            available: !!currentSignal,
-            note: currentSignal?.factors?.length 
-              ? `${currentSignal.factors.length} factors • ${currentSignal.regime ?? ''}` 
-              : (currentSignal?.actionV2?.replaceAll("_", " ") ?? currentSignal?.regime ?? "V3 engine"),
-          },
-          {
-            label: "News Sentiment",
-            signed: signedFromNews(news),
-            weight: 0,
-            available: !!news && !news.error,
-            note: news?.error ? "quota limited" : (news?.sentiment?.label ?? "UI only - not in decision"),
-          },
-          {
-            label: "AI Thesis",
-            signed: 0,
-            weight: 0,
-            available: !!aiSignal,
-            note: aiSignal ? "Optional (separate analyze)" : "Not in live score",
-          },
-        ];
+      : currentSignal?.factors?.length
+        ? currentSignal.factors.slice(0, 6).map((f: any) => {
+            let displayLabel = f.name;
+            if (displayLabel === "ORDER_FLOW") displayLabel = "Order Flow";
+            if (displayLabel === "DEPTH") displayLabel = "Orderbook Depth";
+            if (displayLabel === "FUNDING") displayLabel = "Funding Rate";
+            if (displayLabel === "TREND") displayLabel = "Trend";
+            if (displayLabel === "MOMENTUM") displayLabel = "Momentum";
+            if (displayLabel === "VOLATILITY") displayLabel = "Volatility";
+            if (displayLabel === "VOLUME") displayLabel = "Volume";
+            if (displayLabel === "STRUCTURE") displayLabel = "Structure";
+            return {
+              label: displayLabel,
+              signed: f.bullish ? 1 : f.score > 50 ? 0.5 : -1,
+              weight: f.weight,
+              available: true,
+              note: f.detail?.slice(0, 45) || "",
+            };
+          })
+        : [
+            {
+              label: "Core Confluence (TA + Micro)",
+              signed: signedFromSignal(currentSignal),
+              weight: 1.0,
+              available: !!currentSignal,
+              note: currentSignal?.actionV2?.replaceAll("_", " ") ?? currentSignal?.regime ?? "V3 unified factors",
+            },
+            {
+              label: "News Sentiment",
+              signed: signedFromNews(news),
+              weight: 0,
+              available: !!news && !news.error,
+              note: news?.error ? "quota limited" : (news?.sentiment?.label ?? "UI only"),
+            },
+            {
+              label: "AI Thesis",
+              signed: 0,
+              weight: 0,
+              available: !!aiSignal,
+              note: aiSignal ? "Optional (separate call)" : "Not in base score",
+            },
+          ];
 
     const action = systemAction;
     const confidence = currentSignal
@@ -625,7 +640,7 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
           </div>
         )}
 
-        {/* Score Drivers (weighted composite) - matching the reference picture exactly */}
+        {/* Score Drivers (weighted composite) — up to 6 rows from real factors (capped for layout) */}
         <div className="rounded-xl border border-border-default bg-inset/70 px-3 py-2">
           <div className="text-[10px] font-semibold uppercase tracking-wide text-txt-tertiary mb-2">Score Drivers (weighted composite)</div>
           <div className="space-y-2">
@@ -635,7 +650,7 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
               const isPositive = source.signed > 0;
               const isNegative = source.signed < 0;
               const contrib = Math.round(source.weight * decision.confidence * (source.signed || 0));
-              // Keep labels as constructed above (we force exactly 3 compact rows)
+              // Labels pre-mapped above for niceness (up to 6 rows from real V3 factors)
               let label = source.label;
               return (
                 <div key={idx} className="flex items-center gap-2 text-[10px]">
