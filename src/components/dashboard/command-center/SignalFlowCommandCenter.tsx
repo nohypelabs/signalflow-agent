@@ -2147,8 +2147,8 @@ export default function SignalFlowCommandCenter() {
       </div>
       <MarketStatsBar />
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <MarketPressureCard />
         <BTCTreasuryDashboard />
+        <MarketPressureCard />
         <MacroSurprise />
       </div>
 
