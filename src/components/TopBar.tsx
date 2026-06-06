@@ -50,6 +50,7 @@ const navGroups = {
     { href: "/analytics", label: "Analytics", Icon: BarChartIcon },
     { href: "/trade-history", label: "Trade History", Icon: HistoryIcon },
     { href: "/journal", label: "Journal", Icon: DocumentIcon },
+    { href: "/docs", label: "Docs", Icon: DocumentIcon },
   ],
   strategy: [
     { href: "/strategy-config", label: "Strategy Config", Icon: StrategyIcon },
