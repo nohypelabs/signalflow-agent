@@ -1,5 +1,52 @@
 # Progress Log
 
+## 2026-06-06 — Chart Fullscreen Fix + UI Polish
+
+### Summary
+Fixed chart fullscreen not covering entire screen in Brave browser, plus minor UI layout tweak. **2 commits**.
+
+---
+
+### Chart Fullscreen — Browser Fullscreen API
+| Commit | Change |
+|--------|--------|
+| `9428588` | Replace CSS-only fullscreen with native Browser Fullscreen API |
+
+**Before:**
+- Fullscreen used CSS `position: fixed; inset: 0; z-index: 40` — only covered browser viewport, browser chrome (URL bar, tabs) still visible
+- In Brave, `z-index: 40` could be overlapped by other stacking contexts
+- ResizeObserver had empty dependency array `[]` — chart didn't resize on fullscreen toggle
+
+**After:**
+- Uses `element.requestFullscreen()` — true fullscreen, hides browser chrome (like video fullscreen)
+- `webkitRequestFullscreen` fallback for Brave/Safari prefix
+- `z-[9999]` as CSS fallback if browser API unavailable
+- `fullscreenchange` event listener syncs state when user presses Esc natively
+- ResizeObserver now depends on `[cleanMode, fullscreen]` — re-triggers on toggle
+- `requestAnimationFrame` guard ensures layout recalculated before chart resize
+
+**Files changed:**
+| File | Change |
+|------|--------|
+| `TradingChart.tsx` | Added `chartWrapperRef`, `toggleFullscreen()` callback, `fullscreenchange` listener, `webkitRequestFullscreen` support, updated ResizeObserver deps |
+
+---
+
+### Command Center — Stat Card Reorder
+| Commit | Change |
+|--------|--------|
+| `3e1fd91` | Swap BTC Treasuries and Market Pressure stat card positions |
+
+**Before:** Market Pressure → BTC Treasuries → Macro Surprise
+**After:** BTC Treasuries → Market Pressure → Macro Surprise
+
+**File changed:**
+| File | Change |
+|------|--------|
+| `SignalFlowCommandCenter.tsx` | Swapped `<BTCTreasuryDashboard />` and `<MarketPressureCard />` in grid |
+
+---
+
 ## 2026-06-02 — Dashboard Polish & UX Overhaul
 
 ### Summary
