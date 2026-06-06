@@ -26,7 +26,7 @@ interface Props {
 
 export default function StrategySelectionModal({ open, onClose, coin, onGenerateComplete }: Props) {
   const d = useDashboard();
-  const [selectedStrategies, setSelectedStrategies] = useState<StrategyEngineName[]>([]);
+  const [selectedStrategy, setSelectedStrategy] = useState<StrategyEngineName | null>(null);
   const [minimized, setMinimized] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [sessions, setSessions] = useState<Record<string, GenerationSession>>({});
@@ -50,10 +50,10 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
     },
   ];
 
-  const toggleStrategy = (name: StrategyEngineName) => {
-    setSelectedStrategies((prev) =>
-      prev.includes(name) ? prev.filter((s) => s !== name) : [...prev, name]
-    );
+  const selectStrategy = (name: StrategyEngineName) => {
+    // Single selection only: clicking the selected one deselects it.
+    // Selecting one automatically "disables" the other visually.
+    setSelectedStrategy((prev) => (prev === name ? null : name));
   };
 
   const startGeneration = async (strategy: StrategyEngineName) => {
@@ -157,9 +157,9 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
   };
 
   const handleGenerateSelected = () => {
-    selectedStrategies.forEach((strat) => {
-      startGeneration(strat);
-    });
+    if (selectedStrategy) {
+      startGeneration(selectedStrategy);
+    }
     // Keep modal open so user can see logs (or minimize)
   };
 
@@ -209,46 +209,61 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
               </div>
               <div className="flex gap-2">
                 <button onClick={toggleMinimize} className="text-xs px-2 py-1 border border-border-default rounded hover:bg-inset active:scale-[0.98] transition-all cursor-pointer">Minimize</button>
-                <button onClick={() => setCustomizeOpen(!customizeOpen)} className="text-xs px-2 py-1 border border-border-default rounded hover:bg-inset active:scale-[0.98] transition-all cursor-pointer">Customize</button>
+                <button 
+                  onClick={() => setCustomizeOpen(!customizeOpen)} 
+                  disabled={!selectedStrategy}
+                  className="text-xs px-2 py-1 border border-border-default rounded hover:bg-inset active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Customize
+                </button>
                 <button onClick={onClose} className="text-xs px-2 py-1 text-txt-muted hover:text-white active:scale-[0.98] transition-all cursor-pointer">Close</button>
               </div>
             </div>
 
-            {/* Strategy selection */}
+            {/* Strategy selection - single choice only */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
               {strategies.map((s) => {
-                const isSelected = selectedStrategies.includes(s.name);
+                const isSelected = selectedStrategy === s.name;
+                const otherSelected = selectedStrategy && selectedStrategy !== s.name;
                 return (
                   <div
                     key={s.name}
-                    onClick={() => toggleStrategy(s.name)}
-                    className={`cursor-pointer rounded-lg border p-3 transition-all hover:scale-[1.015] active:scale-[0.985] ${isSelected ? "border-accent bg-accent/5" : "border-border-default hover:border-accent/50"}`}
+                    onClick={() => selectStrategy(s.name)}
+                    className={`rounded-lg border p-3 transition-all ${otherSelected ? 'opacity-40 pointer-events-none' : 'cursor-pointer hover:scale-[1.015] active:scale-[0.985]'} ${isSelected ? "border-accent bg-accent/5" : "border-border-default hover:border-accent/50"}`}
                   >
                     <div className="font-medium flex items-center gap-2">
-                      <input type="checkbox" checked={isSelected} readOnly className="accent-accent" />
+                      {/* Radio-style indicator instead of checkbox for single choice */}
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-accent bg-accent' : 'border-border-default'}`}>
+                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#0B1020]" />}
+                      </div>
                       {s.label}
                     </div>
                     <div className="text-[11px] text-txt-secondary mt-1">{s.description}</div>
+                    {otherSelected && (
+                      <div className="text-[10px] text-txt-muted mt-1">Disabled while other strategy is selected</div>
+                    )}
                   </div>
                 );
               })}
             </div>
 
-            {/* Customize section */}
-            {customizeOpen && (
+            {/* Customize section - only for the selected strategy */}
+            {customizeOpen && selectedStrategy && (
               <div className="mb-4 rounded border border-border-default p-3 bg-inset/30 text-xs">
-                <div className="font-medium mb-2">Customize Parameters (per generation)</div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="font-medium mb-2">Customize Parameters</div>
+                {selectedStrategy === "liquidityFlow" && (
                   <div>
-                    <div className="text-txt-muted mb-1">LiquidityFlow</div>
+                    <div className="text-txt-muted mb-1">Liquidity Flow (legacy)</div>
                     <label className="block">Min Spread (bps): <input type="number" value={customOptions.liquidityFlow.minSpreadBps} onChange={e => setCustomOptions(p => ({...p, liquidityFlow: {...p.liquidityFlow, minSpreadBps: parseFloat(e.target.value)}}))} className="bg-[#111827] w-16 px-1 rounded" /></label>
                     <label className="flex items-center gap-1 mt-1"><input type="checkbox" checked={customOptions.liquidityFlow.includeFunding} onChange={e => setCustomOptions(p => ({...p, liquidityFlow: {...p.liquidityFlow, includeFunding: e.target.checked}}))} /> Include Funding Rate</label>
                   </div>
+                )}
+                {selectedStrategy === "confluence" && (
                   <div>
                     <div className="text-txt-muted mb-1">Confluence V3</div>
                     <label>Min Confidence: <input type="number" value={customOptions.confluence.minConfidence} onChange={e => setCustomOptions(p => ({...p, confluence: {...p.confluence, minConfidence: parseInt(e.target.value)}}))} className="bg-[#111827] w-16 px-1 rounded" /></label>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
@@ -256,7 +271,7 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
             <div className="mb-3">
               <div className="text-xs uppercase tracking-wider text-txt-muted mb-1">Live Generation Logs</div>
               {Object.keys(sessions).length === 0 && (
-                <div className="text-xs text-txt-secondary italic">Select strategy above and click Generate to start. Logs will appear here in real time.</div>
+                <div className="text-xs text-txt-secondary italic">Select a strategy above and click Generate to start. Logs will appear here in real time.</div>
               )}
               {Object.values(sessions).map((sess) => (
                 <div key={sess.id} className="mb-2 border border-border-default rounded p-2 bg-black/30">
@@ -295,10 +310,10 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
             <div className="flex gap-2 justify-end">
               <button
                 onClick={handleGenerateSelected}
-                disabled={selectedStrategies.length === 0}
+                disabled={!selectedStrategy}
                 className="rounded bg-accent text-black px-3 py-1 text-sm font-medium disabled:opacity-50 hover:bg-emerald-400 active:scale-[0.985] transition-all duration-150 cursor-pointer"
               >
-                Generate Selected Strategies
+                Generate Signal
               </button>
               <button onClick={onClose} className="rounded border border-border-default px-3 py-1 text-sm hover:bg-inset active:scale-[0.985] transition-all duration-150 cursor-pointer">Close</button>
             </div>
