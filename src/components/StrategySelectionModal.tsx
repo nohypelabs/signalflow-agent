@@ -121,7 +121,8 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
       }
       const serialized = serializeStrategyConfig(forcedCfg);
 
-      const result = await d.generate(coin, true, serialized);
+      // Use includeAI=false by default for fast base V3 signal (AI thesis is optional and slower)
+      const result = await d.generate(coin, false, serialized);
 
       setSessions((prev) => {
         const sess = prev[sessionId];

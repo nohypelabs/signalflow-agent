@@ -50,34 +50,55 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string, signal?:
   ]);
 }
 
-async function gatherMarketData(coin: string, signal?: AbortSignal) {
-  const DATA_TIMEOUT = 15_000; // 15s for all external data
+async function gatherMarketData(coin: string, signal?: AbortSignal, includeAI: boolean = true) {
+  const DATA_TIMEOUT = 8_000; // reduced for faster manual generate
 
-  const [currencies, etfSummary, macroEvents, btcTreasuries, hotNews] = await withTimeout(
-    Promise.all([
-      getCurrencies(signal).catch(() => []),
-      getETFSummary("BTC", "US", 5, signal).catch(() => []),
-      getMacroEvents(signal).catch(() => []),
-      getBTCTreasuries(signal).catch(() => []),
-      getNewsHot(1, 20, signal).catch(() => ({ list: [], page: 1, page_size: 20, total: 0 })),
-    ]),
-    DATA_TIMEOUT,
-    "SoSoValue data gathering",
-    signal,
-  );
+  let etfSummary: any[] = [];
+  let macroEvents: any[] = [];
+  let btcTreasuries: any[] = [];
+  let newsList: any[] = [];
+  let snap: any = null;
 
-  const currency = currencies.find((c) => c.symbol.toLowerCase() === coin.toLowerCase());
-  const snap = currency
-    ? await withTimeout(
+  const currencyPromise = getCurrencies(signal).catch(() => []).then((currencies) => {
+    const currency = currencies.find((c: any) => c.symbol.toLowerCase() === coin.toLowerCase());
+    if (currency) {
+      return withTimeout(
         getMarketSnapshot(currency.currency_id, signal).catch(() => null),
         DATA_TIMEOUT,
         "Market snapshot",
-        signal,
-      )
-    : null;
-  const newsList = "list" in hotNews ? hotNews.list : [];
+        signal
+      ).then((s) => ({ currency, snap: s }));
+    }
+    return { currency: null, snap: null };
+  });
 
-  // SoDEX ticker for live price + klines for TA engine
+  // Only fetch heavy SoSoValue data if AI thesis is requested (for the prompt)
+  const soSoPromise = includeAI
+    ? withTimeout(
+        Promise.all([
+          getETFSummary("BTC", "US", 5, signal).catch(() => []),
+          getMacroEvents(signal).catch(() => []),
+          getBTCTreasuries(signal).catch(() => []),
+          getNewsHot(1, 20, signal).catch(() => ({ list: [], page: 1, page_size: 20, total: 0 })),
+        ]),
+        DATA_TIMEOUT,
+        "SoSoValue data gathering",
+        signal
+      )
+    : Promise.resolve([[], [], [], { list: [] }]);
+
+  const [[etf, macro, treas, hot], { currency, snap: marketSnap }] = await Promise.all([
+    soSoPromise,
+    currencyPromise,
+  ]);
+
+  etfSummary = etf;
+  macroEvents = macro;
+  btcTreasuries = treas;
+  newsList = "list" in hot ? hot.list : [];
+  snap = marketSnap;
+
+  // SoDEX ticker for live price + klines for TA engine — always needed for V3 base
   const sodexSymbol = pairToSodexSymbol(`${coin}/USDC`) || `v${coin.toUpperCase()}_vUSDC`;
   const [tickers, klines] = await withTimeout(
     Promise.all([
@@ -88,7 +109,7 @@ async function gatherMarketData(coin: string, signal?: AbortSignal) {
     "SoDEX data gathering",
     signal,
   );
-  const ticker = tickers.find((t) => t.symbol === sodexSymbol);
+  const ticker = tickers.find((t: any) => t.symbol === sodexSymbol);
 
   return {
     coin,
@@ -197,7 +218,7 @@ export async function POST(req: NextRequest) {
     const reqSignal = (req as Request & { signal?: AbortSignal }).signal;
     if (reqSignal) reqSignal.addEventListener("abort", () => ac.abort(), { once: true });
 
-    const marketData = await gatherMarketData(coin, ac.signal);
+    const marketData = await gatherMarketData(coin, ac.signal, includeAI);
 
     // Always fetch micro for the coin (orderbook, trades, perps) so V3 can use it
     const sodexSymbol = pairToSodexSymbol(`${coin}/USDC`) || `v${coin.toUpperCase()}_vUSDC`;
