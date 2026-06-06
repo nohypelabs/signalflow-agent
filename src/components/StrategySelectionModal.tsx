@@ -27,7 +27,6 @@ interface Props {
 export default function StrategySelectionModal({ open, onClose, coin, onGenerateComplete }: Props) {
   const d = useDashboard();
   const [selectedStrategy, setSelectedStrategy] = useState<StrategyEngineName | null>(null);
-  const [minimized, setMinimized] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [sessions, setSessions] = useState<Record<string, GenerationSession>>({});
 
@@ -163,26 +162,6 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
     // Keep modal open so user can see logs (or minimize)
   };
 
-  const toggleMinimize = () => {
-    setMinimized(!minimized);
-  };
-
-  if (minimized) {
-    const hasSuccess = Object.values(sessions).some(s => s.status === "success");
-    const hasRunning = Object.values(sessions).some(s => s.status === "running");
-    return (
-      <div className="fixed bottom-4 right-4 z-[100] bg-[#0B1020] border border-border-default rounded-lg px-3 py-2 text-xs shadow-lg flex items-center gap-2">
-        {hasSuccess && !hasRunning ? (
-          <span className="text-emerald-500">✅ Generation complete</span>
-        ) : (
-          <span className="text-txt-secondary">Generating signals...</span>
-        )}
-        <button onClick={toggleMinimize} className="text-accent hover:underline">Expand</button>
-        <button onClick={onClose} className="text-txt-muted hover:text-white">×</button>
-      </div>
-    );
-  }
-
   return (
     <AnimatePresence>
       {open && (
@@ -191,15 +170,15 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
           onClick={onClose}
         >
           <motion.div
             className="w-full max-w-2xl rounded-xl border border-border-default bg-[#0B1020] p-4 text-sm mt-[-800px]"
-            initial={{ opacity: 0, scale: 0.96, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 30 }}
-            transition={{ type: "spring", stiffness: 320, damping: 26, mass: 0.7 }}
+            initial={{ opacity: 0, scale: 0.94, y: 24, filter: "blur(2px)" }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scale: 0.97, y: 16, filter: "blur(1px)" }}
+            transition={{ type: "spring", stiffness: 280, damping: 28, mass: 0.8 }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
@@ -208,7 +187,6 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
                 <div className="text-[10px] text-txt-muted">Transparency mode for judges & users</div>
               </div>
               <div className="flex gap-2">
-                <button onClick={toggleMinimize} className="text-xs px-2 py-1 border border-border-default rounded hover:bg-inset active:scale-[0.98] transition-all cursor-pointer">Minimize</button>
                 <button 
                   onClick={() => setCustomizeOpen(!customizeOpen)} 
                   disabled={!selectedStrategy}
@@ -291,18 +269,16 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
                   {sess.error && <div className="text-rose-500 text-xs mt-1">Error: {sess.error}</div>}
 
                   {sess.status === "success" && (
-                    <div className="mt-2 p-3 bg-emerald-500/10 border border-emerald-500/40 rounded-lg">
-                      <div className="flex items-center gap-2 text-emerald-500 font-semibold text-sm">
-                        ✅ Signal successfully generated!
-                      </div>
-                      <div className="text-[11px] text-txt-secondary mt-1 mb-2">
-                        Signal has been successfully generated. Please return to the Live Decision Score panel to view the results.
+                    <div className="mt-2 flex items-center justify-between gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs">
+                      <div className="flex items-center gap-1.5 text-emerald-400">
+                        <span>✅</span>
+                        <span className="font-medium">Signal generated</span>
                       </div>
                       <button
                         onClick={onClose}
-                        className="w-full rounded bg-emerald-500 hover:bg-emerald-600 text-black py-1.5 text-sm font-medium transition-all duration-150 hover:scale-[1.01] active:scale-[0.985] cursor-pointer"
+                        className="rounded bg-emerald-500/90 px-2.5 py-0.5 text-[10px] font-medium text-black transition hover:bg-emerald-500 active:scale-[0.985]"
                       >
-                        Back to Live Decision Score
+                        View in panel
                       </button>
                     </div>
                   )}
@@ -322,7 +298,7 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
             </div>
 
             <div className="mt-3 text-[10px] text-txt-muted">
-              Each strategy runs its own screening pipeline. After success, click the button in the success banner to return to the main panel.
+              One strategy at a time. After generation, use the success button or Close to return to the decision panel.
             </div>
           </motion.div>
         </motion.div>
