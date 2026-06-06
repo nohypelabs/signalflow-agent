@@ -69,12 +69,12 @@ export async function fetchSignals(
 ): Promise<SignalModuleResult> {
   const strategyConfig = deserializeStrategyConfig(null);
 
-  // Fast path: liquidity flow
+  // Fast path: liquidity flow (legacy)
   if (engine === "liquidityFlow") {
     return fetchLiquidityFlowSignals(strategyConfig);
   }
 
-  // Default: confluence V2
+  // Default: confluence V3 (unified)
   const [currencies, etfSummary, macroEvents, btcTreasuries, hotNews] = await Promise.all([
     getCurrencies().catch(() => []),
     getETFSummary("BTC", "US", 5).catch(() => []),
@@ -247,7 +247,7 @@ export async function fetchSignals(
 
   return {
     updated: Date.now(),
-    engine: "v2",
+    engine: "v3",
     signals,
     sources: {
       etf: (etfSummary as ETFSummaryItem[]).length > 0,

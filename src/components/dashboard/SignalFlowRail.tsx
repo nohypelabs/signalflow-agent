@@ -76,7 +76,7 @@ export default function SignalFlowRail({
       status: signalsError ? "error" as RailStatus : metricToRailStatus(metrics.activeSignals.status),
     },
     {
-      label: "Confluence V2",
+      label: "Confluence V3",
       detail: metrics.avgConfidence.status === "live" ? `${metrics.avgConfidence.formatted} confidence` : "Scoring engine",
       status: metricToRailStatus(metrics.avgConfidence.status),
     },

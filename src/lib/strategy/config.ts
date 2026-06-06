@@ -1,7 +1,7 @@
 export const STRATEGY_CONFIG_STORAGE_KEY = "signalflow-strategy-config";
 export const STRATEGY_CONFIG_EVENT = "signalflow-strategy-config-changed";
 
-export type StrategyEngineName = "confluence" | "liquidityFlow";
+export type StrategyEngineName = "confluence" | "liquidityFlow"; // liquidityFlow kept for backward compat only (logic folded into Confluence V3)
 
 // Re-export for consumers (weights driven by injected Thinking Framework)
 export type { TradingTypeProfile, TradingTypeProfiles, FactorWeights, FrameworkApplication, FrameworkTraceEntry } from "./thinking-framework";
@@ -51,7 +51,7 @@ export const DEFAULT_STRATEGY_CONFIG: StrategyConfig = {
 
 export const LIQUIDITY_FLOW_STRATEGY_CONFIG: StrategyConfig = {
   ...DEFAULT_STRATEGY_CONFIG,
-  engine: "liquidityFlow",
+  engine: "liquidityFlow", // legacy separate path (micro-only)
   etfFlow: 0,
   sentiment: 0,
   macro: 0,
@@ -217,7 +217,7 @@ export function toActiveStrategySummary(config: StrategyConfig): ActiveStrategyS
   const sanitized = sanitizeStrategyConfig(config);
   return {
     engine: sanitized.engine,
-    label: sanitized.engine === "liquidityFlow" ? "Liquidity Flow" : "Confluence V2",
+    label: sanitized.engine === "liquidityFlow" ? "Liquidity Flow (legacy)" : "Confluence V3",
     minConfidence: sanitized.minConfidence,
     maxPositionSize: sanitized.maxPositionSize,
     autoExecute: sanitized.autoExecute,

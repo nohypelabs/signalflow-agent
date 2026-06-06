@@ -40,12 +40,12 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
   const strategies: { name: StrategyEngineName; label: string; description: string }[] = [
     {
       name: "liquidityFlow",
-      label: "Liquidity Flow",
+      label: "Liquidity Flow (legacy)",
       description: "Orderbook screening, orderflow (imbalance), funding rate, EMA 9 & 21, RSI, spread gate ≤3bps, etc.",
     },
     {
       name: "confluence",
-      label: "Confluence V2",
+      label: "Confluence V3",
       description: "5-factor confluence (Trend/Momentum/Volatility/Volume/Structure), multi-timeframe, AI optional.",
     },
   ];
@@ -246,7 +246,7 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
                     <label className="flex items-center gap-1 mt-1"><input type="checkbox" checked={customOptions.liquidityFlow.includeFunding} onChange={e => setCustomOptions(p => ({...p, liquidityFlow: {...p.liquidityFlow, includeFunding: e.target.checked}}))} /> Include Funding Rate</label>
                   </div>
                   <div>
-                    <div className="text-txt-muted mb-1">Confluence V2</div>
+                    <div className="text-txt-muted mb-1">Confluence V3</div>
                     <label>Min Confidence: <input type="number" value={customOptions.confluence.minConfidence} onChange={e => setCustomOptions(p => ({...p, confluence: {...p.confluence, minConfidence: parseInt(e.target.value)}}))} className="bg-[#111827] w-16 px-1 rounded" /></label>
                   </div>
                 </div>

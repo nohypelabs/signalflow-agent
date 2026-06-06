@@ -48,7 +48,7 @@ const STRATEGY_ENGINES: Record<
   }
 > = {
   confluence: {
-    label: "Confluence V2",
+    label: "Confluence V3",
     badge: "Current",
     desc: "Multi-factor signal engine for broader directional context.",
     thesis: "Combines SoSoValue fundamentals, sentiment, macro, and technical momentum into one confidence score.",
@@ -61,7 +61,7 @@ const STRATEGY_ENGINES: Record<
     ],
   },
   liquidityFlow: {
-    label: "Liquidity Flow",
+    label: "Liquidity Flow (legacy)",
     badge: "New",
     desc: "Orderbook-first strategy for cleaner entries and strict execution control.",
     thesis: "Ignores news as an entry trigger, checks spread and top-book imbalance first, then uses EMA(9), EMA(21), and RSI(14) only.",

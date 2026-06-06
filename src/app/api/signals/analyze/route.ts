@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
 
     const marketData = await gatherMarketData(coin, ac.signal);
 
-    // ── Base signal: respect active strategy (liquidityFlow uses orderbook + EMA + RSI screening) ──
+    // ── Base signal: respect active strategy (liquidityFlow is legacy; main path is Confluence V3 with micro fused) ──
     const strategyConfig = body.strategy ? deserializeStrategyConfig(body.strategy) : undefined;
     const isLiquidity = strategyConfig?.engine === "liquidityFlow";
 

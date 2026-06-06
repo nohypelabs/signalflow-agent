@@ -76,7 +76,7 @@ export default function StrategySwitcher({ compact = false }: { compact?: boolea
     : activePreset
     ? PRESET_META[activePreset].label
     : current.engine === "liquidityFlow"
-    ? "Liquidity Flow"
+    ? "Liquidity Flow (legacy)"
     : "Custom";
 
   return (
@@ -85,7 +85,7 @@ export default function StrategySwitcher({ compact = false }: { compact?: boolea
 
       <div className="relative">
         <select
-          value={isCustom ? "custom" : activePreset || (current.engine === "liquidityFlow" ? "liquidity" : "balanced")}
+          value={isCustom ? "custom" : activePreset || "balanced"}
           onChange={(e) => {
             const val = e.target.value;
             if (val === "conservative" || val === "balanced" || val === "aggressive") {

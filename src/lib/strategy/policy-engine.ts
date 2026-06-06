@@ -1,9 +1,7 @@
 // SignalFlow Agent — Strategy Policy Engine
 // ─────────────────────────────────────────────────────────────
-// Two strategies: Confluence V2 (TA-based) and Liquidity Flow
-// (order flow / microstructure-based). Liquidity Flow uses
-// orderbook depth, trade flow, funding rate, and OI as PRIMARY
-// signal source. TA is demoted to confirmation layer only.
+// Confluence V3 (unified): 5 TA factors + microstructure (ORDER_FLOW, DEPTH, FUNDING)
+// fused in the main path. Liquidity Flow generator kept for legacy "liquidityFlow" engine option only.
 
 import type { OrderBook, SoDEXKline } from "../sodex-types";
 import type { SoDEXPerpsTicker } from "../sodex-perps";
@@ -45,7 +43,7 @@ function isDirectional(action: SignalAction): action is "LONG" | "SHORT" {
   return action === "LONG" || action === "SHORT";
 }
 
-// ── Confluence V2 Policy ─────────────────────────────────────
+// ── Confluence V3 Policy (main unified engine) ─────────────────────────────────────
 
 function configuredDimensionScore(signal: Signal, config: StrategyConfig): number {
   const totalWeight = DIMENSION_KEYS.reduce((sum, key) => sum + config[key], 0);

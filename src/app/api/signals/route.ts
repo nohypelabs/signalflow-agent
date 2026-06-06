@@ -151,7 +151,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    // ── LIQUIDITY FLOW PATH ───────────────────────────────
+    // ── LIQUIDITY FLOW PATH (legacy separate generator) ───────────────────────────────
     if (strategyConfig.engine === "liquidityFlow") {
       const klinesMap = new Map<string, SoDEXKline[]>();
       const orderbooks = new Map<string, OrderBook>();
@@ -281,7 +281,7 @@ export async function GET(request: Request) {
       return jsonNoCache(result);
     }
 
-    // ── CONFLUENCE V2 PATH ────────────────────────────────
+    // ── CONFLUENCE V3 PATH (unified: 5 TA factors + ORDER_FLOW + DEPTH + FUNDING micro) ────────────────────────────────
 
     const [currencies, etfSummary, macroEvents, btcTreasuries, hotNews] = await Promise.all([
       getCurrencies(ac.signal).catch(() => []),
@@ -570,7 +570,7 @@ export async function GET(request: Request) {
 
     const result = {
       updated: Date.now(),
-      engine: "v2",
+      engine: "v3",
       strategy: toActiveStrategySummary(strategyConfig),
       signals,
       sources: {

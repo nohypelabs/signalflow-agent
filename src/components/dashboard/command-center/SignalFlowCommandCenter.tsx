@@ -35,7 +35,7 @@ const TradingChart = dynamic(() => import("@/components/TradingChart"), {
 const pipelineSteps = [
   { number: "1", title: "SoDEX Data", description: "Live DEX Prices\nKlines & Volume", icon: "database" },
   { number: "2", title: "SoSoValue Data", description: "News, ETF Flow\nMacro & Sentiment", icon: "cube" },
-  { number: "3", title: "Confluence V2", description: "TA Fusion\nSignal Alignment", icon: "fusion" },
+  { number: "3", title: "Confluence V3", description: "TA + Micro\n(Orderbook / Flow / Funding)", icon: "fusion" },
   { number: "4", title: "AI Thesis", description: "Narrative Context\nProbability Check", icon: "brain" },
   { number: "5", title: "Trade Setup", description: "Entry, Risk\nTargets & Sizing", icon: "target" },
   { number: "6", title: "Decision Score", description: "Final Bias\nExecution Readiness", icon: "score" },
@@ -387,7 +387,7 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
     const sources: DecisionSource[] = liquidityFlowActive
       ? [
           {
-            label: "Liquidity Flow",
+            label: "Liquidity Flow (legacy)",
             signed: signedFromSignal(currentSignal),
             weight: 1,
             available: !!currentSignal,
