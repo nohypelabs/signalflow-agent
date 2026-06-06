@@ -239,6 +239,7 @@ export default function TradingChart({
   const [chartType, setChartType] = useState<"area" | "candles">("area");
   const [chartEngine, setChartEngine] = useState<"native" | "tradingview">("native");
   const [fullscreen, setFullscreen] = useState(false);
+  const chartWrapperRef = useRef<HTMLDivElement>(null);
   const [cleanMode, setCleanMode] = useState(false); // Visual preset: cleaner TV-like grid / contrast (no feature hiding)
   const [showIndicatorsDropdown, setShowIndicatorsDropdown] = useState(false);
   const [activeIndicators, setActiveIndicators] = useState<string[]>([]);
@@ -283,14 +284,53 @@ export default function TradingChart({
     });
   }, []);
 
-  // Cancel pending drawing on Escape
+  // Cancel pending drawing on Escape + sync browser fullscreen state
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") { cancelPending(); setFullscreen(false); }
     };
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) setFullscreen(false);
+    };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
   }, [cancelPending]);
+
+  // Toggle true fullscreen (Browser Fullscreen API) with CSS fallback
+  const toggleFullscreen = useCallback(async () => {
+    const el = chartWrapperRef.current;
+    if (!el) return;
+
+    if (!fullscreen) {
+      // Enter fullscreen
+      try {
+        if (el.requestFullscreen) {
+          await el.requestFullscreen();
+        } else if ((el as HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen) {
+          await (el as HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen?.();
+        }
+      } catch {
+        // Fallback: CSS-only fullscreen if browser API fails
+      }
+      setFullscreen(true);
+    } else {
+      // Exit fullscreen
+      try {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as Document & { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen) {
+          await (document as Document & { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen?.();
+        }
+      } catch {
+        // ignore
+      }
+      setFullscreen(false);
+    }
+  }, [fullscreen]);
 
   // Fetch klines for selected pair + timeframe
   const fetchTfKlines = useCallback(async () => {
@@ -708,19 +748,29 @@ export default function TradingChart({
     chartRef.current?.timeScale().fitContent();
   }, [klines, pairSignals, latestSignal, showVolume, showSignals, showTradePlan, chartType, activeIndicators]);
 
-  // Handle resize
+  // Handle resize (re-observe on fullscreen/cleanMode change)
   useEffect(() => {
     const container = containerRef.current;
     if (!container || !chartRef.current) return;
 
-    const observer = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      chartRef.current?.applyOptions({ width, height });
-    });
+    const resizeChart = () => {
+      requestAnimationFrame(() => {
+        if (!container || !chartRef.current) return;
+        const { width, height } = container.getBoundingClientRect();
+        if (width > 0 && height > 0) {
+          chartRef.current.applyOptions({ width, height });
+        }
+      });
+    };
+
+    const observer = new ResizeObserver(() => resizeChart());
     observer.observe(container);
 
+    // Immediately resize on effect fire (fullscreen toggle / cleanMode change)
+    resizeChart();
+
     return () => observer.disconnect();
-  }, []);
+  }, [cleanMode, fullscreen]);
 
   // Current ticker for selected pair
   const currentTicker = tickerMap?.get(sodexSymbol);
@@ -753,8 +803,8 @@ export default function TradingChart({
     : null;
 
   return (
-    <div className={fullscreen
-      ? "fixed inset-0 z-40 bg-background p-2 flex flex-col"
+    <div ref={chartWrapperRef} className={fullscreen
+      ? "fixed inset-0 z-[9999] bg-background p-2 flex flex-col"
       : "h-full w-full flex flex-col min-w-0 bg-card border border-border-default rounded-lg overflow-hidden"
     }>
       {/* Header — 2 rows (status on top, full toolbar row below)
@@ -1003,7 +1053,7 @@ export default function TradingChart({
             </button>
 
             <button
-              onClick={() => setFullscreen((v) => !v)}
+              onClick={toggleFullscreen}
               className="flex items-center justify-center w-6 h-6 rounded text-txt-faint hover:text-txt-secondary hover:bg-elevated/40 transition-colors cursor-pointer"
               title={fullscreen ? "Exit fullscreen (Esc)" : "Fullscreen"}
             >
