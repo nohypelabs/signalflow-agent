@@ -41,7 +41,7 @@ export const DEFAULT_STRATEGY_CONFIG: StrategyConfig = {
   macro: 20,
   momentum: 15,
   treasury: 10,
-  minConfidence: 62, // lowered from 70 — engine is multi-gate; 70 was causing chronic HOLD even on clear trends
+  minConfidence: 52, // v3: lower default so system makes frequent decisions in 24/7 volatile crypto. Raise if you want fewer but higher-conviction. All signals carry full factors[] for post-trade audit of wins/losses.
   maxPositionSize: 5,
   autoExecute: true,
   slippage: 0.5,
@@ -77,21 +77,21 @@ export const PRESET_META: Record<StrategyPresetName, { label: string; badge: str
   conservative: {
     label: "Conservative",
     badge: "Low Risk",
-    desc: "High-confidence signals, smaller position size, manual execution bias.",
+    desc: "High-confidence signals, smaller position size, manual execution bias. Engine still produces candidates; this preset just filters harder at the policy gate.",
     tone: "border-info/30 bg-info/5 text-info",
     bullets: ["80% min confidence", "3% max position", "5 trades per day"],
   },
   balanced: {
     label: "Balanced",
     badge: "Default",
-    desc: "Middle-ground signal scoring for steady validation and controlled execution.",
+    desc: "Middle-ground signal scoring for steady validation and controlled execution. Engine is tuned to emit more real signals (WEAK_LONG etc).",
     tone: "border-accent/30 bg-accent/5 text-accent",
-    bullets: ["70% min confidence", "5% max position", "10 trades per day"],
+    bullets: ["58% min confidence (tunable)", "5% max position", "10 trades per day"],
   },
   aggressive: {
     label: "Aggressive",
     badge: "High Activity",
-    desc: "More momentum weight, lower confidence threshold, higher paper-trade cadence.",
+    desc: "More momentum weight, lower confidence threshold, higher paper-trade cadence. Best for seeing lots of signals.",
     tone: "border-hold/30 bg-hold/5 text-hold",
     bullets: ["55% min confidence", "10% max position", "25 trades per day"],
   },

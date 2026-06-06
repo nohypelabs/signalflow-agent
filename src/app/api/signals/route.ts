@@ -382,7 +382,50 @@ export async function GET(request: Request) {
     if (eth && snapshots[eth.currency_id]) snapshotMap.set("ETH", snapshots[eth.currency_id]);
     if (sol && snapshots[sol.currency_id]) snapshotMap.set("SOL", snapshots[sol.currency_id]);
 
-    // ── Generate signals on PRIMARY TF ───────────────────
+    // ── v3 unified: always fetch microstructure (orderbook/flow/funding) for main confluence path ──
+    // These are the leading, fastest signals in crypto. Fused so default engine emits more actionable decisions.
+    const orderbooks = new Map<string, OrderBook>();
+    const recentTrades = new Map<string, SoDEXTrade[]>();
+    const perpsTickersMap = new Map<string, SoDEXPerpsTicker>();
+    const hlFundingRates = new Map<string, number>();
+
+    await Promise.all(
+      SIGNAL_PAIRS.map(async (pair) => {
+        const base = pair.split("/")[0];
+        const symbol = pairToSodexSymbol(pair);
+        if (!symbol) return;
+        const [ob, trades] = await Promise.all([
+          withTimeout(getOrderbook(symbol, 20).catch(() => null), 4_000, null as OrderBook | null, ac.signal),
+          withTimeout(getRecentTrades(symbol, 150).catch(() => []), 4_000, [] as SoDEXTrade[], ac.signal),
+        ]);
+        if (ob) orderbooks.set(base, ob);
+        if (trades.length) recentTrades.set(base, trades);
+      }),
+    );
+
+    try {
+      const perpsTickers = await withTimeout(getPerpsTickers().catch(() => []), 4_000, [] as SoDEXPerpsTicker[], ac.signal);
+      for (const t of perpsTickers) {
+        const base = t.symbol.split("-")[0]?.toUpperCase();
+        if (base) perpsTickersMap.set(base, t);
+      }
+      // Optional HL divergence (best effort)
+      const hlResp = await fetch("https://api.hyperliquid.xyz/info", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "metaAndAssetCtxs" }), cache: "no-store", signal: ac.signal }).catch(() => null);
+      if (hlResp?.ok) {
+        const hlData = await hlResp.json().catch(() => null);
+        if (Array.isArray(hlData) && hlData.length >= 2) {
+          const universe = hlData[0]?.universe ?? [];
+          const contexts = hlData[1] ?? [];
+          for (let i = 0; i < universe.length; i++) {
+            const asset = universe[i] as { name?: string };
+            const ctx = contexts[i] as { funding?: string };
+            if (asset?.name && ctx?.funding) hlFundingRates.set(asset.name.toUpperCase(), Number(ctx.funding));
+          }
+        }
+      }
+    } catch {}
+
+    // ── Generate signals on PRIMARY TF (now with micro fused) ───────────────────
     const v2Signals = generateSignalsV2({
       pairs: SIGNAL_PAIRS,
       klinesMap,
@@ -394,6 +437,11 @@ export async function GET(request: Request) {
       snapshots: snapshotMap,
       tradingType: tradingType ?? undefined,
       typeProfiles: strategyConfig.typeProfiles,
+      // Pass micro maps — builder will pick per-pair inside the loop
+      orderbooks,
+      recentTrades,
+      perpsTickers: perpsTickersMap,
+      hlFundingRates,
     });
 
     // ── Generate confluence signals on each TF ───────────
@@ -409,6 +457,11 @@ export async function GET(request: Request) {
         snapshots: snapshotMap,
         tradingType: tradingType ?? undefined,
         typeProfiles: strategyConfig.typeProfiles,
+        // same micro maps (micro not TF-dependent)
+        orderbooks,
+        recentTrades,
+        perpsTickers: perpsTickersMap,
+        hlFundingRates,
       }),
     );
 

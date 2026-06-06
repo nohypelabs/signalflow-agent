@@ -503,21 +503,21 @@ export function calculateConfluence(factors: ConfluenceFactor[]): ConfluenceResu
 export function classifySignal(confluence: ConfluenceResult): SignalActionV2 {
   const { score, bullishCount, bearishCount } = confluence;
 
-  // STRONG: very high confluence + strong factor support
-  if (score > 70 && bullishCount >= 3) return "STRONG_LONG";
-  if (score < 30 && bearishCount >= 3) return "STRONG_SHORT";
+  // STRONG kept strict (rare, high quality)
+  if (score > 68 && bullishCount >= 3) return "STRONG_LONG";
+  if (score < 32 && bearishCount >= 3) return "STRONG_SHORT";
 
-  // LONG: solid confluence. Allow high-score single-factor conviction or 2+ normal.
-  if ((score > 58 && bullishCount >= 2) || (score > 64 && bullishCount >= 1)) return "LONG";
+  // LONG: allow on decent single strong factor or moderate confluence (crypto moves fast, we want decisions)
+  if ((score > 52 && bullishCount >= 2) || (score > 55 && bullishCount >= 1)) return "LONG";
 
-  // SHORT: symmetric
-  if ((score < 42 && bearishCount >= 2) || (score < 36 && bearishCount >= 1)) return "SHORT";
+  // SHORT symmetric
+  if ((score < 48 && bearishCount >= 2) || (score < 45 && bearishCount >= 1)) return "SHORT";
 
-  // WEAK: directional bias present but not full confluence
-  if (score > 52) return "WEAK_LONG";
-  if (score < 48) return "WEAK_SHORT";
+  // WEAK: emit on any clear directional bias from any factor (TA or micro). User/policy controls via minConfidence.
+  // Goal: frequent signals for pattern analysis instead of 24h HOLD.
+  if (score > 48) return "WEAK_LONG";
+  if (score < 52) return "WEAK_SHORT";
 
-  // HOLD: close to neutral (48-52)
   return "HOLD";
 }
 
@@ -535,23 +535,15 @@ export function applyCoverageGuardrail(confluence: ConfluenceResult, action: Sig
 }
 
 export function passesFilter(confluence: ConfluenceResult, action: SignalActionV2): boolean {
-  // Single-factor conviction allowed at moderate confluence.
-  // Weak signals tolerant of single factor alignment.
-  if (action === "STRONG_LONG" || action === "LONG") {
-    if (confluence.score > 58) return confluence.bullishCount >= 1;
-    return confluence.bullishCount >= 2;
+  // Any directional bias (from TA or micro factors) is enough to emit.
+  // We want frequent decisions in volatile crypto so patterns (win/loss) can be audited.
+  // The real control is StrategyConfig.minConfidence + user review.
+  if (action === "STRONG_LONG" || action === "LONG" || action === "WEAK_LONG") {
+    return confluence.bullishCount >= 1 || confluence.score > 52;
   }
-  if (action === "STRONG_SHORT" || action === "SHORT") {
-    if (confluence.score < 42) return confluence.bearishCount >= 1;
-    return confluence.bearishCount >= 2;
+  if (action === "STRONG_SHORT" || action === "SHORT" || action === "WEAK_SHORT") {
+    return confluence.bearishCount >= 1 || confluence.score < 48;
   }
-  if (action === "WEAK_LONG") {
-    return confluence.bullishCount >= 1;
-  }
-  if (action === "WEAK_SHORT") {
-    return confluence.bearishCount >= 1;
-  }
-
   return true;
 }
 

@@ -3,8 +3,8 @@ import type { StrategyLesson } from "./types";
 export const COVERAGE_GUARDRAIL = {
   minWatchableCoveragePct: 8,
   minWatchableSignals: 1,
-  weakLongScore: 50, // allow weak bias earlier
-  weakShortScore: 50,
+  weakLongScore: 48, // allow weak bias earlier (aligned with relaxed classifier)
+  weakShortScore: 52,
 } as const;
 
 export const BASELINE_LESSONS: StrategyLesson[] = [
@@ -15,10 +15,10 @@ export const BASELINE_LESSONS: StrategyLesson[] = [
     sampleSize: 0,
     winRate: null,
     profitFactor: null,
-    confidenceAdjustment: 5,
-    minConfidence: 58,
+    confidenceAdjustment: 6,
+    minConfidence: 52,
     status: "trusted",
-    note: "Long trend continuation is allowed when trend + at least one confirmation factor align in TRENDING_UP regime.",
+    note: "Long trend continuation — lowered bar to let more real edge through. Final gate is user minConfidence in Strategy Config.",
   },
   {
     setupType: "trend_continuation",
@@ -27,10 +27,10 @@ export const BASELINE_LESSONS: StrategyLesson[] = [
     sampleSize: 0,
     winRate: null,
     profitFactor: null,
-    confidenceAdjustment: 5,
-    minConfidence: 58,
+    confidenceAdjustment: 6,
+    minConfidence: 52,
     status: "trusted",
-    note: "Short trend continuation is allowed when trend + at least one confirmation factor align in TRENDING_DOWN regime.",
+    note: "Short trend continuation — lowered bar to let more real edge through. Final gate is user minConfidence in Strategy Config.",
   },
   {
     setupType: "breakout",
@@ -39,10 +39,10 @@ export const BASELINE_LESSONS: StrategyLesson[] = [
     sampleSize: 0,
     winRate: null,
     profitFactor: null,
-    confidenceAdjustment: 3,
-    minConfidence: 68,
+    confidenceAdjustment: 4,
+    minConfidence: 58,
     status: "trusted",
-    note: "Breakouts need above-neutral momentum and volume confirmation before execution.",
+    note: "Breakouts: lowered from 68. Momentum + volume still preferred but we emit the signal and let confidence + policy decide.",
   },
   {
     setupType: "mean_reversion",
@@ -51,10 +51,10 @@ export const BASELINE_LESSONS: StrategyLesson[] = [
     sampleSize: 0,
     winRate: null,
     profitFactor: null,
-    confidenceAdjustment: 2,
-    minConfidence: 58,
+    confidenceAdjustment: 3,
+    minConfidence: 52,
     status: "watch",
-    note: "Volatile regime in crypto often means opportunity. Structure + momentum at extremes can yield sharp reversals.",
+    note: "Volatile regime in crypto often means opportunity. We now emit more of these instead of default HOLD.",
   },
   {
     setupType: "range_trade",
@@ -63,10 +63,10 @@ export const BASELINE_LESSONS: StrategyLesson[] = [
     sampleSize: 0,
     winRate: null,
     profitFactor: null,
-    confidenceAdjustment: -4,
-    minConfidence: 66,
+    confidenceAdjustment: -2,
+    minConfidence: 55,
     status: "watch",
-    note: "Range trades are allowed only near structure extremes with limited confidence uplift.",
+    note: "Range trades: much lower bar. Structure at extremes can be valid; user controls final minConfidence.",
   },
   {
     setupType: "no_edge",
@@ -75,9 +75,9 @@ export const BASELINE_LESSONS: StrategyLesson[] = [
     sampleSize: 0,
     winRate: null,
     profitFactor: null,
-    confidenceAdjustment: -5,
-    minConfidence: 55,
+    confidenceAdjustment: -3,
+    minConfidence: 50,
     status: "watch",
-    note: "Limited edge; only act if other confluence compensates. Watch-grade.",
+    note: "Limited edge. Still allow weak directional bias as WEAK_LONG/SHORT so user sees opportunities instead of pure no-trade.",
   },
 ];

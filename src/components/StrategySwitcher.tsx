@@ -39,11 +39,8 @@ export default function StrategySwitcher({ compact = false }: { compact?: boolea
     setIsCustom(false);
   };
 
-  const selectLiquidity = () => {
-    saveStrategyConfig(LIQUIDITY_FLOW_STRATEGY_CONFIG);
-    setCurrent(LIQUIDITY_FLOW_STRATEGY_CONFIG);
-    setIsCustom(false);
-  };
+  // Liquidity Flow logic folded into unified Confluence v3 (micro factors always included when data available).
+  // Kept for backward config load only.
 
   const selectCustom = () => {
     // Load whatever is saved in full Strategy Config (may include framework typeProfiles)
@@ -93,8 +90,6 @@ export default function StrategySwitcher({ compact = false }: { compact?: boolea
             const val = e.target.value;
             if (val === "conservative" || val === "balanced" || val === "aggressive") {
               selectPreset(val as StrategyPresetName);
-            } else if (val === "liquidity") {
-              selectLiquidity();
             } else if (val === "custom") {
               selectCustom();
             }
@@ -107,7 +102,6 @@ export default function StrategySwitcher({ compact = false }: { compact?: boolea
               {PRESET_META[name].label}
             </option>
           ))}
-          <option value="liquidity">Liquidity Flow</option>
           <option value="custom">Custom (from Strategy Config)</option>
         </select>
       </div>

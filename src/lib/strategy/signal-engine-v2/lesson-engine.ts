@@ -65,9 +65,9 @@ export function classifyTradeSetup(input: {
   const volatility = factorScore(factors, "VOLATILITY");
   const volume = factorScore(factors, "VOLUME");
   const structure = factorScore(factors, "STRUCTURE");
-  const factorScores = [trend, momentum, volatility, volume, structure];
-  const supportCount = factorScores.filter((score) => supports(direction, score)).length;
-  const conflictCount = factorScores.filter((score) => contradicts(direction, score)).length;
+  // Dynamic support/conflict now includes micro factors (ORDER_FLOW/DEPTH/FUNDING) from v3 fusion.
+  const supportCount = factors.filter((f) => supports(direction, f.score)).length;
+  const conflictCount = factors.filter((f) => contradicts(direction, f.score)).length;
   const trendDirection = directionFromScore(trend);
   const structureDirection = directionFromScore(structure);
 
@@ -76,7 +76,9 @@ export function classifyTradeSetup(input: {
   let invalidation = "Wait for at least three aligned factors or a clearer regime transition.";
   let confidenceBias = -12;
 
-  if (direction === "neutral" || conflictCount >= 3 || (supportCount < 2 && !isWeakAction(action))) {
+  if (direction === "neutral" || conflictCount >= 3 || (supportCount < 1 && !isWeakAction(action))) {
+    // Relaxed from <2 to <1 — if there's at least one supporting factor we try to give it a setup label
+    // instead of defaulting to no_edge (which carries heavy negative lesson bias).
     type = "no_edge";
   } else if (
     regime === "BREAKOUT" &&
@@ -181,6 +183,9 @@ export function calibrateSignalQuality(input: {
   if (input.action === "HOLD") {
     blockedReasons.push("Base classifier returned HOLD.");
   }
+  // Only explicit "blocked" lessons should hard-block the signal to HOLD.
+  // "watch" + shortfall now only marks as watch (user sees the signal with lower confidence).
+  // The real final safety is the configurable minConfidence in Strategy Config / applyConfluenceStrategyPolicy.
   if (lesson.status === "blocked") {
     blockedReasons.push(lesson.note);
   }

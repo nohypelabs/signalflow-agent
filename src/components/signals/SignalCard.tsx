@@ -42,17 +42,10 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
         ? { text: "BLOCKED", className: "bg-sell/10 text-sell border-sell/25" }
         : null;
 
-  // Calculate type-specific TP/SL if trading type is selected
-  const typeTP = typeConfig && signal.execution.entry > 0
-    ? signal.action === "LONG"
-      ? signal.execution.entry * (1 + (typeConfig.tpMultiplier.max * 0.02))
-      : signal.execution.entry * (1 - (typeConfig.tpMultiplier.max * 0.02))
-    : null;
-  const typeSL = typeConfig && signal.execution.entry > 0
-    ? signal.action === "LONG"
-      ? signal.execution.entry * (1 - (typeConfig.slMultiplier.max * 0.02))
-      : signal.execution.entry * (1 + (typeConfig.slMultiplier.max * 0.02))
-    : null;
+  // Use the ATR/regime/trading-type aware TP/SL that was computed by the signal engine
+  // (do NOT recalculate here with fake 2% ATR — that caused "always same numbers" per type).
+  const typeTP = (typeConfig && signal.execution?.takeProfit > 0) ? signal.execution.takeProfit : null;
+  const typeSL = (typeConfig && signal.execution?.stopLoss > 0) ? signal.execution.stopLoss : null;
 
   return (
     <div className="bg-card border border-border-default rounded-xl overflow-hidden transition-colors hover:border-border-muted">

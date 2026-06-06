@@ -331,11 +331,23 @@ function buildTargets(action: DecisionAction, entry: number, signal: Signal | nu
   if (!entry || !Number.isFinite(entry)) return [["--", "--", "--"]];
 
   const dir = action === "LONG" ? 1 : -1;
-  const tp1 = signal?.execution.takeProfit ?? entry * (1 + dir * 0.012);
+  // Prefer the real ATR-based execution from the signal engine.
+  // Only fall back to small fixed % if no execution data (prevents "always same hardcoded" look).
+  const tp1 = signal?.execution?.takeProfit && signal.execution.takeProfit > 0
+    ? signal.execution.takeProfit
+    : entry * (1 + dir * 0.012);
+  // If we have a real primary TP, derive TP2/TP3 as ~1.5x / 2x the distance for "scaled targets" feel.
+  const primaryDist = Math.abs(tp1 - entry);
+  const tp2 = signal?.execution?.takeProfit && signal.execution.takeProfit > 0
+    ? entry + dir * primaryDist * 1.6
+    : entry * (1 + dir * 0.024);
+  const tp3 = signal?.execution?.takeProfit && signal.execution.takeProfit > 0
+    ? entry + dir * primaryDist * 2.2
+    : entry * (1 + dir * 0.04);
   return [
     ["TP1", formatPanelPrice(tp1), "(live)"],
-    ["TP2", formatPanelPrice(entry * (1 + dir * 0.024)), "(2R)"],
-    ["TP3", formatPanelPrice(entry * (1 + dir * 0.04)), "(3R)"],
+    ["TP2", formatPanelPrice(tp2), "(scaled)"],
+    ["TP3", formatPanelPrice(tp3), "(scaled)"],
   ];
 }
 
@@ -343,7 +355,11 @@ function buildStop(action: DecisionAction, entry: number, signal: Signal | null)
   if (!entry || !Number.isFinite(entry)) return ["SL", "--", "--"];
   if (action === "NO TRADE") return ["State", "WAIT", "(flat)"];
   const dir = action === "LONG" ? -1 : 1;
-  return ["SL", formatPanelPrice(signal?.execution.stopLoss ?? entry * (1 + dir * 0.01)), "risk"];
+  // Prefer real engine SL; fallback only if missing (avoids showing the same tiny % every time).
+  const sl = signal?.execution?.stopLoss && signal.execution.stopLoss > 0
+    ? signal.execution.stopLoss
+    : entry * (1 + dir * 0.01);
+  return ["SL", formatPanelPrice(sl), "risk"];
 }
 
 function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsResponse | null; onGenerate?: () => void }) {
@@ -420,7 +436,7 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
     const confidence = currentSignal
       ? clamp(Math.round(systemConfidence), 0, 100)
       : 0;
-    const signalForExecution = currentSignal ?? aiSignal;
+    const signalForExecution = aiSignal ?? currentSignal; // prefer freshly generated aiSignal (the "signal yang diberikan") for TP/SL in decision panel
 
     return {
       action,
@@ -429,36 +445,10 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
       sources,
       targets: buildTargets(action, currentPrice, signalForExecution),
       stop: buildStop(action, currentPrice, signalForExecution),
-      riskReward: !currentSignal || action === "NO TRADE" ? "Stand aside" : currentSignal.execution.riskReward,
-      positionSize: !currentSignal || action === "NO TRADE" ? "Flat / no entry" : currentSignal.execution.positionSize,
+      riskReward: !signalForExecution || action === "NO TRADE" ? "Stand aside" : (signalForExecution.execution?.riskReward || "—"),
+      positionSize: !signalForExecution || action === "NO TRADE" ? "Flat / no entry" : (signalForExecution.execution?.positionSize || "—"),
     };
   }, [aiSignal, currentPrice, currentSignal, d.analyzing, liquidityFlowActive, news, sourceState?.orderbooks]);
-
-  const decisionTone = decision.action === "LONG"
-    ? "text-buy"
-    : decision.action === "SHORT"
-      ? "text-sell"
-      : "text-hold";
-  const riskRewardNumber = parseFloat(String(decision.riskReward).replace(":1", ""));
-  const rewardShare = Number.isFinite(riskRewardNumber)
-    ? clamp((riskRewardNumber / (riskRewardNumber + 1)) * 100, 42, 76)
-    : 58;
-  const riskShare = 100 - rewardShare;
-  const riskRewardDisplay = Number.isFinite(riskRewardNumber)
-    ? `${riskRewardNumber.toFixed(2)}R`
-    : decision.riskReward;
-
-  // Effective execution for display (prefer signal engine's ATR-based execution,
-  // fallback to aiSignal's execution). Signal engine computes proper TP/SL from
-  // ATR, regime, and structure — AI is good at reasoning but bad at precise levels.
-  const execForDisplay = currentSignal?.execution || aiSignal?.execution || null;
-  const dispEntry = execForDisplay?.entry || currentPrice || 0;
-  const dispTP = execForDisplay?.takeProfit || 0;
-  const dispSL = execForDisplay?.stopLoss || 0;
-  const tpPct = dispEntry && dispTP ? ((dispTP - dispEntry) / dispEntry * 100) : 0;
-  const slPct = dispEntry && dispSL ? ((dispSL - dispEntry) / dispEntry * 100) : 0;
-  const tpBarWidth = Math.min(100, Math.max(5, Math.abs(tpPct) * 4));
-  const slBarWidth = Math.min(100, Math.max(5, Math.abs(slPct) * 4));
 
   // Dynamic color logic based on signal strength & recommendation
   function getSignalColor(score: number, action: string) {
@@ -640,8 +630,6 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
               const barWidth = Math.max(5, Math.min(100, weightPct));
               const isPositive = source.signed > 0;
               const isNegative = source.signed < 0;
-              const barFill = isPositive ? `bg-[${signalColor.main}]` : isNegative ? "bg-rose-500" : "bg-amber-500";
-              const valueColor = isPositive ? `text-[${signalColor.main}]` : isNegative ? "text-rose-500" : "text-amber-500";
               const contrib = Math.round(source.weight * decision.confidence * (source.signed || 0));
               // Map labels to match picture
               let label = source.label;
@@ -670,58 +658,6 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
           </div>
         </div>
 
-        {/* Bottom two stat cards under live decision score — wired to real execution from aiSignal (generate) or live currentSignal. Chart lines also prefer aiSignal for sync. Bars & % now calculated from actual entry/TP/SL distances (no mock/static). Grid lowered 2px for balanced gaps. */}
-        <div className="grid grid-cols-2 gap-3 mt-[2px]">
-          {/* TP box */}
-          <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent px-3 py-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold text-emerald-500">Take Profit (TP)</span>
-              <span className="rounded bg-emerald-500/10 border border-emerald-500/40 px-1.5 py-0 text-[9px] font-bold text-emerald-500">
-                {currentSignal?.execution?.riskReward || aiSignal?.execution?.riskReward || riskRewardDisplay}
-              </span>
-            </div>
-            <div className="mt-0.5 text-2xl font-bold tabular-nums text-emerald-500">
-              {currentSignal?.execution?.takeProfit
-                ? formatPanelPrice(currentSignal.execution.takeProfit)
-                : aiSignal?.execution?.takeProfit
-                  ? formatPanelPrice(aiSignal.execution.takeProfit)
-                  : (decision.targets?.[0]?.[1] || "—")}
-            </div>
-            <div className="mt-1 text-[9px] text-[#a1a1aa]">from entry</div>
-            <div className="mt-0.5 h-[5px] w-full bg-[#27272a] rounded-full overflow-hidden">
-              <div className="h-[5px] bg-gradient-to-r from-emerald-500 to-emerald-400" style={{ width: `${tpBarWidth}%` }} />
-            </div>
-            <div className="mt-0.5 flex justify-between text-[9px] font-mono">
-              <span className="text-emerald-500">+{tpPct.toFixed(1)}%</span>
-              <span className="text-[#a1a1aa]">{aiSignal?.execution?.riskReward || currentSignal?.execution?.riskReward || riskRewardDisplay}</span>
-            </div>
-          </div>
-
-          {/* SL box */}
-          <div className="rounded-xl border border-rose-500/30 bg-gradient-to-br from-rose-500/10 to-transparent px-3 py-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold text-rose-500">Stop Loss (SL)</span>
-              <span className="rounded bg-rose-500/10 border border-rose-500/40 px-1.5 py-0 text-[9px] font-bold text-rose-500">
-                risk
-              </span>
-            </div>
-            <div className="mt-0.5 text-2xl font-bold tabular-nums text-rose-500">
-              {currentSignal?.execution?.stopLoss
-                ? formatPanelPrice(currentSignal.execution.stopLoss)
-                : aiSignal?.execution?.stopLoss
-                  ? formatPanelPrice(aiSignal.execution.stopLoss)
-                  : (decision.stop?.[1] || "—")}
-            </div>
-            <div className="mt-1 text-[9px] text-[#a1a1aa]">from entry</div>
-            <div className="mt-0.5 h-[5px] w-full bg-[#27272a] rounded-full overflow-hidden">
-              <div className="h-[5px] bg-gradient-to-r from-rose-500 to-rose-400" style={{ width: `${slBarWidth}%` }} />
-            </div>
-            <div className="mt-0.5 flex justify-between text-[9px] font-mono">
-              <span className="text-rose-500">{slPct.toFixed(1)}%</span>
-              <span className="text-[#a1a1aa]">{aiSignal?.execution?.riskReward || currentSignal?.execution?.riskReward || riskRewardDisplay}</span>
-            </div>
-          </div>
-        </div>
       </div>
     </Panel>
   );
@@ -1141,7 +1077,7 @@ function MarketPressureCard() {
   // Correlate with live signals
   const getSignalFor = (sym: string) => {
     const target = normalizePair(sym + '/USDC');
-    return (d.liveSignals || []).find((s: any) => normalizePair(s.pair) === target) || null;
+    return (d.liveSignals || []).find((s: Signal) => normalizePair(s.pair) === target) || null;
   };
   const moversWithSignals = [...topMovers, ...bottomMovers].filter(t => {
     const sig = getSignalFor(t.symbol);

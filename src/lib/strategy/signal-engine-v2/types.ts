@@ -23,7 +23,7 @@ export type SignalSetupType =
   | "no_edge";
 
 export interface ConfluenceFactor {
-  name: "TREND" | "MOMENTUM" | "VOLATILITY" | "VOLUME" | "STRUCTURE";
+  name: "TREND" | "MOMENTUM" | "VOLATILITY" | "VOLUME" | "STRUCTURE" | "ORDER_FLOW" | "DEPTH" | "FUNDING";
   score: number;         // 0-100
   weight: number;        // 0.0 - 1.0 (fraction of total)
   detail: string;

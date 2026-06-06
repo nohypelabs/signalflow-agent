@@ -62,17 +62,11 @@ export function applyConfluenceStrategyPolicy(
   config: StrategyConfig,
 ): Signal[] {
   return signals.map((signal) => {
-    const bullishPolicyScore = configuredDimensionScore(signal, config);
-    const directionalSupport = signal.action === "SHORT"
-      ? 100 - bullishPolicyScore
-      : bullishPolicyScore;
-    // Blend external policy dims, but if they are near-neutral (~50) don't drag down a strong TA signal.
-    const externalBias = Math.abs(directionalSupport - 50) <= 8 ? 0.08 : 0.22;
-    const policyConfidence = isDirectional(signal.action)
-      ? Math.round(signal.confidence * (1 - externalBias) + directionalSupport * externalBias)
-      : signal.confidence;
-    const blockedByThreshold = isDirectional(signal.action)
-      && policyConfidence < config.minConfidence;
+    // v3: Policy is now mostly the user minConfidence knob.
+    // Legacy external dims (etf/sentiment/...) have minimal drag — the rich factors[] (TA + micro) are authoritative.
+    // This keeps signals flowing for pattern analysis while the final gate stays tunable.
+    const policyConfidence = signal.confidence;
+    const blockedByThreshold = isDirectional(signal.action) && policyConfidence < config.minConfidence;
     const action: SignalAction = blockedByThreshold ? "HOLD" : signal.action;
     const confidence = blockedByThreshold ? Math.min(55, policyConfidence) : policyConfidence;
     const blockedReason = `Strategy Config requires ${config.minConfidence}% minimum confidence.`;
@@ -83,8 +77,8 @@ export function applyConfluenceStrategyPolicy(
       actionV2: blockedByThreshold ? "HOLD" : signal.actionV2,
       confidence,
       reasoning: blockedByThreshold
-        ? `[Confluence V2 policy blocked] ${blockedReason} ${signal.reasoning}`
-        : `[Confluence V2 policy active] ${signal.reasoning}`,
+        ? `[policy blocked] ${blockedReason} ${signal.reasoning}`
+        : signal.reasoning,
       execution: {
         ...signal.execution,
         orderType: "LIMIT",
@@ -101,7 +95,7 @@ export function applyConfluenceStrategyPolicy(
               : signal.quality.blockedReasons,
           }
         : undefined,
-      sources: [...new Set([...signal.sources, "Strategy Config"])],
+      sources: [...new Set([...signal.sources, "Policy"])],
     };
   });
 }

@@ -2,7 +2,9 @@
 import { ema, bollingerBands, atr, last } from "../indicators";
 import { TRADING_TYPES, type TradingType } from "../../types/trading-type";
 import type { NewsItem, ETFSummaryItem, MacroEvent, MarketSnapshot, BTCPurchaseHistory } from "../../sosovalue";
-import type { SoDEXKline } from "../../sodex-types";
+import type { SoDEXKline, OrderBook } from "../../sodex-types";
+import type { SoDEXPerpsTicker } from "../../sodex-perps";
+import type { SoDEXTrade } from "../../types/trade";
 import { adx, normalizeKlines } from "./indicator-engine";
 import { detectRegime } from "./regime-engine";
 import { scoreTrend, scoreMomentum, scoreVolatility, scoreVolume, scoreStructure, calculateConfluence, classifySignal, applyCoverageGuardrail, passesFilter, buildDimensions } from "./score-engine";
@@ -11,6 +13,7 @@ import { calibrateSignalQuality, classifyTradeSetup } from "./lesson-engine";
 import type { ConfluenceFactor, MarketRegime, SignalV2 } from "./types";
 import type { TradingTypeProfiles } from "../config";
 import { getEffectiveWeights } from "../thinking-framework";
+import { analyzeTradeFlow, analyzeDepth, analyzeFunding } from "../order-flow-engine";
 
 export function generateSignalV2(input: {
   pair: string;
@@ -24,6 +27,11 @@ export function generateSignalV2(input: {
   tradingType?: TradingType;
   // Injected profiles from StrategyConfig (Thinking Framework overrides)
   typeProfiles?: TradingTypeProfiles;
+  // v3 fusion: microstructure (leading in volatile crypto) — always preferred when available
+  orderbook?: OrderBook | null;
+  recentTrades?: SoDEXTrade[];
+  perpsTicker?: SoDEXPerpsTicker | null;
+  hlFundingRate?: number | null;
 }): SignalV2 | null {
   const { pair, klines, snapshot } = input;
   const news = input.news ?? [];
@@ -93,6 +101,44 @@ export function generateSignalV2(input: {
     structureFactor,
   ];
 
+  // ── v3: Fuse microstructure factors (orderbook/depth, trade flow, funding) as native leading signals ──
+  // These are the fastest in 24/7 crypto. Appended with modest fixed weights so they influence confluence
+  // without dominating (TA + regime still core). If data present, they help emit more actionable signals.
+  const trades = input.recentTrades ?? [];
+  const ob = input.orderbook ?? null;
+  const pt = input.perpsTicker ?? null;
+  if (ob || trades.length > 0 || pt) {
+    const tradeFlow = analyzeTradeFlow(trades);
+    const depth = analyzeDepth(ob, 20);
+    const funding = analyzeFunding(pt, input.hlFundingRate ?? null);
+
+    factors.push({
+      name: "ORDER_FLOW",
+      score: tradeFlow.buyPressure,
+      weight: 0.13,
+      detail: `Buy ${tradeFlow.buyPressure.toFixed(0)}% (delta ${tradeFlow.deltaVolume > 0 ? "+" : ""}${tradeFlow.deltaVolume.toFixed(0)}), vel ${(tradeFlow.tradeVelocity || 0).toFixed(1)}`,
+      bullish: tradeFlow.buyPressure > 55,
+    });
+    factors.push({
+      name: "DEPTH",
+      score: Math.round((depth.imbalance || 0.5) * 100),
+      weight: 0.11,
+      detail: `Imbalance ${((depth.imbalance || 0.5) * 100).toFixed(0)}% (${depth.levels} lvls) spread ${depth.spreadBps.toFixed(1)}bps`,
+      bullish: (depth.imbalance || 0.5) > 0.55,
+    });
+    if (funding) {
+      const fScore = funding.regime === "extreme_short" || funding.regime === "short_heavy" ? 70 :
+                     funding.regime === "extreme_long" || funding.regime === "long_heavy" ? 30 : 50;
+      factors.push({
+        name: "FUNDING",
+        score: fScore,
+        weight: 0.09,
+        detail: `Rate ${(funding.fundingRate * 100).toFixed(4)}% OI ${funding.openInterest.toFixed(0)} ${funding.regime}`,
+        bullish: fScore > 55,
+      });
+    }
+  }
+
   // ── Override weights if tradingType is specified (respect custom Thinking Framework profiles from StrategyConfig) ────────
   let frameworkApplication: SignalV2["frameworkApplication"] | undefined;
   if (tradingType) {
@@ -143,8 +189,13 @@ export function generateSignalV2(input: {
     tradingType,
   });
 
+  // v3: Prefer emitting (even WEAK) so user can audit real patterns and which factors caused wins/losses.
+  // Only suppress strong actions on explicit "blocked" lesson. WEAK directional always surface.
   if (quality.status === "blocked") {
-    action = "HOLD";
+    if (action === "STRONG_LONG" || action === "STRONG_SHORT") {
+      action = "HOLD";
+    }
+    // LONG/SHORT/WEAK_ stay — final minConfidence in policy is the control.
   }
 
   const confidence = action === "HOLD"
@@ -255,6 +306,11 @@ export function generateSignalsV2(input: {
   tradingType?: TradingType;
   // Injected profiles from StrategyConfig (Thinking Framework overrides)
   typeProfiles?: TradingTypeProfiles;
+  // v3 micro maps (fused into main engine)
+  orderbooks?: Map<string, OrderBook>;
+  recentTrades?: Map<string, SoDEXTrade[]>;
+  perpsTickers?: Map<string, SoDEXPerpsTicker>;
+  hlFundingRates?: Map<string, number>;
 }): SignalV2[] {
   const signals: SignalV2[] = [];
 
@@ -274,6 +330,10 @@ export function generateSignalsV2(input: {
       snapshot: input.snapshots?.get(base),
       tradingType: input.tradingType,
       typeProfiles: input.typeProfiles,
+      orderbook: input.orderbooks?.get(base) ?? null,
+      recentTrades: input.recentTrades?.get(base) ?? [],
+      perpsTicker: input.perpsTickers?.get(base) ?? null,
+      hlFundingRate: input.hlFundingRates?.get(base) ?? null,
     });
 
     if (signal) signals.push(signal);
