@@ -241,7 +241,13 @@ export async function POST(req: NextRequest) {
         perpsTickers: perpsTickersMap,
         tradingType: "intraday",
       });
-      baseSignal = v3Signals[0] ?? null;
+      const rawV3 = v3Signals[0] ?? null;
+      // Convert V2 to simple Signal (action LONG/SHORT/HOLD) for compatibility with analyze response
+      baseSignal = rawV3 ? {
+        ...rawV3,
+        action: rawV3.action.includes("LONG") ? "LONG" : rawV3.action.includes("SHORT") ? "SHORT" : "HOLD",
+        actionV2: rawV3.action,
+      } as Signal : null;
     }
 
     if (!baseSignal) {

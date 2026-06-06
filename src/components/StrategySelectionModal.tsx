@@ -139,14 +139,19 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
 
       onGenerateComplete?.(strategy, result);
 
-      // Add floating notification to top-right via toast + feed the top bar AlertBell
-      const resSig = result?.signals?.[0] || result;
-      if (resSig) {
-        alertsApi.addManualSignalGenerated?.(resSig.pair || coin + '/USDC', resSig.action || 'LONG', resSig.confidence || 70, strategy === 'confluence' ? 'Confluence V3' : 'Liquidity Flow');
+      // result from d.generate (in analyze path) is already the base Signal
+      const resSig = result;
+      if (resSig && typeof resSig === 'object' && 'pair' in resSig) {
+        alertsApi.addManualSignalGenerated?.(
+          (resSig as any).pair || `${coin}/USDC`,
+          (resSig as any).action || 'LONG',
+          (resSig as any).confidence || 70,
+          strategy === 'confluence' ? 'Confluence V3' : 'Liquidity Flow'
+        );
       }
 
       toast.success(`Signal ${strategy === 'confluence' ? 'Confluence V3' : 'Liquidity Flow'} generated`, {
-        description: `${resSig?.pair || coin} • ${resSig?.action || ''} @ ${resSig?.confidence || ''}% — added to history & alerts`,
+        description: `${(resSig as any)?.pair || coin} • ${(resSig as any)?.action || ''} @ ${(resSig as any)?.confidence || ''}% — added to history & alerts`,
         action: {
           label: "View",
           onClick: onClose,
