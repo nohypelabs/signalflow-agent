@@ -2084,13 +2084,17 @@ function MarketBreadthCard() {
   );
 }
 
-function MarketStatsBar() {
+function DashboardEvidenceGrid() {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <IndexROIDashboard />
-      <SignalAccuracyCard />
+      <NewsSentimentPanel compact />
       <MarketBreadthCard />
+      <MarketPressureCard />
+      <SignalAccuracyCard />
       <MarketStatsCard />
+      <IndexROIDashboard />
+      <BTCTreasuryDashboard />
+      <MacroSurprise />
     </div>
   );
 }
@@ -2218,15 +2222,7 @@ export default function SignalFlowCommandCenter() {
         <MarketCanvas pair={pair} />
         <DecisionPanel pair={pair} news={news} onGenerate={() => openGenerateModal(coin)} />
       </div>
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(280px,0.95fr)_minmax(0,2.05fr)]">
-        <NewsSentimentPanel compact />
-        <MarketStatsBar />
-      </div>
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <BTCTreasuryDashboard />
-        <MarketPressureCard />
-        <MacroSurprise />
-      </div>
+      <DashboardEvidenceGrid />
 
       {/* Strategy modal for Generate Signal - per agenda: choice, minimize, customize, live logs per strategy */}
       <StrategySelectionModal
