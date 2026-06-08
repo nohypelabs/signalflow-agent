@@ -15,6 +15,7 @@ interface AppShellProps {
   tickerCount?: number;
   tickerMap?: Map<string, SoDEXTicker>;
   onTickerClick?: (symbol: string) => void;
+  latestSignal?: Signal | null;
   // Trade form
   tradeForm?: {
     signal: Signal | null;
@@ -27,7 +28,6 @@ interface AppShellProps {
     paperAvailable?: number;
     onPaperTrade?: (trade: { pair: string; side: 'LONG' | 'SHORT'; leverage: number; margin: number; entryPrice: number; takeProfit: number; stopLoss: number }) => void;
   } | null;
-  /** When true, main takes full remaining height with no padding/scroll — for trading terminal */
   fullScreen?: boolean;
   hideHeader?: boolean;
 }
@@ -38,25 +38,36 @@ export default function AppShell({
   tickerCount,
   tickerMap,
   onTickerClick,
+  latestSignal,
   tradeForm,
   fullScreen = false,
   hideHeader = false,
 }: AppShellProps) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="flex flex-col h-screen">
-      {!hideHeader && (
-        <Header
-          sodexStatus={sodexStatus}
-          tickerCount={tickerCount}
-          tickerMap={tickerMap}
-          onTickerClick={onTickerClick}
-          onMenuClick={() => setMobileSidebarOpen(true)}
-        />
-      )}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        <Sidebar mobileOpen={mobileSidebarOpen} onMobileClose={() => setMobileSidebarOpen(false)} />
+    <div className="flex h-screen overflow-hidden">
+      <Sidebar
+        latestSignal={latestSignal}
+        collapsed={sidebarCollapsed}
+        onCollapse={() => setSidebarCollapsed(true)}
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
+      />
+
+      <div className="flex flex-col flex-1 min-w-0 min-h-0">
+        {!hideHeader && (
+          <Header
+            sodexStatus={sodexStatus}
+            tickerCount={tickerCount}
+            tickerMap={tickerMap}
+            onTickerClick={onTickerClick}
+            sidebarCollapsed={sidebarCollapsed}
+            onExpandSidebar={() => setSidebarCollapsed(false)}
+            onMenuClick={() => setMobileSidebarOpen(true)}
+          />
+        )}
         <main
           className={
             fullScreen
@@ -65,7 +76,6 @@ export default function AppShell({
           }
         >
           {fullScreen ? (
-            /* Full-screen mode: no padding, no footer, no scroll — trading terminal */
             children
           ) : (
             <>
@@ -77,16 +87,13 @@ export default function AppShell({
           )}
           <footer className="mt-6 border-t border-border-default py-6">
             <div className="flex flex-col items-center gap-3 text-center">
-              {/* Buildathon badge */}
               <div className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent-muted/40 px-4 py-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
                 <span className="text-[11px] font-semibold text-accent">SoSoValue Buildathon Wave 2 — 2026</span>
               </div>
-              {/* Brand */}
               <p className="text-[11px] text-txt-secondary">
                 <span className="text-txt-primary font-medium">SignalFlow Agent</span> — AI-Powered Signal-to-Execution Dashboard
               </p>
-              {/* Links */}
               <div className="flex items-center gap-4 text-[10px] text-txt-muted">
                 <a href="https://github.com/nohypelabs/signalflow-agent" target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-md border border-border-default px-2.5 py-1 hover:text-txt-primary hover:border-border-muted transition-colors">
@@ -99,12 +106,12 @@ export default function AppShell({
                   X/@nohypelabs
                 </a>
               </div>
-              {/* Copyright */}
               <p className="text-[10px] text-txt-muted/60">© 2026 NoHype Labs. All rights reserved.</p>
             </div>
           </footer>
         </main>
       </div>
+
       {tradeForm && (
         <TradeForm
           signal={tradeForm.signal}

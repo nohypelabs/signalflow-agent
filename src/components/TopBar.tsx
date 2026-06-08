@@ -6,11 +6,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import WalletButton from "./WalletButton";
 import AlertBell from "./AlertBell";
-import StatusDot from "@/components/ui/StatusDot";
 import MarketTickerTape from "./MarketTickerTape";
 import { useAlerts } from "@/lib/hooks/useAlerts";
 import {
-  MenuIcon,
   SettingsIcon,
   CloseIcon,
 } from "@/components/ui/icons";
@@ -21,6 +19,8 @@ interface Props {
   tickerCount?: number;
   tickerMap?: Map<string, SoDEXTicker>;
   onTickerClick?: (symbol: string) => void;
+  sidebarCollapsed?: boolean;
+  onExpandSidebar?: () => void;
   onMenuClick?: () => void;
 }
 
@@ -33,6 +33,8 @@ export default function TopBar({
   tickerCount,
   tickerMap,
   onTickerClick,
+  sidebarCollapsed,
+  onExpandSidebar,
   onMenuClick,
 }: Props) {
   const router = useRouter();
@@ -41,12 +43,6 @@ export default function TopBar({
   const settingsRef = useRef<HTMLDivElement>(null);
   const tickerArray = tickerMap ? Array.from(tickerMap.values()) : null;
   const alerts = useAlerts(tickerArray);
-
-  const dotStatus =
-    sodexStatus === "connected" ? "live" : sodexStatus === "loading" ? "warning" : "error";
-
-  const statusLabel =
-    sodexStatus === "connected" ? "SODEX" : sodexStatus === "loading" ? "SODEX..." : "SODEX OFF";
 
   const timeStr = new Date().toLocaleTimeString("en-US", {
     hour12: false,
@@ -59,7 +55,6 @@ export default function TopBar({
     systemItems.forEach((item) => router.prefetch(item.href));
   }, [router]);
 
-  // Close settings modal on outside click
   useEffect(() => {
     if (!settingsOpen) return;
     const handler = (e: MouseEvent) => {
@@ -71,7 +66,6 @@ export default function TopBar({
     return () => document.removeEventListener("mousedown", handler);
   }, [settingsOpen]);
 
-  // Close settings modal on route change
   useEffect(() => {
     setSettingsOpen(false);
   }, [pathname]);
@@ -81,86 +75,66 @@ export default function TopBar({
     setSettingsOpen(false);
   };
 
-  // Check if any system page is active
   const isSystemActive = systemItems.some((item) => pathname === item.href);
 
   return (
     <div className="shrink-0">
-      {/* Mobile: scrolling market tape as separate bar */}
+      {/* Mobile: scrolling market tape */}
       <div className="lg:hidden">
         <MarketTickerTape tickerMap={tickerMap} onTickerClick={onTickerClick} />
       </div>
 
       {/* Main header bar */}
       <header className="relative flex items-center justify-between gap-3 px-4 h-12 bg-surface border-b border-border-default">
-        {/* Subtle accent glow at bottom edge */}
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent" />
 
-        {/* Left: brand + primary navigation */}
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex items-center gap-2">
-            <button
+        {/* Left: logo button — visible on mobile (drawer) or desktop collapsed (expand) */}
+        <div className="flex min-w-0 items-center gap-2.5">
+          {/* Mobile: always show logo as drawer trigger */}
+          <motion.button
+            type="button"
+            onClick={onMenuClick}
+            whileTap={{ scale: 0.92 }}
+            aria-label="Open sidebar"
+            className="flex md:hidden cursor-pointer items-center justify-center rounded-lg overflow-hidden"
+          >
+            <Image
+              src="/icons/signalflow-logo.png"
+              alt="SignalFlow"
+              width={28}
+              height={28}
+              className="h-7 w-7 object-contain"
+              priority
+            />
+          </motion.button>
+          {/* Desktop: show logo only when sidebar collapsed */}
+          {sidebarCollapsed && (
+            <motion.button
               type="button"
-              onClick={onMenuClick}
-              aria-label="Open sidebar"
-              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-border-default bg-elevated/45 text-txt-primary transition-colors hover:border-accent/30 hover:bg-accent/10 md:hidden"
-              title="Open sidebar"
-            >
-              <MenuIcon size={15} />
-            </button>
-            {/* Desktop: logo inline */}
-            <button
-              type="button"
-              onClick={() => navigate("/dashboard")}
-              className="hidden lg:flex cursor-pointer items-center gap-2 rounded-lg pr-1 transition-opacity hover:opacity-85"
-              aria-label="Go to dashboard"
+              onClick={onExpandSidebar}
+              whileTap={{ scale: 0.92 }}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              aria-label="Expand sidebar"
+              className="hidden md:flex cursor-pointer items-center justify-center rounded-lg overflow-hidden"
             >
               <Image
                 src="/icons/signalflow-logo.png"
-                alt="SignalFlow logo"
-                width={36}
-                height={36}
-                className="h-9 w-9 object-contain"
+                alt="SignalFlow"
+                width={28}
+                height={28}
+                className="h-7 w-7 object-contain"
                 priority
               />
-              <span className="font-bold text-[13px] text-txt-primary tracking-tight">SignalFlow</span>
-            </button>
-            <div
-              className="hidden lg:flex items-center gap-1.5 rounded border border-border-default bg-elevated/25 px-1.5 py-0.5"
-              title={
-                sodexStatus === "connected"
-                  ? "SoDEX live"
-                  : sodexStatus === "loading"
-                    ? "Connecting to SoDEX"
-                    : "SoDEX offline"
-              }
-            >
-              <StatusDot status={dotStatus} pulse size="sm" />
-              <span className="font-mono text-[9px] font-semibold text-txt-muted">{statusLabel}</span>
-            </div>
-          </div>
+            </motion.button>
+          )}
         </div>
 
-        {/* Mobile: logo centered */}
-        <button
-          type="button"
-          onClick={() => navigate("/dashboard")}
-          className="absolute left-1/2 -translate-x-1/2 lg:hidden flex cursor-pointer items-center transition-opacity hover:opacity-85"
-          aria-label="Go to dashboard"
-        >
-          <Image
-            src="/icons/signalflow-logo.png"
-            alt="SignalFlow logo"
-            width={32}
-            height={32}
-            className="h-[34px] w-[34px] object-contain"
-            priority
-          />
-        </button>
-
-        {/* Center: scrolling ticker tape (desktop only) */}
+        {/* Center: scrolling ticker tape (desktop) */}
         <div
-          className="relative hidden lg:flex flex-1 min-w-0 mx-0 overflow-hidden rounded-md bg-[#060810]"
+          className="relative hidden lg:flex flex-1 min-w-0 mx-3 overflow-hidden rounded-md bg-[#060810]"
           style={{
             maskImage: "linear-gradient(90deg, transparent 0, black 28px, black calc(100% - 28px), transparent 100%)",
             WebkitMaskImage: "linear-gradient(90deg, transparent 0, black 28px, black calc(100% - 28px), transparent 100%)",
@@ -171,12 +145,8 @@ export default function TopBar({
           <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-surface/80 to-transparent" />
         </div>
 
-        {/* Right: system modal + wallet */}
+        {/* Right: meta + wallet + alerts + settings */}
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-2.5 shrink-0">
-          <div className="md:hidden flex items-center gap-1">
-            <StatusDot status={dotStatus} pulse size="sm" />
-          </div>
-
           {tickerCount !== undefined && tickerCount > 0 && (
             <span className="hidden xl:inline-flex text-[10px] font-mono font-semibold text-txt-muted">
               {tickerCount} PAIRS
@@ -188,7 +158,6 @@ export default function TopBar({
           >
             {timeStr}
             <span className="text-txt-dim">UTC+7</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
           </span>
           <WalletButton />
           <AlertBell
@@ -198,7 +167,7 @@ export default function TopBar({
             onRemove={alerts.removeAlert}
             onClearTriggered={alerts.clearTriggered}
           />
-          {/* Gear icon → System modal */}
+          {/* Settings */}
           <div className="relative" ref={settingsRef}>
             <button
               type="button"

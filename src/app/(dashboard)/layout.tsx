@@ -24,6 +24,7 @@ function ShellWithProps({ children }: { children: React.ReactNode }) {
         // symbol is display format like "BTC/USDC" from ticker tape
         d.setSelectedPair(symbol);
       }}
+      latestSignal={d.liveSignals[0] ?? null}
       tradeForm={
         d.showTradeForm
           ? {

@@ -8,6 +8,8 @@ interface HeaderProps {
   tickerCount?: number;
   tickerMap?: Map<string, SoDEXTicker>;
   onTickerClick?: (symbol: string) => void;
+  sidebarCollapsed?: boolean;
+  onExpandSidebar?: () => void;
   onMenuClick?: () => void;
 }
 
