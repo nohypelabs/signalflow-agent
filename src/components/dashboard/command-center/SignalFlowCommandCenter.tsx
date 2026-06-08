@@ -778,7 +778,7 @@ function ArticleCard({ article }: { article: { uuid: string; url: string; source
   );
 }
 
-function NewsSentimentPanel() {
+function NewsSentimentPanel({ compact = false }: { compact?: boolean }) {
   const { data, loading, error } = useMarketaux(10);
 
   const sentiment = data?.avgSentiment ?? 0;
@@ -797,7 +797,7 @@ function NewsSentimentPanel() {
           {loading ? "..." : error ? "ERROR" : label.toUpperCase()}
         </Badge>
       }
-      className="h-[569px]"
+      className={compact ? "min-h-[300px]" : "h-[569px]"}
     >
       <div className="flex flex-col gap-2.5 p-3">
         {/* Sentiment Gauge */}
@@ -836,7 +836,7 @@ function NewsSentimentPanel() {
           <div className="rounded-xl border border-border-default bg-inset/50 p-2.5">
             <p className="text-[9px] font-semibold uppercase tracking-wide text-txt-muted mb-2">Trending Mentions</p>
             <div className="space-y-1.5">
-              {trending.slice(0, 4).map((entity) => {
+              {trending.slice(0, compact ? 3 : 4).map((entity) => {
                 const entityTone = entity.avgSentiment > 0.1
                   ? "text-buy"
                   : entity.avgSentiment < -0.1
@@ -888,6 +888,12 @@ function NewsSentimentPanel() {
             <div className="flex min-h-[100px] flex-col items-center justify-center gap-2 text-center">
               <Newspaper size={18} className="text-txt-muted" />
               <p className="text-[10px] text-txt-muted">No crypto news found</p>
+            </div>
+          ) : compact ? (
+            <div className="space-y-1.5">
+              {articles.slice(0, 2).map((article) => (
+                <ArticleCard key={article.uuid} article={article} />
+              ))}
             </div>
           ) : articles.length <= 3 ? (
             /* Few articles — static list, no scroll needed */
@@ -2208,12 +2214,14 @@ export default function SignalFlowCommandCenter() {
       <div className="overflow-x-auto">
         <PipelineFlow />
       </div>
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,2.68fr)_minmax(280px,1.3fr)_minmax(280px,1.32fr)]">
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,2.65fr)_minmax(320px,1fr)]">
         <MarketCanvas pair={pair} />
         <DecisionPanel pair={pair} news={news} onGenerate={() => openGenerateModal(coin)} />
-        <NewsSentimentPanel />
       </div>
-      <MarketStatsBar />
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(280px,0.95fr)_minmax(0,2.05fr)]">
+        <NewsSentimentPanel compact />
+        <MarketStatsBar />
+      </div>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <BTCTreasuryDashboard />
         <MarketPressureCard />
