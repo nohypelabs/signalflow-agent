@@ -134,12 +134,12 @@ function TechIcon({ name, className = "" }: { name: string; className?: string }
 
 function PipelineStepCard({ step }: { step: (typeof pipelineSteps)[number] }) {
   return (
-    <Card variant="default" padding="none" className="relative flex h-[88px] items-center gap-4 rounded-xl px-5">
-      <span className="absolute left-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent-muted text-[11px] font-bold text-accent">{step.number}</span>
-      <TechIcon name={step.icon} className="h-10 w-10 shrink-0" />
+    <Card variant="default" padding="none" className="relative flex h-14 items-center gap-3 rounded-lg px-4">
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent-muted text-[10px] font-bold text-accent">{step.number}</span>
+      <TechIcon name={step.icon} className="h-6 w-6 shrink-0 text-txt-secondary" />
       <div>
-        <h3 className="text-sm font-semibold text-txt-primary">{step.title}</h3>
-        <p className="mt-1 whitespace-pre-line text-xs leading-snug text-txt-tertiary">{step.description}</p>
+        <h3 className="text-xs font-semibold text-txt-primary">{step.title}</h3>
+        <p className="mt-0.5 hidden whitespace-pre-line text-[10px] leading-snug text-txt-tertiary 2xl:block">{step.description}</p>
       </div>
     </Card>
   );
@@ -147,7 +147,7 @@ function PipelineStepCard({ step }: { step: (typeof pipelineSteps)[number] }) {
 
 function Connector() {
   return (
-    <div className="hidden min-w-[64px] flex-1 items-center lg:flex">
+    <div className="hidden min-w-[34px] flex-1 items-center lg:flex">
       {/* Left line — shimmer on the line itself */}
       <div className="h-px flex-1 relative overflow-hidden">
         <div className="absolute inset-0 bg-accent-dim" />
@@ -171,8 +171,8 @@ function Connector() {
 
 function PipelineFlow() {
   return (
-    <Card variant="default" padding="sm" className="rounded-xl">
-      <div className="grid min-w-[1120px] grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] items-center">
+    <Card variant="default" padding="sm" className="rounded-xl bg-inset/35">
+      <div className="grid min-w-[920px] grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] items-center">
         {pipelineSteps.map((step, index) => (
           <div key={step.title} className="contents">
             <PipelineStepCard step={step} />
@@ -2089,6 +2089,73 @@ function MarketStatsBar() {
   );
 }
 
+function DashboardActionHeader({
+  pair,
+  onGenerate,
+}: {
+  pair: string;
+  onGenerate: () => void;
+}) {
+  const d = useDashboard();
+  const liveSignal = d.liveSignals.find((s) => normalizePair(s.pair) === normalizePair(pair)) ?? null;
+  const generatedSignal = d.aiSignal && normalizePair(d.aiSignal.pair) === normalizePair(pair) ? d.aiSignal : null;
+  const currentSignal = generatedSignal ?? liveSignal;
+  const action = actionFromSignal(currentSignal);
+  const confidence = currentSignal ? clamp(Math.round(currentSignal.confidence ?? 0), 0, 100) : 0;
+  const canExecute = Boolean(currentSignal && action !== "NO TRADE");
+  const actionTone =
+    action === "LONG"
+      ? "text-buy border-buy-dim bg-buy-muted/10"
+      : action === "SHORT"
+        ? "text-sell border-sell-dim bg-sell-muted/10"
+        : "text-hold border-hold/30 bg-hold/10";
+
+  return (
+    <Card variant="default" padding="none" className="overflow-hidden rounded-xl border-accent/20 bg-inset/60">
+      <div className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-accent">Live signal path</span>
+            <span className={cx("rounded-full border px-2 py-0.5 text-[10px] font-bold", actionTone)}>{action}</span>
+            <span className="font-mono text-[10px] text-txt-secondary tabular-nums">{confidence}% confidence</span>
+          </div>
+          <div className="mt-1 flex flex-wrap items-baseline gap-2">
+            <h1 className="text-xl font-semibold leading-tight text-txt-primary lg:text-2xl">{pair} signal command</h1>
+            <span className="text-xs font-medium text-txt-secondary">
+              Generate the next signal, then move straight into setup.
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:w-[420px]">
+          <button
+            type="button"
+            onClick={onGenerate}
+            disabled={d.analyzing}
+            className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-accent bg-accent px-4 text-sm font-bold text-black transition-all hover:bg-accent/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {d.analyzing ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/60 border-t-transparent" />
+            ) : (
+              <PedalIcon className="h-4 w-4" />
+            )}
+            Generate Signal
+          </button>
+          <button
+            type="button"
+            onClick={() => currentSignal && d.handleExecuteSignal(currentSignal)}
+            disabled={!canExecute}
+            className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-border-default bg-elevated px-4 text-sm font-bold text-txt-primary transition-all hover:border-accent/40 hover:bg-accent-muted/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:text-txt-muted disabled:opacity-55"
+          >
+            <Play size={15} fill="currentColor" />
+            Trade Setup
+          </button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 /* ── Root Component ── */
 
 export default function SignalFlowCommandCenter() {
@@ -2126,13 +2193,14 @@ export default function SignalFlowCommandCenter() {
 
   return (
     <div className="space-y-3 px-2 lg:px-3 pt-2 lg:pt-3">
-      {/* Global Strategy Control - subtle header for quick strategy switching.
-          Changes instantly affect live signals, decision score, and catalyst.
-          Full editor in /strategy-config. */}
-      <div className="flex items-center gap-3 rounded-lg border border-border-default bg-inset/40 px-3 py-1.5 text-sm">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-txt-muted">Strategy</span>
-        <StrategySwitcher />
-        <span className="ml-auto text-[9px] text-txt-faint hidden lg:inline">
+      <DashboardActionHeader pair={pair} onGenerate={() => openGenerateModal(coin)} />
+
+      <div className="flex flex-col gap-2 rounded-lg border border-border-default bg-inset/40 px-3 py-2 text-sm lg:flex-row lg:items-center">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-txt-muted">Strategy</span>
+          <StrategySwitcher />
+        </div>
+        <span className="text-[9px] text-txt-faint lg:ml-auto">
           Live effect on all panels. <a href="/strategy-config" className="text-accent hover:underline">Full config</a>
         </span>
       </div>
