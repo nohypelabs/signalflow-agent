@@ -8,6 +8,7 @@ interface HeaderProps {
   tickerCount?: number;
   tickerMap?: Map<string, SoDEXTicker>;
   onTickerClick?: (symbol: string) => void;
+  onMenuClick?: () => void;
 }
 
 export default function Header(props: HeaderProps) {

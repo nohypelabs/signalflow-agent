@@ -10,19 +10,8 @@ import StatusDot from "@/components/ui/StatusDot";
 import MarketTickerTape from "./MarketTickerTape";
 import { useAlerts } from "@/lib/hooks/useAlerts";
 import {
-  ActivityIcon,
-  BarChartIcon,
-  BellIcon,
-  ChartIcon,
-  DocumentIcon,
-  HistoryIcon,
-  HomeIcon,
   MenuIcon,
-  PerformanceIcon,
   SettingsIcon,
-  SignalIcon,
-  StrategyIcon,
-  TradeIcon,
   CloseIcon,
 } from "@/components/ui/icons";
 import type { SoDEXTicker } from "@/lib/sodex-types";
@@ -32,58 +21,22 @@ interface Props {
   tickerCount?: number;
   tickerMap?: Map<string, SoDEXTicker>;
   onTickerClick?: (symbol: string) => void;
+  onMenuClick?: () => void;
 }
-
-const navGroups = {
-  command: [
-    { href: "/dashboard", label: "Dashboard", Icon: HomeIcon },
-    { href: "/signals", label: "Signals", Icon: SignalIcon },
-    { href: "/screener", label: "Market Overview", Icon: ActivityIcon },
-  ],
-  execution: [
-    { href: "/trading", label: "Trading", Icon: TradeIcon },
-    { href: "/portfolio", label: "Portfolio", Icon: ChartIcon },
-    { href: "/alerts", label: "Alerts", Icon: BellIcon },
-  ],
-  review: [
-    { href: "/performance", label: "Performance", Icon: PerformanceIcon },
-    { href: "/analytics", label: "Analytics", Icon: BarChartIcon },
-    { href: "/trade-history", label: "Trade History", Icon: HistoryIcon },
-    { href: "/journal", label: "Journal", Icon: DocumentIcon },
-    { href: "/docs", label: "Docs", Icon: DocumentIcon },
-  ],
-  strategy: [
-    { href: "/strategy-config", label: "Strategy Config", Icon: StrategyIcon },
-  ],
-};
-
-const navGroupLabels: Record<keyof typeof navGroups, string> = {
-  command: "Command",
-  execution: "Execution",
-  review: "Review",
-  strategy: "Strategy",
-};
 
 const systemItems = [
   { href: "/settings", label: "Settings", Icon: SettingsIcon, description: "Preferences & configuration" },
 ];
-
-const directNavItems = [
-  { href: "/signals", label: "Signal", Icon: SignalIcon },
-  { href: "/trading", label: "Trading", Icon: TradeIcon },
-];
-
-const directNavHrefs = new Set(directNavItems.map((item) => item.href));
 
 export default function TopBar({
   sodexStatus = "loading",
   tickerCount,
   tickerMap,
   onTickerClick,
+  onMenuClick,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
-  const [pagesOpen, setPagesOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const tickerArray = tickerMap ? Array.from(tickerMap.values()) : null;
@@ -101,11 +54,8 @@ export default function TopBar({
     minute: "2-digit",
     timeZone: "Asia/Jakarta",
   });
-  const activePage = Object.values(navGroups).flat().find((item) => pathname === item.href);
-  const moreMenuActive = Boolean(activePage && !directNavHrefs.has(activePage.href));
 
   useEffect(() => {
-    Object.values(navGroups).flat().forEach((item) => router.prefetch(item.href));
     systemItems.forEach((item) => router.prefetch(item.href));
   }, [router]);
 
@@ -124,76 +74,15 @@ export default function TopBar({
   // Close settings modal on route change
   useEffect(() => {
     setSettingsOpen(false);
-    setPagesOpen(false);
   }, [pathname]);
 
   const navigate = (href: string) => {
     router.push(href);
-    setPagesOpen(false);
     setSettingsOpen(false);
   };
 
   // Check if any system page is active
   const isSystemActive = systemItems.some((item) => pathname === item.href);
-
-  const pagesMenuButton = () => {
-    return (
-      <div className="relative lg:ml-0 ml-[-23%]">
-        <button
-          type="button"
-          onClick={() => setPagesOpen(!pagesOpen)}
-          aria-label="More pages menu"
-          aria-expanded={pagesOpen}
-          className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border text-xs font-semibold transition-colors ${
-            moreMenuActive
-              ? "border-accent/35 bg-accent/10 text-accent"
-              : "border-border-default bg-elevated/45 text-txt-primary hover:border-accent/30 hover:bg-accent/10"
-          }`}
-          title="More pages"
-        >
-          <MenuIcon size={15} />
-        </button>
-        <AnimatePresence>
-          {pagesOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -4, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -4, scale: 0.98 }}
-              transition={{ duration: 0.15 }}
-              className="absolute left-0 top-10 z-50 w-56 rounded-xl border border-border-default bg-card p-1.5 shadow-2xl shadow-black/50"
-            >
-              {(["command", "execution", "review", "strategy"] as const).map((groupKey, index) => (
-                <div key={groupKey}>
-                  {index > 0 && <div className="my-1 h-px bg-border-default" />}
-                  <div className="px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-txt-faint">
-                    {navGroupLabels[groupKey]}
-                  </div>
-                  {navGroups[groupKey].filter(({ href }) => !directNavHrefs.has(href)).map(({ href, label: itemLabel, Icon }) => {
-                    const itemActive = pathname === href;
-                    return (
-                      <button
-                        key={href}
-                        type="button"
-                        onClick={() => navigate(href)}
-                        className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
-                          itemActive
-                            ? "bg-accent-muted text-accent"
-                            : "text-txt-secondary hover:bg-elevated hover:text-txt-primary"
-                        }`}
-                      >
-                        <Icon size={14} className={itemActive ? "text-accent" : "text-txt-muted"} />
-                        {itemLabel}
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  };
 
   return (
     <div className="shrink-0">
@@ -210,7 +99,15 @@ export default function TopBar({
         {/* Left: brand + primary navigation */}
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex items-center gap-2">
-            {pagesMenuButton()}
+            <button
+              type="button"
+              onClick={onMenuClick}
+              aria-label="Open sidebar"
+              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-border-default bg-elevated/45 text-txt-primary transition-colors hover:border-accent/30 hover:bg-accent/10 md:hidden"
+              title="Open sidebar"
+            >
+              <MenuIcon size={15} />
+            </button>
             {/* Desktop: logo inline */}
             <button
               type="button"
@@ -242,30 +139,6 @@ export default function TopBar({
               <span className="font-mono text-[9px] font-semibold text-txt-muted">{statusLabel}</span>
             </div>
           </div>
-
-          <div className="hidden sm:block h-5 w-px bg-border-default" />
-
-          <nav className="flex items-center gap-1 rounded-xl border border-border-default bg-elevated/20 px-1.5 py-0.5 lg:ml-0 ml-[-15%]">
-            {directNavItems.map(({ href, label, Icon }) => {
-              const itemActive = pathname === href;
-              return (
-                <button
-                  key={href}
-                  type="button"
-                  onClick={() => navigate(href)}
-                  className={`flex h-7 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors ${
-                    itemActive
-                      ? "border-accent/35 bg-accent/10 text-accent"
-                      : "border-transparent text-txt-secondary hover:border-accent/25 hover:bg-accent/10 hover:text-txt-primary"
-                  }`}
-                >
-                  <Icon size={13} />
-                  <span className="hidden xl:inline">{label}</span>
-                </button>
-              );
-            })}
-          </nav>
-
         </div>
 
         {/* Mobile: logo centered */}

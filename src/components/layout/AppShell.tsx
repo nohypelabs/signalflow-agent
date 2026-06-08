@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Header from "./Header";
+import Sidebar from "./Sidebar";
 import TradeForm from "@/components/TradeForm";
 import { AmbientGrid } from "@/components/ui/Polish";
 import type { Signal } from "@/lib/types/signal";
@@ -40,6 +42,8 @@ export default function AppShell({
   fullScreen = false,
   hideHeader = false,
 }: AppShellProps) {
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   return (
     <div className="flex flex-col h-screen">
       {!hideHeader && (
@@ -48,9 +52,11 @@ export default function AppShell({
           tickerCount={tickerCount}
           tickerMap={tickerMap}
           onTickerClick={onTickerClick}
+          onMenuClick={() => setMobileSidebarOpen(true)}
         />
       )}
       <div className="flex flex-1 min-h-0 overflow-hidden">
+        <Sidebar mobileOpen={mobileSidebarOpen} onMobileClose={() => setMobileSidebarOpen(false)} />
         <main
           className={
             fullScreen
