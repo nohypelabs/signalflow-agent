@@ -557,10 +557,10 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
           </span>
         </div>
       }
-      className="h-[570px] relative z-10"
+      className="relative z-10"
       bodyClassName="flex-1 overflow-visible"
     >
-      <div className="flex h-full min-w-0 flex-col gap-2 overflow-visible p-3">
+      <div className="flex min-w-0 flex-col gap-2 overflow-visible p-3">
         <div className="rounded-xl border border-border-default bg-inset/70 px-3 py-2">
           <div className="flex items-center gap-3">
             <div className="grid min-w-0 flex-1 grid-cols-3 gap-1.5">
