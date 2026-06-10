@@ -2374,10 +2374,9 @@ export default function SignalFlowCommandCenter() {
       <div className="overflow-x-auto">
         <PipelineFlow />
       </div>
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,2.65fr)_minmax(320px,1fr)]">
-        <MarketCanvas pair={pair} />
-        <DecisionPanel pair={pair} news={news} onGenerate={() => openGenerateModal(coin)} />
-      </div>
+      {/* Chart removed from dashboard — already on trading page. 
+          Dashboard focuses 100% on signal intelligence. */}
+      <DecisionPanel pair={pair} news={news} onGenerate={() => openGenerateModal(coin)} />
       <DashboardEvidenceGrid />
 
       {/* Strategy modal for Generate Signal - per agenda: choice, minimize, customize, live logs per strategy */}
