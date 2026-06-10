@@ -7,9 +7,12 @@ interface OrderbookLevel {
   quantity: number;
 }
 
-interface LiveOrderbook {
+export interface LiveOrderbookData {
   bestBid: OrderbookLevel | null;
   bestAsk: OrderbookLevel | null;
+  bidTotal: number; // total bid volume (top N levels)
+  askTotal: number; // total ask volume (top N levels)
+  imbalance: number; // 0-100, 50=balanced, >50=bid-heavy(bullish), <50=ask-heavy(bearish)
   spread: number;
   spreadBps: number;
   midPrice: number;
@@ -19,16 +22,19 @@ interface LiveOrderbook {
 }
 
 /**
- * Hook to fetch live orderbook data at short intervals.
- * Shows real-time best bid/ask to prove data is live.
+ * Hook to fetch live orderbook data and calculate imbalance score.
+ * Returns imbalance 0-100 for use as a confluence factor.
  */
 export function useLiveOrderbook(
   symbol: string | null,
   pollIntervalMs: number = 3000,
-): LiveOrderbook {
-  const [state, setState] = useState<LiveOrderbook>({
+): LiveOrderbookData {
+  const [state, setState] = useState<LiveOrderbookData>({
     bestBid: null,
     bestAsk: null,
+    bidTotal: 0,
+    askTotal: 0,
+    imbalance: 50,
     spread: 0,
     spreadBps: 0,
     midPrice: 0,
@@ -44,19 +50,13 @@ export function useLiveOrderbook(
     if (!symbol) return;
 
     try {
-      const res = await fetch(`/api/orderbook?symbol=${encodeURIComponent(symbol)}&limit=5`);
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
+      const res = await fetch(`/api/orderbook?symbol=${encodeURIComponent(symbol)}&limit=10`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
+      if (data.error) throw new Error(data.error);
       if (!mountedRef.current) return;
 
-      // Parse orderbook response
       const bids: [number, number][] = data.bids ?? [];
       const asks: [number, number][] = data.asks ?? [];
 
@@ -67,6 +67,17 @@ export function useLiveOrderbook(
         ? { price: Number(asks[0][0]), quantity: Number(asks[0][1]) }
         : null;
 
+      // Sum total volume on each side (quote-weighted: price * qty)
+      const bidTotal = bids.reduce((sum, [p, q]) => sum + Number(p) * Number(q), 0);
+      const askTotal = asks.reduce((sum, [p, q]) => sum + Number(p) * Number(q), 0);
+
+      // Imbalance: 0-100 scale
+      // 50 = perfectly balanced
+      // >50 = bid-heavy (bullish buying pressure)
+      // <50 = ask-heavy (bearish selling pressure)
+      const total = bidTotal + askTotal;
+      const imbalance = total > 0 ? Math.round((bidTotal / total) * 100) : 50;
+
       const spread = bestBid && bestAsk ? bestAsk.price - bestBid.price : 0;
       const midPrice = bestBid && bestAsk ? (bestBid.price + bestAsk.price) / 2 : 0;
       const spreadBps = midPrice > 0 ? (spread / midPrice) * 10_000 : 0;
@@ -74,6 +85,9 @@ export function useLiveOrderbook(
       setState({
         bestBid,
         bestAsk,
+        bidTotal,
+        askTotal,
+        imbalance,
         spread,
         spreadBps,
         midPrice,
@@ -93,23 +107,17 @@ export function useLiveOrderbook(
 
   useEffect(() => {
     mountedRef.current = true;
-
     if (!symbol) {
       setState((prev) => ({ ...prev, loading: false }));
       return;
     }
 
-    // Initial fetch
     fetchOrderbook();
-
-    // Poll at interval
     intervalRef.current = setInterval(fetchOrderbook, pollIntervalMs);
 
     return () => {
       mountedRef.current = false;
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [symbol, pollIntervalMs, fetchOrderbook]);
 

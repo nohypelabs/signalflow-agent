@@ -18,7 +18,7 @@ import { getCoinIcon } from "@/lib/coin-icons";
 import { getStockIcon } from "@/lib/stock-icons";
 import { unwrapApiResponse } from "@/lib/api/client";
 import type { Signal } from "@/lib/types/signal";
-import LiveOrderbookRow from "@/components/signals/LiveOrderbookRow";
+import LiveOrderbookFactor from "@/components/signals/LiveOrderbookRow";
 
 // Lazy load heavy chart lib (lightweight-charts) so it doesn't bloat the main
 // dashboard chunk and slow down initial route compilation.
@@ -694,6 +694,8 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
                 </div>
               );
             })}
+            {/* Live Orderbook Factor — animated bar showing bid/ask imbalance */}
+            <LiveOrderbookFactor pair={pair} />
           </div>
           {/* Conflict detection */}
           {currentSignal?.factors && (() => {
@@ -710,10 +712,6 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
           })()}
           <div className="mt-2 text-[8px] text-[#a1a1aa] text-center font-mono">
             Score 0-100 per factor (50=neutral). Weight = factor influence on confluence. {decision.confidence}% total confluence.
-          </div>
-          {/* Live Orderbook — proves data is real-time */}
-          <div className="mt-1.5 pt-1.5 border-t border-border-default/50">
-            <LiveOrderbookRow pair={pair} />
           </div>
         </div>
 
