@@ -1264,8 +1264,8 @@ function MarketPressureCard() {
     .filter((t) => t.price > 0 && !isStockOrIndex(t.symbol))
     .sort((a, b) => b.change - a.change);
 
-  const topMovers = parsed.slice(0, 7);
-  const bottomMovers = parsed.slice(-7).reverse();
+  const topMovers = parsed.slice(0, 4);
+  const bottomMovers = parsed.slice(-4).reverse();
   const maxAbs = Math.max(...parsed.map((t) => Math.abs(t.change)), 1);
   const advancing = parsed.filter((t) => t.change > 0).length;
   const declining = parsed.filter((t) => t.change < 0).length;
@@ -1451,33 +1451,6 @@ function MarketPressureCard() {
               </div>
             </div>
           </div>
-
-          {/* Small High Volume Movers section */}
-          {highVolumeMovers.length > 0 && (
-            <div className="mt-1">
-              <div className="mb-0.5 flex items-center justify-between">
-                <span className="text-[8px] font-semibold uppercase tracking-wide text-txt-muted">High Volume Movers</span>
-              </div>
-              <div className="grid grid-cols-4 gap-x-2 gap-y-0.5 text-[8px]">
-                {highVolumeMovers.map((t) => {
-                  const sig = getSignalFor(t.symbol);
-                  const hasSignal = sig && sig.action !== 'HOLD';
-                  return (
-                    <div key={t.symbol} className="flex items-center gap-1 truncate">
-                      <CoinAvatar symbol={t.symbol} size={12} />
-                      <span className="font-semibold text-txt-primary truncate">{t.symbol}</span>
-                      <span className="font-mono text-txt-faint tabular-nums">$${(t.volume / 1e6).toFixed(1)}M</span>
-                      {hasSignal && (
-                        <span className={`text-[6px] px-0.5 rounded font-bold ${sig.action === 'LONG' ? 'bg-buy text-white' : 'bg-sell text-white'}`}>
-                          {sig.action[0]}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           {/* Different visual for Pressure Distribution: side-by-side bars + integrated % for better fill and clarity */}
           <div className="mt-1">
