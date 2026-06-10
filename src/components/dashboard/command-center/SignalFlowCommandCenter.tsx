@@ -2245,9 +2245,9 @@ function MarketBreadthCard() {
 
 function DashboardEvidenceGrid() {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <NewsSentimentPanel compact />
+    <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,2.65fr)_minmax(320px,1fr)]">
       <MarketPressureCard />
+      <NewsSentimentPanel compact />
     </div>
   );
 }
