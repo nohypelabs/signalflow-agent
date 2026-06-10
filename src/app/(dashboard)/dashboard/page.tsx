@@ -1,7 +1,11 @@
 "use client";
 
-import SignalFlowCommandCenter from "@/components/dashboard/command-center/SignalFlowCommandCenter";
+import SignalIntelligenceDashboard from "@/components/dashboard/SignalIntelligenceDashboard";
+import { useDashboard } from "@/lib/dashboard-context";
 
 export default function DashboardPage() {
-  return <SignalFlowCommandCenter />;
+  const d = useDashboard();
+  const pair = d.selectedPair ?? "BTC/USDC";
+  
+  return <SignalIntelligenceDashboard pair={pair} />;
 }
