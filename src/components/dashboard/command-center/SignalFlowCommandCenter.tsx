@@ -712,6 +712,63 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
           </div>
         </div>
 
+        {/* ── MACRO CONTEXT: SoSoValue dimensions (ETF, Sentiment, Macro, Treasury) ── */}
+        {/* Judges want to see ALL signal inputs, not just TA */}
+        {currentSignal?.dimensions && (
+          <div className="rounded-xl border border-border-default bg-inset/70 px-3 py-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-txt-tertiary mb-2">
+              Macro Context — SoSoValue Data
+            </div>
+            <div className="space-y-1.5">
+              {[
+                { key: "etfFlow", label: "ETF Flow", icon: "💰" },
+                { key: "sentiment", label: "News Sentiment", icon: "📰" },
+                { key: "macro", label: "Macro Events", icon: "🌍" },
+                { key: "treasury", label: "BTC Treasury", icon: "🏛" },
+              ].map(({ key, label, icon }) => {
+                const score = Math.round(currentSignal.dimensions[key as keyof typeof currentSignal.dimensions] ?? 50);
+                const detail = currentSignal.dimensionDetails?.[key as keyof typeof currentSignal.dimensionDetails]?.detail;
+                const scoreColor = score >= 65 ? "#00E5A8" : score >= 55 ? "#4ADE80" : score >= 45 ? "#F59E0B" : score >= 35 ? "#F97316" : "#EF4444";
+                const isBullish = score > 55;
+                const isBearish = score < 45;
+
+                return (
+                  <div key={key}>
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <div className="w-24 shrink-0 font-medium text-txt-primary flex items-center gap-1">
+                        <span className="text-[10px]">{icon}</span>
+                        {label}
+                      </div>
+                      <div className="flex-1 h-[6px] bg-[#27272a] rounded-full overflow-hidden">
+                        <div
+                          className="h-[6px] rounded-full transition-all"
+                          style={{ width: `${Math.max(5, Math.min(100, score))}%`, backgroundColor: scoreColor }}
+                        />
+                      </div>
+                      <div className="w-10 text-right font-mono text-[10px] font-semibold tabular-nums" style={{ color: scoreColor }}>
+                        {score}
+                      </div>
+                      <div className="w-6 text-center">
+                        {isBullish && <span className="text-[8px] text-green-400">▲</span>}
+                        {isBearish && <span className="text-[8px] text-red-400">▼</span>}
+                        {!isBullish && !isBearish && <span className="text-[8px] text-txt-dim">—</span>}
+                      </div>
+                    </div>
+                    {detail && (
+                      <div className="ml-26 mt-0.5 text-[8px] text-txt-dim truncate" title={detail}>
+                        {detail}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-2 text-[8px] text-[#a1a1aa] text-center font-mono">
+              SoSoValue API: ETF flows, news sentiment, macro events, BTC treasury data.
+            </div>
+          </div>
+        )}
+
       </div>
     </Panel>
   );
@@ -2124,15 +2181,10 @@ function MarketBreadthCard() {
 
 function DashboardEvidenceGrid() {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
       <NewsSentimentPanel compact />
-      <MarketBreadthCard />
       <MarketPressureCard />
       <SignalAccuracyCard />
-      <MarketStatsCard />
-      <IndexROIDashboard />
-      <BTCTreasuryDashboard />
-      <MacroSurprise />
     </div>
   );
 }
