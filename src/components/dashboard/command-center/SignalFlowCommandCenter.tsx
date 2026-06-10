@@ -640,37 +640,75 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
           </div>
         )}
 
-        {/* Score Drivers (weighted composite) — up to 6 rows from real factors (capped for layout) */}
+        {/* Score Drivers (weighted composite) — shows ACTUAL factor scores for transparency */}
         <div className="rounded-xl border border-border-default bg-inset/70 px-3 py-2">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-txt-tertiary mb-2">Score Drivers (weighted composite)</div>
-          <div className="space-y-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-txt-tertiary mb-2">
+            Confluence Breakdown — {currentSignal?.regime?.replace("_", " ") || "N/A"} regime
+          </div>
+          <div className="space-y-1.5">
             {decision.sources.map((source, idx) => {
               const weightPct = Math.round(source.weight * 100);
-              const barWidth = Math.max(5, Math.min(100, weightPct));
-              const isPositive = source.signed > 0;
-              const isNegative = source.signed < 0;
-              const contrib = Math.round(source.weight * decision.confidence * (source.signed || 0));
-              // Labels pre-mapped above for niceness (up to 6 rows from real V3 factors)
-              let label = source.label;
+              // Find the actual factor score from currentSignal
+              const factor = currentSignal?.factors?.find((f: any) => {
+                const name = f.name;
+                if (name === "ORDER_FLOW" && source.label === "Order Flow") return true;
+                if (name === "DEPTH" && source.label === "Orderbook Depth") return true;
+                if (name === "FUNDING" && source.label === "Funding Rate") return true;
+                if (name === "TREND" && source.label === "Trend") return true;
+                if (name === "MOMENTUM" && source.label === "Momentum") return true;
+                if (name === "VOLATILITY" && source.label === "Volatility") return true;
+                if (name === "VOLUME" && source.label === "Volume") return true;
+                if (name === "STRUCTURE" && source.label === "Structure") return true;
+                return false;
+              });
+              const score = factor?.score ?? 50;
+              const scoreColor = score >= 65 ? "#00E5A8" : score >= 55 ? "#4ADE80" : score >= 45 ? "#F59E0B" : score >= 35 ? "#F97316" : "#EF4444";
+              const isBullish = score > 55;
+              const isBearish = score < 45;
+              const isStrong = score > 65 || score < 35;
+
               return (
                 <div key={idx} className="flex items-center gap-2 text-[10px]">
-                  <div className="w-20 shrink-0 font-medium text-txt-primary">{label}</div>
-                  <div className="w-8 text-right font-mono text-[#a1a1aa]">{weightPct}%</div>
+                  <div className="w-20 shrink-0 font-medium text-txt-primary flex items-center gap-1">
+                    {isStrong && <span className="text-[8px]" style={{ color: scoreColor }}>●</span>}
+                    {isBullish && !isStrong && <span className="text-[8px] text-green-400">▲</span>}
+                    {isBearish && !isStrong && <span className="text-[8px] text-red-400">▼</span>}
+                    {!isBullish && !isBearish && <span className="text-[8px] text-txt-dim">—</span>}
+                    {source.label}
+                  </div>
+                  {/* Factor score bar (0-100) */}
                   <div className="flex-1 h-[6px] bg-[#27272a] rounded-full overflow-hidden">
-                    <div 
-                      className="h-[6px] rounded-full transition-all" 
-                      style={{ width: `${barWidth}%`, backgroundColor: isPositive ? signalColor.main : isNegative ? '#ef4444' : '#f59e0b' }} 
+                    <div
+                      className="h-[6px] rounded-full transition-all"
+                      style={{ width: `${Math.max(5, Math.min(100, score))}%`, backgroundColor: scoreColor }}
                     />
                   </div>
-                  <div className="w-14 text-right font-mono text-[10px] font-semibold tabular-nums" style={{ color: isPositive ? signalColor.main : isNegative ? '#ef4444' : '#f59e0b' }}>
-                    {weightPct}% {contrib > 0 ? "+" : ""}{contrib}
+                  {/* Score + weight */}
+                  <div className="w-16 text-right font-mono text-[10px] font-semibold tabular-nums" style={{ color: scoreColor }}>
+                    {score}
+                  </div>
+                  <div className="w-8 text-right font-mono text-[8px] text-txt-dim">
+                    {weightPct}%
                   </div>
                 </div>
               );
             })}
           </div>
+          {/* Conflict detection */}
+          {currentSignal?.factors && (() => {
+            const strongBull = currentSignal.factors.filter((f: any) => f.score > 65).length;
+            const strongBear = currentSignal.factors.filter((f: any) => f.score < 35).length;
+            if (strongBull > 0 && strongBear > 0) {
+              return (
+                <div className="mt-1.5 text-[9px] text-yellow-400 bg-yellow-400/5 border border-yellow-400/20 rounded px-2 py-1">
+                  ⚠ Conflict: {strongBull} strong bullish vs {strongBear} strong bearish — signal suppressed
+                </div>
+              );
+            }
+            return null;
+          })()}
           <div className="mt-2 text-[8px] text-[#a1a1aa] text-center font-mono">
-            {decision.confidence}% = real factor confluence (TA + Microstructure). AI/News are optional/UI only.
+            Score 0-100 per factor (50=neutral). Weight = factor influence on confluence. {decision.confidence}% total confluence.
           </div>
         </div>
 
