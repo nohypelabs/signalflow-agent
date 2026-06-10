@@ -407,8 +407,12 @@ export async function POST(req: NextRequest) {
       });
     }
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Signal analysis failed";
-    console.error("/api/signals/analyze error:", msg);
-    return jsonNoCache({ error: msg }, { status: 502 });
+    // Sanitize error message — don't leak internal details to client
+    const internalMsg = err instanceof Error ? err.message : "Unknown error";
+    console.error("/api/signals/analyze error:", internalMsg);
+    return jsonNoCache(
+      { error: "Signal analysis failed. Please try again." },
+      { status: 502 },
+    );
   }
 }

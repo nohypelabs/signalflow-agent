@@ -91,9 +91,13 @@ export async function POST(req: NextRequest) {
     if (order.clientOrderId) markIdempotency(order.clientOrderId, "completed", response);
     return jsonNoCache(response);
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Order placement failed";
-    console.error("[/api/orders POST]", msg);
-    return jsonNoCache({ error: msg }, { status: 502 });
+    // Sanitize error message — log full error server-side, return generic to client
+    const internalMsg = err instanceof Error ? err.message : "Unknown error";
+    console.error("[/api/orders POST]", internalMsg);
+    return jsonNoCache(
+      { error: "Order placement failed. Please try again." },
+      { status: 502 },
+    );
   }
 }
 
