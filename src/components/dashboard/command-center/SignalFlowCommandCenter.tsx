@@ -769,8 +769,99 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
           </div>
         )}
 
+        {/* ── SIGNAL RELIABILITY: accuracy tracking at the bottom ── */}
+        {/* Merged from standalone SignalAccuracyCard for unified view */}
+        <SignalReliabilityInline />
+
       </div>
     </Panel>
+  );
+}
+
+/* ── Inline Signal Reliability (compact version for DecisionPanel) ── */
+
+function SignalReliabilityInline() {
+  const d = useDashboard();
+  const stats = d.signalStats;
+  const streaks = d.streaks;
+
+  const accuracy = stats?.accuracy;
+  const totalResolved = stats?.totalResolved ?? 0;
+  const totalCorrect = stats?.totalCorrect ?? 0;
+  const totalMissed = Math.max(0, totalResolved - totalCorrect);
+  const currentStreak = streaks?.current;
+  const winStreak = currentStreak?.type === "win" ? currentStreak.count : 0;
+  const lossStreak = currentStreak?.type === "loss" ? currentStreak.count : 0;
+
+  const reliabilityTone = totalResolved === 0
+    ? "text-txt-muted"
+    : accuracy == null
+      ? "text-txt-muted"
+      : accuracy >= 60
+        ? "text-buy"
+        : accuracy >= 45
+          ? "text-hold"
+          : "text-sell";
+  const reliabilityLabel = totalResolved === 0
+    ? "collecting"
+    : accuracy == null
+      ? "pending"
+      : accuracy >= 60
+        ? "strong"
+        : accuracy >= 45
+          ? "mixed"
+          : "weak";
+
+  return (
+    <div className="rounded-xl border border-border-default bg-inset/70 px-3 py-2">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[10px] font-semibold uppercase tracking-wide text-txt-tertiary flex items-center gap-1">
+          <Target size={10} className="text-accent" /> Signal Reliability
+        </div>
+        <span className={cx("text-[9px] font-mono uppercase tabular-nums", reliabilityTone)}>
+          {reliabilityLabel}
+        </span>
+      </div>
+      <div className="flex items-center gap-3">
+        {/* Win rate */}
+        <div className="flex items-center gap-2">
+          <WinRateRing value={accuracy} size={48} />
+          <div>
+            <div className={cx("font-mono text-lg font-bold leading-none tabular-nums", reliabilityTone)}>
+              {accuracy == null ? "--" : `${accuracy.toFixed(1)}%`}
+            </div>
+            <div className="text-[8px] text-txt-muted">hit rate</div>
+          </div>
+        </div>
+        {/* Stats */}
+        <div className="flex-1 grid grid-cols-3 gap-1.5">
+          <div className="text-center rounded-lg border border-border-default bg-elevated/20 px-1.5 py-1">
+            <div className="font-mono text-xs font-bold text-txt-primary tabular-nums">{totalResolved}</div>
+            <div className="text-[7px] text-txt-muted">resolved</div>
+          </div>
+          <div className="text-center rounded-lg border border-buy-dim/30 bg-buy-muted/10 px-1.5 py-1">
+            <div className="font-mono text-xs font-bold text-buy tabular-nums">{totalCorrect}</div>
+            <div className="text-[7px] text-txt-muted">wins</div>
+          </div>
+          <div className="text-center rounded-lg border border-sell-dim/30 bg-sell-muted/10 px-1.5 py-1">
+            <div className="font-mono text-xs font-bold text-sell tabular-nums">{totalMissed}</div>
+            <div className="text-[7px] text-txt-muted">misses</div>
+          </div>
+        </div>
+        {/* Streaks */}
+        <div className="flex flex-col gap-1">
+          {winStreak > 0 && (
+            <div className="text-[8px] font-mono text-buy">🔥 {winStreak}W streak</div>
+          )}
+          {lossStreak > 0 && (
+            <div className="text-[8px] font-mono text-sell">❄️ {lossStreak}L streak</div>
+          )}
+          {!winStreak && !lossStreak && (
+            <div className="text-[8px] font-mono text-txt-dim">—</div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -2181,10 +2272,9 @@ function MarketBreadthCard() {
 
 function DashboardEvidenceGrid() {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <NewsSentimentPanel compact />
       <MarketPressureCard />
-      <SignalAccuracyCard />
     </div>
   );
 }
