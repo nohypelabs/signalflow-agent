@@ -1,10 +1,10 @@
 import type { StrategyLesson } from "./types";
 
 export const COVERAGE_GUARDRAIL = {
-  minWatchableCoveragePct: 8,
-  minWatchableSignals: 1,
-  weakLongScore: 48, // allow weak bias earlier (aligned with relaxed classifier)
-  weakShortScore: 52,
+  minWatchableCoveragePct: 12,
+  minWatchableSignals: 2,
+  weakLongScore: 56,  // tightened from 48 — require genuine directional bias
+  weakShortScore: 44, // tightened from 52
 } as const;
 
 export const BASELINE_LESSONS: StrategyLesson[] = [
@@ -15,10 +15,10 @@ export const BASELINE_LESSONS: StrategyLesson[] = [
     sampleSize: 0,
     winRate: null,
     profitFactor: null,
-    confidenceAdjustment: 6,
-    minConfidence: 52,
+    confidenceAdjustment: 8,
+    minConfidence: 58,
     status: "trusted",
-    note: "Long trend continuation — lowered bar to let more real edge through. Final gate is user minConfidence in Strategy Config.",
+    note: "Long trend continuation in confirmed uptrend. EMA stack aligned, ADX > 25, momentum confirming. Highest-confidence setup type.",
   },
   {
     setupType: "trend_continuation",
@@ -27,10 +27,10 @@ export const BASELINE_LESSONS: StrategyLesson[] = [
     sampleSize: 0,
     winRate: null,
     profitFactor: null,
-    confidenceAdjustment: 6,
-    minConfidence: 52,
+    confidenceAdjustment: 8,
+    minConfidence: 58,
     status: "trusted",
-    note: "Short trend continuation — lowered bar to let more real edge through. Final gate is user minConfidence in Strategy Config.",
+    note: "Short trend continuation in confirmed downtrend. EMA stack bearish, ADX > 25, momentum confirming. Highest-confidence setup type.",
   },
   {
     setupType: "breakout",
@@ -39,10 +39,10 @@ export const BASELINE_LESSONS: StrategyLesson[] = [
     sampleSize: 0,
     winRate: null,
     profitFactor: null,
-    confidenceAdjustment: 4,
-    minConfidence: 58,
+    confidenceAdjustment: 5,
+    minConfidence: 62,
     status: "trusted",
-    note: "Breakouts: lowered from 68. Momentum + volume still preferred but we emit the signal and let confidence + policy decide.",
+    note: "Breakout with momentum + volume confirmation. Require ATR expansion and price at range extremes. Higher bar than trend continuation.",
   },
   {
     setupType: "mean_reversion",
@@ -51,10 +51,10 @@ export const BASELINE_LESSONS: StrategyLesson[] = [
     sampleSize: 0,
     winRate: null,
     profitFactor: null,
-    confidenceAdjustment: 3,
-    minConfidence: 52,
+    confidenceAdjustment: 0,
+    minConfidence: 60,
     status: "watch",
-    note: "Volatile regime in crypto often means opportunity. We now emit more of these instead of default HOLD.",
+    note: "Mean reversion in volatile regime. Higher risk — require structure support + momentum divergence. Watch carefully.",
   },
   {
     setupType: "range_trade",
@@ -64,9 +64,9 @@ export const BASELINE_LESSONS: StrategyLesson[] = [
     winRate: null,
     profitFactor: null,
     confidenceAdjustment: -2,
-    minConfidence: 55,
+    minConfidence: 60,
     status: "watch",
-    note: "Range trades: much lower bar. Structure at extremes can be valid; user controls final minConfidence.",
+    note: "Range trade in ranging regime. Require price at support/resistance extremes + momentum reversal signal. Lower conviction.",
   },
   {
     setupType: "no_edge",
@@ -75,9 +75,9 @@ export const BASELINE_LESSONS: StrategyLesson[] = [
     sampleSize: 0,
     winRate: null,
     profitFactor: null,
-    confidenceAdjustment: -3,
-    minConfidence: 50,
-    status: "watch",
-    note: "Limited edge. Still allow weak directional bias as WEAK_LONG/SHORT so user sees opportunities instead of pure no-trade.",
+    confidenceAdjustment: -8,
+    minConfidence: 65,
+    status: "blocked",
+    note: "No clear edge detected. Conflicting factors or insufficient confluence. Do not trade — wait for cleaner setup.",
   },
 ];
