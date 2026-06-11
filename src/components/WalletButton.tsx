@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useWallet, type WalletConnectionPreference } from "@/lib/hooks/useWallet";
+import { useState } from "react";
+import { useWallet } from "@/lib/hooks/useWallet";
 import { useSwitchChain } from "wagmi";
 import { valuechain } from "@/lib/wallet-config";
 import Button from "@/components/ui/Button";
@@ -20,33 +20,18 @@ export default function WalletButton() {
     walletConnectConfigured,
   } = useWallet();
   const { switchChainAsync } = useSwitchChain();
-  const connectMenuRef = useRef<HTMLDivElement>(null);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [connectMenuOpen, setConnectMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const correctChain = chainId === valuechain.id;
   const walletConnectMissing = !hasInjectedProvider && !walletConnectConfigured;
-  const canChooseWallet = hasInjectedProvider && walletConnectConfigured;
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (connectMenuRef.current && !connectMenuRef.current.contains(event.target as Node)) {
-        setConnectMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleConnect = async (preference?: WalletConnectionPreference) => {
+  const handleConnect = async () => {
     setConnecting(true);
     setError(null);
-    setConnectMenuOpen(false);
     try {
-      await connect(preference);
+      await connect();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Connection rejected");
     } finally {
@@ -65,49 +50,15 @@ export default function WalletButton() {
   // ── Disconnected ──
   if (!isConnected) {
     return (
-      <div className="relative flex items-center gap-2" ref={connectMenuRef}>
+      <div className="flex items-center gap-2">
         <button
-          onClick={() => {
-            if (canChooseWallet) {
-              setConnectMenuOpen((open) => !open);
-              return;
-            }
-            void handleConnect(hasInjectedProvider ? "injected" : "walletConnect");
-          }}
+          onClick={handleConnect}
           disabled={connecting}
           className="cursor-pointer px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 hover:border-accent/50 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all whitespace-nowrap"
         >
-          <span className="hidden sm:inline">
-            {connecting ? "Connecting..." : canChooseWallet ? "Choose Wallet" : "Connect Wallet"}
-          </span>
+          <span className="hidden sm:inline">{connecting ? "Connecting..." : "Connect Wallet"}</span>
           <span className="sm:hidden">{connecting ? "..." : "Connect"}</span>
         </button>
-
-        {connectMenuOpen && canChooseWallet && (
-          <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-border-default bg-card shadow-2xl">
-            <button
-              onClick={() => void handleConnect("injected")}
-              className="flex w-full items-start gap-2 px-3 py-2.5 text-left text-[11px] text-txt-secondary hover:bg-[#ffffff06] hover:text-txt-primary"
-            >
-              <span className="mt-0.5 h-2 w-2 rounded-full bg-accent" />
-              <span>
-                <span className="block font-semibold text-txt-primary">Browser Wallet</span>
-                <span className="block text-[10px] text-txt-dim">Open the injected wallet extension</span>
-              </span>
-            </button>
-            <button
-              onClick={() => void handleConnect("walletConnect")}
-              className="flex w-full items-start gap-2 border-t border-border-default px-3 py-2.5 text-left text-[11px] text-txt-secondary hover:bg-[#ffffff06] hover:text-txt-primary"
-            >
-              <span className="mt-0.5 h-2 w-2 rounded-full bg-hold" />
-              <span>
-                <span className="block font-semibold text-txt-primary">WalletConnect</span>
-                <span className="block text-[10px] text-txt-dim">Scan QR or use a mobile wallet</span>
-              </span>
-            </button>
-          </div>
-        )}
-
         {error && <span className="text-[10px] text-error">{error}</span>}
         {!error && walletConnectMissing && (
           <span className="hidden md:inline text-[10px] text-hold">

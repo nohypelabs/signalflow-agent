@@ -72,19 +72,7 @@ export function useWallet() {
   };
 
   const disconnect = async () => {
-    // 1. Clear wagmi persisted state FIRST so disconnectAsync doesn't read stale data
-    try {
-      const keys = Object.keys(localStorage);
-      for (const key of keys) {
-        if (key.startsWith("wagmi") || key.startsWith("wc:") || key.startsWith("walletconnect")) {
-          localStorage.removeItem(key);
-        }
-      }
-    } catch {
-      // localStorage unavailable, silently ignore
-    }
-
-    // 2. Revoke MetaMask browser-level permission so it prompts again on next connect
+    // 1. Revoke MetaMask browser-level permission so it prompts again on next connect
     const win = window as unknown as { ethereum?: EthereumProvider } | undefined;
     if (typeof window !== "undefined" && win?.ethereum) {
       try {
@@ -97,11 +85,24 @@ export function useWallet() {
       }
     }
 
-    // 3. Disconnect wagmi session
+    // 2. Disconnect wagmi session
     await disconnectAsync();
 
-    // 4. Force a clean re-render to avoid stale connector state
-    window.dispatchEvent(new Event("wallet-disconnected"));
+    // 3. Clear ALL wagmi persisted state
+    try {
+      const keys = Object.keys(localStorage);
+      for (const key of keys) {
+        if (key.startsWith("wagmi") || key.startsWith("wc:") || key.startsWith("walletconnect")) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch {
+      // localStorage unavailable, silently ignore
+    }
+
+    // 4. Reload page to fully reset wagmi in-memory state
+    //    Without this, connectAsync reuses the cached connector and auto-connects
+    window.location.reload();
   };
 
   const shortAddress = address
