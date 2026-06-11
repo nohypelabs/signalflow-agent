@@ -29,6 +29,10 @@ export const RATE_LIMITS = {
     windowMs: Number(process.env.SIGNALFLOW_RATE_LIMIT_BACKTEST_WINDOW_MS ?? 60_000),
     max: Number(process.env.SIGNALFLOW_RATE_LIMIT_BACKTEST_MAX ?? 20),
   },
+  chat: {
+    windowMs: Number(process.env.SIGNALFLOW_RATE_LIMIT_CHAT_WINDOW_MS ?? 60_000),
+    max: Number(process.env.SIGNALFLOW_RATE_LIMIT_CHAT_MAX ?? 20),
+  },
 } satisfies Record<string, RateLimitConfig>;
 
 export function getClientIp(req: Request): string {

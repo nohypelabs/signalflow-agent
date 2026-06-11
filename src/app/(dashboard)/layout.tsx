@@ -5,6 +5,7 @@ import { DashboardProvider, useDashboard } from "@/lib/dashboard-context";
 import { usePaperTrading } from "@/lib/hooks/usePaperTrading";
 import AppShell from "@/components/layout/AppShell";
 import DynamicTitle from "@/components/DynamicTitle";
+import SignalChatPopup from "@/components/ai/SignalChatPopup";
 
 function ShellWithProps({ children }: { children: React.ReactNode }) {
   const d = useDashboard();
@@ -54,6 +55,7 @@ function ShellWithProps({ children }: { children: React.ReactNode }) {
     >
       {children}
     </AppShell>
+    <SignalChatPopup />
     </>
   );
 }
