@@ -10,17 +10,75 @@ interface Message {
   content: string;
 }
 
+const MAX_QUESTIONS = 15;
+const STORAGE_KEY_PREFIX = 'sf-chat-';
+const COUNTER_KEY_PREFIX = 'sf-chat-count-';
+
+function getStorageKey(address: string | undefined): string {
+  return `${STORAGE_KEY_PREFIX}${address ?? 'anonymous'}`;
+}
+
+function getCounterKey(address: string | undefined): string {
+  return `${COUNTER_KEY_PREFIX}${address ?? 'anonymous'}`;
+}
+
+function loadMessages(address: string | undefined): Message[] {
+  if (typeof window === 'undefined' || !address) return [];
+  try {
+    const raw = localStorage.getItem(getStorageKey(address));
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveMessages(address: string | undefined, messages: Message[]): void {
+  if (!address) return;
+  try {
+    localStorage.setItem(getStorageKey(address), JSON.stringify(messages));
+  } catch {}
+}
+
+function loadQuestionCount(address: string | undefined): number {
+  if (typeof window === 'undefined' || !address) return 0;
+  try {
+    const raw = localStorage.getItem(getCounterKey(address));
+    return raw ? parseInt(raw, 10) || 0 : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function incrementQuestionCount(address: string | undefined): number {
+  if (!address) return 0;
+  const next = loadQuestionCount(address) + 1;
+  try {
+    localStorage.setItem(getCounterKey(address), String(next));
+  } catch {}
+  return next;
+}
+
 export default function SignalChatPopup() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [questionCount, setQuestionCount] = useState(0);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const d = useDashboard();
   const { tradingType } = useTradingType();
   const activeSignal = d.displaySignal ?? d.liveSignals[0] ?? null;
+  const walletAddress = d.isConnected ? d.address : undefined;
+
+  // Hydrate from localStorage on mount / wallet change
+  useEffect(() => {
+    setMessages(loadMessages(walletAddress));
+    setQuestionCount(loadQuestionCount(walletAddress));
+    setHydrated(true);
+  }, [walletAddress]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -36,22 +94,30 @@ export default function SignalChatPopup() {
     }
   }, [open]);
 
+  const questionsRemaining = MAX_QUESTIONS - questionCount;
+  const isLimitReached = questionCount >= MAX_QUESTIONS;
+
   const handleSend = useCallback(async () => {
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text || loading || !walletAddress || isLimitReached) return;
 
     const userMsg: Message = { role: 'user', content: text };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
+    saveMessages(walletAddress, newMessages);
     setInput('');
     setLoading(true);
+
+    // Increment counter
+    const newCount = incrementQuestionCount(walletAddress);
+    setQuestionCount(newCount);
 
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: newMessages,
+          messages: newMessages.slice(-6), // last 3 exchanges only
           context: {
             signal: activeSignal,
             liveDims: d.liveDims ?? null,
@@ -64,30 +130,39 @@ export default function SignalChatPopup() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Unknown error' }));
-        setMessages([
-          ...newMessages,
-          { role: 'assistant', content: `Error: ${err.error || 'Gagal menghubungi AI.'}` },
-        ]);
+        const errMsg: Message = { role: 'assistant', content: `Error: ${err.error || 'Failed to reach AI.'}` };
+        const updated = [...newMessages, errMsg];
+        setMessages(updated);
+        saveMessages(walletAddress, updated);
         return;
       }
 
       const { reply } = await res.json();
-      setMessages([...newMessages, { role: 'assistant', content: reply }]);
+      const assistantMsg: Message = { role: 'assistant', content: reply };
+      const updated = [...newMessages, assistantMsg];
+      setMessages(updated);
+      saveMessages(walletAddress, updated);
     } catch {
-      setMessages([
-        ...newMessages,
-        { role: 'assistant', content: 'Network error. Coba lagi.' },
-      ]);
+      const errMsg: Message = { role: 'assistant', content: 'Network error. Please try again.' };
+      const updated = [...newMessages, errMsg];
+      setMessages(updated);
+      saveMessages(walletAddress, updated);
     } finally {
       setLoading(false);
     }
-  }, [input, loading, messages, activeSignal, d.liveDims, d.signalsData, tradingType]);
+  }, [input, loading, messages, activeSignal, d.liveDims, d.signalsData, tradingType, walletAddress, isLimitReached]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleClearChat = () => {
+    if (!walletAddress) return;
+    setMessages([]);
+    saveMessages(walletAddress, []);
   };
 
   const suggestions = activeSignal
@@ -99,6 +174,9 @@ export default function SignalChatPopup() {
       ]
     : ['Select a signal to start chatting'];
 
+  // Not connected state
+  const showWalletRequired = !walletAddress;
+
   return (
     <>
       {/* Floating button */}
@@ -107,7 +185,7 @@ export default function SignalChatPopup() {
         className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-background shadow-lg shadow-accent/20 hover:shadow-accent/40 transition-shadow"
         whileTap={{ scale: 0.92 }}
         whileHover={{ scale: 1.05 }}
-        aria-label={open ? 'Close chat' : 'Open SignalFlow AI'}
+        aria-label={open ? 'Close chat' : 'Open Dora AI'}
       >
         {open ? (
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -143,15 +221,46 @@ export default function SignalChatPopup() {
                   </span>
                 )}
               </div>
-              <span className="text-[10px] text-txt-secondary">Signal consultant</span>
+              <div className="flex items-center gap-2">
+                {walletAddress && messages.length > 0 && (
+                  <button
+                    onClick={handleClearChat}
+                    className="text-[9px] text-txt-faint hover:text-txt-secondary transition-colors"
+                    title="Clear chat history"
+                  >
+                    Clear
+                  </button>
+                )}
+                <span className="text-[10px] text-txt-secondary">
+                  {walletAddress ? `${questionsRemaining} left` : ''}
+                </span>
+              </div>
             </div>
 
             {/* Messages */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[200px] max-h-[340px]">
-              {messages.length === 0 && (
+              {/* Wallet not connected */}
+              {showWalletRequired && (
+                <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+                  <div className="w-10 h-10 rounded-xl bg-inset border border-border-default flex items-center justify-center">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-txt-dim">
+                      <rect x="2" y="6" width="20" height="14" rx="2" />
+                      <path d="M2 10h20" />
+                      <circle cx="16" cy="14" r="1.5" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-txt-muted font-medium">Connect Wallet</p>
+                    <p className="text-xs text-txt-dim mt-1">Connect your wallet to chat with Dora.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Welcome + suggestions */}
+              {!showWalletRequired && messages.length === 0 && hydrated && (
                 <div className="space-y-3">
                   <p className="text-xs text-txt-secondary">
-                    Hi! I'm Dora, your signal consultant. Ask me about active signals, the engine, or how SignalFlow works.
+                    Hi! I'm Dora, your SignalFlow consultant. Ask me anything about active signals, the engine, or how our system works.
                   </p>
                   {suggestions.map((s) => (
                     <button
@@ -165,6 +274,14 @@ export default function SignalChatPopup() {
                 </div>
               )}
 
+              {/* Limit reached notice */}
+              {isLimitReached && !showWalletRequired && (
+                <div className="rounded-lg bg-hold/10 border border-hold/20 px-3 py-2 text-xs text-hold">
+                  Question limit reached ({MAX_QUESTIONS}/{MAX_QUESTIONS}). Chat history is preserved.
+                </div>
+              )}
+
+              {/* Message list */}
               {messages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div
@@ -194,26 +311,37 @@ export default function SignalChatPopup() {
 
             {/* Input */}
             <div className="border-t border-border-default p-3">
-              <div className="flex items-center gap-2">
-                <input
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={activeSignal ? `Tanya tentang ${activeSignal.pair}...` : 'Pilih signal dulu...'}
-                  disabled={!activeSignal || loading}
-                  className="flex-1 bg-inset border border-border-default rounded-lg px-3 py-2 text-xs text-txt-primary placeholder:text-txt-secondary/50 focus:outline-none focus:border-accent/50 disabled:opacity-40"
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={!input.trim() || loading || !activeSignal}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-30 transition-colors"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                  </svg>
-                </button>
-              </div>
+              {!showWalletRequired && (
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={
+                      isLimitReached
+                        ? 'Question limit reached'
+                        : activeSignal
+                        ? `Ask about ${activeSignal.pair}...`
+                        : 'Select a signal first...'
+                    }
+                    disabled={!activeSignal || loading || isLimitReached}
+                    className="flex-1 bg-inset border border-border-default rounded-lg px-3 py-2 text-xs text-txt-primary placeholder:text-txt-secondary/50 focus:outline-none focus:border-accent/50 disabled:opacity-40"
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={!input.trim() || loading || !activeSignal || isLimitReached}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-30 transition-colors"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              {showWalletRequired && (
+                <p className="text-center text-[10px] text-txt-faint">Wallet connection required</p>
+              )}
             </div>
           </motion.div>
         )}
