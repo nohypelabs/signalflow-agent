@@ -26,6 +26,7 @@ export async function fetchAISignal(
     apiKey?: string; 
     includeAI?: boolean;
     strategy?: string; // pass serialized strategy to respect engine (e.g. liquidityFlow)
+    tradingType?: TradingType | null;
   },
 ): Promise<SignalGenerationResult> {
   const body: Record<string, unknown> = { coin };
@@ -39,6 +40,9 @@ export async function fetchAISignal(
   }
   if (opts?.strategy) {
     body.strategy = opts.strategy;
+  }
+  if (opts?.tradingType) {
+    body.tradingType = opts.tradingType;
   }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 90_000); // 90s (server needs 60s for AI + buffer)

@@ -28,6 +28,7 @@ export const signalGenerationSchema = z
     apiKey: z.string().min(1).max(2_000).optional(),
     includeAI: z.boolean().optional(),
     strategy: z.string().optional(), // serialized StrategyConfig for engine selection (e.g. liquidityFlow)
+    tradingType: z.enum(["scalping", "intraday", "swing", "position"]).optional(),
   })
   .strict();
 

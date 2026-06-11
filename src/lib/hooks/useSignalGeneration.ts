@@ -5,6 +5,7 @@ import type { Signal, SignalGenerationResult, SignalDimensionDetails, SignalExec
 import type { AIConfig } from "../types/datasource";
 import type { AIError } from "../ai/providerErrors";
 import type { Provider } from "../ai-providers";
+import type { TradingType } from "../types/trading-type";
 import { getAllowedProvider } from "../ai-providers";
 import { fetchAISignal } from "../api/signals";
 import { mapAIError } from "../ai/providerErrors";
@@ -24,7 +25,7 @@ export interface AIThesis {
   execution: SignalExecution;
 }
 
-export function useSignalGeneration(aiConfig?: AIConfig) {
+export function useSignalGeneration(aiConfig?: AIConfig, tradingType?: TradingType | null) {
   const [phase, setPhase] = useState<SignalPhase>("idle");
   const [baseSignal, setBaseSignal] = useState<Signal | null>(null);
   const [aiThesis, setAiThesis] = useState<AIThesis | null>(null);
@@ -45,6 +46,7 @@ export function useSignalGeneration(aiConfig?: AIConfig) {
         apiKey?: string; 
         includeAI?: boolean;
         strategy?: string;
+        tradingType?: TradingType | null;
       } = { includeAI };
       if (includeAI && aiConfig?.apiKey) {
         const provider = getAllowedProvider(aiConfig.providerId);
@@ -54,6 +56,7 @@ export function useSignalGeneration(aiConfig?: AIConfig) {
             model: aiConfig.model || provider.defaultModel,
             apiKey: aiConfig.apiKey,
             includeAI,
+            tradingType,
           };
           console.log(`[SignalGen] Using user provider: ${provider.name} model=${opts.model}`);
         }
@@ -63,6 +66,9 @@ export function useSignalGeneration(aiConfig?: AIConfig) {
 
       if (strategySerialized) {
         opts.strategy = strategySerialized;
+      }
+      if (tradingType) {
+        opts.tradingType = tradingType;
       }
 
       setPhase(includeAI ? "generating_ai_thesis" : "computing_signal");

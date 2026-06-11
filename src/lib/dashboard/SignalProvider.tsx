@@ -29,7 +29,7 @@ export function useSignalProviderState(
     analyzing,
     generate: generateRaw,
     clear: clearAISignal,
-  } = useSignalGeneration(aiConfig);
+  } = useSignalGeneration(aiConfig, tradingType);
 
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
   const [aiCoin, setAiCoin] = useState("BTC");
