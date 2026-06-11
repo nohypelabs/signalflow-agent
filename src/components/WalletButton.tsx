@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useWallet } from "@/lib/hooks/useWallet";
 import { useSwitchChain } from "wagmi";
+import type { Connector } from "wagmi";
 import { valuechain } from "@/lib/wallet-config";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import StatusDot from "@/components/ui/StatusDot";
 import WalletDropdown from "@/components/layout/WalletDropdown";
+import WalletConnectModal from "@/components/WalletConnectModal";
 
 export default function WalletButton() {
   const {
@@ -16,22 +18,26 @@ export default function WalletButton() {
     chainId,
     connect,
     disconnect,
-    hasInjectedProvider,
-    walletConnectConfigured,
   } = useWallet();
   const { switchChainAsync } = useSwitchChain();
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const correctChain = chainId === valuechain.id;
-  const walletConnectMissing = !hasInjectedProvider && !walletConnectConfigured;
 
-  const handleConnect = async () => {
+  const handleConnectClick = () => {
+    setError(null);
+    setModalOpen(true);
+  };
+
+  const handleSelectWallet = async (connector: Connector) => {
     setConnecting(true);
     setError(null);
     try {
-      await connect();
+      await connect(connector);
+      setModalOpen(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Connection rejected");
     } finally {
@@ -50,22 +56,26 @@ export default function WalletButton() {
   // ── Disconnected ──
   if (!isConnected) {
     return (
-      <div className="flex items-center gap-2">
-        <button
-          onClick={handleConnect}
-          disabled={connecting}
-          className="cursor-pointer px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 hover:border-accent/50 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all whitespace-nowrap"
-        >
-          <span className="hidden sm:inline">{connecting ? "Connecting..." : "Connect Wallet"}</span>
-          <span className="sm:hidden">{connecting ? "..." : "Connect"}</span>
-        </button>
-        {error && <span className="text-[10px] text-error">{error}</span>}
-        {!error && walletConnectMissing && (
-          <span className="hidden md:inline text-[10px] text-hold">
-            WalletConnect env missing
-          </span>
-        )}
-      </div>
+      <>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleConnectClick}
+            disabled={connecting}
+            className="cursor-pointer px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 hover:border-accent/50 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+          >
+            <span className="hidden sm:inline">{connecting ? "Connecting..." : "Connect Wallet"}</span>
+            <span className="sm:hidden">{connecting ? "..." : "Connect"}</span>
+          </button>
+        </div>
+
+        <WalletConnectModal
+          isOpen={modalOpen}
+          onClose={() => { setModalOpen(false); setError(null); }}
+          onConnect={handleSelectWallet}
+          connecting={connecting}
+          error={error}
+        />
+      </>
     );
   }
 

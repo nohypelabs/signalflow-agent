@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import type { Connector } from "wagmi";
 
+export type { Connector } from "wagmi";
+
 export type WalletConnectionPreference = "injected" | "walletConnect";
 
 const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
@@ -67,8 +69,13 @@ export function useWallet() {
     throw new Error("No wallet connector available. Check wallet configuration.");
   };
 
-  const connect = async (preference?: WalletConnectionPreference) => {
-    await connectAsync({ connector: getConnector(preference) });
+  const connect = async (preferenceOrConnector?: WalletConnectionPreference | Connector) => {
+    // If a Connector object is passed directly (from wallet modal), use it
+    if (preferenceOrConnector && typeof preferenceOrConnector === 'object' && 'uid' in preferenceOrConnector) {
+      await connectAsync({ connector: preferenceOrConnector as Connector });
+      return;
+    }
+    await connectAsync({ connector: getConnector(preferenceOrConnector as WalletConnectionPreference | undefined) });
   };
 
   const disconnect = async () => {
