@@ -371,6 +371,8 @@ export default function SignalFlowTransparencyDashboard() {
   const activeTicker = d.tickerMap.get(pairToSodexSymbol(activePair));
   const livePrice = activeTicker ? Number.parseFloat(activeTicker.lastPx) : null;
   const liveChange = activeTicker ? Number(activeTicker.changePct) : null;
+  const liveChangeTone = liveChange === null ? "text-txt-secondary" : liveChange < 0 ? "text-sell" : "text-buy";
+  const liveMarkMeta = liveChange === null ? "Awaiting live SoDEX mark." : `${formatPct(liveChange)} vs 24h on SoDEX.`;
   const coinStats = d.historyByCoin(activeCoin);
   const selectedId = activeSignal?.id ?? null;
   const action = actionLabel(activeSignal);
@@ -457,47 +459,51 @@ export default function SignalFlowTransparencyDashboard() {
           </div>
 
           <div className="space-y-4 p-4 lg:p-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className={`text-3xl font-semibold tracking-tight lg:text-[40px] ${actionTone(activeSignal)}`}>
-                    {activeSignal ? activeSignal.pair : "Waiting for flow"}
-                  </p>
-                  <Badge variant={actionVariant(activeSignal)} size="md">{action}</Badge>
-                  {activeSignal?.quality?.status && (
-                    <Badge variant={qualityVariant(activeSignal.quality.status)} size="md">
-                      {activeSignal.quality.status}
-                    </Badge>
-                  )}
-                </div>
-                <p className="mt-2 text-sm leading-relaxed text-txt-secondary">
-                  {activeSignal?.reasoning || "Generate or select a live signal to expose the current SignalFlow decision."}
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className={`text-3xl font-semibold tracking-tight lg:text-[40px] ${actionTone(activeSignal)}`}>
+                  {activeSignal ? activeSignal.pair : "Waiting for flow"}
                 </p>
+                <Badge variant={actionVariant(activeSignal)} size="md">{action}</Badge>
+                {activeSignal?.quality?.status && (
+                  <Badge variant={qualityVariant(activeSignal.quality.status)} size="md">
+                    {activeSignal.quality.status}
+                  </Badge>
+                )}
               </div>
+              <p className="mt-2 max-w-4xl text-sm leading-relaxed text-txt-secondary">
+                {activeSignal?.reasoning || "Generate or select a live signal to expose the current SignalFlow decision."}
+              </p>
+            </div>
 
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <div className="rounded-xl border border-border-default bg-inset/35 px-3 py-2">
-                  <p className="text-[9px] uppercase text-txt-secondary">Confidence</p>
-                  <p className="mt-1 text-sm font-mono font-semibold text-txt-primary">
-                    {activeSignal ? `${Math.round(activeSignal.confidence)}%` : "--"}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border-default bg-inset/35 px-3 py-2">
-                  <p className="text-[9px] uppercase text-txt-secondary">Live mark</p>
-                  <p className="mt-1 text-sm font-mono font-semibold text-txt-primary">{formatPrice(livePrice)}</p>
-                </div>
-                <div className="rounded-xl border border-border-default bg-inset/35 px-3 py-2">
-                  <p className="text-[9px] uppercase text-txt-secondary">Regime</p>
-                  <p className="mt-1 text-xs font-semibold text-txt-primary">
-                    {activeSignal?.regime?.replaceAll("_", " ") || "--"}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border-default bg-inset/35 px-3 py-2">
-                  <p className="text-[9px] uppercase text-txt-secondary">Accuracy</p>
-                  <p className="mt-1 text-xs font-semibold text-txt-primary">
-                    {coinStats.accuracy === null ? "--" : `${coinStats.accuracy.toFixed(1)}%`}
-                  </p>
-                </div>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-2xl border border-border-default bg-inset/35 px-4 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-txt-secondary">Confidence</p>
+                <p className="mt-2 text-2xl font-mono font-semibold text-txt-primary">
+                  {activeSignal ? `${Math.round(activeSignal.confidence)}%` : "--"}
+                </p>
+                <p className="mt-1 text-[11px] text-txt-secondary">Current engine conviction on the active setup.</p>
+              </div>
+              <div className="rounded-2xl border border-border-default bg-inset/35 px-4 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-txt-secondary">Live mark</p>
+                <p className="mt-2 text-2xl font-mono font-semibold text-txt-primary">{formatPrice(livePrice)}</p>
+                <p className={`mt-1 text-[11px] ${liveChangeTone}`}>{liveMarkMeta}</p>
+              </div>
+              <div className="rounded-2xl border border-border-default bg-inset/35 px-4 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-txt-secondary">Regime</p>
+                <p className="mt-2 text-base font-semibold text-txt-primary">
+                  {activeSignal?.regime?.replaceAll("_", " ") || "--"}
+                </p>
+                <p className="mt-1 text-[11px] text-txt-secondary">Market state attached to this signal output.</p>
+              </div>
+              <div className="rounded-2xl border border-border-default bg-inset/35 px-4 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-txt-secondary">Accuracy</p>
+                <p className="mt-2 text-2xl font-mono font-semibold text-txt-primary">
+                  {coinStats.accuracy === null ? "--" : `${coinStats.accuracy.toFixed(1)}%`}
+                </p>
+                <p className="mt-1 text-[11px] text-txt-secondary">
+                  {coinStats.total > 0 ? `${coinStats.total} resolved ${activeCoin} signals` : "No resolved history yet"}
+                </p>
               </div>
             </div>
 
@@ -585,7 +591,7 @@ export default function SignalFlowTransparencyDashboard() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <EvidenceFlow signal={activeSignal} liveDims={activeDims} />
+        <EvidenceFlow signal={activeSignal} liveDims={activeDims} sourceFlags={d.signalsData?.sources} />
         <ExecutionHandoffPanel
           signal={activeSignal}
           tradingHref={tradingHref}
