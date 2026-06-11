@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '@/lib/dashboard-context';
 import { useTradingType } from '@/lib/hooks/useTradingType';
+import TypewriterText from './TypewriterText';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -68,6 +69,7 @@ export default function SignalChatPopup() {
   const [hydrated, setHydrated] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [hovering, setHovering] = useState(false);
+  const [typingIndex, setTypingIndex] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -165,6 +167,7 @@ export default function SignalChatPopup() {
       const { reply } = await res.json();
       const assistantMsg: Message = { role: 'assistant', content: reply };
       const updated = [...newMessages, assistantMsg];
+      setTypingIndex(updated.length - 1); // trigger typewriter for this message
       setMessages(updated);
       saveMessages(walletAddress, updated);
     } catch {
@@ -388,7 +391,15 @@ export default function SignalChatPopup() {
                         : 'bg-inset text-txt-secondary'
                     }`}
                   >
-                    {msg.content}
+                    {msg.role === 'assistant' && i === typingIndex ? (
+                      <TypewriterText
+                        text={msg.content}
+                        speed={40}
+                        onComplete={() => setTypingIndex(null)}
+                      />
+                    ) : (
+                      msg.content
+                    )}
                   </div>
                 </div>
               ))}
