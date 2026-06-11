@@ -608,14 +608,14 @@ export default function TradingChart({
 
   // Update data when klines change
   useEffect(() => {
-    if (!candleRef.current || !volumeRef.current || !klines || klines.length === 0) return;
+    if (!chartRef.current || !candleRef.current || !volumeRef.current || !klines || klines.length === 0) return;
 
     const candles = klines.map(klineToCandle);
     const volumes = klines.map(klineToVolume);
 
     // Safety: ensure ascending order (normalizeKlines should handle this, but belt-and-suspenders)
     const sortedCandles = [...candles].sort((a, b) => (a.time as number) - (b.time as number));
-    candleRef.current.setData(sortedCandles);
+    try { candleRef.current.setData(sortedCandles); } catch { return; }
 
     // Area series data (close prices)
     const areaData = klines.map((k) => ({
@@ -624,7 +624,7 @@ export default function TradingChart({
     }));
     const sortedAreaData = [...areaData].sort((a, b) => (a.time as number) - (b.time as number));
     if (areaSeriesRef.current) {
-      areaSeriesRef.current.setData(sortedAreaData as AreaData<Time>[]);
+      try { areaSeriesRef.current.setData(sortedAreaData as AreaData<Time>[]); } catch {}
     }
 
     // EMA indicators data (if active in dropdown)
@@ -665,8 +665,10 @@ export default function TradingChart({
 
     // Volume visibility
     const sortedVolumes = [...volumes].sort((a, b) => (a.time as number) - (b.time as number));
-    volumeRef.current.setData(sortedVolumes);
-    volumeRef.current.applyOptions({ visible: showVolume });
+    try {
+      volumeRef.current.setData(sortedVolumes);
+      volumeRef.current.applyOptions({ visible: showVolume });
+    } catch {}
 
     // Remove old marker lines
     markerLinesRef.current.forEach((line) => {
@@ -697,50 +699,56 @@ export default function TradingChart({
         .sort((a, b) => (a.time as number) - (b.time as number));
 
       if (markers.length > 0 && markersPluginRef.current) {
-        markersPluginRef.current.setMarkers(markers);
+        try { markersPluginRef.current.setMarkers(markers); } catch {}
       }
     } else if (markersPluginRef.current) {
-      markersPluginRef.current.setMarkers([]);
+      try { markersPluginRef.current.setMarkers([]); } catch {}
     }
 
     // Add entry / TP / SL lines for latest signal — only when showTradePlan is on
-    if (showTradePlan && latestSignal?.execution) {
+    if (showTradePlan && latestSignal?.execution && candleRef.current) {
       const ex = latestSignal.execution;
 
-      if (ex.entry > 0 && candleRef.current) {
-        const line = candleRef.current.createPriceLine({
-          price: ex.entry,
-          color: CHART_COLORS.entryLine,
-          lineWidth: 1,
-          lineStyle: 2 as LineStyle,
-          axisLabelVisible: true,
-          title: "Entry",
-        });
-        markerLinesRef.current.push(line);
+      if (typeof ex.entry === "number" && Number.isFinite(ex.entry) && ex.entry > 0) {
+        try {
+          const line = candleRef.current.createPriceLine({
+            price: ex.entry,
+            color: CHART_COLORS.entryLine,
+            lineWidth: 1,
+            lineStyle: 2 as LineStyle,
+            axisLabelVisible: true,
+            title: "Entry",
+          });
+          markerLinesRef.current.push(line);
+        } catch {}
       }
 
-      if (ex.takeProfit > 0 && candleRef.current) {
-        const line = candleRef.current.createPriceLine({
-          price: ex.takeProfit,
-          color: CHART_COLORS.tpLine,
-          lineWidth: 1,
-          lineStyle: 2 as LineStyle,
-          axisLabelVisible: true,
-          title: "TP",
-        });
-        markerLinesRef.current.push(line);
+      if (typeof ex.takeProfit === "number" && Number.isFinite(ex.takeProfit) && ex.takeProfit > 0) {
+        try {
+          const line = candleRef.current.createPriceLine({
+            price: ex.takeProfit,
+            color: CHART_COLORS.tpLine,
+            lineWidth: 1,
+            lineStyle: 2 as LineStyle,
+            axisLabelVisible: true,
+            title: "TP",
+          });
+          markerLinesRef.current.push(line);
+        } catch {}
       }
 
-      if (ex.stopLoss > 0 && candleRef.current) {
-        const line = candleRef.current.createPriceLine({
-          price: ex.stopLoss,
-          color: CHART_COLORS.slLine,
-          lineWidth: 1,
-          lineStyle: 2 as LineStyle,
-          axisLabelVisible: true,
-          title: "SL",
-        });
-        markerLinesRef.current.push(line);
+      if (typeof ex.stopLoss === "number" && Number.isFinite(ex.stopLoss) && ex.stopLoss > 0) {
+        try {
+          const line = candleRef.current.createPriceLine({
+            price: ex.stopLoss,
+            color: CHART_COLORS.slLine,
+            lineWidth: 1,
+            lineStyle: 2 as LineStyle,
+            axisLabelVisible: true,
+            title: "SL",
+          });
+          markerLinesRef.current.push(line);
+        } catch {}
       }
     }
 
