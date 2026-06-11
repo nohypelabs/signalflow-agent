@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useWallet } from "@/lib/hooks/useWallet";
+import { useAccount, useDisconnect } from "wagmi";
 import { useSwitchChain } from "wagmi";
-import { valuechain } from "@/lib/wallet-config";
+import { valuechain } from "@/lib/valuechain";
 import { parseApiResponse } from "@/lib/api/client";
 import type { SoDEXBalance } from "@/lib/sodex-types";
 import StatusDot from "@/components/ui/StatusDot";
@@ -21,7 +21,8 @@ interface Props {
 
 export default function WalletDropdown({ onClose }: Props) {
   const router = useRouter();
-  const { address, isConnected, chainId, disconnect } = useWallet();
+  const { address, isConnected, chainId } = useAccount();
+  const { disconnect } = useDisconnect();
   const { switchChainAsync } = useSwitchChain();
   const panelRef = useRef<HTMLDivElement>(null);
 

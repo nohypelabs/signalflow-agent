@@ -23,7 +23,7 @@ import {
   type SoDEXFundingTransfer,
 } from "@/lib/sodex-funding";
 import type { SoDEXPerpsPosition } from "@/lib/sodex-perps";
-import { valuechain } from "@/lib/wallet-config";
+import { valuechain } from "@/lib/valuechain";
 
 interface PerpsAccountStatus {
   positions?: SoDEXPerpsPosition[];

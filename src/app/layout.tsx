@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "@rainbow-me/rainbowkit/styles.css";
 import Providers from "./providers";
 import ServiceWorkerCleanup from "@/components/ServiceWorkerCleanup";
 import CacheBuster from "@/components/CacheBuster";

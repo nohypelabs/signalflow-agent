@@ -44,8 +44,7 @@ export interface DashboardState {
   shortAddress: string | undefined;
   isConnected: boolean;
   chainId: number | undefined;
-  connectWallet: () => Promise<void>;
-  disconnectWallet: () => Promise<void>;
+  disconnectWallet: () => void;
 
   // Orders
   orders: SoDEXOrder[];

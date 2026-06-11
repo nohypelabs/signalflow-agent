@@ -1,23 +1,20 @@
 "use client";
 
-import { useWallet } from "../hooks/useWallet";
+import { useAccount, useDisconnect } from "wagmi";
 
 export function useWalletProviderState() {
-  const {
-    address,
-    shortAddress,
-    isConnected,
-    chainId,
-    connect: connectWallet,
-    disconnect: disconnectWallet,
-  } = useWallet();
+  const { address, isConnected, chainId } = useAccount();
+  const { disconnect } = useDisconnect();
+
+  const shortAddress = address
+    ? `${address.slice(0, 6)}...${address.slice(-4)}`
+    : undefined;
 
   return {
     address,
     shortAddress,
     isConnected,
     chainId,
-    connectWallet,
-    disconnectWallet,
+    disconnectWallet: disconnect,
   };
 }

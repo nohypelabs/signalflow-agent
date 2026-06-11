@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { BrainCircuit, Database, ExternalLink, Route, ShieldCheck, Workflow } from "lucide-react";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import type { Signal } from "@/lib/types/signal";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -202,13 +203,12 @@ function ExecutionHandoffPanel({
   signal,
   tradingHref,
   isConnected,
-  onConnect,
 }: {
   signal: Signal | null;
   tradingHref: string;
   isConnected: boolean;
-  onConnect: () => Promise<void>;
 }) {
+  const { openConnectModal } = useConnectModal();
   return (
     <Card variant="default" padding="none" className="overflow-hidden rounded-xl">
       <div className="border-b border-border-default px-4 py-3">
@@ -271,7 +271,7 @@ function ExecutionHandoffPanel({
           {!isConnected ? (
             <button
               type="button"
-              onClick={() => { void onConnect(); }}
+              onClick={() => openConnectModal?.()}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-border-default bg-background/70 px-3 py-2 text-xs font-semibold text-txt-primary transition-colors hover:border-border-muted hover:bg-elevated/30"
             >
               Connect Wallet
@@ -361,6 +361,7 @@ function LogicTracePanel({ signal, signalAccuracy }: { signal: Signal | null; si
 
 export default function SignalFlowTransparencyDashboard() {
   const d = useDashboard();
+  const { openConnectModal } = useConnectModal();
   const metrics = useDashboardMetrics(d.tickers, d.liveSignals, d.marketError, d.signalsError);
 
   const pairSignal = d.liveSignals.find((signal) => normalizePair(signal.pair) === normalizePair(d.selectedPair)) ?? null;
@@ -596,7 +597,6 @@ export default function SignalFlowTransparencyDashboard() {
           signal={activeSignal}
           tradingHref={tradingHref}
           isConnected={d.isConnected}
-          onConnect={d.connectWallet}
         />
       </section>
 
