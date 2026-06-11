@@ -13,6 +13,7 @@ interface Message {
 const MAX_QUESTIONS = 15;
 const STORAGE_KEY_PREFIX = 'sf-chat-';
 const COUNTER_KEY_PREFIX = 'sf-chat-count-';
+const HINT_DISMISSED_KEY = 'sf-chat-hint-dismissed';
 
 function getStorageKey(address: string | undefined): string {
   return `${STORAGE_KEY_PREFIX}${address ?? 'anonymous'}`;
@@ -65,6 +66,8 @@ export default function SignalChatPopup() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const [hovering, setHovering] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -79,6 +82,28 @@ export default function SignalChatPopup() {
     setQuestionCount(loadQuestionCount(walletAddress));
     setHydrated(true);
   }, [walletAddress]);
+
+  // Auto-show hint popup after 3s if never dismissed (one-time draw attention)
+  useEffect(() => {
+    if (open) { setShowHint(false); return; }
+    try {
+      if (localStorage.getItem(HINT_DISMISSED_KEY)) return;
+    } catch {}
+    const timer = setTimeout(() => setShowHint(true), 3000);
+    return () => clearTimeout(timer);
+  }, [open]);
+
+  // Auto-hide hint after 8s if not interacted
+  useEffect(() => {
+    if (!showHint) return;
+    const timer = setTimeout(() => setShowHint(false), 8000);
+    return () => clearTimeout(timer);
+  }, [showHint]);
+
+  const dismissHint = useCallback(() => {
+    setShowHint(false);
+    try { localStorage.setItem(HINT_DISMISSED_KEY, '1'); } catch {}
+  }, []);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -179,25 +204,97 @@ export default function SignalChatPopup() {
 
   return (
     <>
-      {/* Floating button */}
-      <motion.button
-        onClick={() => setOpen(!open)}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-background shadow-lg shadow-accent/20 hover:shadow-accent/40 transition-shadow"
-        whileTap={{ scale: 0.92 }}
-        whileHover={{ scale: 1.05 }}
-        aria-label={open ? 'Close chat' : 'Open Dora AI'}
-      >
-        {open ? (
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <line x1="4" y1="4" x2="16" y2="16" />
-            <line x1="16" y1="4" x2="4" y2="16" />
-          </svg>
-        ) : (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
+      {/* Auto-show hint popup (first visit) */}
+      <AnimatePresence>
+        {showHint && !open && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.9 }}
+            transition={{ duration: 0.3, type: 'spring', stiffness: 300, damping: 25 }}
+            className="fixed bottom-[88px] right-6 z-50 w-[260px] rounded-xl border border-accent/30 bg-card shadow-xl shadow-accent/10 overflow-hidden"
+          >
+            <div className="p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-lg bg-accent/15 flex items-center justify-center">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </div>
+                  <span className="text-xs font-semibold text-txt-primary">Ask Dora AI</span>
+                </div>
+                <button
+                  onClick={dismissHint}
+                  className="text-txt-faint hover:text-txt-secondary transition-colors p-0.5"
+                >
+                  <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <line x1="4" y1="4" x2="16" y2="16" />
+                    <line x1="16" y1="4" x2="4" y2="16" />
+                  </svg>
+                </button>
+              </div>
+              <p className="text-[11px] text-txt-secondary mt-2 leading-relaxed">
+                Get instant signal analysis from our AI consultant. Ask about any active signal, the engine, or trading strategy.
+              </p>
+              <button
+                onClick={() => { dismissHint(); setOpen(true); }}
+                className="mt-2 w-full text-center text-[11px] font-medium text-accent bg-accent/10 hover:bg-accent/20 rounded-lg py-1.5 transition-colors"
+              >
+                Try it now
+              </button>
+            </div>
+            {/* Arrow pointing to button */}
+            <div className="absolute -bottom-1.5 right-8 w-3 h-3 rotate-45 border-r border-b border-accent/30 bg-card" />
+          </motion.div>
         )}
-      </motion.button>
+      </AnimatePresence>
+
+      {/* Floating button with hover tooltip */}
+      <div
+        className="fixed bottom-6 right-6 z-50"
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+      >
+        {/* Hover tooltip */}
+        <AnimatePresence>
+          {hovering && !open && !showHint && (
+            <motion.div
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 5 }}
+              transition={{ duration: 0.15 }}
+              className="absolute -top-10 right-0 whitespace-nowrap rounded-lg bg-elevated border border-border-default px-2.5 py-1 text-[11px] text-txt-primary shadow-lg"
+            >
+              Ask Dora AI
+              <div className="absolute -bottom-1 right-5 w-2 h-2 rotate-45 bg-elevated border-r border-b border-border-default" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <motion.button
+          onClick={() => { setOpen(!open); dismissHint(); }}
+          className="relative flex h-14 w-14 items-center justify-center rounded-full bg-accent text-background shadow-lg shadow-accent/20 hover:shadow-accent/40 transition-shadow"
+          whileTap={{ scale: 0.92 }}
+          whileHover={{ scale: 1.05 }}
+          aria-label={open ? 'Close chat' : 'Ask Dora AI'}
+        >
+          {/* Pulse ring animation */}
+          {!open && (
+            <span className="absolute inset-0 rounded-full bg-accent/30 animate-ping" style={{ animationDuration: '2s' }} />
+          )}
+          {open ? (
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="4" y1="4" x2="16" y2="16" />
+              <line x1="16" y1="4" x2="4" y2="16" />
+            </svg>
+          ) : (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          )}
+        </motion.button>
+      </div>
 
       {/* Chat panel */}
       <AnimatePresence>
