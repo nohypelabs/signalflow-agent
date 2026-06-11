@@ -1,7 +1,7 @@
 "use client";
 
-import SignalFlowCommandCenter from "@/components/dashboard/command-center/SignalFlowCommandCenter";
+import SignalFlowTransparencyDashboard from "@/components/dashboard/SignalFlowTransparencyDashboard";
 
 export default function DashboardPage() {
-  return <SignalFlowCommandCenter />;
+  return <SignalFlowTransparencyDashboard />;
 }
