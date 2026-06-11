@@ -92,11 +92,12 @@ export default function SignalChatPopup() {
 
   const suggestions = activeSignal
     ? [
-        `Kenapa ${activeSignal.pair} ${activeSignal.action}?`,
-        'Jelasin dimension scores-nya',
-        'Ada kontradiksi antar source?',
+        `Why is ${activeSignal.pair} ${activeSignal.action}?`,
+        'Explain the confluence factors',
+        'What is Confluence V3?',
+        'Any contradictions between sources?',
       ]
-    : ['Pilih signal dulu untuk mulai chat'];
+    : ['Select a signal to start chatting'];
 
   return (
     <>
@@ -134,14 +135,15 @@ export default function SignalChatPopup() {
             <div className="flex items-center justify-between gap-2 border-b border-border-default px-4 py-3">
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
-                <span className="text-sm font-semibold text-txt-primary">SignalFlow AI</span>
+                <span className="text-sm font-semibold text-txt-primary">Dora</span>
+                <span className="text-[9px] text-accent/70 bg-accent/10 px-1.5 py-0.5 rounded">SignalFlow AI</span>
                 {activeSignal && (
                   <span className="text-[10px] text-txt-secondary bg-inset px-1.5 py-0.5 rounded">
                     {activeSignal.pair}
                   </span>
                 )}
               </div>
-              <span className="text-[10px] text-txt-secondary">Konsultan signal</span>
+              <span className="text-[10px] text-txt-secondary">Signal consultant</span>
             </div>
 
             {/* Messages */}
@@ -149,7 +151,7 @@ export default function SignalChatPopup() {
               {messages.length === 0 && (
                 <div className="space-y-3">
                   <p className="text-xs text-txt-secondary">
-                    Tanya apa aja soal signal yang aktif. AI akan jawab berdasarkan data real-time.
+                    Hi! I'm Dora, your signal consultant. Ask me about active signals, the engine, or how SignalFlow works.
                   </p>
                   {suggestions.map((s) => (
                     <button
