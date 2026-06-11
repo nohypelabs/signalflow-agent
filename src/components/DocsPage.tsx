@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const sections = [
   "Overview",
   "Getting Started",
   "Architecture",
   "Signal Engine",
+  "Confluence V3",
   "AI Agents",
   "Risk Engine",
   "Data Pipeline",
@@ -17,8 +18,55 @@ const sections = [
   "Roadmap",
 ];
 
+const sectionHashes: Record<string, string> = {
+  Overview: "overview",
+  "Getting Started": "getting-started",
+  Architecture: "architecture",
+  "Signal Engine": "signal-engine",
+  "Confluence V3": "confluence-v3",
+  "AI Agents": "ai-agents",
+  "Risk Engine": "risk-engine",
+  "Data Pipeline": "data-pipeline",
+  "Trading & Execution": "trading-execution",
+  "Wallet Infrastructure": "wallet-infrastructure",
+  "API Reference": "api-reference",
+  Deployment: "deployment",
+  Roadmap: "roadmap",
+};
+
+function sectionFromHash(hash: string): string | null {
+  const normalized = hash.replace(/^#/, "");
+  return sections.find((section) => sectionHashes[section] === normalized) ?? null;
+}
+
 export default function DocsPage() {
   const [active, setActive] = useState("Overview");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const syncFromHash = () => {
+      const section = sectionFromHash(window.location.hash);
+      if (section) {
+        setActive(section);
+      }
+    };
+
+    syncFromHash();
+    window.addEventListener("hashchange", syncFromHash);
+    return () => window.removeEventListener("hashchange", syncFromHash);
+  }, []);
+
+  function handleSectionSelect(section: string) {
+    setActive(section);
+
+    if (typeof window === "undefined") return;
+
+    const hash = sectionHashes[section];
+    const nextUrl = `${window.location.pathname}${window.location.search}${hash ? `#${hash}` : ""}`;
+    window.history.replaceState(null, "", nextUrl);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-full">
@@ -30,7 +78,7 @@ export default function DocsPage() {
         {sections.map((s) => (
           <button
             key={s}
-            onClick={() => setActive(s)}
+            onClick={() => handleSectionSelect(s)}
             className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors mb-0.5 ${
               active === s
                 ? "text-white font-semibold bg-accent-muted border-l-[3px] border-[#00E5A8]"
@@ -48,6 +96,7 @@ export default function DocsPage() {
         {active === "Getting Started" && <GettingStarted />}
         {active === "Architecture" && <Architecture />}
         {active === "Signal Engine" && <SignalEngine />}
+        {active === "Confluence V3" && <ConfluenceV3 />}
         {active === "AI Agents" && <AIAgents />}
         {active === "Risk Engine" && <RiskEngine />}
         {active === "Data Pipeline" && <DataPipeline />}
@@ -516,6 +565,200 @@ TP/SL = ATR-based: BUY TP = price × (1 + 2×ATR%), SL = price × (1 - ATR%)`}</
         which data sources are being downweighted due to outlier behavior. The overall score and weight
         breakdown are visible for BTC, ETH, and SOL.
       </p>
+    </div>
+  );
+}
+
+function ConfluenceV3() {
+  return (
+    <div className="prose prose-invert max-w-none space-y-6">
+      <h2 className="text-2xl font-bold text-white">Confluence V3</h2>
+      <p className="text-[#aaaacc]">
+        Confluence V3 is the deterministic core of SignalFlow. Before any AI thesis is generated,
+        this engine fuses macro context from SoSoValue with live TA and microstructure from SoDEX,
+        then produces a structured signal object with action, confidence, setup, and execution levels.
+      </p>
+
+      <h3 className="text-lg font-bold text-white mt-6">What It Solves</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+        <RiskCard
+          title="Signal before story"
+          desc="The base decision is born from code and live data first. AI comes after the engine, not before it."
+        />
+        <RiskCard
+          title="Macro + TA + micro"
+          desc="ETF flows, macro events, treasury activity, candles, order flow, depth, and funding are evaluated in one path."
+        />
+        <RiskCard
+          title="Auditable output"
+          desc="Every signal carries factor scores, setup evidence, framework trace, policy status, and execution fields."
+        />
+      </div>
+
+      <h3 className="text-lg font-bold text-white mt-8">Birth Flow</h3>
+      <CodeBlock>{`/api/signals
+  -> gather SoSoValue context
+  -> gather SoDEX klines + orderbook + recent trades + perps
+  -> generateSignalsV2(...)
+  -> applyConfluenceStrategyPolicy(...)
+  -> return Signal[]
+
+/api/signals/analyze
+  -> run the same fused backend path for one coin
+  -> build AI prompt from baseSignal factors/setup/framework
+  -> AI may enrich or challenge, but baseSignal stays the source of truth`}</CodeBlock>
+
+      <h3 className="text-lg font-bold text-white mt-8">Stage 1: Input Collection</h3>
+      <table className="w-full text-sm mt-3 border-collapse">
+        <thead>
+          <tr className="border-b border-border-default text-txt-muted text-left">
+            <th className="py-2 pr-4">Layer</th>
+            <th className="py-2 pr-4">Source</th>
+            <th className="py-2">What enters the engine</th>
+          </tr>
+        </thead>
+        <tbody>
+          {[
+            ["Macro context", "SoSoValue", "ETF summary, hot news, macro calendar, BTC treasury holders, purchase history, market snapshots"],
+            ["Price structure", "SoDEX", "Primary klines plus confluence timeframe klines for the supported pairs"],
+            ["Microstructure", "SoDEX", "Orderbook imbalance, recent trade flow, perp ticker context"],
+            ["Funding divergence", "Hyperliquid + SoDEX", "Cross-venue funding read used to detect crowded long/short positioning"],
+            ["Policy input", "/strategy-config", "Engine choice, min confidence, position cap, and optional typeProfiles"],
+          ].map(([layer, source, desc]) => (
+            <tr key={layer} className="border-b border-[#1E293B20]">
+              <td className="py-2 pr-4 text-white font-semibold">{layer}</td>
+              <td className="py-2 pr-4 font-mono text-accent text-xs">{source}</td>
+              <td className="py-2 text-[#aaaacc] text-xs">{desc}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3 className="text-lg font-bold text-white mt-8">Stage 2: Regime Detection</h3>
+      <p className="text-[#aaaacc]">
+        Each pair needs enough kline history first. The engine normalizes candles, computes EMA 20/50/200,
+        ADX, ATR, and Bollinger width, then classifies the market into one regime:
+        <strong className="text-white"> TRENDING_UP</strong>, <strong className="text-white">TRENDING_DOWN</strong>,
+        <strong className="text-white"> RANGING</strong>, <strong className="text-white">VOLATILE</strong>, or
+        <strong className="text-white"> BREAKOUT</strong>.
+      </p>
+      <CodeBlock>{`normalizeKlines(klines)
+  -> ema20 / ema50 / ema200
+  -> adx(highs, lows, closes, 14)
+  -> atr(highs, lows, closes, 14)
+  -> bollingerBands(closes, 20, 2)
+  -> detectRegime(...)`}</CodeBlock>
+
+      <h3 className="text-lg font-bold text-white mt-8">Stage 3: Factor Scoring</h3>
+      <p className="text-[#aaaacc]">
+        Confluence V3 scores both slower structural factors and faster market-pressure factors.
+        Each factor ends up as a 0-100 score plus a textual explanation.
+      </p>
+      <table className="w-full text-sm mt-3 border-collapse">
+        <thead>
+          <tr className="border-b border-border-default text-txt-muted text-left">
+            <th className="py-2 pr-4">Factor</th>
+            <th className="py-2 pr-4">Family</th>
+            <th className="py-2">Meaning</th>
+          </tr>
+        </thead>
+        <tbody>
+          {[
+            ["TREND", "TA", "EMA alignment and directional strength"],
+            ["MOMENTUM", "TA", "Impulse and continuation pressure in recent closes"],
+            ["VOLATILITY", "TA", "Expansion or compression through ATR and band behavior"],
+            ["VOLUME", "TA", "Participation quality behind the move"],
+            ["STRUCTURE", "TA", "Support, resistance, breakout, and invalidation geometry"],
+            ["ORDER_FLOW", "Micro", "Recent trade delta and buy/sell pressure"],
+            ["DEPTH", "Micro", "Orderbook imbalance, spread quality, and top-level depth"],
+            ["FUNDING", "Micro", "Crowded long/short posture from perp funding context"],
+          ].map(([factor, family, meaning]) => (
+            <tr key={factor} className="border-b border-[#1E293B20]">
+              <td className="py-2 pr-4 text-white font-semibold">{factor}</td>
+              <td className="py-2 pr-4 text-[#aaaacc]">{family}</td>
+              <td className="py-2 text-[#aaaacc] text-xs">{meaning}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3 className="text-lg font-bold text-white mt-8">Stage 4: Trading-Type Weighting</h3>
+      <p className="text-[#aaaacc]">
+        If a trading type is active, Confluence V3 applies the Thinking Framework weights from
+        <code className="text-accent bg-[#1E293B] px-1 rounded"> /strategy-config</code>.
+        That reweights the core TA factors for scalping, intraday, swing, or position logic.
+        Microstructure factors stay attached with their own modest native weights so they sharpen,
+        but do not replace, the broader structure call.
+      </p>
+
+      <h3 className="text-lg font-bold text-white mt-8">Stage 5: Confluence to Action</h3>
+      <p className="text-[#aaaacc]">
+        After the weighted factor stack is built, the engine computes the final confluence score,
+        classifies direction, and applies internal guardrails before the signal can become actionable.
+      </p>
+      <CodeBlock>{`confluence = calculateConfluence(factors)
+rawAction = classifySignal(confluence)
+guardedAction = applyCoverageGuardrail(confluence, rawAction)
+
+if (!passesFilter(confluence, guardedAction)) {
+  action = "HOLD"
+}`}</CodeBlock>
+
+      <h3 className="text-lg font-bold text-white mt-8">Stage 6: Setup, Quality, and Policy Gate</h3>
+      <ol className="text-[#aaaacc] space-y-2 ml-4">
+        <li><strong className="text-white">Setup labeling</strong> via <code className="text-accent bg-[#1E293B] px-1 rounded">classifyTradeSetup</code> creates a human-readable thesis and invalidation path.</li>
+        <li><strong className="text-white">Quality calibration</strong> via <code className="text-accent bg-[#1E293B] px-1 rounded">calibrateSignalQuality</code> adjusts confidence from historical lesson logic.</li>
+        <li><strong className="text-white">Policy enforcement</strong> via <code className="text-accent bg-[#1E293B] px-1 rounded">applyConfluenceStrategyPolicy</code> applies the active minimum confidence and max position rules from <code className="text-accent bg-[#1E293B] px-1 rounded">/strategy-config</code>.</li>
+      </ol>
+
+      <div className="bg-inset border border-border-default rounded-lg p-4 mt-4 font-mono text-xs text-[#aaaacc]">
+        <pre className="whitespace-pre-wrap m-0">{`If confidence < strategy.minConfidence:
+  action -> HOLD
+  confidence -> capped lower
+  reasoning -> prepends policy blocked note
+  execution.positionSize -> uses strategy maxPositionSize`}</pre>
+      </div>
+
+      <h3 className="text-lg font-bold text-white mt-8">Stage 7: Signal Is Born</h3>
+      <p className="text-[#aaaacc]">
+        A valid Confluence V3 signal returns as a full object, not just a label. This is what the dashboard,
+        signals page, and AI analyst layer inherit.
+      </p>
+      <CodeBlock>{`{
+  id,
+  pair,
+  action,
+  actionV2,
+  confidence,
+  regime,
+  confluence,
+  factors,
+  setup,
+  quality,
+  dimensions,
+  dimensionDetails,
+  execution,
+  sources,
+  frameworkApplication
+}`}</CodeBlock>
+
+      <h3 className="text-lg font-bold text-white mt-8">Where AI Fits</h3>
+      <p className="text-[#aaaacc]">
+        AI does not create Confluence V3. It reads the output after the engine is done. On
+        <code className="text-accent bg-[#1E293B] px-1 rounded"> /api/signals/analyze</code>,
+        the prompt is built from the live <strong className="text-white">baseSignal</strong>:
+        action, confidence, factors, setup evidence, framework trace, and execution plan.
+        That keeps the AI analyst aligned with the same backend truth users see on the dashboard.
+      </p>
+
+      <h3 className="text-lg font-bold text-white mt-8">Core Files</h3>
+      <ul className="text-[#aaaacc] space-y-2 ml-4">
+        <li><code className="text-accent bg-[#1E293B] px-1 rounded">src/app/api/signals/route.ts</code> — live multi-pair fused signal pipeline</li>
+        <li><code className="text-accent bg-[#1E293B] px-1 rounded">src/lib/strategy/signal-engine-v2/signal-builder.ts</code> — Confluence V3 assembly and signal creation</li>
+        <li><code className="text-accent bg-[#1E293B] px-1 rounded">src/lib/strategy/signal-engine-v2/score-engine.ts</code> — factor scoring and confluence math</li>
+        <li><code className="text-accent bg-[#1E293B] px-1 rounded">src/lib/strategy/order-flow-engine.ts</code> — trade flow, depth, and funding reads</li>
+        <li><code className="text-accent bg-[#1E293B] px-1 rounded">src/lib/strategy/policy-engine.ts</code> — policy gate after signal generation</li>
+      </ul>
     </div>
   );
 }
@@ -1467,16 +1710,16 @@ function Roadmap() {
         ))}
       </ul>
 
-      <h3 className="text-lg font-bold text-white mt-8">Addressing Wave 1 Judge Feedback (for Wave 2)</h3>
+      <h3 className="text-lg font-bold text-white mt-8">Wave 2 Verification Upgrades</h3>
       <p className="text-[#aaaacc] text-sm">
-        Wave 1 feedback focused on: mock data, unverifiable metrics, lack of live SoSoValue/SoDEX end-to-end, weak strategy validation, and similarity to other agents. 
-        In Wave 2 we delivered:
+        Earlier review focused on mock data, unverifiable metrics, missing live SoSoValue and SoDEX continuity,
+        weak strategy validation, and shallow differentiation. In Wave 2 we delivered:
       </p>
       <ul className="text-[#aaaacc] text-xs ml-4 mt-2 space-y-1">
         <li>✅ Zero mock data — 100% live SoSoValue + SoDEX in all signals and engine.</li>
         <li>✅ Verifiable backend: full strategy lib (V2 engine, Thinking Framework) in public repo with API routes.</li>
-        <li>✅ Agent Thinking Framework: explicit 5-principle analytical layer for adaptive profiles (auditable "why" for weights, regime modulation, outlier caps). Directly addresses "logic/workflow" and "differentiation".</li>
-        <li>✅ Live framework trace in signals (SignalCard "FW" badge, AnalysisDrawer shows principles + note).</li>
+        <li>✅ Agent Thinking Framework: explicit 5-principle analytical layer for adaptive profiles, including visible reasons for weights, regime modulation, and outlier caps.</li>
+        <li>✅ Live framework trace in signals with the FW badge and analysis drawer note.</li>
         <li>✅ End-to-end live flow: SoSoValue data → Framework-applied V2 engine → real numbers signal → execution plan (paper + SoDEX path).</li>
         <li>✅ Validation: Backtest, per-type paper stats, signal history with accuracy. Framework impact visible in StrategyConfig apply trace.</li>
       </ul>

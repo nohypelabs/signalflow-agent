@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { Signal } from "@/lib/types/signal";
 import type { DashboardMetrics, MetricStatus } from "@/lib/hooks/useDashboardMetrics";
 
@@ -79,6 +80,7 @@ export default function SignalFlowRail({
       label: "Confluence V3",
       detail: metrics.avgConfidence.status === "live" ? `${metrics.avgConfidence.formatted} confidence` : "Scoring engine",
       status: metricToRailStatus(metrics.avgConfidence.status),
+      href: "/docs#confluence-v3",
     },
     {
       label: "AI Thesis",
@@ -115,7 +117,16 @@ export default function SignalFlowRail({
               <div className="h-full rounded-lg border border-border-default bg-inset/30 px-3 py-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] uppercase tracking-wider font-semibold text-txt-secondary truncate">
-                    {node.label}
+                    {node.href ? (
+                      <Link
+                        href={node.href}
+                        className="transition-colors hover:text-accent hover:underline underline-offset-4"
+                      >
+                        {node.label}
+                      </Link>
+                    ) : (
+                      node.label
+                    )}
                   </span>
                   <span className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[8px] font-bold ${statusClass(node.status)}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${dotClass(node.status)} ${node.status === "live" || node.status === "loading" ? "animate-pulse" : ""}`} />

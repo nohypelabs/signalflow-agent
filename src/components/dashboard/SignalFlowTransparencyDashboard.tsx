@@ -256,7 +256,7 @@ function ExecutionHandoffPanel({
         </div>
 
         <div className="rounded-xl border border-accent/25 bg-accent-muted/10 px-3 py-3 text-[11px] leading-relaxed text-txt-secondary">
-          Chart intentionally lives on <span className="font-semibold text-txt-primary">/trading</span> so judges see a clean split:
+          Chart intentionally lives on <span className="font-semibold text-txt-primary">/trading</span> so the product keeps a clean split:
           dashboard for signal transparency, trading page for real execution context.
         </div>
 
@@ -405,8 +405,8 @@ export default function SignalFlowTransparencyDashboard() {
               One clear signal, one clear logic path, one clear execution handoff.
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-txt-secondary">
-              Judges do not need another generic stats wall. This dashboard now shows the exact source stack,
-              the current SignalFlow output, and how that output moves to the SoDEX trading desk.
+              This dashboard shows the exact source stack, the current SignalFlow output,
+              and how that output moves to the SoDEX trading desk.
             </p>
           </div>
 
@@ -453,10 +453,10 @@ export default function SignalFlowTransparencyDashboard() {
 
       <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <Card variant="default" padding="none" className="overflow-hidden rounded-2xl">
-          <div className="border-b border-border-default px-4 py-3">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-txt-secondary">Active Signal</p>
-            <h2 className="mt-1 text-sm font-semibold text-txt-primary">The one output judges should care about right now</h2>
-          </div>
+            <div className="border-b border-border-default px-4 py-3">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-txt-secondary">Active Signal</p>
+            <h2 className="mt-1 text-sm font-semibold text-txt-primary">The one output that matters right now</h2>
+            </div>
 
           <div className="space-y-4 p-4 lg:p-5">
             <div>

@@ -204,7 +204,7 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
             <div className="flex items-center justify-between mb-3">
               <div>
                 <div className="font-semibold text-lg">Generate Signal — Choose Strategy</div>
-                <div className="text-[10px] text-txt-muted">Transparency mode for judges & users</div>
+                <div className="text-[10px] text-txt-muted">Transparency mode for signal review</div>
               </div>
               <div className="flex gap-2">
                 <button 
