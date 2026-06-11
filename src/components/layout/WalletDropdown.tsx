@@ -230,6 +230,37 @@ export default function WalletDropdown({ onClose }: Props) {
             </div>
           </div>
         )}
+        {!usdcBalance && !balanceLoading && (
+          <div className="flex items-center justify-between py-1.5 mb-0.5">
+            <div className="flex items-center gap-1.5">
+              <span className="w-4 h-4 rounded-full bg-[#2775ca] flex items-center justify-center text-[8px] font-bold text-white">$</span>
+              <span className="text-[11px] font-semibold text-txt-primary">USDC</span>
+            </div>
+            <span className="text-[10px] text-txt-dim">No balance</span>
+          </div>
+        )}
+
+        {/* Deposit / Funding buttons */}
+        <div className="flex items-center gap-1.5 mt-1.5">
+          <button
+            onClick={() => navigateTo("/trading")}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[10px] font-semibold text-buy bg-buy-muted hover:bg-buy-muted/80 border border-buy-dim rounded-lg transition-colors"
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Deposit
+          </button>
+          <button
+            onClick={() => navigateTo("/trading")}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[10px] font-semibold text-hold bg-hold-muted hover:bg-hold-muted/80 border border-hold-dim rounded-lg transition-colors"
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7 17l9.2-9.2M17 17V7H7" />
+            </svg>
+            Funding
+          </button>
+        </div>
 
         {/* Other balances */}
         {otherBalances.length > 0 && (
