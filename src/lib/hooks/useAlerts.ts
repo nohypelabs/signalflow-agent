@@ -65,7 +65,7 @@ export function useAlerts(tickers?: SoDEXTicker[] | null) {
 
   // Add manual signal generated notification (called from generate signal flow)
   const addManualSignalGenerated = useCallback((pair: string, action: string, confidence: number, strategy?: string) => {
-    const newAlert: any = {
+    const newAlert: Alert = {
       id: generateId(),
       pair,
       type: 'manual_signal_generated',
@@ -74,9 +74,9 @@ export function useAlerts(tickers?: SoDEXTicker[] | null) {
       strategy,
       createdAt: Date.now(),
       triggered: true,
-    };
+    } as Alert;
     setAlerts(prev => {
-      const next = [newAlert, ...prev.filter((a: any) => a.id !== newAlert.id)].slice(0, MAX_ALERTS);
+      const next = [newAlert, ...prev.filter((a) => a.id !== newAlert.id)].slice(0, MAX_ALERTS);
       return next;
     });
     fireNotification(`Manual Signal: ${action} ${pair}`, `Conf ${confidence}%${strategy ? ` • ${strategy}` : ''}`);

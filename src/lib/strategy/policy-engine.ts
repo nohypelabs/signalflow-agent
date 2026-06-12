@@ -20,19 +20,7 @@ import {
   analyzeDepth,
   analyzeFunding,
   scoreOrderFlow,
-  type OrderFlowScore,
 } from "./order-flow-engine";
-
-const DIMENSION_KEYS: Array<keyof SignalDimensions> = [
-  "etfFlow",
-  "sentiment",
-  "macro",
-  "momentum",
-  "treasury",
-];
-
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(max, Math.max(min, value));
 
 function numberValue(value: string | number | undefined): number {
   const parsed = Number(value);
@@ -44,16 +32,6 @@ function isDirectional(action: SignalAction): action is "LONG" | "SHORT" {
 }
 
 // ── Confluence V3 Policy (main unified engine) ─────────────────────────────────────
-
-function configuredDimensionScore(signal: Signal, config: StrategyConfig): number {
-  const totalWeight = DIMENSION_KEYS.reduce((sum, key) => sum + config[key], 0);
-  if (totalWeight <= 0) return 50;
-
-  return DIMENSION_KEYS.reduce((sum, key) => {
-    const score = signal.dimensionDetails?.[key]?.score ?? signal.dimensions[key] ?? 50;
-    return sum + score * config[key];
-  }, 0) / totalWeight;
-}
 
 export function applyConfluenceStrategyPolicy(
   signals: Signal[],

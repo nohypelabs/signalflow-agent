@@ -122,12 +122,8 @@ export function analyzeTradeFlow(
   const recent = trades.filter((t) => numberVal(t.T) * 1000 > cutoff);
   const pool = recent.length > 0 ? recent : trades.slice(-100);
 
-  let buyVolume = 0;
-  let sellVolume = 0;
   let buyQuoteVol = 0;
   let sellQuoteVol = 0;
-  let buyCount = 0;
-  let sellCount = 0;
   let buyVwapNum = 0;
   let buyVwapDen = 0;
   let sellVwapNum = 0;
@@ -144,15 +140,11 @@ export function analyzeTradeFlow(
     const isBuy = trade.S === "BUY";
 
     if (isBuy) {
-      buyVolume += qty;
       buyQuoteVol += quoteVol;
-      buyCount++;
       buyVwapNum += price * qty;
       buyVwapDen += qty;
     } else {
-      sellVolume += qty;
       sellQuoteVol += quoteVol;
-      sellCount++;
       sellVwapNum += price * qty;
       sellVwapDen += qty;
     }
@@ -331,7 +323,6 @@ export function scoreOrderFlow(input: {
 
   // ── Factor 1: Trade Flow (weight: 35%) ──────────────
   // Buy pressure >65% is bullish, <35% is bearish
-  const flowScore = tradeFlow.buyPressure; // 0-100
   const flowDelta = (tradeFlow.buyPressure - 50) * 0.7; // max ±35
   score += flowDelta;
 

@@ -4,11 +4,8 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { useAccount, useReconnect } from "wagmi";
 
 interface UseWalletAutoReconnectOptions {
-  /** Max reconnection attempts before giving up */
-  maxAttempts?: number;
-  /** Delay between reconnection attempts in ms */
-  retryDelayMs?: number;
-  /** Enable/disable auto-reconnect */
+  maxReconnectAttempts?: number;
+  reconnectRetryDelayMs?: number;
   enabled?: boolean;
 }
 
@@ -18,15 +15,10 @@ interface WalletReconnectState {
   lastError: string | null;
 }
 
-/**
- * Auto-reconnect wallet hook.
- * Detects disconnections and attempts to reconnect gracefully.
- * Shows status without blocking the UI.
- */
 export function useWalletAutoReconnect(options: UseWalletAutoReconnectOptions = {}) {
   const {
-    maxAttempts = 3,
-    retryDelayMs = 2000,
+    maxReconnectAttempts = 3,
+    reconnectRetryDelayMs = 2000,
     enabled = true,
   } = options;
 
@@ -41,6 +33,8 @@ export function useWalletAutoReconnect(options: UseWalletAutoReconnectOptions = 
   const attemptRef = useRef(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const prevConnectedRef = useRef(isConnected);
+  const reconnectRef = useRef(reconnect);
+  reconnectRef.current = reconnect;
 
   const clearRetryTimeout = useCallback(() => {
     if (timeoutRef.current) {
@@ -49,12 +43,14 @@ export function useWalletAutoReconnect(options: UseWalletAutoReconnectOptions = 
     }
   }, []);
 
-  const attemptReconnect = useCallback(async () => {
-    if (!enabled || attemptRef.current >= maxAttempts) {
+  // Use ref-based recursive call to avoid react-hooks lint issue
+  const attemptReconnectRef = useRef<(() => Promise<void>) | null>(null);
+  attemptReconnectRef.current = async () => {
+    if (!enabled || attemptRef.current >= maxReconnectAttempts) {
       setState((s) => ({
         ...s,
         isReconnecting: false,
-        lastError: attemptRef.current >= maxAttempts ? "Max reconnection attempts reached" : s.lastError,
+        lastError: attemptRef.current >= maxReconnectAttempts ? "Max reconnection attempts reached" : s.lastError,
       }));
       return;
     }
@@ -68,8 +64,7 @@ export function useWalletAutoReconnect(options: UseWalletAutoReconnectOptions = 
     }));
 
     try {
-      await reconnect();
-      // Success — reset state
+      await reconnectRef.current();
       attemptRef.current = 0;
       setState({
         isReconnecting: false,
@@ -78,7 +73,7 @@ export function useWalletAutoReconnect(options: UseWalletAutoReconnectOptions = 
       });
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Reconnection failed";
-      console.warn(`[WalletAutoReconnect] Attempt ${attemptRef.current}/${maxAttempts} failed:`, errorMsg);
+      console.warn(`[WalletAutoReconnect] Attempt ${attemptRef.current}/${maxReconnectAttempts} failed:`, errorMsg);
 
       setState((s) => ({
         ...s,
@@ -86,25 +81,27 @@ export function useWalletAutoReconnect(options: UseWalletAutoReconnectOptions = 
         lastError: errorMsg,
       }));
 
-      // Schedule retry if we haven't hit the limit
-      if (attemptRef.current < maxAttempts) {
-        timeoutRef.current = setTimeout(attemptReconnect, retryDelayMs);
+      if (attemptRef.current < maxReconnectAttempts) {
+        timeoutRef.current = setTimeout(() => {
+          attemptReconnectRef.current?.();
+        }, reconnectRetryDelayMs);
       }
     }
-  }, [enabled, maxAttempts, retryDelayMs, reconnect]);
+  };
 
   // Detect disconnection (was connected, now disconnected)
   useEffect(() => {
     if (!enabled) return;
 
     if (prevConnectedRef.current && isDisconnected) {
-      // Was connected, now disconnected — attempt reconnect
       attemptRef.current = 0;
-      timeoutRef.current = setTimeout(attemptReconnect, 1000);
+      timeoutRef.current = setTimeout(() => {
+        attemptReconnectRef.current?.();
+      }, 1000);
     }
 
     prevConnectedRef.current = isConnected;
-  }, [isConnected, isDisconnected, enabled, attemptReconnect]);
+  }, [isConnected, isDisconnected, enabled]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -117,8 +114,8 @@ export function useWalletAutoReconnect(options: UseWalletAutoReconnectOptions = 
   const manualRetry = useCallback(() => {
     attemptRef.current = 0;
     clearRetryTimeout();
-    attemptReconnect();
-  }, [clearRetryTimeout, attemptReconnect]);
+    attemptReconnectRef.current?.();
+  }, [clearRetryTimeout]);
 
   return {
     ...state,

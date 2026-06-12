@@ -164,7 +164,7 @@ export default function StrategyConfig() {
 
   const runThinkingFramework = () => {
     // Pull a representative regime if available from live signals (BTC preferred)
-    const btcSignal = signalsData?.signals?.find((s: any) => s.pair?.startsWith("BTC"));
+    const btcSignal = signalsData?.signals?.find((s) => s.pair?.startsWith("BTC"));
     const regime = btcSignal?.regime as MarketRegime | undefined;
 
     const application = applyThinkingFramework(currentTypeProfiles, regime ? { regime } : undefined);
@@ -681,8 +681,8 @@ export default function StrategyConfig() {
                 </div>
               ))}
             </div>
-            <p className="mt-2 text-[8px] text-txt-faint">
-              "Apply Thinking Framework" runs regime-conditional modulation + diversification floor + horizon rules, then re-normalizes all profiles. Manual edits always take precedence. This explicit reasoning layer makes the SignalFlow agent's multi-style strategy profiles auditable and truly agentic — a core differentiator for the SoSoValue Buildathon.
+              <p className="mt-2 text-[8px] text-txt-faint">
+              &quot;Apply Thinking Framework&quot; runs regime-conditional modulation + diversification floor + horizon rules, then re-normalizes all profiles. Manual edits always take precedence. This explicit reasoning layer makes the SignalFlow agent&apos;s multi-style strategy profiles auditable and truly agentic — a core differentiator for the SoSoValue Buildathon.
             </p>
           </div>
 

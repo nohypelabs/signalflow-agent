@@ -62,7 +62,6 @@ export function classifyTradeSetup(input: {
   const direction = actionDirection(action);
   const trend = factorScore(factors, "TREND");
   const momentum = factorScore(factors, "MOMENTUM");
-  const volatility = factorScore(factors, "VOLATILITY");
   const volume = factorScore(factors, "VOLUME");
   const structure = factorScore(factors, "STRUCTURE");
   // Dynamic support/conflict now includes micro factors (ORDER_FLOW/DEPTH/FUNDING) from v3 fusion.

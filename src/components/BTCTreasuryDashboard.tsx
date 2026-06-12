@@ -41,7 +41,7 @@ export default function BTCTreasuryDashboard() {
         // The signals API includes BTC treasury data
         setTreasuries(d.btcTreasuries ?? []);
         // Normalize purchase history defensively (external API can return numeric strings)
-        const ph = (d.purchaseHistory ?? []).map((p: any) => ({
+        const ph = (d.purchaseHistory ?? []).map((p) => ({
           date: String(p?.date ?? ""),
           ticker: String(p?.ticker ?? ""),
           btc_holding: Number(p?.btc_holding) || 0,

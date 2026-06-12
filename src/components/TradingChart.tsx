@@ -8,6 +8,7 @@ import type {
   IPriceLine,
   CandlestickData,
   HistogramData,
+  LineData,
   Time,
   MouseEventParams,
   LineStyle,
@@ -635,7 +636,7 @@ export default function TradingChart({
 
     const ema9Data = ema9Values
       .map((val, i) => (val !== null ? { time: (klines[i].t / 1000) as Time, value: val } : null))
-      .filter(Boolean) as any[];
+      .filter(Boolean) as LineData<Time>[];
     if (ema9Ref.current) {
       ema9Ref.current.setData(ema9Data);
       ema9Ref.current.applyOptions({ visible: activeIndicators.includes("EMA 9") });
@@ -643,7 +644,7 @@ export default function TradingChart({
 
     const ema21Data = ema21Values
       .map((val, i) => (val !== null ? { time: (klines[i].t / 1000) as Time, value: val } : null))
-      .filter(Boolean) as any[];
+      .filter(Boolean) as LineData<Time>[];
     if (ema21Ref.current) {
       ema21Ref.current.setData(ema21Data);
       ema21Ref.current.applyOptions({ visible: activeIndicators.includes("EMA 21") });
@@ -651,7 +652,7 @@ export default function TradingChart({
 
     const sma50Data = sma50Values
       .map((val, i) => (val !== null ? { time: (klines[i].t / 1000) as Time, value: val } : null))
-      .filter(Boolean) as any[];
+      .filter(Boolean) as LineData<Time>[];
     if (sma50Ref.current) {
       sma50Ref.current.setData(sma50Data);
       sma50Ref.current.applyOptions({ visible: activeIndicators.includes("SMA 50") });

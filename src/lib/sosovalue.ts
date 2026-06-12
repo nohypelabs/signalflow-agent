@@ -193,13 +193,13 @@ function toFiniteNumber(v: unknown): number {
 }
 
 export async function getBTCPurchaseHistory(ticker: string, limit = 50, signal?: AbortSignal): Promise<BTCPurchaseHistory[]> {
-  const raw = await sosoFetch<any[]>(
+  const raw = await sosoFetch<Record<string, unknown>[]>(
     `/btc-treasuries/${ticker}/purchase-history?limit=${limit}`,
     undefined,
     3,
     signal,
-  ).catch(() => [] as any[]);
-  return (raw || []).map((p: any) => ({
+  ).catch(() => [] as Record<string, unknown>[]);
+  return (raw || []).map((p) => ({
     date: String(p?.date ?? ""),
     ticker: String(p?.ticker ?? ""),
     btc_holding: toFiniteNumber(p?.btc_holding),

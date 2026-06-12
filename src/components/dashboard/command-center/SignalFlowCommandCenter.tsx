@@ -17,7 +17,7 @@ import { pairToSodexSymbol } from "@/lib/pair-map";
 import { getCoinIcon } from "@/lib/coin-icons";
 import { getStockIcon } from "@/lib/stock-icons";
 import { unwrapApiResponse } from "@/lib/api/client";
-import type { Signal } from "@/lib/types/signal";
+import type { Signal, ConfluenceFactor } from "@/lib/types/signal";
 import LiveOrderbookFactor from "@/components/signals/LiveOrderbookRow";
 
 // Lazy load heavy chart lib (lightweight-charts) so it doesn't bloat the main
@@ -410,7 +410,7 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
           },
         ]
       : currentSignal?.factors?.length
-        ? currentSignal.factors.slice(0, 6).map((f: any) => {
+        ? currentSignal.factors.slice(0, 6).map((f: ConfluenceFactor) => {
             let displayLabel = f.name;
             if (displayLabel === "ORDER_FLOW") displayLabel = "Order Flow";
             if (displayLabel === "DEPTH") displayLabel = "Orderbook Depth";
@@ -650,7 +650,7 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
             {decision.sources.map((source, idx) => {
               const weightPct = Math.round(source.weight * 100);
               // Find the actual factor score from currentSignal
-              const factor = currentSignal?.factors?.find((f: any) => {
+              const factor = currentSignal?.factors?.find((f: ConfluenceFactor) => {
                 const name = f.name;
                 if (name === "ORDER_FLOW" && source.label === "Order Flow") return true;
                 if (name === "DEPTH" && source.label === "Orderbook Depth") return true;
@@ -699,8 +699,8 @@ function DecisionPanel({ pair, news, onGenerate }: { pair: string; news: NewsRes
           </div>
           {/* Conflict detection */}
           {currentSignal?.factors && (() => {
-            const strongBull = currentSignal.factors.filter((f: any) => f.score > 65).length;
-            const strongBear = currentSignal.factors.filter((f: any) => f.score < 35).length;
+            const strongBull = currentSignal.factors.filter((f: ConfluenceFactor) => f.score > 65).length;
+            const strongBear = currentSignal.factors.filter((f: ConfluenceFactor) => f.score < 35).length;
             if (strongBull > 0 && strongBear > 0) {
               return (
                 <div className="mt-1.5 text-[9px] text-yellow-400 bg-yellow-400/5 border border-yellow-400/20 rounded px-2 py-1">

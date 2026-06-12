@@ -20,7 +20,7 @@ export function useTradeExecution(autoRefresh = false) {
       // Always coerce to array to prevent .filter crashes (see hydration + perps migration).
       const list: SoDEXOrder[] = Array.isArray(data)
         ? data
-        : (data as any)?.orders ?? [];
+        : (data as { orders?: SoDEXOrder[] })?.orders ?? [];
       setOrders(list);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch orders");

@@ -16,19 +16,31 @@ function fmtVol(v: number): string {
 }
 
 function ScreenerStats() {
-  const { data, total, loading } = useScreener();
+  const { data, total, loading, error } = useScreener();
 
   const stats = useMemo(() => {
     if (!data || data.length === 0) return null;
 
     const totalVol = data.reduce((s, p) => s + p.quoteVolume24h, 0);
     const avgChange = data.reduce((s, p) => s + p.change24h, 0) / data.length;
-    const topGainer = [...data].sort((a, b) => b.change24h - a.change24h)[0];
-    const topLoser = [...data].sort((a, b) => a.change24h - b.change24h)[0];
+    let topGainer = data[0];
+    let topLoser = data[0];
+    for (const p of data) {
+      if (p.change24h > topGainer.change24h) topGainer = p;
+      if (p.change24h < topLoser.change24h) topLoser = p;
+    }
     const trading = data.filter((p) => p.status === "TRADING").length;
 
     return { totalVol, avgChange, topGainer, topLoser, trading };
   }, [data]);
+
+  if (error) {
+    return (
+      <section className="rounded-xl border border-red-500/20 bg-red-500/5 p-5">
+        <p className="text-sm text-red-400">Failed to load market data: {error}</p>
+      </section>
+    );
+  }
 
   if (loading || !stats) {
     return (

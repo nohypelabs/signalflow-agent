@@ -102,7 +102,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
               </span>
             )}
             {/* Thinking Framework badge for live traceable reasoning (Wave 2 differentiator) */}
-            {(signal as any).frameworkApplication && (
+            {signal.frameworkApplication && (
               <span className="text-[8px] px-1 py-0.5 rounded bg-accent/10 text-accent font-bold border border-accent/30" title="Thinking Framework applied - explicit auditable principles from Strategy Config">
                 FW
               </span>

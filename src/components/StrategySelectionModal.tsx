@@ -13,7 +13,7 @@ interface GenerationSession {
   strategy: StrategyEngineName;
   status: "running" | "success" | "error";
   logs: string[];
-  result?: any;
+  result?: unknown;
   error?: string;
   startedAt: number;
 }
@@ -22,7 +22,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   coin: string;
-  onGenerateComplete?: (strategy: StrategyEngineName, result: any) => void;
+  onGenerateComplete?: (strategy: StrategyEngineName, result: unknown) => void;
 }
 
 export default function StrategySelectionModal({ open, onClose, coin, onGenerateComplete }: Props) {
@@ -141,24 +141,25 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
       onGenerateComplete?.(strategy, result);
 
       // result from d.generate (in analyze path) is already the base Signal
-      const resSig = result;
+      const resSig = result as Record<string, unknown> | null | undefined;
       if (resSig && typeof resSig === 'object' && 'pair' in resSig) {
         alertsApi.addManualSignalGenerated?.(
-          (resSig as any).pair || `${coin}/USDC`,
-          (resSig as any).action || 'LONG',
-          (resSig as any).confidence || 70,
+          String(resSig.pair || `${coin}/USDC`),
+          String(resSig.action || 'LONG'),
+          Number(resSig.confidence || 70),
           strategy === 'confluence' ? 'Confluence V3' : 'Liquidity Flow'
         );
       }
 
       toast.success(`Signal ${strategy === 'confluence' ? 'Confluence V3' : 'Liquidity Flow'} generated`, {
-        description: `${(resSig as any)?.pair || coin} • ${(resSig as any)?.action || ''} @ ${(resSig as any)?.confidence || ''}% — added to history & alerts`,
+        description: `${String(resSig?.pair || coin)} • ${String(resSig?.action || '')} @ ${String(resSig?.confidence || '')}% — added to history & alerts`,
         action: {
           label: "View",
           onClick: onClose,
         },
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "Generation failed";
       setSessions((prev) => {
         const sess = prev[sessionId];
         if (!sess) return prev;
@@ -167,8 +168,8 @@ export default function StrategySelectionModal({ open, onClose, coin, onGenerate
           [sessionId]: {
             ...sess,
             status: "error",
-            error: err?.message || "Generation failed",
-            logs: [...sess.logs, `[${new Date().toLocaleTimeString()}] ERROR: ${err?.message || "Unknown error"}`],
+            error: errMsg,
+            logs: [...sess.logs, `[${new Date().toLocaleTimeString()}] ERROR: ${errMsg}`],
           },
         };
       });

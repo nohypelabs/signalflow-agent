@@ -3,7 +3,6 @@ import { sma, ema, rsi, macd, bollingerBands, atr, last } from "../indicators";
 import type { SignalDimensions, SignalDimensionDetails } from "../../types/signal";
 import type { NewsItem, ETFSummaryItem, MacroEvent, MarketSnapshot, BTCPurchaseHistory } from "../../sosovalue";
 import { obv, roc, findSupportResistance } from "./indicator-engine";
-import { COVERAGE_GUARDRAIL } from "./strategy-lessons";
 import type { ConfluenceFactor, ConfluenceResult, SignalActionV2 } from "./types";
 
 export function scoreTrend(
@@ -208,7 +207,6 @@ export function scoreVolatility(
     : 0;
 
   // Trend context for volatility interpretation
-  const price = closes[closes.length - 1];
   const emaShort = last(ema(closes, 20));
   const emaLong = last(ema(closes, 50));
   const inTrend = !isNaN(emaShort) && !isNaN(emaLong) &&

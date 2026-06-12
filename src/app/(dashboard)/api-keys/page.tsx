@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useDashboard } from "@/lib/dashboard-context";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
@@ -47,7 +47,7 @@ export default function ApiKeysPage() {
   const [newKeySecret, setNewKeySecret] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tier, setTier] = useState<SubscriptionTier>("FREE");
+  const [tier] = useState<SubscriptionTier>("FREE");
 
   const fetchKeys = useCallback(async () => {
     if (!d.isConnected) return;
@@ -67,9 +67,9 @@ export default function ApiKeysPage() {
   }, [d.isConnected]);
 
   // Fetch keys on mount and when wallet connects
-  useState(() => {
+  useEffect(() => {
     if (d.isConnected) fetchKeys();
-  });
+  }, [d.isConnected, fetchKeys]);
 
   const handleCreate = async () => {
     if (!newKeyName.trim()) return;
@@ -108,14 +108,21 @@ export default function ApiKeysPage() {
       });
       if (res.ok) {
         setKeys((prev) => prev.filter((k) => k.id !== id));
+      } else {
+        const data = await res.json().catch(() => null);
+        setError(data?.error?.message ?? "Failed to revoke key");
       }
     } catch {
-      // Intentionally ignored — UI will show stale data
+      setError("Failed to revoke key — please try again");
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      setError("Failed to copy to clipboard");
+    }
   };
 
   if (!d.isConnected) {

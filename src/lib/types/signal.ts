@@ -160,7 +160,10 @@ export interface RecordedSignal {
   price: number;
   timestamp: number;
   dimensions: SignalDimensions;
-  execution?: SignalExecution;  // added to support proper correctness check using TP/SL
+  strategy?: string;
+  reasoning?: string;
+  setup?: { thesis?: string };
+  execution?: SignalExecution;
   resolved?: {
     correct: boolean;
     finalPrice: number;

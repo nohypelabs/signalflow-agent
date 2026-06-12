@@ -126,15 +126,18 @@ export function sanitizeStrategyConfig(value: unknown): StrategyConfig {
     : DEFAULT_STRATEGY_CONFIG;
 
   // Pass-through custom type profiles (Thinking Framework). Shallow validation only.
-  const rawProfiles = (input as any).typeProfiles;
+  const rawProfiles = typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>).typeProfiles
+    : undefined;
   let typeProfiles: import("./thinking-framework").TradingTypeProfiles | undefined;
   if (rawProfiles && typeof rawProfiles === "object") {
     typeProfiles = {};
     const validTypes = ["scalping", "intraday", "swing", "position"] as const;
     for (const t of validTypes) {
-      const p = (rawProfiles as any)[t];
-      if (p && p.weights && typeof p.weights === "object") {
-        const w = p.weights;
+      const p = (rawProfiles as Record<string, unknown>)[t];
+      const pObj = typeof p === "object" && p !== null ? p as Record<string, unknown> : null;
+      if (pObj && pObj.weights && typeof pObj.weights === "object") {
+        const w = pObj.weights as Record<string, unknown>;
         typeProfiles[t] = {
           weights: {
             trend: clamp(finiteNumber(w.trend, 15), 0, 60),

@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import WelcomeExperience from "@/components/layout/WelcomeExperience";
 import { WELCOME_STORAGE_KEY } from "@/lib/welcome";
 
+const EXIT_ANIMATION_MS = 420;
+
 export default function WelcomePage() {
   const router = useRouter();
   const [isLeaving, setIsLeaving] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     try {
@@ -23,17 +26,23 @@ export default function WelcomePage() {
     }
   }, [router]);
 
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
   const enterDashboard = () => {
     try {
       localStorage.setItem(WELCOME_STORAGE_KEY, "1");
-    } catch {}
+    } catch {
+      // intentionally ignored — non-critical localStorage write
+    }
     setIsLeaving(true);
 
-    // Wait for exit animation to complete before navigating.
-    // This gives a smooth "mulu" transition out of welcome into dashboard.
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       router.replace("/dashboard");
-    }, 420);
+    }, EXIT_ANIMATION_MS);
   };
 
   return (

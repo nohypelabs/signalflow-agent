@@ -360,7 +360,7 @@ export default function SignalChatPopup() {
               {!showWalletRequired && messages.length === 0 && hydrated && (
                 <div className="space-y-3">
                   <p className="text-xs text-txt-secondary">
-                    Hi! I'm Dora, your SignalFlow consultant. Ask me anything about active signals, the engine, or how our system works.
+                    Hi! I&apos;m Dora, your SignalFlow consultant. Ask me anything about active signals, the engine, or how our system works.
                   </p>
                   {suggestions.map((s) => (
                     <button

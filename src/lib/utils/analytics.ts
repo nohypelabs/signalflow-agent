@@ -211,7 +211,6 @@ export function consecutiveWinsLosses(trades: PaperTrade[]): {
     }
   }
 
-  const last = closed[closed.length - 1];
   const streakType =
     currentWins > 0 ? "win" : currentLosses > 0 ? "loss" : "none";
   const currentStreak =

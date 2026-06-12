@@ -115,16 +115,13 @@ export function applyThinkingFramework(
   const regime = context?.regime;
   const result: TradingTypeProfiles = {};
   const trace: FrameworkTraceEntry[] = [];
-  const appliedPrinciples: string[] = [];
 
   for (const type of (["scalping", "intraday", "swing", "position"] as TradingType[])) {
     // Start from input if present, else framework default
     const base = inputProfiles[type]?.weights ?? FRAMEWORK_DEFAULT_WEIGHTS[type];
-    let w = { ...base };
+    const w = { ...base };
     const changes: FrameworkTraceEntry["changes"] = [];
     const principlesForType: string[] = [];
-
-    const before = { ...w };
 
     // ── Regime Modulation (Principle 2) ──
     if (regime === "TRENDING_UP" || regime === "TRENDING_DOWN" || regime === "BREAKOUT") {

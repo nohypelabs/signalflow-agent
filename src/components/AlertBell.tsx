@@ -95,7 +95,7 @@ export default function AlertBell({
       return `${pa.type === "price_above" ? "↑ Above" : "↓ Below"} $${pa.targetPrice.toLocaleString()}`;
     }
     if (alert.type === "manual_signal_generated") {
-      const ma = alert as any;
+      const ma = alert as ManualSignalGeneratedAlert;
       return `Manual ${ma.action} ${ma.pair} @ ${ma.confidence}%${ma.strategy ? ` (${ma.strategy})` : ''}`;
     }
     const sa = alert as SignalAlert;

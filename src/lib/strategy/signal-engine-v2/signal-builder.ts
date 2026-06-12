@@ -1,6 +1,6 @@
 // Extracted from signal-engine-v2.ts. Keep public behavior stable.
 import { ema, bollingerBands, atr, last } from "../indicators";
-import { TRADING_TYPES, type TradingType } from "../../types/trading-type";
+import { type TradingType } from "../../types/trading-type";
 import type { NewsItem, ETFSummaryItem, MacroEvent, MarketSnapshot, BTCPurchaseHistory } from "../../sosovalue";
 import type { SoDEXKline, OrderBook } from "../../sodex-types";
 import type { SoDEXPerpsTicker } from "../../sodex-perps";

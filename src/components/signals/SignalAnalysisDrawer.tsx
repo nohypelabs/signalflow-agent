@@ -176,13 +176,13 @@ export default function SignalAnalysisDrawer({ signal, liveDims, weights, capped
         )}
 
         {/* Thinking Framework trace for auditability (Wave 2: addresses judge feedback on verifiable analytical framework & strategy logic) */}
-        {(signal as any).frameworkApplication && (
+        {signal.frameworkApplication && (
           <div>
             <p className="text-[10px] text-accent uppercase tracking-wider mb-1.5 font-semibold">Thinking Framework Applied</p>
             <div className="text-[9px] text-txt-tertiary bg-inset p-2 rounded border border-border-default">
-              <p><strong>Trading Type:</strong> {(signal as any).frameworkApplication.tradingType}</p>
-              <p><strong>Principles:</strong> {(signal as any).frameworkApplication.principlesApplied?.join(", ")}</p>
-              <p className="mt-1 text-txt-faint">{(signal as any).frameworkApplication.note}</p>
+              <p><strong>Trading Type:</strong> {signal.frameworkApplication.tradingType}</p>
+              <p><strong>Principles:</strong> {signal.frameworkApplication.principlesApplied?.join(", ")}</p>
+              <p className="mt-1 text-txt-faint">{signal.frameworkApplication.note}</p>
             </div>
           </div>
         )}
