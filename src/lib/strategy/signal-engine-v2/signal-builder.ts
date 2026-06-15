@@ -1,5 +1,5 @@
 // Extracted from signal-engine-v2.ts. Keep public behavior stable.
-import { ema, bollingerBands, atr, last } from "../indicators";
+import { ema, bollingerBands, atr, last, rsi, stochRSI } from "../indicators";
 import { type TradingType } from "../../types/trading-type";
 import type { NewsItem, ETFSummaryItem, MacroEvent, MarketSnapshot, BTCPurchaseHistory } from "../../sosovalue";
 import type { SoDEXKline, OrderBook } from "../../sodex-types";
@@ -75,6 +75,21 @@ export function generateSignalV2(input: {
     ? validAtr.slice(-50).reduce((s, v) => s + v, 0) / Math.min(50, validAtr.length)
     : atrVal;
 
+  // ── RSI & Stoch RSI ───────────────────────────────────
+  const rsiVals = rsi(closes, 14);
+  const rsiValue = last(rsiVals);
+  const stochRSIResult = stochRSI(closes, 14, 14, 3, 3);
+  const stochK = last(stochRSIResult.k);
+  const stochD = last(stochRSIResult.d);
+
+  // Daily price change detection (for overbought/oversold after big moves)
+  const priceChange24h = closes.length >= 24
+    ? ((price - closes[closes.length - 24]) / closes[closes.length - 24]) * 100
+    : 0;
+  const priceChange12h = closes.length >= 12
+    ? ((price - closes[closes.length - 12]) / closes[closes.length - 12]) * 100
+    : 0;
+
   // ── LAYER 1: Regime Detection ──────────────────────────
   const regime = detectRegime(
     closes, highs, lows,
@@ -101,6 +116,65 @@ export function generateSignalV2(input: {
     volumeFactor,
     structureFactor,
   ];
+
+  // ── RSI Factor ─────────────────────────────────────────
+  if (!isNaN(rsiValue)) {
+    const rsiLabel = rsiValue < 30 ? "oversold" : rsiValue > 70 ? "overbought" : "neutral";
+    const rsiScore = rsiValue < 30 ? 80 + (30 - rsiValue) : rsiValue > 70 ? 20 - (rsiValue - 70) : 50 + (rsiValue - 50) * 0.5;
+
+    factors.push({
+      name: "RSI",
+      score: Math.round(Math.max(0, Math.min(100, rsiScore))),
+      weight: 0.10,
+      detail: `RSI(14) ${rsiValue.toFixed(1)} (${rsiLabel}) — ${rsiValue > 70 ? "overbought, potential reversal" : rsiValue < 30 ? "oversold, potential bounce" : "neutral zone"}`,
+      bullish: rsiValue < 50,
+    });
+  }
+
+  // ── Stoch RSI Factor ───────────────────────────────────
+  if (!isNaN(stochK) && !isNaN(stochD)) {
+    const stochLabel = stochK > 80 ? "overbought" : stochK < 20 ? "oversold" : "neutral";
+    const stochCross = stochK > stochD ? "bullish cross" : "bearish cross";
+    const stochScore = stochK > 80 ? 20 - (stochK - 80) * 0.5 : stochK < 20 ? 80 + (20 - stochK) * 0.5 : 50 + (stochK - 50) * 0.3;
+
+    factors.push({
+      name: "STOCH_RSI",
+      score: Math.round(Math.max(0, Math.min(100, stochScore))),
+      weight: 0.08,
+      detail: `StochRSI K=${stochK.toFixed(1)} D=${stochD.toFixed(1)} (${stochLabel}) — ${stochCross}`,
+      bullish: stochK < 50,
+    });
+  }
+
+  // ── Overbought/Oversold Sniper Detection ──────────────
+  // Big pump + RSI overbought = potential short opportunity
+  // Big dump + RSI oversold = potential long opportunity
+  if (Math.abs(priceChange24h) > 5 || Math.abs(priceChange12h) > 3) {
+    const bigMove = priceChange24h > 5 || priceChange12h > 3;
+    const bigDrop = priceChange24h < -5 || priceChange12h < -3;
+
+    if (bigMove && rsiValue > 70) {
+      // Overbought after big pump — sniper SHORT
+      const sniperScore = Math.min(95, 70 + (rsiValue - 70) * 2 + Math.abs(priceChange24h));
+      factors.push({
+        name: "SNIPER_ENTRY",
+        score: Math.round(100 - sniperScore), // Inverted for bearish
+        weight: 0.12,
+        detail: `OVERBOUGHT SHORT: +${priceChange24h.toFixed(1)}% pump, RSI ${rsiValue.toFixed(0)} — mean reversion setup`,
+        bullish: false,
+      });
+    } else if (bigDrop && rsiValue < 30) {
+      // Oversold after big dump — sniper LONG
+      const sniperScore = Math.min(95, 70 + (30 - rsiValue) * 2 + Math.abs(priceChange24h));
+      factors.push({
+        name: "SNIPER_ENTRY",
+        score: Math.round(sniperScore),
+        weight: 0.12,
+        detail: `OVERSOLD LONG: ${priceChange24h.toFixed(1)}% dump, RSI ${rsiValue.toFixed(0)} — mean reversion setup`,
+        bullish: true,
+      });
+    }
+  }
 
   // ── v3: Fuse microstructure factors (orderbook/depth, trade flow, funding) as native leading signals ──
   // These are the fastest in 24/7 crypto. Appended with modest fixed weights so they influence confluence

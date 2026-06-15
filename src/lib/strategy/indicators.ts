@@ -175,3 +175,68 @@ export function last(arr: number[]): number {
   }
   return NaN;
 }
+
+export interface StochRSIResult {
+  k: number[];  // Fast %K (RSI smoothed)
+  d: number[];  // Slow %D (SMA of %K)
+}
+
+export function stochRSI(
+  closes: number[],
+  rsiPeriod = 14,
+  stochPeriod = 14,
+  kSmooth = 3,
+  dSmooth = 3,
+): StochRSIResult {
+  const rsiVals = rsi(closes, rsiPeriod);
+  const k: number[] = [];
+  const d: number[] = [];
+
+  // Calculate %K = (RSI - lowest RSI) / (highest RSI - lowest RSI) * 100
+  for (let i = 0; i < rsiVals.length; i++) {
+    if (isNaN(rsiVals[i]) || i < stochPeriod - 1) {
+      k.push(NaN);
+      continue;
+    }
+
+    let lowest = Infinity;
+    let highest = -Infinity;
+    for (let j = i - stochPeriod + 1; j <= i; j++) {
+      if (!isNaN(rsiVals[j])) {
+        lowest = Math.min(lowest, rsiVals[j]);
+        highest = Math.max(highest, rsiVals[j]);
+      }
+    }
+
+    const range = highest - lowest;
+    k.push(range === 0 ? 50 : ((rsiVals[i] - lowest) / range) * 100);
+  }
+
+  // Smooth %K with SMA
+  const kSmoothed = sma(k.filter(v => !isNaN(v)), kSmooth);
+  const dSmoothed = sma(kSmoothed.filter(v => !isNaN(v)), dSmooth);
+
+  // Map back to full array
+  const kResult: number[] = [];
+  const dResult: number[] = [];
+  let ki = 0;
+  let di = 0;
+
+  for (let i = 0; i < rsiVals.length; i++) {
+    if (isNaN(k[i])) {
+      kResult.push(NaN);
+      dResult.push(NaN);
+    } else {
+      kResult.push(kSmoothed[ki] ?? NaN);
+      ki++;
+      if (ki >= kSmooth) {
+        dResult.push(dSmoothed[di] ?? NaN);
+        di++;
+      } else {
+        dResult.push(NaN);
+      }
+    }
+  }
+
+  return { k: kResult, d: dResult };
+}

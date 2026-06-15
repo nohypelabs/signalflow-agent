@@ -38,6 +38,7 @@ import type { Signal } from "@/lib/types/signal";
 import { jsonNoCache } from "@/lib/api/no-cache";
 import type { TradingType } from "@/lib/types/trading-type";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { logData, logSignal, logRecalc, logWarning, logError } from "@/lib/signal-log-bus";
 
 export const dynamic = "force-dynamic";
 
@@ -151,8 +152,11 @@ export async function GET(request: Request) {
   }
 
   try {
+    logRecalc("🔄", `Signal generation started — ${tradingType ?? "all"} mode, ${strategyConfig.engine} engine`);
+
     // ── LIQUIDITY FLOW PATH (legacy separate generator) ───────────────────────────────
     if (strategyConfig.engine === "liquidityFlow") {
+      logData("📊", "Fetching klines, orderbook, and trades for all pairs...");
       const klinesMap = new Map<string, SoDEXKline[]>();
       const orderbooks = new Map<string, OrderBook>();
       const tradesMap = new Map<string, SoDEXTrade[]>();
@@ -283,6 +287,7 @@ export async function GET(request: Request) {
 
     // ── CONFLUENCE V3 PATH (unified: 5 TA factors + ORDER_FLOW + DEPTH + FUNDING micro) ────────────────────────────────
 
+    logData("📰", "Fetching SoSoValue data (ETF, macro, news, treasuries)...");
     const [currencies, etfSummary, macroEvents, btcTreasuries, hotNews] = await Promise.all([
       getCurrencies(ac.signal).catch(() => []),
       getETFSummary("BTC", "US", 5, ac.signal).catch(() => []),
@@ -296,6 +301,9 @@ export async function GET(request: Request) {
     const sol = currencies.find((c) => c.symbol.toLowerCase() === "sol");
 
     const newsList = "list" in hotNews ? hotNews.list : [];
+
+    logData("✅", `SoSoValue data loaded: ${etfSummary.length} ETF, ${macroEvents.length} macro, ${newsList.length} news`);
+    logData("📊", `Market snapshot: BTC=${btc ? "✓" : "✗"} ETH=${eth ? "✓" : "✗"} SOL=${sol ? "✓" : "✗"}`);
 
     const topTickers = (btcTreasuries as { ticker: string; name: string }[]).slice(0, 5);
     const [purchaseHistory, btcIndex, ethIndex] = await Promise.all([
