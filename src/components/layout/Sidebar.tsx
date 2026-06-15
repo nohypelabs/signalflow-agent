@@ -11,6 +11,7 @@ import {
   DocsIcon,
   CloseIcon,
   SidebarCollapseIcon,
+  ChartIcon,
 } from "@/components/ui/icons";
 import type { Signal, SignalAction, SignalActionV2 } from "@/lib/types/signal";
 
@@ -21,6 +22,8 @@ const groups = [
       { href: "/dashboard", label: "Dashboard", Icon: HomeIcon },
       { href: "/trading", label: "Trading", Icon: TradeIcon },
       { href: "/signals", label: "Signals", Icon: SignalIcon },
+      { href: "/backtest", label: "Backtest", Icon: ChartIcon },
+      { href: "/portfolio", label: "Portfolio", Icon: ChartIcon },
     ],
   },
   {
