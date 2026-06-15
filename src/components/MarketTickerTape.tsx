@@ -89,8 +89,14 @@ export default function MarketTickerTape({ tickerMap, embedded, onTickerClick }:
   // Duplicate for seamless loop
   const doubled = [...tickers, ...tickers];
 
+  // Duration proportional to ticker count (base: 30s for ~8 tickers)
+  const duration = Math.max(20, Math.round(tickers.length * 3.75));
+
   const content = (
-    <div className="ticker-tape-scroll flex items-center h-7 whitespace-nowrap">
+    <div
+      className="ticker-tape-scroll flex items-center h-7 whitespace-nowrap"
+      style={{ animationDuration: `${duration}s` }}
+    >
       {doubled.map((item, i) => (
         <TickerItemChip
           key={`${item.symbol}-${i}`}

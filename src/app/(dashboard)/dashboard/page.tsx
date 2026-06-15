@@ -1,7 +1,7 @@
 "use client";
 
-import SignalFlowTransparencyDashboard from "@/components/dashboard/SignalFlowTransparencyDashboard";
+import DashboardGridLayout from "@/components/dashboard/DashboardGridLayout";
 
 export default function DashboardPage() {
-  return <SignalFlowTransparencyDashboard />;
+  return <DashboardGridLayout />;
 }

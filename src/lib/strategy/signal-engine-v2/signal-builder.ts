@@ -14,6 +14,7 @@ import type { ConfluenceFactor, MarketRegime, SignalV2 } from "./types";
 import type { TradingTypeProfiles } from "../config";
 import { getEffectiveWeights } from "../thinking-framework";
 import { analyzeTradeFlow, analyzeDepth, analyzeFunding } from "../order-flow-engine";
+import { analyzeSMC } from "../smc-engine";
 
 export function generateSignalV2(input: {
   pair: string;
@@ -137,6 +138,27 @@ export function generateSignalV2(input: {
         bullish: fScore > 55,
       });
     }
+  }
+
+  // ── v3: SMC Analysis (Smart Money Concepts — OB, FVG, BOS, Sniper Entry) ──
+  const smc = analyzeSMC(klines);
+  if (smc.orderBlocks.length > 0 || smc.fairValueGaps.length > 0 || smc.breaksOfStructure.length > 0) {
+    factors.push({
+      name: "SMC_STRUCTURE",
+      score: smc.smcScore,
+      weight: 0.12,
+      detail: smc.smcDetail,
+      bullish: smc.smcDirection === "bullish",
+    });
+  }
+  if (smc.sniperEntry) {
+    factors.push({
+      name: "SNIPER_ENTRY",
+      score: smc.sniperEntry.confidence,
+      weight: 0.08,
+      detail: `${smc.sniperEntry.direction.toUpperCase()} @ ${smc.sniperEntry.zone} — ${smc.sniperEntry.confluences.join(", ")}`,
+      bullish: smc.sniperEntry.direction === "long",
+    });
   }
 
   // ── Override weights if tradingType is specified (respect custom Thinking Framework profiles from StrategyConfig) ────────

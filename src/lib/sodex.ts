@@ -18,20 +18,24 @@ async function sodexFetch<T>(
     });
   }
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8_000);
+  const timeout = setTimeout(() => controller.abort(), 5_000);
 
-  const res = await fetch(url.toString(), {
-    headers: { Accept: "application/json", ...init?.headers },
-    signal: controller.signal,
-    ...init,
-  }).finally(() => clearTimeout(timeout));
+  try {
+    const res = await fetch(url.toString(), {
+      headers: { Accept: "application/json", ...init?.headers },
+      signal: controller.signal,
+      ...init,
+    });
 
-  if (!res.ok) {
-    throw new Error(`SoDEX ${res.status}: ${await res.text().catch(() => "")}`);
+    if (!res.ok) {
+      throw new Error(`SoDEX ${res.status}: ${await res.text().catch(() => "")}`);
+    }
+    const json = await res.json();
+    if (json.error) throw new Error(json.error);
+    return json.data as T;
+  } finally {
+    clearTimeout(timeout);
   }
-  const json = await res.json();
-  if (json.error) throw new Error(json.error);
-  return json.data as T;
 }
 
 function authHeaders(): Record<string, string> {

@@ -386,3 +386,12 @@ main::-webkit-scrollbar-thumb {
   bottom: 0;
   background: linear-gradient(to top, var(--bg-card) 0%, transparent 100%);
 }
+
+@keyframes log-entry-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.log-entry-fade-in {
+  animation: log-entry-fade-in 80ms ease-in;
+}

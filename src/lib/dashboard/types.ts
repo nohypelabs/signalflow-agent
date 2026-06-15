@@ -62,6 +62,7 @@ export interface DashboardState {
   historyHydrated: boolean;
   recordSignal: (s: Signal) => void;
   resolveSignals: (coin: string, price: number) => void;
+  reResolveAll: (currentPrices: Map<string, number>) => void;
   signalStats: {
     totalResolved: number;
     totalCorrect: number;
@@ -78,6 +79,7 @@ export interface DashboardState {
   streaks: import("../hooks/useSignalHistory").StreakInfo;
   perCoin: import("../hooks/useSignalHistory").CoinAccuracy[];
   frequency: import("../hooks/useSignalHistory").FrequencyStats;
+  dailyBreakdown: import("../hooks/useSignalHistory").DailyBreakdown[];
   resolutionWindow: import("../hooks/useSignalHistory").ResolutionWindow;
   setResolutionWindow: (w: import("../hooks/useSignalHistory").ResolutionWindow) => void;
   exportCSV: () => void;

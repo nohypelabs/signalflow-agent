@@ -42,23 +42,22 @@ function isSignalCorrect(signal: RecordedSignal, currentPrice: number): boolean 
     const { entry, takeProfit, stopLoss } = exec;
 
     if (signal.action === "LONG") {
-      // Correct if the plan's take profit target was reached (or better) by resolution time.
-      // This validates the signal's specific prediction rather than just any upward move.
-      if (takeProfit != null) {
-        return currentPrice >= takeProfit;
-      }
-      // Fallback: at least moved in the right direction from entry
+      // Correct if price moved in the right direction OR reached TP
+      // Wrong if hit stop loss
+      if (stopLoss != null && currentPrice <= stopLoss) return false;
+      if (takeProfit != null && currentPrice >= takeProfit) return true;
       return currentPrice > entry;
     }
 
     if (signal.action === "SHORT") {
-      if (takeProfit != null) {
-        return currentPrice <= takeProfit;
-      }
+      // Correct if price moved in the right direction OR reached TP
+      // Wrong if hit stop loss
+      if (stopLoss != null && currentPrice >= stopLoss) return false;
+      if (takeProfit != null && currentPrice <= takeProfit) return true;
       return currentPrice < entry;
     }
 
-    // HOLD: price didn't move much from entry
+    // HOLD: price didn't move much from entry (within 2%)
     return Math.abs(currentPrice - entry) / entry <= 0.02;
   }
 
@@ -240,6 +239,47 @@ function computeStreaks(history: RecordedSignal[]): StreakInfo {
   };
 }
 
+/* ── Daily breakdown ── */
+
+export interface DailyBreakdown {
+  date: string;
+  total: number;
+  wins: number;
+  losses: number;
+  accuracy: number | null;
+}
+
+function computeDailyBreakdown(history: RecordedSignal[], days = 7): DailyBreakdown[] {
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+  const result: DailyBreakdown[] = [];
+
+  for (let i = 0; i < days; i++) {
+    const dayStart = now - (i + 1) * dayMs;
+    const dayEnd = now - i * dayMs;
+    const dateStr = new Date(dayEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+    const daySignals = history.filter((s) => {
+      const ts = s.resolved?.resolvedAt ?? s.timestamp;
+      return ts >= dayStart && ts < dayEnd;
+    });
+
+    const resolved = daySignals.filter((s) => s.resolved);
+    const wins = resolved.filter((s) => s.resolved?.correct).length;
+    const losses = resolved.length - wins;
+
+    result.unshift({
+      date: dateStr,
+      total: daySignals.length,
+      wins,
+      losses,
+      accuracy: resolved.length > 0 ? (wins / resolved.length) * 100 : null,
+    });
+  }
+
+  return result;
+}
+
 /* ── Per-coin breakdown ── */
 
 export interface CoinAccuracy {
@@ -394,6 +434,41 @@ export function useSignalHistory() {
     [resolutionWindow],
   );
 
+  // Re-resolve all signals with current price logic
+  const reResolveAll = useCallback(
+    (currentPrices: Map<string, number>) => {
+      const now = Date.now();
+      const windowMs = RESOLUTION_MS[resolutionWindow];
+      let changed = false;
+
+      setHistory((prev) => {
+        const next = prev.map((s) => {
+          // Only re-resolve signals that were already resolved
+          if (!s.resolved) return s;
+
+          const currentPrice = currentPrices.get(s.coin);
+          if (!currentPrice) return s;
+
+          // Check if signal is old enough to resolve
+          if (now - s.timestamp < windowMs) return s;
+
+          const correct = isSignalCorrect(s, currentPrice);
+          if (correct !== s.resolved.correct) {
+            changed = true;
+            return {
+              ...s,
+              resolved: { correct, finalPrice: currentPrice, resolvedAt: now },
+            };
+          }
+          return s;
+        });
+        if (changed) save(next);
+        return next;
+      });
+    },
+    [resolutionWindow],
+  );
+
   // Core stats
   const totalResolved = useMemo(() => history.filter((s) => s.resolved).length, [history]);
   const totalCorrect = useMemo(() => history.filter((s) => s.resolved?.correct).length, [history]);
@@ -406,6 +481,7 @@ export function useSignalHistory() {
   const streaks = useMemo(() => computeStreaks(history), [history]);
   const perCoin = useMemo(() => computePerCoin(history), [history]);
   const frequency = useMemo(() => computeFrequency(history), [history]);
+  const dailyBreakdown = useMemo(() => computeDailyBreakdown(history, 7), [history]);
 
   // Per-coin helper
   const byCoin = useCallback(
@@ -438,6 +514,7 @@ export function useSignalHistory() {
     hydrated,
     recordSignal,
     resolveSignals,
+    reResolveAll,
     resolutionWindow,
     setResolutionWindow,
     stats: { totalResolved, totalCorrect, accuracy },
@@ -447,6 +524,7 @@ export function useSignalHistory() {
     streaks,
     perCoin,
     frequency,
+    dailyBreakdown,
     byCoin,
     exportCSV,
   };
