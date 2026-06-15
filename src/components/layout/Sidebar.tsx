@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -177,18 +176,12 @@ export default function Sidebar({
   const brandHeader = (
     <div
       className={`flex items-center border-b border-border-default ${
-        collapsed ? "justify-center px-2 py-3" : "gap-2.5 px-4 py-3.5"
+        collapsed ? "justify-center px-2 py-3" : "gap-3 px-4 py-4"
       }`}
     >
       <div className="relative shrink-0">
-        <div className="w-7 h-7 rounded-lg bg-black border border-accent/20 flex items-center justify-center overflow-hidden">
-          <Image
-            src="/icons/signalflow-logo.png"
-            alt="SignalFlow"
-            width={28}
-            height={28}
-            className="h-full w-full object-cover"
-          />
+        <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
+          <span className="text-accent font-bold text-sm">SF</span>
         </div>
         <span
           className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border-2 border-surface"
@@ -204,10 +197,10 @@ export default function Sidebar({
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             className="flex flex-col overflow-hidden"
           >
-            <span className="text-sm font-bold text-txt-primary leading-tight">
+            <span className="text-base font-bold text-txt-primary leading-tight tracking-tight">
               SignalFlow
             </span>
-            <span className="text-[9px] text-accent/70 font-medium tracking-wider uppercase">
+            <span className="text-[9px] text-accent font-semibold tracking-[0.2em] uppercase">
               Agent
             </span>
           </motion.div>
@@ -412,16 +405,10 @@ export default function Sidebar({
               className="absolute left-0 top-0 bottom-0 w-64 bg-surface border-r border-border-default flex flex-col"
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-border-default">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-3">
                   <div className="relative">
-                    <div className="w-7 h-7 rounded-lg bg-black border border-accent/20 flex items-center justify-center overflow-hidden">
-                      <Image
-                        src="/icons/signalflow-logo.png"
-                        alt="SignalFlow"
-                        width={28}
-                        height={28}
-                        className="h-full w-full object-cover"
-                      />
+                    <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
+                      <span className="text-accent font-bold text-sm">SF</span>
                     </div>
                     <span
                       className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border-2 border-surface"
@@ -429,10 +416,10 @@ export default function Sidebar({
                     />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold text-txt-primary leading-tight">
+                    <span className="text-base font-bold text-txt-primary leading-tight tracking-tight">
                       SignalFlow
                     </span>
-                    <span className="text-[9px] text-accent/70 font-medium tracking-wider uppercase">
+                    <span className="text-[9px] text-accent font-semibold tracking-[0.2em] uppercase">
                       Agent
                     </span>
                   </div>
