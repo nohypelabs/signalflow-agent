@@ -175,7 +175,7 @@ export default function Sidebar({
   /* ── Brand header ── */
   const brandHeader = (
     <div
-      className={`flex items-center justify-center border-b border-border-default ${
+      className={`flex items-center justify-center ${
         collapsed ? "px-2 py-3" : "px-4 py-4"
       }`}
     >
@@ -401,7 +401,7 @@ export default function Sidebar({
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className="absolute left-0 top-0 bottom-0 w-64 bg-surface border-r border-border-default flex flex-col"
             >
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border-default">
+              <div className="flex items-center justify-between px-4 py-3">
                 <div className="flex flex-col items-center flex-1">
                   <span className="text-base font-bold text-txt-primary leading-tight tracking-tight">
                     SignalFlow
