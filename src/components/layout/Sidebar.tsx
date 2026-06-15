@@ -7,58 +7,26 @@ import {
   HomeIcon,
   SignalIcon,
   TradeIcon,
-  HistoryIcon,
-  StrategyIcon,
-  PerformanceIcon,
   SettingsIcon,
   DocsIcon,
   CloseIcon,
   SidebarCollapseIcon,
-  ChartIcon,
-  BellIcon,
-  DocumentIcon,
-  BarChartIcon,
-  ShieldIcon,
 } from "@/components/ui/icons";
 import type { Signal, SignalAction, SignalActionV2 } from "@/lib/types/signal";
 
 const groups = [
   {
-    label: "Command",
+    label: "Core",
     items: [
       { href: "/dashboard", label: "Dashboard", Icon: HomeIcon },
-      { href: "/signals", label: "Signals", Icon: SignalIcon },
-      { href: "/screener", label: "Market Overview", Icon: HistoryIcon },
-    ],
-  },
-  {
-    label: "Execution",
-    items: [
       { href: "/trading", label: "Trading", Icon: TradeIcon },
-      { href: "/portfolio", label: "Portfolio", Icon: ChartIcon },
-      { href: "/alerts", label: "Alerts", Icon: BellIcon },
-    ],
-  },
-  {
-    label: "Review",
-    items: [
-      { href: "/performance", label: "Performance", Icon: PerformanceIcon },
-      { href: "/analytics", label: "Analytics", Icon: BarChartIcon },
-      { href: "/trade-history", label: "Trade History", Icon: HistoryIcon },
-      { href: "/journal", label: "Journal", Icon: DocumentIcon },
-    ],
-  },
-  {
-    label: "Strategy",
-    items: [
-      { href: "/strategy-config", label: "Strategy Config", Icon: StrategyIcon },
+      { href: "/signals", label: "Signals", Icon: SignalIcon },
     ],
   },
   {
     label: "System",
     items: [
       { href: "/settings", label: "Settings", Icon: SettingsIcon },
-      { href: "/api-keys", label: "API Keys", Icon: ShieldIcon },
       { href: "/docs", label: "Docs", Icon: DocsIcon },
     ],
   },
