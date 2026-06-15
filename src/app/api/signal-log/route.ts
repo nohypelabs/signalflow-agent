@@ -18,7 +18,7 @@ function send(encoder: TextEncoder, controller: ReadableStreamDefaultController,
   controller.enqueue(encoder.encode(`data: ${JSON.stringify(entry)}\n\n`));
 }
 
-async function fetchTickers(): Promise<Array<{ symbol: string; lastPx: string; changePct: number }>> {
+async function fetchTickers(): Promise<Array<{ symbol: string; lastPx: string; changePct: number; quoteVolume: number }>> {
   try {
     const res = await fetch("https://mainnet-gw.sodex.dev/api/v1/spot/markets/tickers", {
       headers: { Accept: "application/json" },
@@ -39,98 +39,80 @@ function formatPrice(px: number): string {
   return `$${px.toFixed(5)}`;
 }
 
+function formatVolume(vol: number): string {
+  if (vol >= 1e9) return `$${(vol / 1e9).toFixed(2)}B`;
+  if (vol >= 1e6) return `$${(vol / 1e6).toFixed(1)}M`;
+  if (vol >= 1e3) return `$${(vol / 1e3).toFixed(1)}K`;
+  return `$${vol.toFixed(2)}`;
+}
+
 export async function GET(): Promise<Response> {
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
     async start(controller) {
-      send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "🚀", msg: "SignalFlow pipeline connected — fetching live data..." });
+      send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "🚀", msg: "SignalFlow pipeline connecting..." });
 
-      // Initial market data fetch
+      // Fetch real market data
       const tickers = await fetchTickers();
       const validTickers = tickers.filter(t => {
         const px = parseFloat(t.lastPx);
         return !isNaN(px) && px > 0;
       });
 
-      if (validTickers.length > 0) {
-        send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "📊", msg: `SoDEX connected — ${validTickers.length} pairs streaming` });
-
-        // Show top 5 pairs
-        const top5 = validTickers.slice(0, 5);
-        for (const t of top5) {
-          const base = t.symbol.replace(/^v/, "").replace(/_vUSDC$/, "");
-          const px = parseFloat(t.lastPx);
-          const change = t.changePct ?? 0;
-          send(encoder, controller, {
-            ts: formatTs(),
-            type: "DATA",
-            emoji: change >= 0 ? "📈" : "📉",
-            msg: `${base}/USDC ${formatPrice(px)} (${change >= 0 ? "+" : ""}${change.toFixed(2)}%)`
-          });
-        }
-
-        // Calculate market stats
-        const advancers = validTickers.filter(t => (t.changePct ?? 0) > 0).length;
-        const decliners = validTickers.filter(t => (t.changePct ?? 0) < 0).length;
-        const breadth = Math.round((advancers / validTickers.length) * 100);
-
-        send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "📊", msg: `Market breadth: ${breadth}% advancing (${advancers}/${validTickers.length} pairs)` });
-      } else {
-        send(encoder, controller, { ts: formatTs(), type: "WARNING", emoji: "⚠️", msg: "SoDEX API timeout — using cached data" });
+      if (validTickers.length === 0) {
+        send(encoder, controller, { ts: formatTs(), type: "ERROR", emoji: "❌", msg: "SoDEX API timeout — no market data available" });
+        return;
       }
 
-      // Signal analysis simulation (would connect to real engine in production)
-      send(encoder, controller, { ts: formatTs(), type: "RECALC", emoji: "🔄", msg: "Confluence V3 engine started — analyzing all pairs..." });
+      send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "✅", msg: `SoDEX connected — ${validTickers.length} pairs streaming` });
 
-      // Simulate factor analysis
-      const factors = [
-        { name: "TREND", emoji: "📈", detail: "EMA20 > EMA50 > EMA200 — bullish stack" },
-        { name: "MOMENTUM", emoji: "⚡", detail: "RSI 58.2 (neutral-bullish) | ROC +1.8%" },
-        { name: "VOLATILITY", emoji: "📊", detail: "ATR $1,240 (1.8%) — Bollinger expanding" },
-        { name: "VOLUME", emoji: "📊", detail: "OBV divergence — price up, volume down" },
-        { name: "STRUCTURE", emoji: "🏗", detail: "Higher highs, higher lows — bullish" },
-        { name: "ORDER_FLOW", emoji: "⚡", detail: "Buy pressure 62% — delta +$4.2M" },
-        { name: "DEPTH", emoji: "📊", detail: "Imbalance 58% bid-heavy — spread 1.5bps" },
-        { name: "FUNDING", emoji: "💰", detail: "SoDEX -0.015% — slight short bias" },
-        { name: "SMC_STRUCTURE", emoji: "🎯", detail: "Bullish OB at $66,800 — unmitigated" },
-        { name: "SNIPER_ENTRY", emoji: "🎯", detail: "LONG @ order_block — BOS confirmed" },
-      ];
+      // Market overview
+      const totalVolume = validTickers.reduce((sum, t) => sum + (t.quoteVolume ?? 0), 0);
+      const advancers = validTickers.filter(t => (t.changePct ?? 0) > 0).length;
+      const decliners = validTickers.filter(t => (t.changePct ?? 0) < 0).length;
+      const breadth = Math.round((advancers / validTickers.length) * 100);
 
-      for (const f of factors) {
-        await new Promise(r => setTimeout(r, 300));
-        send(encoder, controller, { ts: formatTs(), type: "SIGNAL", emoji: f.emoji, msg: `${f.name}: ${f.detail}` });
+      send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "📊", msg: `24H volume: ${formatVolume(totalVolume)} across ${validTickers.length} instruments` });
+      send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "📊", msg: `Market breadth: ${breadth}% advancing (${advancers}↑ ${decliners}↓)` });
+
+      // Top movers
+      const sorted = [...validTickers].sort((a, b) => Math.abs(b.changePct ?? 0) - Math.abs(a.changePct ?? 0));
+      const top3 = sorted.slice(0, 3);
+
+      for (const t of top3) {
+        const base = t.symbol.replace(/^v/, "").replace(/_vUSDC$/, "");
+        const px = parseFloat(t.lastPx);
+        const change = t.changePct ?? 0;
+        send(encoder, controller, {
+          ts: formatTs(),
+          type: "DATA",
+          emoji: change >= 0 ? "📈" : "📉",
+          msg: `${base}/USDC ${formatPrice(px)} (${change >= 0 ? "+" : ""}${change.toFixed(2)}%) — ${change >= 0 ? "top gainer" : "top loser"}`
+        });
       }
 
-      // Confluence result
-      await new Promise(r => setTimeout(r, 500));
-      send(encoder, controller, { ts: formatTs(), type: "SIGNAL", emoji: "📊", msg: "Confluence score: 68/100 — 5 bullish, 1 bearish, 2 neutral" });
+      // BTC specific
+      const btc = validTickers.find(t => t.symbol.includes("BTC"));
+      if (btc) {
+        const px = parseFloat(btc.lastPx);
+        const change = btc.changePct ?? 0;
+        const vol = btc.quoteVolume ?? 0;
+        send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "₿", msg: `BTC/USDC ${formatPrice(px)} — 24H volume ${formatVolume(vol)}` });
+      }
 
-      // Trade setup
-      await new Promise(r => setTimeout(r, 300));
-      send(encoder, controller, { ts: formatTs(), type: "SIGNAL", emoji: "🎯", msg: "Trade setup: trend_continuation — LONG bias on BTC/USDC" });
-      send(encoder, controller, { ts: formatTs(), type: "SIGNAL", emoji: "✅", msg: "Entry: $67,420 | TP: $68,950 (2.3%) | SL: $66,800 (0.9%)" });
-
-      // Quality check
-      await new Promise(r => setTimeout(r, 200));
-      send(encoder, controller, { ts: formatTs(), type: "SIGNAL", emoji: "🔍", msg: "Quality: raw 72% → calibrated 68% — ACTIONABLE" });
-
-      // AI thesis
-      await new Promise(r => setTimeout(r, 400));
-      send(encoder, controller, { ts: formatTs(), type: "RECALC", emoji: "🤖", msg: "AI thesis: Bullish continuation — macro supportive" });
-
-      // Final
-      await new Promise(r => setTimeout(r, 300));
-      send(encoder, controller, { ts: formatTs(), type: "SIGNAL", emoji: "🎯", msg: "SIGNAL: BTC/USDC LONG — 68% confidence — Confluence 68/100" });
+      send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "✅", msg: "Market data pipeline active — waiting for signal generation..." });
 
       // Live price updates every 5s
+      let updateCount = 0;
       const priceInterval = setInterval(async () => {
+        updateCount++;
         const freshTickers = await fetchTickers();
         if (freshTickers.length > 0) {
-          const btc = freshTickers.find(t => t.symbol.includes("BTC"));
-          if (btc) {
-            const px = parseFloat(btc.lastPx);
-            const change = btc.changePct ?? 0;
+          const freshBtc = freshTickers.find(t => t.symbol.includes("BTC"));
+          if (freshBtc) {
+            const px = parseFloat(freshBtc.lastPx);
+            const change = freshBtc.changePct ?? 0;
             send(encoder, controller, {
               ts: formatTs(),
               type: "DATA",
@@ -138,12 +120,24 @@ export async function GET(): Promise<Response> {
               msg: `BTC/USDC ${formatPrice(px)} (${change >= 0 ? "+" : ""}${change.toFixed(2)}%)`
             });
           }
+
+          // Every 5th update, show market breadth
+          if (updateCount % 5 === 0) {
+            const adv = freshTickers.filter(t => (t.changePct ?? 0) > 0).length;
+            const dec = freshTickers.filter(t => (t.changePct ?? 0) < 0).length;
+            send(encoder, controller, {
+              ts: formatTs(),
+              type: "DATA",
+              emoji: "📊",
+              msg: `Breadth update: ${adv}↑ ${dec}↓ — ${Math.round((adv / freshTickers.length) * 100)}% advancing`
+            });
+          }
         }
       }, 5000);
 
       // Heartbeat every 30s
       const heartbeat = setInterval(() => {
-        send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "💓", msg: "Pipeline active — all feeds connected" });
+        send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "💓", msg: "Pipeline heartbeat — all feeds active" });
       }, 30000);
 
       // Cleanup
