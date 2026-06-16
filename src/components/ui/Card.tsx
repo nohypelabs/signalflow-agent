@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 
 const variants = {
   default: "bg-card border border-border-default",
-  glass: "bg-white/[0.03] backdrop-blur-2xl border border-white/[0.06]",
+  glass: "bg-black/30 backdrop-blur-xl border border-white/[0.08]",
   inset: "bg-inset border border-border-default",
   elevated: "bg-elevated border border-border-muted",
   ghost: "bg-transparent border-none",

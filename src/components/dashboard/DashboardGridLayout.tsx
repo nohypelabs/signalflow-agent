@@ -2,6 +2,7 @@
 
 import { useDashboard } from "@/lib/dashboard-context";
 import { useSignalLog } from "@/lib/hooks/useSignalLog";
+import FlowBackground from "@/components/layout/FlowBackground";
 import DecisionScoreHero from "./DecisionScoreHero";
 import LayerBreakdown from "./LayerBreakdown";
 import SignalLogFeed from "./SignalLogFeed";
@@ -31,31 +32,36 @@ export default function DashboardGridLayout() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-3 space-y-3">
-      {/* Row 1: Decision Score + Layer Breakdown */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <DecisionScoreHero
-          signal={activeSignal}
-          analyzing={d.analyzing}
-          onGenerate={handleGenerate}
-          onExecute={handleExecute}
+    <div className="relative mx-auto w-full max-w-[1400px] px-4 py-3">
+      <FlowBackground />
+
+      {/* Bento Grid */}
+      <div className="relative z-10 space-y-3">
+        {/* Row 1: Decision Score + Layer Breakdown */}
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <DecisionScoreHero
+            signal={activeSignal}
+            analyzing={d.analyzing}
+            onGenerate={handleGenerate}
+            onExecute={handleExecute}
+          />
+          <LayerBreakdown
+            signal={activeSignal}
+            sourceFlags={d.signalsData?.sources}
+          />
+        </div>
+
+        {/* Row 2: Log Feed — full width */}
+        <SignalLogFeed
+          entries={log.entries}
+          status={log.status}
+          filter={log.filter}
+          onFilterChange={log.setFilter}
         />
-        <LayerBreakdown
-          signal={activeSignal}
-          sourceFlags={d.signalsData?.sources}
-        />
+
+        {/* Row 3: Why This Signal — full width */}
+        <WhyThisSignal signal={activeSignal} />
       </div>
-
-      {/* Row 2: Log Feed — full width */}
-      <SignalLogFeed
-        entries={log.entries}
-        status={log.status}
-        filter={log.filter}
-        onFilterChange={log.setFilter}
-      />
-
-      {/* Row 3: Why This Signal — full width */}
-      <WhyThisSignal signal={activeSignal} />
     </div>
   );
 }
