@@ -32,7 +32,7 @@ export default function DashboardGridLayout() {
   }
 
   return (
-    <div className="relative mx-auto w-full max-w-[1400px] px-4 py-3">
+    <div className="relative mx-auto w-full max-w-[1400px] px-4 py-3 overflow-x-hidden">
       <FlowBackground />
 
       {/* Bento Grid */}
