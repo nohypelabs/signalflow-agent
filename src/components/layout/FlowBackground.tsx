@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-interface Node {
+interface Satellite {
   x: number;
   y: number;
   z: number;
@@ -13,30 +13,30 @@ interface Node {
   color: string;
   alpha: number;
   pulse: number;
-  connections: number[];
-  type: "source" | "hub" | "output";
+  type: "source" | "processor" | "output";
+  targets: number[];
 }
 
-interface FlowParticle {
-  x: number;
-  y: number;
-  z: number;
+interface Beam {
+  from: number;
+  to: number;
   progress: number;
   speed: number;
-  fromNode: number;
-  toNode: number;
+  width: number;
   color: string;
-  size: number;
+  active: boolean;
+  cooldown: number;
 }
 
-const NODE_COLORS = {
-  source: "#00E5A8",  // green — data sources
-  hub: "#00D4FF",     // cyan — processing hubs
-  output: "#8B5CF6",  // purple — signal outputs
-};
+const SATELLITE_COUNT = 20;
+const BEAM_COUNT = 40;
 
-const NODE_COUNT = 30;
-const FLOW_PARTICLE_COUNT = 60;
+const COLORS = {
+  source: "#00E5A8",
+  processor: "#00D4FF",
+  output: "#8B5CF6",
+  beam: "#00E5A8",
+};
 
 export default function FlowBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -54,111 +54,106 @@ export default function FlowBackground() {
     canvas.width = width;
     canvas.height = height;
 
-    const nodes: Node[] = [];
-    const flowParticles: FlowParticle[] = [];
+    const satellites: Satellite[] = [];
+    const beams: Beam[] = [];
     let time = 0;
 
-    // Create nodes in a network topology
-    function initNodes() {
-      nodes.length = 0;
+    function init() {
+      satellites.length = 0;
+      beams.length = 0;
 
-      // Source nodes (left side) — represent data feeds
-      for (let i = 0; i < 8; i++) {
-        nodes.push({
-          x: width * 0.1 + Math.random() * width * 0.15,
-          y: height * 0.1 + (height * 0.8 * i) / 7,
-          z: Math.random() * 200 - 50,
-          vx: (Math.random() - 0.5) * 0.3,
-          vy: (Math.random() - 0.5) * 0.2,
-          vz: (Math.random() - 0.5) * 0.3,
-          size: 2 + Math.random() * 2,
-          color: NODE_COLORS.source,
-          alpha: 0,
-          pulse: Math.random() * Math.PI * 2,
-          connections: [],
-          type: "source",
-        });
-      }
-
-      // Hub nodes (center) — represent processing
-      for (let i = 0; i < 12; i++) {
-        nodes.push({
-          x: width * 0.35 + Math.random() * width * 0.3,
-          y: height * 0.05 + (height * 0.9 * i) / 11,
-          z: Math.random() * 300 - 100,
-          vx: (Math.random() - 0.5) * 0.2,
-          vy: (Math.random() - 0.5) * 0.15,
+      // Source satellites (left region)
+      for (let i = 0; i < 6; i++) {
+        satellites.push({
+          x: width * 0.08 + Math.random() * width * 0.12,
+          y: height * 0.15 + (height * 0.7 * i) / 5,
+          z: Math.random() * 300 - 50,
+          vx: (Math.random() - 0.5) * 0.15,
+          vy: (Math.random() - 0.5) * 0.1,
           vz: (Math.random() - 0.5) * 0.2,
-          size: 2.5 + Math.random() * 2.5,
-          color: NODE_COLORS.hub,
+          size: 3 + Math.random() * 2,
+          color: COLORS.source,
           alpha: 0,
           pulse: Math.random() * Math.PI * 2,
-          connections: [],
-          type: "hub",
+          type: "source",
+          targets: [],
         });
       }
 
-      // Output nodes (right side) — represent signals
-      for (let i = 0; i < 10; i++) {
-        nodes.push({
-          x: width * 0.75 + Math.random() * width * 0.15,
-          y: height * 0.1 + (height * 0.8 * i) / 9,
-          z: Math.random() * 200 - 50,
-          vx: (Math.random() - 0.5) * 0.25,
-          vy: (Math.random() - 0.5) * 0.2,
-          vz: (Math.random() - 0.5) * 0.25,
-          size: 2 + Math.random() * 2,
-          color: NODE_COLORS.output,
-          alpha: 0,
-          pulse: Math.random() * Math.PI * 2,
-          connections: [],
-          type: "output",
-        });
-      }
-
-      // Create connections: source → hub → output
+      // Processor satellites (center)
       for (let i = 0; i < 8; i++) {
-        // Each source connects to 2-3 hubs
-        const hubs = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
-        const targetHubs = hubs.sort(() => Math.random() - 0.5).slice(0, 2 + Math.floor(Math.random() * 2));
-        nodes[i].connections = targetHubs;
-      }
-
-      for (let i = 8; i < 20; i++) {
-        // Each hub connects to 2-4 outputs
-        const outputs = [20, 21, 22, 23, 24, 25, 26, 27, 28, 29];
-        const targetOutputs = outputs.sort(() => Math.random() - 0.5).slice(0, 2 + Math.floor(Math.random() * 3));
-        nodes[i].connections = targetOutputs;
-      }
-    }
-
-    function initFlowParticles() {
-      flowParticles.length = 0;
-      for (let i = 0; i < FLOW_PARTICLE_COUNT; i++) {
-        const fromNode = Math.floor(Math.random() * NODE_COUNT);
-        const conn = nodes[fromNode].connections;
-        if (conn.length === 0) continue;
-        const toNode = conn[Math.floor(Math.random() * conn.length)];
-
-        flowParticles.push({
-          x: nodes[fromNode].x,
-          y: nodes[fromNode].y,
-          z: nodes[fromNode].z,
-          progress: Math.random(),
-          speed: 0.003 + Math.random() * 0.005,
-          fromNode,
-          toNode,
-          color: nodes[fromNode].color,
-          size: 1 + Math.random() * 1.5,
+        satellites.push({
+          x: width * 0.35 + Math.random() * width * 0.3,
+          y: height * 0.1 + (height * 0.8 * i) / 7,
+          z: Math.random() * 400 - 100,
+          vx: (Math.random() - 0.5) * 0.1,
+          vy: (Math.random() - 0.5) * 0.08,
+          vz: (Math.random() - 0.5) * 0.15,
+          size: 4 + Math.random() * 2,
+          color: COLORS.processor,
+          alpha: 0,
+          pulse: Math.random() * Math.PI * 2,
+          type: "processor",
+          targets: [],
         });
       }
+
+      // Output satellites (right region)
+      for (let i = 0; i < 6; i++) {
+        satellites.push({
+          x: width * 0.75 + Math.random() * width * 0.15,
+          y: height * 0.15 + (height * 0.7 * i) / 5,
+          z: Math.random() * 300 - 50,
+          vx: (Math.random() - 0.5) * 0.12,
+          vy: (Math.random() - 0.5) * 0.1,
+          vz: (Math.random() - 0.5) * 0.18,
+          size: 3 + Math.random() * 2,
+          color: COLORS.output,
+          alpha: 0,
+          pulse: Math.random() * Math.PI * 2,
+          type: "output",
+          targets: [],
+        });
+      }
+
+      // Create beam connections: source → processor → output
+      // Sources shoot to processors
+      for (let i = 0; i < 6; i++) {
+        const targetCount = 1 + Math.floor(Math.random() * 2);
+        const available = [6, 7, 8, 9, 10, 11, 12, 13];
+        const targets = available.sort(() => Math.random() - 0.5).slice(0, targetCount);
+        satellites[i].targets = targets;
+      }
+
+      // Processors shoot to outputs
+      for (let i = 6; i < 14; i++) {
+        const targetCount = 1 + Math.floor(Math.random() * 2);
+        const available = [14, 15, 16, 17, 18, 19];
+        const targets = available.sort(() => Math.random() - 0.5).slice(0, targetCount);
+        satellites[i].targets = targets;
+      }
+
+      // Create beams
+      for (let i = 0; i < satellites.length; i++) {
+        for (const targetIdx of satellites[i].targets) {
+          beams.push({
+            from: i,
+            to: targetIdx,
+            progress: 0,
+            speed: 0.008 + Math.random() * 0.012,
+            width: 1.5 + Math.random() * 1.5,
+            color: satellites[i].color,
+            active: true,
+            cooldown: Math.random() * 200,
+          });
+        }
+      }
     }
 
-    initNodes();
-    initFlowParticles();
+    init();
 
     function project(x: number, y: number, z: number): { px: number; py: number; scale: number } {
-      const fov = 700;
+      const fov = 800;
       const scale = fov / (fov + z);
       return { px: x * scale, py: y * scale, scale };
     }
@@ -167,135 +162,159 @@ export default function FlowBackground() {
       ctx!.clearRect(0, 0, width, height);
       time += 0.016;
 
-      // Update nodes
-      for (const node of nodes) {
-        // Gentle drift
-        node.x += node.vx;
-        node.y += node.vy;
-        node.z += node.vz;
-        node.pulse += 0.03;
+      // Update satellites
+      for (const sat of satellites) {
+        sat.x += sat.vx;
+        sat.y += sat.vy;
+        sat.z += sat.vz;
+        sat.pulse += 0.04;
+        sat.alpha = Math.min(1, sat.alpha + 0.015);
 
-        // Bounce softly
-        if (node.x < width * 0.05 || node.x > width * 0.95) node.vx *= -1;
-        if (node.y < height * 0.05 || node.y > height * 0.95) node.vy *= -1;
-        if (node.z < -200 || node.z > 400) node.vz *= -1;
-
-        // Fade in
-        node.alpha = Math.min(1, node.alpha + 0.02);
+        // Soft bounce
+        if (sat.x < width * 0.03 || sat.x > width * 0.97) sat.vx *= -1;
+        if (sat.y < height * 0.05 || sat.y > height * 0.95) sat.vy *= -1;
+        if (sat.z < -200 || sat.z > 500) sat.vz *= -1;
       }
 
-      // Draw connections
-      for (const node of nodes) {
-        const from = project(node.x, node.y, node.z);
-        for (const connIdx of node.connections) {
-          const target = nodes[connIdx];
-          const to = project(target.x, target.y, target.z);
+      // Draw beams FIRST (behind satellites)
+      for (const beam of beams) {
+        if (!beam.active) continue;
 
-          const dist = Math.sqrt((from.px - to.px) ** 2 + (from.py - to.py) ** 2);
-          const maxDist = 400;
-          if (dist > maxDist) continue;
+        beam.cooldown -= 1;
+        if (beam.cooldown > 0) continue;
 
-          const alpha = (1 - dist / maxDist) * 0.15 * Math.min(node.alpha, target.alpha);
+        beam.progress += beam.speed;
 
-          // Draw connection line
-          ctx!.beginPath();
-          ctx!.moveTo(from.px, from.py);
-
-          // Bezier curve for organic feel
-          const midX = (from.px + to.px) / 2;
-          const midY = (from.py + to.py) / 2;
-          const offset = Math.sin(time + connIdx) * 15;
-          ctx!.quadraticCurveTo(midX + offset, midY - offset, to.px, to.py);
-
-          ctx!.strokeStyle = node.color;
-          ctx!.globalAlpha = alpha * from.scale;
-          ctx!.lineWidth = 0.8 * from.scale;
-          ctx!.stroke();
+        if (beam.progress >= 1) {
+          beam.progress = 0;
+          beam.cooldown = 50 + Math.random() * 150; // delay before next beam
+          continue;
         }
-      }
 
-      // Draw nodes
-      for (const node of nodes) {
-        const proj = project(node.x, node.y, node.z);
-        const size = node.size * proj.scale;
-        const pulse = Math.sin(node.pulse) * 0.3 + 0.7;
-        const finalAlpha = node.alpha * proj.scale * pulse;
+        const from = satellites[beam.from];
+        const to = satellites[beam.to];
+        const pFrom = project(from.x, from.y, from.z);
+        const pTo = project(to.x, to.y, to.z);
 
-        // Glow
-        const glowSize = size * 5;
-        const gradient = ctx!.createRadialGradient(proj.px, proj.py, 0, proj.px, proj.py, glowSize);
-        gradient.addColorStop(0, node.color);
+        const t = beam.progress;
+        const beamX = pFrom.px + (pTo.px - pFrom.px) * t;
+        const beamY = pFrom.py + (pTo.py - pFrom.py) * t;
+
+        // Beam trail (line from source to current position)
+        const trailAlpha = 0.3 * Math.min(from.alpha, to.alpha);
+        ctx!.beginPath();
+        ctx!.moveTo(pFrom.px, pFrom.py);
+        ctx!.lineTo(beamX, beamY);
+        ctx!.strokeStyle = beam.color;
+        ctx!.globalAlpha = trailAlpha * 0.3;
+        ctx!.lineWidth = beam.width * pFrom.scale;
+        ctx!.stroke();
+
+        // Beam head (glowing dot)
+        const headSize = (beam.width * 2 + 2) * pFrom.scale;
+        const headAlpha = t < 0.2 ? t / 0.2 : t > 0.8 ? (1 - t) / 0.2 : 1;
+
+        // Outer glow
+        const glowSize = headSize * 4;
+        const gradient = ctx!.createRadialGradient(beamX, beamY, 0, beamX, beamY, glowSize);
+        gradient.addColorStop(0, beam.color);
+        gradient.addColorStop(0.3, beam.color);
         gradient.addColorStop(1, "transparent");
         ctx!.beginPath();
-        ctx!.arc(proj.px, proj.py, glowSize, 0, Math.PI * 2);
+        ctx!.arc(beamX, beamY, glowSize, 0, Math.PI * 2);
         ctx!.fillStyle = gradient;
-        ctx!.globalAlpha = finalAlpha * 0.12;
+        ctx!.globalAlpha = headAlpha * 0.4 * pFrom.scale;
         ctx!.fill();
 
         // Core
         ctx!.beginPath();
-        ctx!.arc(proj.px, proj.py, size, 0, Math.PI * 2);
-        ctx!.fillStyle = node.color;
-        ctx!.globalAlpha = finalAlpha;
+        ctx!.arc(beamX, beamY, headSize, 0, Math.PI * 2);
+        ctx!.fillStyle = "#ffffff";
+        ctx!.globalAlpha = headAlpha * 0.9 * pFrom.scale;
         ctx!.fill();
 
-        // Inner bright spot
-        ctx!.beginPath();
-        ctx!.arc(proj.px, proj.py, size * 0.4, 0, Math.PI * 2);
-        ctx!.fillStyle = "#ffffff";
-        ctx!.globalAlpha = finalAlpha * 0.6;
-        ctx!.fill();
+        // Beam tail (fading trail)
+        const tailLength = 0.15;
+        const tailStart = Math.max(0, t - tailLength);
+        for (let i = 0; i < 5; i++) {
+          const tt = tailStart + (t - tailStart) * (i / 5);
+          const tx = pFrom.px + (pTo.px - pFrom.px) * tt;
+          const ty = pFrom.py + (pTo.py - pFrom.py) * tt;
+          const tailAlpha2 = (i / 5) * headAlpha * 0.3;
+          const tailSize = headSize * (0.3 + (i / 5) * 0.7);
+
+          ctx!.beginPath();
+          ctx!.arc(tx, ty, tailSize, 0, Math.PI * 2);
+          ctx!.fillStyle = beam.color;
+          ctx!.globalAlpha = tailAlpha2 * pFrom.scale;
+          ctx!.fill();
+        }
       }
 
-      // Update and draw flow particles
-      for (const fp of flowParticles) {
-        fp.progress += fp.speed;
-        if (fp.progress >= 1) {
-          // Reset to new path
-          fp.progress = 0;
-          fp.fromNode = fp.toNode;
-          const conn = nodes[fp.fromNode].connections;
-          if (conn.length > 0) {
-            fp.toNode = conn[Math.floor(Math.random() * conn.length)];
-            fp.color = nodes[fp.fromNode].color;
-          }
-        }
+      // Draw connection lines (faint, always visible)
+      for (const beam of beams) {
+        const from = satellites[beam.from];
+        const to = satellites[beam.to];
+        const pFrom = project(from.x, from.y, from.z);
+        const pTo = project(to.x, to.y, to.z);
 
-        const from = nodes[fp.fromNode];
-        const to = nodes[fp.toNode];
-        const t = fp.progress;
-
-        // Interpolate position along curve
-        const midX = (from.x + to.x) / 2;
-        const midY = (from.y + to.y) / 2;
-        const midZ = (from.z + to.z) / 2;
-        const offset = Math.sin(time * 2 + fp.fromNode) * 20;
-
-        fp.x = (1 - t) * (1 - t) * from.x + 2 * (1 - t) * t * (midX + offset) + t * t * to.x;
-        fp.y = (1 - t) * (1 - t) * from.y + 2 * (1 - t) * t * (midY - offset) + t * t * to.y;
-        fp.z = (1 - t) * (1 - t) * from.z + 2 * (1 - t) * t * midZ + t * t * to.z;
-
-        const proj = project(fp.x, fp.y, fp.z);
-        const size = fp.size * proj.scale;
-
-        // Fade at start/end
-        const fadeAlpha = t < 0.1 ? t / 0.1 : t > 0.9 ? (1 - t) / 0.1 : 1;
-
-        // Draw flow particle with glow
         ctx!.beginPath();
-        ctx!.arc(proj.px, proj.py, size * 2, 0, Math.PI * 2);
-        const grad = ctx!.createRadialGradient(proj.px, proj.py, 0, proj.px, proj.py, size * 2);
-        grad.addColorStop(0, fp.color);
-        grad.addColorStop(1, "transparent");
-        ctx!.fillStyle = grad;
-        ctx!.globalAlpha = fadeAlpha * proj.scale * 0.5;
-        ctx!.fill();
+        ctx!.moveTo(pFrom.px, pFrom.py);
+        ctx!.lineTo(pTo.px, pTo.py);
+        ctx!.strokeStyle = beam.color;
+        ctx!.globalAlpha = 0.04 * Math.min(from.alpha, to.alpha);
+        ctx!.lineWidth = 0.5 * pFrom.scale;
+        ctx!.stroke();
+      }
 
+      // Draw satellites
+      for (const sat of satellites) {
+        const proj = project(sat.x, sat.y, sat.z);
+        const size = sat.size * proj.scale;
+        const pulse = Math.sin(sat.pulse) * 0.3 + 0.7;
+        const finalAlpha = sat.alpha * proj.scale * pulse;
+
+        // Outer ring (antenna feel)
+        ctx!.beginPath();
+        ctx!.arc(proj.px, proj.py, size * 2.5, 0, Math.PI * 2);
+        ctx!.strokeStyle = sat.color;
+        ctx!.globalAlpha = finalAlpha * 0.15;
+        ctx!.lineWidth = 0.5 * proj.scale;
+        ctx!.stroke();
+
+        // Middle ring
+        ctx!.beginPath();
+        ctx!.arc(proj.px, proj.py, size * 1.5, 0, Math.PI * 2);
+        ctx!.strokeStyle = sat.color;
+        ctx!.globalAlpha = finalAlpha * 0.25;
+        ctx!.lineWidth = 0.8 * proj.scale;
+        ctx!.stroke();
+
+        // Core body
         ctx!.beginPath();
         ctx!.arc(proj.px, proj.py, size, 0, Math.PI * 2);
-        ctx!.fillStyle = fp.color;
-        ctx!.globalAlpha = fadeAlpha * proj.scale * 0.8;
+        ctx!.fillStyle = sat.color;
+        ctx!.globalAlpha = finalAlpha * 0.8;
         ctx!.fill();
+
+        // Bright center
+        ctx!.beginPath();
+        ctx!.arc(proj.px, proj.py, size * 0.35, 0, Math.PI * 2);
+        ctx!.fillStyle = "#ffffff";
+        ctx!.globalAlpha = finalAlpha * 0.7;
+        ctx!.fill();
+
+        // Signal wave pulse (expanding ring)
+        const wavePhase = (sat.pulse * 0.5) % (Math.PI * 2);
+        const waveRadius = size * 3 + wavePhase * size * 0.8;
+        const waveAlpha = Math.max(0, 1 - wavePhase / (Math.PI * 2)) * 0.1;
+
+        ctx!.beginPath();
+        ctx!.arc(proj.px, proj.py, waveRadius, 0, Math.PI * 2);
+        ctx!.strokeStyle = sat.color;
+        ctx!.globalAlpha = waveAlpha * finalAlpha;
+        ctx!.lineWidth = 1 * proj.scale;
+        ctx!.stroke();
       }
 
       ctx!.globalAlpha = 1;
@@ -309,8 +328,7 @@ export default function FlowBackground() {
       height = window.innerHeight;
       canvas.width = width;
       canvas.height = height;
-      initNodes();
-      initFlowParticles();
+      init();
     };
 
     window.addEventListener("resize", handleResize);
@@ -325,7 +343,7 @@ export default function FlowBackground() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 z-0 pointer-events-none"
-      style={{ opacity: 0.7 }}
+      style={{ opacity: 0.75 }}
       aria-hidden="true"
     />
   );
