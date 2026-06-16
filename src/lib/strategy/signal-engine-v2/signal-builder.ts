@@ -146,34 +146,103 @@ export function generateSignalV2(input: {
     });
   }
 
+  // ── MA Cross Detection ──────────────────────────────────
+  const ema9 = last(ema(closes, 9));
+  const ema21 = last(ema(closes, 21));
+  const prevEma9 = closes.length > 10 ? ema(closes, 9)[closes.length - 2] : NaN;
+  const prevEma21 = closes.length > 22 ? ema(closes, 21)[closes.length - 2] : NaN;
+  const bullishMACross = !isNaN(ema9) && !isNaN(ema21) && !isNaN(prevEma9) && !isNaN(prevEma21)
+    && prevEma9 <= prevEma21 && ema9 > ema21;
+  const bearishMACross = !isNaN(ema9) && !isNaN(ema21) && !isNaN(prevEma9) && !isNaN(prevEma21)
+    && prevEma9 >= prevEma21 && ema9 < ema21;
+
+  // Stoch RSI cross detection
+  const prevStochK = stochRSIResult.k.length > 2 ? stochRSIResult.k[stochRSIResult.k.length - 2] : NaN;
+  const prevStochD = stochRSIResult.d.length > 2 ? stochRSIResult.d[stochRSIResult.d.length - 2] : NaN;
+  const stochBullishCross = !isNaN(stochK) && !isNaN(stochD) && !isNaN(prevStochK) && !isNaN(prevStochD)
+    && prevStochK <= prevStochD && stochK > stochD;
+  const stochBearishCross = !isNaN(stochK) && !isNaN(stochD) && !isNaN(prevStochK) && !isNaN(prevStochD)
+    && prevStochK >= prevStochD && stochK < stochD;
+
   // ── Overbought/Oversold Sniper Detection ──────────────
   // Big pump + RSI overbought = potential short opportunity
   // Big dump + RSI oversold = potential long opportunity
-  if (Math.abs(priceChange24h) > 5 || Math.abs(priceChange12h) > 3) {
-    const bigMove = priceChange24h > 5 || priceChange12h > 3;
-    const bigDrop = priceChange24h < -5 || priceChange12h < -3;
+  // MA cross + StochRSI cross = confluence confirmation
+  const bigMove = priceChange24h > 5 || priceChange12h > 3;
+  const bigDrop = priceChange24h < -5 || priceChange12h < -3;
+  const rsiOverbought = rsiValue > 70 || stochK > 80;
+  const rsiOversold = rsiValue < 30 || stochK < 20;
 
-    if (bigMove && rsiValue > 70) {
-      // Overbought after big pump — sniper SHORT
-      const sniperScore = Math.min(95, 70 + (rsiValue - 70) * 2 + Math.abs(priceChange24h));
-      factors.push({
-        name: "SNIPER_ENTRY",
-        score: Math.round(100 - sniperScore), // Inverted for bearish
-        weight: 0.12,
-        detail: `OVERBOUGHT SHORT: +${priceChange24h.toFixed(1)}% pump, RSI ${rsiValue.toFixed(0)} — mean reversion setup`,
-        bullish: false,
-      });
-    } else if (bigDrop && rsiValue < 30) {
-      // Oversold after big dump — sniper LONG
-      const sniperScore = Math.min(95, 70 + (30 - rsiValue) * 2 + Math.abs(priceChange24h));
-      factors.push({
-        name: "SNIPER_ENTRY",
-        score: Math.round(sniperScore),
-        weight: 0.12,
-        detail: `OVERSOLD LONG: ${priceChange24h.toFixed(1)}% dump, RSI ${rsiValue.toFixed(0)} — mean reversion setup`,
-        bullish: true,
-      });
-    }
+  if (bigMove && rsiOverbought) {
+    // Overbought after big pump — sniper SHORT
+    const confluences: string[] = [];
+    let sniperStrength = 60;
+
+    if (rsiValue > 70) { confluences.push(`RSI ${rsiValue.toFixed(0)}`); sniperStrength += 10; }
+    if (stochK > 80) { confluences.push(`StochRSI K=${stochK.toFixed(0)}`); sniperStrength += 8; }
+    if (bearishMACross) { confluences.push("EMA 9/21 bearish cross"); sniperStrength += 12; }
+    if (stochBearishCross) { confluences.push("StochRSI bearish cross"); sniperStrength += 10; }
+    if (priceChange24h > 8) { confluences.push(`+${priceChange24h.toFixed(1)}% extreme pump`); sniperStrength += 5; }
+
+    factors.push({
+      name: "SNIPER_ENTRY",
+      score: Math.round(100 - Math.min(95, sniperStrength)),
+      weight: 0.12,
+      detail: `OVERBOUGHT SHORT: ${confluences.join(", ")} — mean reversion`,
+      bullish: false,
+    });
+  } else if (bigDrop && rsiOversold) {
+    // Oversold after big dump — sniper LONG
+    const confluences: string[] = [];
+    let sniperStrength = 60;
+
+    if (rsiValue < 30) { confluences.push(`RSI ${rsiValue.toFixed(0)}`); sniperStrength += 10; }
+    if (stochK < 20) { confluences.push(`StochRSI K=${stochK.toFixed(0)}`); sniperStrength += 8; }
+    if (bullishMACross) { confluences.push("EMA 9/21 bullish cross"); sniperStrength += 12; }
+    if (stochBullishCross) { confluences.push("StochRSI bullish cross"); sniperStrength += 10; }
+    if (priceChange24h < -8) { confluences.push(`${priceChange24h.toFixed(1)}% extreme dump`); sniperStrength += 5; }
+
+    factors.push({
+      name: "SNIPER_ENTRY",
+      score: Math.round(Math.min(95, sniperStrength)),
+      weight: 0.12,
+      detail: `OVERSOLD LONG: ${confluences.join(", ")} — mean reversion`,
+      bullish: true,
+    });
+  } else if (rsiOversold && (bullishMACross || stochBullishCross)) {
+    // Oversold + reversal signals (no big dump needed)
+    const confluences: string[] = [];
+    let sniperStrength = 55;
+
+    if (rsiValue < 30) { confluences.push(`RSI ${rsiValue.toFixed(0)} oversold`); sniperStrength += 10; }
+    if (stochK < 20) { confluences.push(`StochRSI K=${stochK.toFixed(0)}`); sniperStrength += 8; }
+    if (bullishMACross) { confluences.push("EMA 9/21 bullish cross"); sniperStrength += 15; }
+    if (stochBullishCross) { confluences.push("StochRSI bullish cross"); sniperStrength += 12; }
+
+    factors.push({
+      name: "SNIPER_ENTRY",
+      score: Math.round(Math.min(95, sniperStrength)),
+      weight: 0.12,
+      detail: `REVERSAL LONG: ${confluences.join(", ")} — bottom reversal`,
+      bullish: true,
+    });
+  } else if (rsiOverbought && (bearishMACross || stochBearishCross)) {
+    // Overbought + reversal signals (no big pump needed)
+    const confluences: string[] = [];
+    let sniperStrength = 55;
+
+    if (rsiValue > 70) { confluences.push(`RSI ${rsiValue.toFixed(0)} overbought`); sniperStrength += 10; }
+    if (stochK > 80) { confluences.push(`StochRSI K=${stochK.toFixed(0)}`); sniperStrength += 8; }
+    if (bearishMACross) { confluences.push("EMA 9/21 bearish cross"); sniperStrength += 15; }
+    if (stochBearishCross) { confluences.push("StochRSI bearish cross"); sniperStrength += 12; }
+
+    factors.push({
+      name: "SNIPER_ENTRY",
+      score: Math.round(100 - Math.min(95, sniperStrength)),
+      weight: 0.12,
+      detail: `REVERSAL SHORT: ${confluences.join(", ")} — top reversal`,
+      bullish: false,
+    });
   }
 
   // ── v3: Fuse microstructure factors (orderbook/depth, trade flow, funding) as native leading signals ──
