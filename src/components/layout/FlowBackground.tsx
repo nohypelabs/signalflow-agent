@@ -150,9 +150,12 @@ export default function FlowBackground() {
         sat.pulse += 0.03;
         sat.alpha = Math.min(1, sat.alpha + 0.01);
 
-        if (sat.x < width * 0.03 || sat.x > width * 0.97) sat.vx *= -1;
-        if (sat.y < height * 0.05 || sat.y > height * 0.95) sat.vy *= -1;
+        // Keep within viewport bounds
+        if (sat.x < 0 || sat.x > width) sat.vx *= -1;
+        if (sat.y < 0 || sat.y > height) sat.vy *= -1;
         if (sat.z < -200 || sat.z > 400) sat.vz *= -1;
+        sat.x = Math.max(0, Math.min(width, sat.x));
+        sat.y = Math.max(0, Math.min(height, sat.y));
       }
 
       // Draw connections FIRST
@@ -286,8 +289,8 @@ export default function FlowBackground() {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 z-0 pointer-events-none"
-      style={{ opacity: 0.75 }}
+      className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
+      style={{ opacity: 0.75, maxWidth: "100vw" }}
       aria-hidden="true"
     />
   );
