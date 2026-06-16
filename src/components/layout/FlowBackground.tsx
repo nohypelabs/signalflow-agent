@@ -14,28 +14,22 @@ interface Satellite {
   alpha: number;
   pulse: number;
   type: "source" | "processor" | "output";
-  targets: number[];
 }
 
-interface Beam {
+interface Connection {
   from: number;
   to: number;
-  progress: number;
-  speed: number;
-  width: number;
+  energy: number;
+  energySpeed: number;
   color: string;
-  active: boolean;
-  cooldown: number;
 }
 
-const SATELLITE_COUNT = 20;
-const BEAM_COUNT = 40;
+const SATELLITE_COUNT = 18;
 
 const COLORS = {
   source: "#00E5A8",
   processor: "#00D4FF",
   output: "#8B5CF6",
-  beam: "#00E5A8",
 };
 
 export default function FlowBackground() {
@@ -55,28 +49,26 @@ export default function FlowBackground() {
     canvas.height = height;
 
     const satellites: Satellite[] = [];
-    const beams: Beam[] = [];
-    let time = 0;
+    const connections: Connection[] = [];
 
     function init() {
       satellites.length = 0;
-      beams.length = 0;
+      connections.length = 0;
 
-      // Source satellites (left region)
-      for (let i = 0; i < 6; i++) {
+      // Source satellites (left)
+      for (let i = 0; i < 5; i++) {
         satellites.push({
-          x: width * 0.08 + Math.random() * width * 0.12,
-          y: height * 0.15 + (height * 0.7 * i) / 5,
-          z: Math.random() * 300 - 50,
-          vx: (Math.random() - 0.5) * 0.15,
-          vy: (Math.random() - 0.5) * 0.1,
-          vz: (Math.random() - 0.5) * 0.2,
-          size: 3 + Math.random() * 2,
+          x: width * 0.1 + Math.random() * width * 0.08,
+          y: height * 0.2 + (height * 0.6 * i) / 4,
+          z: Math.random() * 200 - 50,
+          vx: (Math.random() - 0.5) * 0.08,
+          vy: (Math.random() - 0.5) * 0.06,
+          vz: (Math.random() - 0.5) * 0.1,
+          size: 3.5 + Math.random() * 1.5,
           color: COLORS.source,
           alpha: 0,
           pulse: Math.random() * Math.PI * 2,
           type: "source",
-          targets: [],
         });
       }
 
@@ -85,74 +77,63 @@ export default function FlowBackground() {
         satellites.push({
           x: width * 0.35 + Math.random() * width * 0.3,
           y: height * 0.1 + (height * 0.8 * i) / 7,
-          z: Math.random() * 400 - 100,
-          vx: (Math.random() - 0.5) * 0.1,
-          vy: (Math.random() - 0.5) * 0.08,
-          vz: (Math.random() - 0.5) * 0.15,
+          z: Math.random() * 300 - 80,
+          vx: (Math.random() - 0.5) * 0.06,
+          vy: (Math.random() - 0.5) * 0.05,
+          vz: (Math.random() - 0.5) * 0.08,
           size: 4 + Math.random() * 2,
           color: COLORS.processor,
           alpha: 0,
           pulse: Math.random() * Math.PI * 2,
           type: "processor",
-          targets: [],
         });
       }
 
-      // Output satellites (right region)
-      for (let i = 0; i < 6; i++) {
+      // Output satellites (right)
+      for (let i = 0; i < 5; i++) {
         satellites.push({
-          x: width * 0.75 + Math.random() * width * 0.15,
-          y: height * 0.15 + (height * 0.7 * i) / 5,
-          z: Math.random() * 300 - 50,
-          vx: (Math.random() - 0.5) * 0.12,
-          vy: (Math.random() - 0.5) * 0.1,
-          vz: (Math.random() - 0.5) * 0.18,
-          size: 3 + Math.random() * 2,
+          x: width * 0.78 + Math.random() * width * 0.1,
+          y: height * 0.2 + (height * 0.6 * i) / 4,
+          z: Math.random() * 200 - 50,
+          vx: (Math.random() - 0.5) * 0.07,
+          vy: (Math.random() - 0.5) * 0.06,
+          vz: (Math.random() - 0.5) * 0.09,
+          size: 3.5 + Math.random() * 1.5,
           color: COLORS.output,
           alpha: 0,
           pulse: Math.random() * Math.PI * 2,
           type: "output",
-          targets: [],
         });
       }
 
-      // Create beam connections: source → processor → output
-      // Sources shoot to processors
-      for (let i = 0; i < 6; i++) {
-        const targetCount = 1 + Math.floor(Math.random() * 2);
-        const available = [6, 7, 8, 9, 10, 11, 12, 13];
-        const targets = available.sort(() => Math.random() - 0.5).slice(0, targetCount);
-        satellites[i].targets = targets;
+      // Create connections: source → processor → output (pipeline)
+      // Each source connects to 2 processors
+      for (let i = 0; i < 5; i++) {
+        const targets = [5, 6, 7, 8, 9, 10, 11, 12];
+        const t1 = targets[i % targets.length];
+        const t2 = targets[(i + 1) % targets.length];
+        connections.push({ from: i, to: t1, energy: Math.random(), energySpeed: 0.003 + Math.random() * 0.004, color: COLORS.source });
+        connections.push({ from: i, to: t2, energy: Math.random(), energySpeed: 0.003 + Math.random() * 0.004, color: COLORS.source });
       }
 
-      // Processors shoot to outputs
-      for (let i = 6; i < 14; i++) {
-        const targetCount = 1 + Math.floor(Math.random() * 2);
-        const available = [14, 15, 16, 17, 18, 19];
-        const targets = available.sort(() => Math.random() - 0.5).slice(0, targetCount);
-        satellites[i].targets = targets;
+      // Each processor connects to 2 outputs
+      for (let i = 5; i < 13; i++) {
+        const targets = [13, 14, 15, 16, 17];
+        const t1 = targets[(i - 5) % targets.length];
+        const t2 = targets[(i - 4) % targets.length];
+        connections.push({ from: i, to: t1, energy: Math.random(), energySpeed: 0.003 + Math.random() * 0.004, color: COLORS.processor });
+        connections.push({ from: i, to: t2, energy: Math.random(), energySpeed: 0.003 + Math.random() * 0.004, color: COLORS.processor });
       }
 
-      // Create beams
-      for (let i = 0; i < satellites.length; i++) {
-        for (const targetIdx of satellites[i].targets) {
-          beams.push({
-            from: i,
-            to: targetIdx,
-            progress: 0,
-            speed: 0.008 + Math.random() * 0.012,
-            width: 1.5 + Math.random() * 1.5,
-            color: satellites[i].color,
-            active: true,
-            cooldown: Math.random() * 200,
-          });
-        }
+      // Cross-connections between processors (mesh feel)
+      for (let i = 5; i < 12; i++) {
+        connections.push({ from: i, to: i + 1, energy: Math.random(), energySpeed: 0.002 + Math.random() * 0.003, color: COLORS.processor });
       }
     }
 
     init();
 
-    function project(x: number, y: number, z: number): { px: number; py: number; scale: number } {
+    function project(x: number, y: number, z: number) {
       const fov = 800;
       const scale = fov / (fov + z);
       return { px: x * scale, py: y * scale, scale };
@@ -160,160 +141,123 @@ export default function FlowBackground() {
 
     function animate() {
       ctx!.clearRect(0, 0, width, height);
-      time += 0.016;
 
       // Update satellites
       for (const sat of satellites) {
         sat.x += sat.vx;
         sat.y += sat.vy;
         sat.z += sat.vz;
-        sat.pulse += 0.04;
-        sat.alpha = Math.min(1, sat.alpha + 0.015);
+        sat.pulse += 0.03;
+        sat.alpha = Math.min(1, sat.alpha + 0.01);
 
-        // Soft bounce
         if (sat.x < width * 0.03 || sat.x > width * 0.97) sat.vx *= -1;
         if (sat.y < height * 0.05 || sat.y > height * 0.95) sat.vy *= -1;
-        if (sat.z < -200 || sat.z > 500) sat.vz *= -1;
+        if (sat.z < -200 || sat.z > 400) sat.vz *= -1;
       }
 
-      // Draw beams FIRST (behind satellites)
-      for (const beam of beams) {
-        if (!beam.active) continue;
-
-        beam.cooldown -= 1;
-        if (beam.cooldown > 0) continue;
-
-        beam.progress += beam.speed;
-
-        if (beam.progress >= 1) {
-          beam.progress = 0;
-          beam.cooldown = 50 + Math.random() * 150; // delay before next beam
-          continue;
-        }
-
-        const from = satellites[beam.from];
-        const to = satellites[beam.to];
+      // Draw connections FIRST
+      for (const conn of connections) {
+        const from = satellites[conn.from];
+        const to = satellites[conn.to];
         const pFrom = project(from.x, from.y, from.z);
         const pTo = project(to.x, to.y, to.z);
 
-        const t = beam.progress;
-        const beamX = pFrom.px + (pTo.px - pFrom.px) * t;
-        const beamY = pFrom.py + (pTo.py - pFrom.py) * t;
+        const dist = Math.sqrt((pFrom.px - pTo.px) ** 2 + (pFrom.py - pTo.py) ** 2);
+        const maxDist = 500;
+        if (dist > maxDist) continue;
 
-        // Beam trail (line from source to current position)
-        const trailAlpha = 0.3 * Math.min(from.alpha, to.alpha);
-        ctx!.beginPath();
-        ctx!.moveTo(pFrom.px, pFrom.py);
-        ctx!.lineTo(beamX, beamY);
-        ctx!.strokeStyle = beam.color;
-        ctx!.globalAlpha = trailAlpha * 0.3;
-        ctx!.lineWidth = beam.width * pFrom.scale;
-        ctx!.stroke();
+        const baseAlpha = (1 - dist / maxDist) * 0.12 * Math.min(from.alpha, to.alpha);
 
-        // Beam head (glowing dot)
-        const headSize = (beam.width * 2 + 2) * pFrom.scale;
-        const headAlpha = t < 0.2 ? t / 0.2 : t > 0.8 ? (1 - t) / 0.2 : 1;
-
-        // Outer glow
-        const glowSize = headSize * 4;
-        const gradient = ctx!.createRadialGradient(beamX, beamY, 0, beamX, beamY, glowSize);
-        gradient.addColorStop(0, beam.color);
-        gradient.addColorStop(0.3, beam.color);
-        gradient.addColorStop(1, "transparent");
-        ctx!.beginPath();
-        ctx!.arc(beamX, beamY, glowSize, 0, Math.PI * 2);
-        ctx!.fillStyle = gradient;
-        ctx!.globalAlpha = headAlpha * 0.4 * pFrom.scale;
-        ctx!.fill();
-
-        // Core
-        ctx!.beginPath();
-        ctx!.arc(beamX, beamY, headSize, 0, Math.PI * 2);
-        ctx!.fillStyle = "#ffffff";
-        ctx!.globalAlpha = headAlpha * 0.9 * pFrom.scale;
-        ctx!.fill();
-
-        // Beam tail (fading trail)
-        const tailLength = 0.15;
-        const tailStart = Math.max(0, t - tailLength);
-        for (let i = 0; i < 5; i++) {
-          const tt = tailStart + (t - tailStart) * (i / 5);
-          const tx = pFrom.px + (pTo.px - pFrom.px) * tt;
-          const ty = pFrom.py + (pTo.py - pFrom.py) * tt;
-          const tailAlpha2 = (i / 5) * headAlpha * 0.3;
-          const tailSize = headSize * (0.3 + (i / 5) * 0.7);
-
-          ctx!.beginPath();
-          ctx!.arc(tx, ty, tailSize, 0, Math.PI * 2);
-          ctx!.fillStyle = beam.color;
-          ctx!.globalAlpha = tailAlpha2 * pFrom.scale;
-          ctx!.fill();
-        }
-      }
-
-      // Draw connection lines (faint, always visible)
-      for (const beam of beams) {
-        const from = satellites[beam.from];
-        const to = satellites[beam.to];
-        const pFrom = project(from.x, from.y, from.z);
-        const pTo = project(to.x, to.y, to.z);
-
+        // Persistent connection line
         ctx!.beginPath();
         ctx!.moveTo(pFrom.px, pFrom.py);
         ctx!.lineTo(pTo.px, pTo.py);
-        ctx!.strokeStyle = beam.color;
-        ctx!.globalAlpha = 0.04 * Math.min(from.alpha, to.alpha);
-        ctx!.lineWidth = 0.5 * pFrom.scale;
+        ctx!.strokeStyle = conn.color;
+        ctx!.globalAlpha = baseAlpha;
+        ctx!.lineWidth = 1 * pFrom.scale;
         ctx!.stroke();
+
+        // Flowing energy along the line
+        conn.energy += conn.energySpeed;
+        if (conn.energy >= 1) conn.energy -= 1;
+
+        const e = conn.energy;
+        const ex = pFrom.px + (pTo.px - pFrom.px) * e;
+        const ey = pFrom.py + (pTo.py - pFrom.py) * e;
+
+        // Energy dot with glow
+        const dotSize = 2.5 * pFrom.scale;
+        const glowSize = dotSize * 4;
+
+        const gradient = ctx!.createRadialGradient(ex, ey, 0, ex, ey, glowSize);
+        gradient.addColorStop(0, "#ffffff");
+        gradient.addColorStop(0.2, conn.color);
+        gradient.addColorStop(1, "transparent");
+        ctx!.beginPath();
+        ctx!.arc(ex, ey, glowSize, 0, Math.PI * 2);
+        ctx!.fillStyle = gradient;
+        ctx!.globalAlpha = baseAlpha * 1.5;
+        ctx!.fill();
+
+        // Energy core
+        ctx!.beginPath();
+        ctx!.arc(ex, ey, dotSize, 0, Math.PI * 2);
+        ctx!.fillStyle = "#ffffff";
+        ctx!.globalAlpha = baseAlpha * 2;
+        ctx!.fill();
       }
 
       // Draw satellites
       for (const sat of satellites) {
         const proj = project(sat.x, sat.y, sat.z);
         const size = sat.size * proj.scale;
-        const pulse = Math.sin(sat.pulse) * 0.3 + 0.7;
+        const pulse = Math.sin(sat.pulse) * 0.2 + 0.8;
         const finalAlpha = sat.alpha * proj.scale * pulse;
 
-        // Outer ring (antenna feel)
+        // Outer glow
+        const glowSize = size * 6;
+        const gradient = ctx!.createRadialGradient(proj.px, proj.py, 0, proj.px, proj.py, glowSize);
+        gradient.addColorStop(0, sat.color);
+        gradient.addColorStop(0.5, sat.color);
+        gradient.addColorStop(1, "transparent");
         ctx!.beginPath();
-        ctx!.arc(proj.px, proj.py, size * 2.5, 0, Math.PI * 2);
+        ctx!.arc(proj.px, proj.py, glowSize, 0, Math.PI * 2);
+        ctx!.fillStyle = gradient;
+        ctx!.globalAlpha = finalAlpha * 0.08;
+        ctx!.fill();
+
+        // Ring
+        ctx!.beginPath();
+        ctx!.arc(proj.px, proj.py, size * 1.8, 0, Math.PI * 2);
         ctx!.strokeStyle = sat.color;
-        ctx!.globalAlpha = finalAlpha * 0.15;
-        ctx!.lineWidth = 0.5 * proj.scale;
+        ctx!.globalAlpha = finalAlpha * 0.2;
+        ctx!.lineWidth = 0.6 * proj.scale;
         ctx!.stroke();
 
-        // Middle ring
-        ctx!.beginPath();
-        ctx!.arc(proj.px, proj.py, size * 1.5, 0, Math.PI * 2);
-        ctx!.strokeStyle = sat.color;
-        ctx!.globalAlpha = finalAlpha * 0.25;
-        ctx!.lineWidth = 0.8 * proj.scale;
-        ctx!.stroke();
-
-        // Core body
+        // Body
         ctx!.beginPath();
         ctx!.arc(proj.px, proj.py, size, 0, Math.PI * 2);
         ctx!.fillStyle = sat.color;
-        ctx!.globalAlpha = finalAlpha * 0.8;
-        ctx!.fill();
-
-        // Bright center
-        ctx!.beginPath();
-        ctx!.arc(proj.px, proj.py, size * 0.35, 0, Math.PI * 2);
-        ctx!.fillStyle = "#ffffff";
         ctx!.globalAlpha = finalAlpha * 0.7;
         ctx!.fill();
 
-        // Signal wave pulse (expanding ring)
-        const wavePhase = (sat.pulse * 0.5) % (Math.PI * 2);
-        const waveRadius = size * 3 + wavePhase * size * 0.8;
-        const waveAlpha = Math.max(0, 1 - wavePhase / (Math.PI * 2)) * 0.1;
+        // Bright core
+        ctx!.beginPath();
+        ctx!.arc(proj.px, proj.py, size * 0.3, 0, Math.PI * 2);
+        ctx!.fillStyle = "#ffffff";
+        ctx!.globalAlpha = finalAlpha * 0.8;
+        ctx!.fill();
+
+        // Signal wave (broadcast ring)
+        const wavePhase = (sat.pulse * 0.3) % (Math.PI * 2);
+        const waveRadius = size * 2 + wavePhase * size * 0.5;
+        const waveAlpha = Math.max(0, 1 - wavePhase / (Math.PI * 2)) * 0.08;
 
         ctx!.beginPath();
         ctx!.arc(proj.px, proj.py, waveRadius, 0, Math.PI * 2);
         ctx!.strokeStyle = sat.color;
         ctx!.globalAlpha = waveAlpha * finalAlpha;
-        ctx!.lineWidth = 1 * proj.scale;
+        ctx!.lineWidth = 0.8 * proj.scale;
         ctx!.stroke();
       }
 
