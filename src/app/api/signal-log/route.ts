@@ -23,7 +23,14 @@ async function fetchTickers(): Promise<Array<{ symbol: string; lastPx: string; c
     });
     if (!res.ok) return [];
     const json = await res.json();
-    return json.data ?? [];
+    const data = json.data ?? [];
+    // Normalize: API returns quoteVolume as string
+    return data.map((t: Record<string, unknown>) => ({
+      symbol: String(t.symbol ?? ""),
+      lastPx: String(t.lastPx ?? "0"),
+      changePct: typeof t.changePct === "number" ? t.changePct : parseFloat(String(t.changePct ?? "0")),
+      quoteVolume: typeof t.quoteVolume === "number" ? t.quoteVolume : parseFloat(String(t.quoteVolume ?? "0")),
+    }));
   } catch {
     return [];
   }
@@ -37,6 +44,7 @@ function formatPrice(px: number): string {
 }
 
 function formatVolume(vol: number): string {
+  if (!Number.isFinite(vol) || vol <= 0) return "$0";
   if (vol >= 1e9) return `$${(vol / 1e9).toFixed(2)}B`;
   if (vol >= 1e6) return `$${(vol / 1e6).toFixed(1)}M`;
   if (vol >= 1e3) return `$${(vol / 1e3).toFixed(1)}K`;
