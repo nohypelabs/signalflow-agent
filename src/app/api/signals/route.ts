@@ -38,7 +38,6 @@ import type { Signal } from "@/lib/types/signal";
 import { jsonNoCache } from "@/lib/api/no-cache";
 import type { TradingType } from "@/lib/types/trading-type";
 import { checkRateLimit } from "@/lib/security/rate-limit";
-import { logData, logSignal, logRecalc, logWarning, logError } from "@/lib/signal-log-bus";
 
 export const dynamic = "force-dynamic";
 
