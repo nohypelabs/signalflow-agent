@@ -1800,7 +1800,7 @@ function CacheCard({ layer, route, ttl, strategy }: { layer: string; route: stri
 
 function CodeBlock({ children }: { children: string }) {
   return (
-    <div className="bg-inset border border-border-default rounded-lg p-4 overflow-x-auto">
+    <div className="bg-inset border border-border-default rounded-lg p-4 overflow-x-auto min-w-0">
       <pre className="text-xs font-mono text-[#aaaacc] whitespace-pre-wrap m-0">{children}</pre>
     </div>
   );

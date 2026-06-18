@@ -80,7 +80,7 @@ export default function OpenOrders({ orders: incomingOrders, loading, error, onC
       )}
 
       {!loading && orders.length > 0 && (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-w-0">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-border-default">

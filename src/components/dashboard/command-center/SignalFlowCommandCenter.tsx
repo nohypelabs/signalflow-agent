@@ -2371,7 +2371,7 @@ export default function SignalFlowCommandCenter() {
         </span>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto min-w-0">
         <PipelineFlow />
       </div>
       {/* Chart removed from dashboard — already on trading page. 

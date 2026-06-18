@@ -61,7 +61,7 @@ export default function SignalHistoryPage() {
       </div>
 
       <Card>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-w-0">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border-default text-left text-xs uppercase tracking-wider text-txt-muted">

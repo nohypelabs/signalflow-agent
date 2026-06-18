@@ -407,7 +407,7 @@ export default function PerformancePage({
         </Card>
 
         <Card padding="none" className="overflow-hidden mt-3">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto min-w-0">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-border-default text-txt-muted">
@@ -495,7 +495,7 @@ export default function PerformancePage({
                 <span className="text-[9px] text-txt-dim">Resolves after {RES_WINDOW_LABELS[resolutionWindow]}</span>
                 <span className="text-[9px] text-txt-dim">Last 15 of {signalHistory.length}</span>
               </div>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto min-w-0">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-border-default text-txt-muted">

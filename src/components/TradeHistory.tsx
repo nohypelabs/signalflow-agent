@@ -157,7 +157,7 @@ export default function TradeHistory({
             {closedPaperTrades.length === 0 ? (
               <EmptyState title="No closed paper trades yet" description="Closed TP, SL, liquidation, and manual exits will appear here" />
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto min-w-0">
                 <table className="w-full text-sm min-w-[760px]">
                   <thead>
                     <tr className="border-b border-border-default text-txt-muted text-xs">

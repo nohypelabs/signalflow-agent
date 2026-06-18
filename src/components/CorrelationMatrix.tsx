@@ -67,7 +67,7 @@ export default function CorrelationMatrix() {
         ) : !data ? (
           <p className="text-xs text-txt-muted text-center">No data</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto min-w-0">
             <table className="w-full">
               <thead>
                 <tr>
