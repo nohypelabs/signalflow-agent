@@ -80,6 +80,7 @@ interface Props {
   latestSignal?: Signal | null;
   collapsed?: boolean;
   onCollapse?: () => void;
+  onExpand?: () => void;
   mobileOpen?: boolean;
   onMobileClose?: () => void;
 }
@@ -88,6 +89,7 @@ export default function Sidebar({
   latestSignal,
   collapsed = false,
   onCollapse,
+  onExpand,
   mobileOpen,
   onMobileClose,
 }: Props) {
@@ -132,8 +134,8 @@ export default function Sidebar({
   /* ── Brand header ── */
   const brandHeader = (
     <div
-      className={`flex items-center justify-center ${
-        collapsed ? "px-2 py-3" : "px-4 py-4"
+      className={`flex items-center ${
+        collapsed ? "justify-center px-2 py-3" : "justify-between gap-2 px-4 py-4"
       }`}
     >
       <AnimatePresence mode="wait">
@@ -152,10 +154,28 @@ export default function Sidebar({
         )}
       </AnimatePresence>
       {collapsed && (
-        <span
-          className="w-2 h-2 rounded-full"
-          style={{ backgroundColor: signalColor }}
-        />
+        <motion.button
+          onClick={onExpand}
+          whileTap={{ scale: 0.92 }}
+          className="flex h-9 w-9 items-center justify-center rounded-[35px] text-txt-muted outline-none transition-colors hover:bg-white/[0.06] hover:text-txt-secondary focus-visible:ring-1 focus-visible:ring-accent/50"
+          title="Expand sidebar"
+        >
+          <SidebarCollapseIcon size={15} className="rotate-180 opacity-70" />
+          <span
+            className="absolute h-1.5 w-1.5 translate-x-2.5 translate-y-2.5 rounded-full"
+            style={{ backgroundColor: signalColor }}
+          />
+        </motion.button>
+      )}
+      {!collapsed && (
+        <motion.button
+          onClick={onCollapse}
+          whileTap={{ scale: 0.92 }}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[35px] text-txt-muted outline-none transition-colors hover:bg-white/[0.06] hover:text-txt-secondary focus-visible:ring-1 focus-visible:ring-accent/50"
+          title="Collapse sidebar"
+        >
+          <SidebarCollapseIcon size={15} className="opacity-70" />
+        </motion.button>
       )}
     </div>
   );
@@ -305,30 +325,11 @@ export default function Sidebar({
         <div className="flex-1 overflow-y-auto py-3 scrollbar-thin">
           {renderNavItems()}
         </div>
-        <AnimatePresence>
-          {!collapsed && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.15 }}
-              className="overflow-hidden border-t border-white/10"
-            >
-              <motion.button
-                onClick={onCollapse}
-                whileTap={{ scale: 0.95 }}
-                className="mx-3 mb-2 mt-3 flex w-[calc(100%-1.5rem)] items-center justify-center gap-2 rounded-[35px] px-3 py-2.5 text-txt-muted outline-none transition-colors hover:bg-white/[0.06] hover:text-txt-secondary focus-visible:ring-1 focus-visible:ring-accent/50"
-                title="Collapse sidebar"
-              >
-                <SidebarCollapseIcon size={15} className="opacity-60" />
-                <span className="text-[11px]">Collapse</span>
-              </motion.button>
-              <p className="text-[9px] text-txt-faint text-center pb-3">
-                v0.1 Beta · NoHype Labs
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {!collapsed && (
+          <p className="border-t border-white/10 px-3 py-3 text-center text-[9px] text-txt-faint">
+            v0.1 Beta · NoHype Labs
+          </p>
+        )}
       </motion.aside>
 
       {/* ── Mobile drawer ── */}
@@ -359,9 +360,6 @@ export default function Sidebar({
                 <div className="flex flex-col items-center flex-1">
                   <span className="text-base font-bold text-txt-primary leading-tight tracking-tight">
                     SignalFlow
-                  </span>
-                  <span className="text-[7px] text-accent font-semibold tracking-[0.2em] uppercase">
-                    Agent
                   </span>
                 </div>
                 <motion.button

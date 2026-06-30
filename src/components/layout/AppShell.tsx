@@ -39,6 +39,7 @@ export default function AppShell({
         latestSignal={latestSignal}
         collapsed={sidebarCollapsed}
         onCollapse={() => setSidebarCollapsed(true)}
+        onExpand={() => setSidebarCollapsed(false)}
         mobileOpen={mobileSidebarOpen}
         onMobileClose={() => setMobileSidebarOpen(false)}
       />
