@@ -8,10 +8,9 @@ interface Props {
   showLabel?: boolean;
   label?: string;
   sweeping?: boolean;
-  color?: string; // dynamic color from signal strength
+  color?: string;
 }
 
-// True semicircle: 180° arc, left → right
 const sizes = {
   sm: { w: 120, h: 68, cx: 60, cy: 58, r: 44, sw: 5, needleLen: 32, tickLen: 5, labelSize: 14, subSize: 8 },
   md: { w: 180, h: 100, cx: 90, cy: 86, r: 66, sw: 7, needleLen: 48, tickLen: 7, labelSize: 20, subSize: 10 },
@@ -24,18 +23,15 @@ function getColor(v: number): string {
   return "var(--color-sell)";
 }
 
-/** Map 0-100 → -180° (left) to 0° (right). Semicircle reads left → right. */
 function valueToAngle(v: number): number {
   return -180 + (v / 100) * 180;
 }
 
-/** Polar to cartesian (SVG: Y goes down) */
 function polar(cx: number, cy: number, r: number, deg: number) {
   const rad = (deg * Math.PI) / 180;
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
 }
 
-/** SVG arc path from startAngle to endAngle */
 function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: number): string {
   const start = polar(cx, cy, r, startDeg);
   const end = polar(cx, cy, r, endDeg);
@@ -49,7 +45,6 @@ export default function SpeedometerGauge({ value, size = "md", showLabel = true,
   const clamped = Math.max(0, Math.min(100, value));
   const color = propColor || getColor(clamped);
 
-  // Animate needle
   const [displayAngle, setDisplayAngle] = useState(-180);
   const rafRef = useRef<number>(0);
 
@@ -70,7 +65,6 @@ export default function SpeedometerGauge({ value, size = "md", showLabel = true,
 
     rafRef.current = requestAnimationFrame(animate);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clamped, sweeping]);
 
   useEffect(() => {
@@ -90,20 +84,17 @@ export default function SpeedometerGauge({ value, size = "md", showLabel = true,
 
     rafRef.current = requestAnimationFrame(animate);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sweeping]);
 
   const needleAngle = displayAngle;
   const needleTip = polar(cx, cy, needleLen, needleAngle);
 
-  // Zone arcs: red (left) → yellow (mid) → green (right)
   const zones = [
-    { start: -180, end: -120, color: "var(--color-sell)", opacity: 0.15 },   // 0–33%
-    { start: -120, end: -60, color: "var(--color-hold)", opacity: 0.12 },    // 33–67%
-    { start: -60, end: 0, color: "var(--color-buy)", opacity: 0.12 },        // 67–100%
+    { start: -180, end: -120, color: "var(--color-sell)", opacity: 0.15 },
+    { start: -120, end: -60, color: "var(--color-hold)", opacity: 0.12 },
+    { start: -60, end: 0, color: "var(--color-buy)", opacity: 0.12 },
   ];
 
-  // Tick marks: major every 25, minor every 5
   const ticks: Array<{ angle: number; major: boolean }> = [];
   for (let v = 0; v <= 100; v += 5) {
     ticks.push({ angle: valueToAngle(v), major: v % 25 === 0 });
@@ -118,33 +109,59 @@ export default function SpeedometerGauge({ value, size = "md", showLabel = true,
         height={h}
         viewBox={`0 0 ${w} ${h}`}
         className="shrink-0"
-        style={{ filter: "drop-shadow(0 0 8px rgba(0,229,168,0.08))" }}
       >
         <defs>
-          <filter id={`needle-glow-${size}`} x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          <filter id={`needle-shadow-${size}`} x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.5" />
           </filter>
+
+          <linearGradient id={`arc-grad-${size}`} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor={color} stopOpacity="0.4" />
+            <stop offset="100%" stopColor={color} stopOpacity="1" />
+          </linearGradient>
+
+          <linearGradient id={`bezel-grad-${size}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.06)" />
+            <stop offset="100%" stopColor="rgba(0,0,0,0.15)" />
+          </linearGradient>
+
+          <linearGradient id={`hub-grad-${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.08)" />
+            <stop offset="50%" stopColor="rgba(255,255,255,0.02)" />
+            <stop offset="100%" stopColor="rgba(0,0,0,0.12)" />
+          </linearGradient>
+
+          <radialGradient id={`hub-glow-${size}`} cx="35%" cy="35%" r="50%">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.12)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+          </radialGradient>
         </defs>
 
-        {/* Outer bezel */}
+        {/* Outer bezel ring */}
         <path
-          d={arcPath(cx, cy, r + sw / 2 + 3, -180, 0)}
+          d={arcPath(cx, cy, r + sw / 2 + 5, -180, 0)}
           fill="none"
           stroke="var(--border-default)"
-          strokeWidth="1.5"
-          opacity="0.25"
+          strokeWidth="3"
+          opacity="0.4"
         />
-        {/* Inner shadow ring */}
         <path
-          d={arcPath(cx, cy, r - sw / 2 - 2, -180, 0)}
+          d={arcPath(cx, cy, r + sw / 2 + 4, -180, 0)}
           fill="none"
-          stroke="var(--border-default)"
-          strokeWidth="0.5"
-          opacity="0.15"
+          stroke={`url(#bezel-grad-${size})`}
+          strokeWidth="2"
+          opacity="0.5"
         />
 
-        {/* Zone arcs (colored bands) */}
+        {/* Inner face shadow ring */}
+        <path
+          d={arcPath(cx, cy, r - sw / 2 - 3, -180, 0)}
+          fill="none"
+          stroke="rgba(0,0,0,0.3)"
+          strokeWidth="1.5"
+        />
+
+        {/* Zone arcs */}
         {zones.map((zone) => (
           <path
             key={`${zone.start}-${zone.end}`}
@@ -157,24 +174,23 @@ export default function SpeedometerGauge({ value, size = "md", showLabel = true,
           />
         ))}
 
-        {/* Background track */}
+        {/* Background track with subtle gradient */}
         <path
           d={arcPath(cx, cy, r, -180, 0)}
           fill="none"
           stroke="var(--border-default)"
           strokeWidth={sw}
           strokeLinecap="round"
-          opacity="0.5"
+          opacity="0.35"
         />
 
-        {/* Active filled arc */}
+        {/* Active filled arc with gradient */}
         <path
           d={arcPath(cx, cy, r, -180, displayAngle)}
           fill="none"
-          stroke={color}
+          stroke={`url(#arc-grad-${size})`}
           strokeWidth={sw}
           strokeLinecap="round"
-          style={{ transition: "stroke 0.5s ease" }}
         />
 
         {/* Tick marks */}
@@ -191,16 +207,16 @@ export default function SpeedometerGauge({ value, size = "md", showLabel = true,
               x2={inner.x}
               y2={inner.y}
               stroke={tick.major ? "var(--text-secondary)" : "var(--text-muted)"}
-              strokeWidth={tick.major ? 1.5 : 0.8}
+              strokeWidth={tick.major ? 2 : 0.8}
               strokeLinecap="round"
-              opacity={tick.major ? 0.7 : 0.35}
+              opacity={tick.major ? 0.7 : 0.3}
             />
           );
         })}
 
         {/* Tick labels */}
         {tickLabels.map((v) => {
-          const labelR = r + sw / 2 + tickLen + (size === "sm" ? 6 : size === "lg" ? 6 : 10);
+          const labelR = r + sw / 2 + tickLen + (size === "sm" ? 6 : size === "lg" ? 8 : 10);
           const pos = polar(cx, cy, labelR, valueToAngle(v));
           return (
             <text
@@ -219,11 +235,26 @@ export default function SpeedometerGauge({ value, size = "md", showLabel = true,
           );
         })}
 
-        {/* Center hub — metallic cap */}
-        <circle cx={cx} cy={cy} r={size === "sm" ? 5 : 8} fill="var(--bg-card)" stroke="var(--border-default)" strokeWidth="1.5" />
-        <circle cx={cx} cy={cy} r={size === "sm" ? 2.5 : 4} fill="var(--bg-elevated)" stroke="var(--border-default)" strokeWidth="0.8" />
+        {/* Needle shadow */}
+        {(() => {
+          const shadowLen = needleLen * 0.85;
+          const shadowAngle = needleAngle + 2;
+          const shadowTip = polar(cx, cy, shadowLen, shadowAngle);
+          return (
+            <line
+              x1={cx}
+              y1={cy}
+              x2={shadowTip.x}
+              y2={shadowTip.y}
+              stroke="rgba(0,0,0,0.25)"
+              strokeWidth={size === "sm" ? 4 : 6}
+              strokeLinecap="round"
+              opacity="0.4"
+            />
+          );
+        })()}
 
-        {/* Needle — tapered polygon */}
+        {/* Needle */}
         {(() => {
           const baseW = size === "sm" ? 4 : 5.5;
           const tailLen = size === "sm" ? 10 : 15;
@@ -238,44 +269,54 @@ export default function SpeedometerGauge({ value, size = "md", showLabel = true,
           const twx = cx - Math.cos(angleRad) * tailLen;
           const twy = cy - Math.sin(angleRad) * tailLen;
           return (
-            <>
-              <polygon
-                points={`${tx},${ty} ${bx1},${by1} ${twx},${twy} ${bx2},${by2}`}
-                fill={color}
-                opacity="0.9"
-                filter={`url(#needle-glow-${size})`}
-                style={{ transition: "fill 0.5s ease" }}
-              />
-              <circle cx={tx} cy={ty} r={size === "sm" ? 1.5 : 2} fill="#fff" opacity="0.85" />
-            </>
+            <polygon
+              points={`${tx},${ty} ${bx1},${by1} ${twx},${twy} ${bx2},${by2}`}
+              fill={color}
+              opacity="0.95"
+              filter={`url(#needle-shadow-${size})`}
+            />
           );
         })()}
 
-        {/* Bottom cap */}
-        <circle cx={cx} cy={cy} r={size === "sm" ? 5 : 7} fill="var(--bg-card)" stroke="var(--border-default)" strokeWidth="1.5" />
+        {/* Hub — metallic with gradient */}
+        <circle cx={cx} cy={cy} r={size === "sm" ? 6 : 9} fill="var(--bg-card)" stroke="var(--border-default)" strokeWidth="1.5" />
+        <circle cx={cx} cy={cy} r={size === "sm" ? 5 : 8} fill={`url(#hub-grad-${size})`} />
+        <circle cx={cx} cy={cy} r={size === "sm" ? 2.5 : 4} fill="var(--bg-elevated)" stroke="var(--border-default)" strokeWidth="0.8" />
+        <circle cx={cx} cy={cy} r={size === "sm" ? 2.5 : 4} fill={`url(#hub-glow-${size})`} />
 
-        {/* Flat bottom line (base of semicircle) */}
+        {/* Flat bottom base */}
         <line
-          x1={cx - r - sw / 2 - 1}
+          x1={cx - r - sw / 2 - 3}
           y1={cy}
-          x2={cx + r + sw / 2 + 1}
+          x2={cx + r + sw / 2 + 3}
           y2={cy}
-          stroke="var(--border-default)"
+          stroke="rgba(255,255,255,0.04)"
           strokeWidth="1"
-          opacity="0.2"
         />
       </svg>
 
       {showLabel && (
-        <div className="mt-1 flex max-w-full items-baseline justify-center gap-1">
-          <span
-            className="font-mono font-bold tabular-nums"
-            style={{ fontSize: labelSize * 0.72, color }}
+        <div className="mt-2 flex flex-col items-center gap-1">
+          <div
+            className="flex items-center justify-center rounded-[35px] px-3 py-1.5 min-w-[72px]"
+            style={{
+              background: "var(--bg-inset)",
+              boxShadow: "inset 2px 2px 6px rgba(0,0,0,0.5), inset -1px -1px 3px rgba(255,255,255,0.03)",
+            }}
           >
-            {clamped}%
-          </span>
+            <span
+              className="font-mono font-bold tracking-wider tabular-nums"
+              style={{
+                fontSize: labelSize * 0.72,
+                color,
+                textShadow: `0 0 10px ${color}40`,
+              }}
+            >
+              {clamped}%
+            </span>
+          </div>
           {label && (
-            <span className="text-xs text-txt-tertiary">{label}</span>
+            <span className="text-[10px] text-txt-muted">{label}</span>
           )}
         </div>
       )}

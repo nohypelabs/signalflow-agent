@@ -3,8 +3,6 @@
 import { useState } from "react";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
-import { AmbientGrid } from "@/components/ui/Polish";
-import WelcomeMotionBackground from "./WelcomeMotionBackground";
 import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/sodex-types";
 
@@ -63,21 +61,9 @@ export default function AppShell({
               : "flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-6 relative"
           }
         >
-          {fullScreen ? (
-            <>
-              <WelcomeMotionBackground />
-              <div className="relative z-10">
-                {children}
-              </div>
-            </>
-          ) : (
-            <>
-              <AmbientGrid opacity={0.025} size={28} />
-              <div className="relative z-10">
-                {children}
-              </div>
-            </>
-          )}
+          <div>
+            {children}
+          </div>
           <footer className="mx-4 mt-6 border-t border-white/10 py-6 lg:mx-6">
             <div className="flex flex-col items-center gap-3 text-center">
               <div className="glass-pill inline-flex items-center gap-2 px-4 py-1.5">

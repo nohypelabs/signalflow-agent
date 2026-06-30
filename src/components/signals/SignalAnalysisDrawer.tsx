@@ -72,20 +72,21 @@ export default function SignalAnalysisDrawer({ signal, liveDims, weights, capped
           transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
         >
       <motion.div
-        className="ticker-selector-glass relative flex max-h-[calc(100vh-6.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[35px] shadow-[0_28px_90px_rgba(0,0,0,0.45)]"
+        className="neu-card relative flex max-h-[calc(100vh-6.5rem)] w-full max-w-5xl flex-col overflow-hidden"
         onClick={(event) => event.stopPropagation()}
-        initial={{ opacity: 0, y: -14, scale: 0.975, filter: "blur(8px)" }}
-        animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-        exit={{ opacity: 0, y: -10, scale: 0.98, filter: "blur(6px)" }}
+        initial={{ opacity: 0, y: -14, scale: 0.975 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -10, scale: 0.98 }}
         transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.8 }}
       >
-        <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+        <div className="flex flex-col gap-3 border-b border-border-default px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-accent">Signal Analysis</p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <h3 className="text-lg font-bold text-txt-primary">{signal.pair}</h3>
               <Badge variant="muted" size="sm">{signal.actionV2 ?? signal.action}</Badge>
-              <span className="glass-pill px-2.5 py-1 text-[10px] font-mono text-txt-secondary">
+              <span className="px-2.5 py-1 text-[10px] font-mono text-txt-secondary rounded-[35px]"
+                    style={{background: "var(--bg-inset)", boxShadow: "inset 2px 2px 5px rgba(0,0,0,0.3), inset -2px -2px 5px rgba(255,255,255,0.02)"}}>
                 {signal.confidence}% confidence
               </span>
             </div>

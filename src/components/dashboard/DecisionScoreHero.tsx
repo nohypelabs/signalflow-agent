@@ -101,11 +101,13 @@ export default function DecisionScoreHero({
                 type="button"
                 onClick={onGenerate}
                 disabled={analyzing}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-[35px] border px-5 py-3 text-[13px] font-semibold transition-all hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[190px]"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-[35px] px-5 py-3 text-[13px] font-semibold transition-all active:scale-[0.99] disabled:cursor-not-allowed sm:w-auto sm:min-w-[190px]"
                 style={{
-                  borderColor: gaugeColor + "80",
-                  color: gaugeColor,
-                  backgroundColor: gaugeColor + "10",
+                  background: "var(--bg-surface)",
+                  boxShadow: analyzing
+                    ? "inset 3px 3px 8px rgba(0,0,0,0.45), inset -3px -3px 8px rgba(255,255,255,0.03)"
+                    : "4px 4px 10px rgba(0,0,0,0.4), -4px -4px 10px rgba(255,255,255,0.03)",
+                  color: analyzing ? "var(--text-muted)" : "var(--text-primary)",
                 }}
               >
                 <span className="text-sm">📶</span>
@@ -114,11 +116,11 @@ export default function DecisionScoreHero({
             </div>
           </div>
 
-          <div className="glass-pill flex h-full min-h-[200px] flex-col items-center justify-center px-5 py-4">
+          <div className="neu-card flex h-full min-h-[200px] flex-col items-center justify-center px-5 py-4" style={{borderRadius: "35px"}}>
             <div className="flex flex-col items-center justify-center text-center">
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-txt-faint">Conviction</p>
               <SpeedometerGauge value={confidence} size="lg" color={gaugeColor} />
-              <p className={`mt-2 text-sm font-semibold ${actionTone(signal)}`}>{action}</p>
+              <p className={`mt-3 text-sm font-semibold ${actionTone(signal)}`}>{action}</p>
             </div>
           </div>
         </div>
