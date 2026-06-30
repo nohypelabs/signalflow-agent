@@ -9,6 +9,7 @@ const variants = {
   inset: "bg-inset border border-border-default",
   elevated: "bg-elevated border border-border-muted",
   ghost: "bg-transparent border-none",
+  neu: "neu-card",
 };
 
 const paddings = {

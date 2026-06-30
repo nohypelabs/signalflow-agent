@@ -719,3 +719,141 @@ main::-webkit-scrollbar-thumb {
 .log-entry-fade-in {
   animation: log-entry-fade-in 80ms ease-in;
 }
+
+/* ── Neumorphism ── */
+.neu-shadow {
+  box-shadow:
+    6px 6px 14px rgba(0, 0, 0, 0.45),
+    -6px -6px 14px rgba(255, 255, 255, 0.035);
+}
+
+.neu-shadow-sm {
+  box-shadow:
+    4px 4px 10px rgba(0, 0, 0, 0.4),
+    -4px -4px 10px rgba(255, 255, 255, 0.03);
+}
+
+.neu-inset {
+  box-shadow:
+    inset 3px 3px 8px rgba(0, 0, 0, 0.45),
+    inset -3px -3px 8px rgba(255, 255, 255, 0.03);
+}
+
+.neu-card {
+  background: var(--bg-card);
+  box-shadow:
+    6px 6px 14px rgba(0, 0, 0, 0.45),
+    -6px -6px 14px rgba(255, 255, 255, 0.035);
+  border: none;
+  border-radius: 35px;
+  transition:
+    box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.neu-card:hover {
+  box-shadow:
+    8px 8px 18px rgba(0, 0, 0, 0.5),
+    -8px -8px 18px rgba(255, 255, 255, 0.04);
+  transform: translateY(-1px);
+}
+
+.neu-control {
+  background: var(--bg-inset);
+  box-shadow:
+    inset 3px 3px 8px rgba(0, 0, 0, 0.45),
+    inset -3px -3px 8px rgba(255, 255, 255, 0.03);
+  border: none;
+  border-radius: 35px;
+}
+
+.neu-btn {
+  background: linear-gradient(135deg, rgba(0, 229, 168, 0.12), rgba(0, 229, 168, 0.06));
+  box-shadow:
+    4px 4px 10px rgba(0, 0, 0, 0.4),
+    -4px -4px 10px rgba(255, 255, 255, 0.03);
+  border: none;
+  border-radius: 35px;
+  transition:
+    box-shadow 200ms ease,
+    transform 200ms ease;
+}
+
+.neu-btn:hover {
+  box-shadow:
+    5px 5px 12px rgba(0, 0, 0, 0.45),
+    -5px -5px 12px rgba(255, 255, 255, 0.04);
+  transform: translateY(-1px);
+}
+
+.neu-btn:active {
+  box-shadow:
+    inset 3px 3px 8px rgba(0, 0, 0, 0.45),
+    inset -3px -3px 8px rgba(255, 255, 255, 0.03);
+  transform: translateY(0);
+}
+
+.neu-scope .sf-card {
+  background: var(--bg-card) !important;
+  box-shadow:
+    6px 6px 14px rgba(0, 0, 0, 0.45),
+    -6px -6px 14px rgba(255, 255, 255, 0.035) !important;
+  border: none !important;
+  border-radius: 35px !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transition:
+    box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+.neu-scope .sf-card:hover {
+  box-shadow:
+    8px 8px 18px rgba(0, 0, 0, 0.5),
+    -8px -8px 18px rgba(255, 255, 255, 0.04) !important;
+  transform: translateY(-2px);
+}
+
+.neu-scope .sf-card > [class*="border-b"] {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.neu-scope input,
+.neu-scope select {
+  background: var(--bg-inset) !important;
+  box-shadow:
+    inset 3px 3px 8px rgba(0, 0, 0, 0.45),
+    inset -3px -3px 8px rgba(255, 255, 255, 0.03) !important;
+  border: none !important;
+  border-radius: 35px !important;
+}
+
+.neu-scope input:focus,
+.neu-scope select:focus {
+  box-shadow:
+    inset 3px 3px 8px rgba(0, 0, 0, 0.5),
+    inset -3px -3px 8px rgba(255, 255, 255, 0.04),
+    0 0 0 3px rgba(0, 229, 168, 0.08) !important;
+}
+
+.neu-scope .glass-pill,
+.neu-scope .glass-control,
+.neu-scope .ticker-selector-glass,
+.neu-scope .ticker-selector-glass-soft {
+  background: var(--bg-card) !important;
+  box-shadow:
+    4px 4px 10px rgba(0, 0, 0, 0.4),
+    -4px -4px 10px rgba(255, 255, 255, 0.03) !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 35px !important;
+}
+
+.neu-scope .glass-control:hover {
+  background: var(--bg-elevated) !important;
+}
+
+.neu-scope .glass-page-backdrop {
+  display: none;
+}

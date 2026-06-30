@@ -43,8 +43,8 @@ export default function DashboardGridLayout() {
   }
 
   return (
-    <div className="dashboard-glass-scope dashboard-grid relative mx-auto mt-2 w-full max-w-[1140px] overflow-x-hidden px-3 py-3 sm:px-4 lg:mt-3 lg:py-5">
-      <div className="glass-page-backdrop rounded-[35px]" />
+    <div className="dashboard-glass-scope neu-scope dashboard-grid relative mx-auto mt-2 w-full max-w-[1140px] overflow-x-hidden px-3 py-3 sm:px-4 lg:mt-3 lg:py-5">
+      <div className="glass-page-backdrop rounded-[35px] hidden" />
       <MarketSelectorModal
         isOpen={marketSelectorOpen}
         onClose={() => setMarketSelectorOpen(false)}
