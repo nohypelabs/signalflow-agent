@@ -64,7 +64,7 @@ export default function SignalLogFeed({ entries, status, filter, onFilterChange 
   const statusMeta = STATUS_META[status];
 
   return (
-    <Card variant="glass" padding="none" className="overflow-hidden rounded-xl">
+    <Card variant="glass" padding="none" className="overflow-hidden">
       <div className="flex items-center justify-between border-b border-border-default px-4 py-3">
         <div>
           <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-txt-secondary">Signal Log</p>
@@ -77,10 +77,10 @@ export default function SignalLogFeed({ entries, status, filter, onFilterChange 
               key={f.key}
               type="button"
               onClick={() => onFilterChange(f.key)}
-              className={`rounded-md px-2 py-1 text-[9px] font-semibold transition-colors ${
+              className={`rounded-[35px] px-2.5 py-1 text-[9px] font-semibold transition-colors ${
                 filter === f.key
-                  ? "bg-accent-muted text-accent border border-accent-dim"
-                  : "text-txt-secondary border border-border-default hover:border-border-muted"
+                  ? "border border-accent-dim bg-accent-muted text-accent"
+                  : "border border-white/10 text-txt-secondary hover:border-white/20"
               }`}
             >
               {f.label}
@@ -103,8 +103,7 @@ export default function SignalLogFeed({ entries, status, filter, onFilterChange 
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="h-[280px] overflow-y-auto p-3 font-mono text-[12px] leading-[1.6]"
-          style={{ backgroundColor: "rgba(0,0,0,0.15)" }}
+          className="h-[280px] overflow-y-auto bg-black/20 p-3 font-mono text-[12px] leading-[1.6]"
         >
           {entries.length === 0 ? (
             <div className="flex h-full items-center justify-center text-txt-secondary text-[11px]">
@@ -118,7 +117,8 @@ export default function SignalLogFeed({ entries, status, filter, onFilterChange 
                 style={{ color: TYPE_COLORS[entry.type] }}
               >
                 <span style={{ color: "#6B7280" }}>[{entry.ts}]</span>{" "}
-                {entry.emoji} {entry.msg}
+                {entry.emoji ? `${entry.emoji} ` : ""}
+                {entry.msg}
               </div>
             ))
           )}
@@ -128,7 +128,7 @@ export default function SignalLogFeed({ entries, status, filter, onFilterChange 
           <button
             type="button"
             onClick={scrollToBottom}
-            className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-accent-dim bg-accent-muted/80 px-3 py-1 text-[10px] font-semibold text-accent backdrop-blur-sm transition-colors hover:bg-accent-muted"
+            className="glass-control absolute bottom-3 left-1/2 -translate-x-1/2 rounded-[35px] px-3 py-1 text-[10px] font-semibold text-accent transition-colors"
           >
             ▼ new entries
           </button>

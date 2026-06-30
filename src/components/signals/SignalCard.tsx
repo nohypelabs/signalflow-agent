@@ -47,7 +47,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
   const typeSL = (typeConfig && signal.execution?.stopLoss > 0) ? signal.execution.stopLoss : null;
 
   return (
-    <div className="bg-card border border-border-default rounded-xl overflow-hidden transition-colors hover:border-border-muted">
+    <div className="signals-glass-card overflow-hidden transition-colors hover:border-border-muted">
       {/* Card header */}
       <div className="p-3.5 sm:p-4">
         <div className="flex flex-col gap-2 mb-2">
@@ -56,24 +56,24 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
             <SignalTypeBadge action={signal.actionV2 ?? signal.action} size="md" />
             {ticker && <Badge variant="live" size="sm">LIVE</Badge>}
             {signal.regime && (
-              <span className="text-[8px] px-1.5 py-0.5 rounded bg-elevated text-txt-muted font-mono uppercase tracking-wider">
+              <span className="glass-pill px-1.5 py-0.5 text-[8px] font-mono uppercase tracking-wider text-txt-muted">
                 {signal.regime.replace("_", " ")}
               </span>
             )}
             {signal.setup && (
-              <span className="text-[8px] px-1.5 py-0.5 rounded bg-accent/10 text-accent border border-accent/20 font-mono uppercase tracking-wider">
+              <span className="rounded-[35px] border border-accent/20 bg-accent/10 px-1.5 py-0.5 text-[8px] font-mono uppercase tracking-wider text-accent">
                 {signal.setup.label}
               </span>
             )}
             {qualityTone && (
-              <span className={`text-[8px] px-1.5 py-0.5 rounded border font-mono font-semibold ${qualityTone.className}`}>
+              <span className={`rounded-[35px] border px-1.5 py-0.5 text-[8px] font-mono font-semibold ${qualityTone.className}`}>
                 {qualityTone.text}
               </span>
             )}
             {/* Trading type badge */}
             {typeConfig && (
               <span
-                className="text-[8px] px-1.5 py-0.5 rounded font-semibold flex items-center gap-1"
+                className="flex items-center gap-1 rounded-[35px] px-1.5 py-0.5 text-[8px] font-semibold"
                 style={{
                   backgroundColor: `${typeConfig.color}15`,
                   color: typeConfig.color,
@@ -87,7 +87,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
             {/* Multi-TF confluence badge */}
             {signal.multiTF && (
               <span
-                className="text-[8px] px-1.5 py-0.5 rounded font-semibold flex items-center gap-1"
+                className="flex items-center gap-1 rounded-[35px] px-1.5 py-0.5 text-[8px] font-semibold"
                 style={{
                   backgroundColor: signal.multiTF.score >= 80 ? "#00E5A815" : signal.multiTF.score >= 60 ? "#F59E0B15" : "#EF444415",
                   color: signal.multiTF.score >= 80 ? "#00E5A8" : signal.multiTF.score >= 60 ? "#F59E0B" : "#EF4444",
@@ -102,7 +102,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
             )}
             {/* Thinking Framework badge for live traceable reasoning (Wave 2 differentiator) */}
             {signal.frameworkApplication && (
-              <span className="text-[8px] px-1 py-0.5 rounded bg-accent/10 text-accent font-bold border border-accent/30" title="Thinking Framework applied - explicit auditable principles from Strategy Config">
+              <span className="rounded-[35px] border border-accent/30 bg-accent/10 px-1 py-0.5 text-[8px] font-bold text-accent" title="Thinking Framework applied - explicit auditable principles from Strategy Config">
                 FW
               </span>
             )}
@@ -141,7 +141,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
         {(signal.setup || signal.quality) && (
           <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
             {signal.setup && (
-              <div className="rounded-lg border border-border-default bg-inset/30 p-2.5">
+              <div className="glass-pill p-2.5">
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="text-[9px] font-semibold text-txt-secondary uppercase tracking-wider">Thesis</span>
                   <span className="text-[9px] text-accent font-mono">
@@ -157,7 +157,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
               </div>
             )}
             {signal.quality && (
-              <div className="rounded-lg border border-border-default bg-inset/30 p-2.5">
+              <div className="glass-pill p-2.5">
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="text-[9px] font-semibold text-txt-secondary uppercase tracking-wider">Calibration</span>
                   <span className="text-[9px] text-txt-tertiary font-mono">
@@ -189,7 +189,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
         {/* Type-specific TP/SL preview */}
         {typeConfig && typeTP && typeSL && (
           <div
-            className="mt-3 p-2.5 rounded-lg border flex flex-wrap items-center gap-2.5 sm:gap-4"
+            className="mt-3 flex flex-wrap items-center gap-2.5 rounded-[35px] border p-2.5 sm:gap-4"
             style={{
               borderColor: `${typeConfig.color}20`,
               backgroundColor: `${typeConfig.color}06`,
@@ -221,7 +221,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
             {signal.multiTF.details.map((tf) => (
               <span
                 key={tf.tf}
-                className="text-[8px] px-1.5 py-0.5 rounded font-mono"
+                className="rounded-[35px] px-1.5 py-0.5 text-[8px] font-mono"
                 style={{
                   backgroundColor: tf.direction === "bullish" ? "#00E5A812" : tf.direction === "bearish" ? "#EF444412" : "#6B728012",
                   color: tf.direction === "bullish" ? "#00E5A8" : tf.direction === "bearish" ? "#EF4444" : "#6B7280",
@@ -235,7 +235,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
       </div>
 
       {/* Footer */}
-      <div className="border-t border-border-default px-3.5 sm:px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div className="flex flex-col gap-2 border-t border-white/10 px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
           <span className="text-[9px] text-txt-dim shrink-0">Sources:</span>
           {signal.sources.slice(0, 4).map((src) => (
@@ -248,7 +248,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
         <div className="flex items-center gap-2 shrink-0 sm:ml-2 self-end sm:self-auto">
           <button
             onClick={() => onFocusSignal?.(signal)}
-            className="text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-accent/20 bg-accent/10 text-accent hover:bg-accent/20 transition-all"
+            className="glass-control rounded-[35px] px-3 py-1.5 text-[10px] font-semibold text-accent transition-all"
           >
             View on Chart
           </button>

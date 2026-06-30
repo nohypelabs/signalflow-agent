@@ -44,7 +44,7 @@ export default function TopBar({
       </div>
 
       {/* Main header bar */}
-      <header className="relative flex items-center justify-between gap-3 px-4 h-12 bg-surface border-b border-border-default">
+      <header className="topbar-glass relative mx-2 mt-2 flex h-16 items-center justify-between gap-3 rounded-[35px] border px-4">
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent" />
 
         {/* Left: logo button — visible on mobile (drawer) or desktop collapsed (expand) */}
@@ -55,7 +55,7 @@ export default function TopBar({
             onClick={onMenuClick}
             whileTap={{ scale: 0.92 }}
             aria-label="Open sidebar"
-            className="flex md:hidden cursor-pointer items-center justify-center rounded-lg overflow-hidden"
+            className="glass-control flex md:hidden cursor-pointer items-center justify-center overflow-hidden rounded-[35px] p-1"
           >
             <Image
               src="/icons/signalflow-logo.png"
@@ -77,7 +77,7 @@ export default function TopBar({
               exit={{ opacity: 0, x: -8 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
               aria-label="Expand sidebar"
-              className="hidden md:flex cursor-pointer items-center justify-center rounded-lg overflow-hidden"
+              className="glass-control hidden cursor-pointer items-center justify-center overflow-hidden rounded-[35px] p-1 md:flex"
             >
               <Image
                 src="/icons/signalflow-logo.png"
@@ -93,7 +93,7 @@ export default function TopBar({
 
         {/* Center: scrolling ticker tape (desktop) */}
         <div
-          className="relative hidden lg:flex flex-1 min-w-0 mx-3 overflow-hidden rounded-md bg-[#060810]"
+          className="market-tape-glass relative mx-3 hidden min-w-0 flex-1 overflow-hidden rounded-[35px] lg:flex"
           style={{
             maskImage: "linear-gradient(90deg, transparent 0, black 28px, black calc(100% - 28px), transparent 100%)",
             WebkitMaskImage: "linear-gradient(90deg, transparent 0, black 28px, black calc(100% - 28px), transparent 100%)",

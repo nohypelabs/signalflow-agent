@@ -1,6 +1,5 @@
 "use client";
 
-import { Play } from "lucide-react";
 import type { Signal } from "@/lib/types/signal";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
@@ -10,7 +9,9 @@ interface Props {
   signal: Signal | null;
   analyzing: boolean;
   onGenerate: () => void;
-  onExecute: () => void;
+  selectedPair: string;
+  selectedPairMeta: string;
+  onOpenMarketSelector: () => void;
 }
 
 function actionLabel(signal: Signal | null): string {
@@ -38,66 +39,88 @@ function getSignalColor(confidence: number, action: string): string {
   return "#f59e0b";
 }
 
-export default function DecisionScoreHero({ signal, analyzing, onGenerate, onExecute }: Props) {
+export default function DecisionScoreHero({
+  signal,
+  analyzing,
+  onGenerate,
+  selectedPair,
+  selectedPairMeta,
+  onOpenMarketSelector,
+}: Props) {
   const action = actionLabel(signal);
   const confidence = signal ? Math.round(signal.confidence) : 0;
-  const canExecute = !!signal && action !== "NO TRADE";
   const gaugeColor = signal ? getSignalColor(confidence, action) : "#6B7280";
 
   return (
-    <Card variant="glass" padding="none" className="overflow-hidden rounded-xl">
-      <div className="border-b border-border-default px-4 py-3">
-        <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-txt-secondary">Decision Score</p>
-        <h2 className="mt-1 text-sm font-semibold text-txt-primary">Current signal bias and conviction</h2>
+    <Card variant="glass" padding="none" className="overflow-hidden">
+      <div className="flex items-center justify-between gap-3 border-b border-border-default px-4 py-3">
+        <div className="min-w-0">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-txt-secondary">Live Decision</p>
+          <h2 className="mt-1 truncate text-sm font-semibold text-txt-primary">Signal bias and conviction</h2>
+        </div>
+        <Badge variant={actionVariant(signal)} size="md">{action}</Badge>
       </div>
 
-      <div className="p-4 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <Badge variant={actionVariant(signal)} size="md">{action}</Badge>
-              {signal?.quality?.status && (
-                <Badge variant={signal.quality.status === "actionable" ? "buy" : signal.quality.status === "blocked" ? "sell" : "hold"} size="sm">
-                  {signal.quality.status}
-                </Badge>
-              )}
+      <div className="decision-hero-body p-4">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-stretch">
+          <div className="min-w-0">
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={onOpenMarketSelector}
+                className="glass-control inline-flex w-fit shrink-0 items-center justify-center gap-2 rounded-[35px] px-4 py-2.5 text-[12px] font-semibold text-txt-secondary transition-colors hover:text-txt-primary"
+              >
+                <span className="text-txt-faint">Ticker</span>
+                <span className="text-txt-primary">{selectedPair}</span>
+                <span className="text-txt-faint">Change</span>
+              </button>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-txt-faint">Selected Market</p>
+                <h3 className={`decision-hero-title mt-1 text-[30px] font-semibold leading-none tracking-tight lg:text-[38px] ${actionTone(signal)}`}>
+                  {selectedPair}
+                </h3>
+                <p className="mt-2 text-[13px] text-txt-secondary">{selectedPairMeta}</p>
+              </div>
             </div>
-            <p className={`mt-2 text-3xl font-semibold tracking-tight lg:text-[40px] ${actionTone(signal)}`}>
-              {signal ? signal.pair : "Waiting for flow"}
-            </p>
-            <p className="mt-1 text-[11px] text-txt-secondary">
-              {signal ? `${confidence}% confidence` : "Generate a signal to begin"}
-            </p>
+
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:max-w-[360px]">
+              <div className="glass-pill px-3 py-2.5 text-center">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-txt-faint">Bias</p>
+                <p className={`mt-1 text-sm font-semibold ${actionTone(signal)}`}>{action}</p>
+              </div>
+              <div className="glass-pill px-3 py-2.5 text-center">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-txt-faint">Score</p>
+                <p className="mt-1 text-sm font-semibold text-txt-primary">
+                  {signal ? `${confidence}%` : "waiting"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={onGenerate}
+                disabled={analyzing}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-[35px] border px-5 py-3 text-[13px] font-semibold transition-all hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[190px]"
+                style={{
+                  borderColor: gaugeColor + "80",
+                  color: gaugeColor,
+                  backgroundColor: gaugeColor + "10",
+                }}
+              >
+                <span className="text-sm">📶</span>
+                <span>Generate Signal</span>
+              </button>
+            </div>
           </div>
-          <SpeedometerGauge value={confidence} size="lg" color={gaugeColor} />
-        </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onGenerate}
-            disabled={analyzing}
-            className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-            style={{
-              borderColor: gaugeColor + "80",
-              color: gaugeColor,
-              backgroundColor: gaugeColor + "10",
-            }}
-          >
-            <span className="text-sm">📶</span>
-            <span>Generate Signal</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onExecute}
-            disabled={!canExecute}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold text-black transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] disabled:bg-[#334155] disabled:text-[#64748b] disabled:cursor-not-allowed"
-            style={{ backgroundColor: canExecute ? gaugeColor : undefined }}
-          >
-            <Play size={14} fill="currentColor" />
-            <span>Execute Setup</span>
-          </button>
+          <div className="glass-pill flex h-full min-h-[200px] flex-col items-center justify-center px-5 py-4">
+            <div className="flex flex-col items-center justify-center text-center">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-txt-faint">Conviction</p>
+              <SpeedometerGauge value={confidence} size="lg" color={gaugeColor} />
+              <p className={`mt-2 text-sm font-semibold ${actionTone(signal)}`}>{action}</p>
+            </div>
+          </div>
         </div>
       </div>
     </Card>

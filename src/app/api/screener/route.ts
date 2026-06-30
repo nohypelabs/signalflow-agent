@@ -47,6 +47,24 @@ function categorize(symbol: string): string {
 
 let cache: { data: ScreenerPair[]; ts: number } | null = null;
 const CACHE_MS = 60_000;
+const MARKETCAP_PRIORITY_BASES = [
+  "btc",
+  "eth",
+  "sol",
+  "bnb",
+  "xrp",
+  "doge",
+  "ada",
+  "trx",
+  "avax",
+  "link",
+  "ton",
+  "sui",
+  "dot",
+  "bch",
+  "ltc",
+  "near",
+];
 
 export async function GET(req: NextRequest) {
   const validation = validateRequest(
@@ -79,8 +97,11 @@ export async function GET(req: NextRequest) {
     }))].filter((b) => b && !["usdt", "usdc"].includes(b));
 
     const snapshotMap = new Map<string, MarketSnapshot>();
-    // Fetch snapshots for top assets only (max 10 to stay within rate limits)
-    const topBases = cryptoBases.slice(0, 10);
+    // Fetch snapshots for major assets first, then fill from the venue list.
+    // The raw SoDEX ticker order is not market-cap ordered, so slicing it can miss BTC/ETH.
+    const priorityBases = MARKETCAP_PRIORITY_BASES.filter((base) => cryptoBases.includes(base));
+    const remainingBases = cryptoBases.filter((base) => !priorityBases.includes(base));
+    const topBases = [...priorityBases, ...remainingBases].slice(0, 16);
     const snapshotResults = await Promise.all(
       topBases.map(async (base) => {
         const cid = sodexBaseToSosoId(base, currencies as { symbol: string; currency_id: string }[]);
@@ -103,7 +124,7 @@ export async function GET(req: NextRequest) {
       return {
         symbol: t.symbol,
         displayName: info?.displayName ?? t.symbol,
-        baseCoin: info?.baseCoin ?? base,
+        baseCoin: base,
         quoteCoin: info?.quoteCoin ?? "USDC",
         price: parseFloat(t.lastPx) || 0,
         change24h: t.changePct || 0,

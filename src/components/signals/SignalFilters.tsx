@@ -51,7 +51,7 @@ export default function SignalFilters({
   onViewModeChange,
 }: Props) {
   return (
-    <div className="flex flex-col gap-2 mb-5">
+    <div className="signals-glass-card mb-5 flex flex-col gap-2 p-3">
       {/* Search */}
       <div className="relative flex-1 min-w-0">
         <svg
@@ -71,13 +71,13 @@ export default function SignalFilters({
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search pairs..."
-          className="w-full bg-inset border border-border-default rounded-lg pl-9 pr-3 py-1.5 text-xs text-txt-primary placeholder:text-txt-dim focus:outline-none focus:border-accent-dim"
+          className="w-full border pl-9 pr-3 py-2 text-xs text-txt-primary placeholder:text-txt-dim focus:outline-none"
         />
       </div>
 
       {/* Type filter */}
       <div className="overflow-x-auto scrollbar-none">
-        <div className="inline-flex min-w-full sm:min-w-0 sm:flex items-center gap-1 bg-inset border border-border-default rounded-lg p-0.5">
+        <div className="glass-pill inline-flex min-w-full items-center gap-1 p-1 sm:min-w-0 sm:flex">
         {typeOptions.map((opt) => {
           const isActive = typeFilter === opt.value;
           let activeColor = "text-accent";
@@ -90,8 +90,8 @@ export default function SignalFilters({
               key={opt.value}
               onClick={() => onTypeFilterChange(opt.value)}
               className={`
-                px-2.5 py-1 text-[10px] font-semibold rounded-md transition-colors whitespace-nowrap
-                ${isActive ? `bg-elevated ${activeColor}` : "text-txt-muted hover:text-txt-secondary"}
+                rounded-[35px] px-2.5 py-1 text-[10px] font-semibold transition-colors whitespace-nowrap
+                ${isActive ? `bg-white/[0.08] ${activeColor}` : "text-txt-muted hover:text-txt-secondary"}
               `}
             >
               {opt.label}
@@ -106,7 +106,7 @@ export default function SignalFilters({
         <select
           value={confidenceFilter}
           onChange={(e) => onConfidenceFilterChange(Number(e.target.value))}
-          className="w-full bg-inset border border-border-default rounded-lg px-2.5 py-1.5 text-[10px] text-txt-secondary focus:outline-none focus:border-accent-dim cursor-pointer"
+          className="w-full cursor-pointer border px-2.5 py-2 text-[10px] text-txt-secondary focus:outline-none"
         >
           {confidenceOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -119,7 +119,7 @@ export default function SignalFilters({
         <select
           value={sortBy}
           onChange={(e) => onSortChange(e.target.value as SortOption)}
-          className="w-full bg-inset border border-border-default rounded-lg px-2.5 py-1.5 text-[10px] text-txt-secondary focus:outline-none focus:border-accent-dim cursor-pointer"
+          className="w-full cursor-pointer border px-2.5 py-2 text-[10px] text-txt-secondary focus:outline-none"
         >
           {sortOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -129,10 +129,10 @@ export default function SignalFilters({
         </select>
 
         {/* View toggle */}
-        <div className="flex items-center justify-center gap-0.5 bg-inset border border-border-default rounded-lg p-0.5 min-[390px]:col-span-2 sm:col-span-1">
+        <div className="glass-pill flex items-center justify-center gap-0.5 p-1 min-[390px]:col-span-2 sm:col-span-1">
           <button
             onClick={() => onViewModeChange("cards")}
-            className={`p-1.5 rounded-md ${viewMode === "cards" ? "bg-elevated text-accent" : "text-txt-muted hover:text-txt-secondary"}`}
+            className={`rounded-[35px] p-1.5 ${viewMode === "cards" ? "bg-white/[0.08] text-accent" : "text-txt-muted hover:text-txt-secondary"}`}
             title="Card view"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -141,7 +141,7 @@ export default function SignalFilters({
           </button>
           <button
             onClick={() => onViewModeChange("compact")}
-            className={`p-1.5 rounded-md ${viewMode === "compact" ? "bg-elevated text-accent" : "text-txt-muted hover:text-txt-secondary"}`}
+            className={`rounded-[35px] p-1.5 ${viewMode === "compact" ? "bg-white/[0.08] text-accent" : "text-txt-muted hover:text-txt-secondary"}`}
             title="Compact view"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

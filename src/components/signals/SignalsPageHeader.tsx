@@ -2,34 +2,32 @@
 
 import Badge from "@/components/ui/Badge";
 import StatusDot from "@/components/ui/StatusDot";
-import TypeSwitcher from "@/components/TypeSwitcher";
-import type { TradingType } from "@/lib/types/trading-type";
 
 interface Props {
   signalCount: number;
   timestamp?: string;
-  currentType: TradingType | null;
-  onTypeChange: (type: TradingType | null) => void;
-  needsAttention?: boolean;
 }
 
-export default function SignalsPageHeader({ signalCount, timestamp, currentType, onTypeChange, needsAttention = false }: Props) {
+export default function SignalsPageHeader({ signalCount, timestamp }: Props) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-border-default mb-5">
-      <div className="flex items-center gap-3">
-        <h2 className="text-lg font-bold text-txt-primary tracking-tight">Live Signals</h2>
-        <div className="flex items-center gap-1.5">
-          <StatusDot status="live" size="sm" pulse />
-          <span className="text-[10px] text-buy font-semibold uppercase tracking-wider">Live</span>
+    <div className="signals-glass-card flex flex-col justify-between gap-3 px-4 py-4 sm:flex-row sm:items-center">
+      <div>
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-bold text-txt-primary tracking-tight">Intraday Signals</h2>
+          <div className="flex items-center gap-1.5">
+            <StatusDot status="live" size="sm" pulse />
+            <span className="text-[10px] text-buy font-semibold uppercase tracking-wider">Live</span>
+          </div>
         </div>
+        <p className="mt-2 max-w-3xl text-[11px] leading-relaxed text-txt-secondary">
+          SignalFlow is currently tuned for same-day crypto setups. Use these signals for entries and exits within roughly
+          {" "}1 to 8 hours, and avoid carrying positions into a multi-day hold unless the setup is revalidated.
+        </p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        {needsAttention && (
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-hold">
-            Try another signal type
-          </span>
-        )}
-        <TypeSwitcher currentType={currentType} onTypeChange={onTypeChange} attention={needsAttention} />
+        <span className="glass-pill px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-accent">
+          Intraday Only
+        </span>
         <Badge variant="accent" size="md">
           {signalCount} {signalCount === 1 ? "signal" : "signals"}
         </Badge>

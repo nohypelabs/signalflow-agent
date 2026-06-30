@@ -109,23 +109,23 @@ export default function LayerBreakdown({ signal, sourceFlags }: Props) {
   }
 
   return (
-    <Card variant="glass" padding="none" className="overflow-hidden rounded-xl">
+    <Card variant="glass" padding="none" className="overflow-visible">
       <div className="border-b border-border-default px-4 py-3">
         <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-txt-secondary">Layer Breakdown</p>
         <h2 className="mt-1 text-sm font-semibold text-txt-primary">Pipeline score contributions</h2>
       </div>
 
-      <div className="divide-y divide-border-default">
+      <div className="relative divide-y divide-white/10">
         {layers.map((layer) => {
           const isExpanded = expanded.has(layer.id);
           const barWidth = Math.max(4, Math.min(100, layer.score));
 
           return (
-            <div key={layer.id}>
+            <div key={layer.id} className="relative">
               <button
                 type="button"
                 onClick={() => toggleLayer(layer.id)}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-elevated/20"
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-white/[0.045]"
               >
                 <ChevronDown
                   size={14}
@@ -135,7 +135,7 @@ export default function LayerBreakdown({ signal, sourceFlags }: Props) {
                 <span className="shrink-0 font-mono text-xs font-semibold text-txt-primary tabular-nums">
                   +{layer.score}pts
                 </span>
-                <div className="w-20 h-1.5 rounded-full bg-border-default/30 overflow-hidden shrink-0">
+                <div className="h-1.5 w-20 shrink-0 overflow-hidden rounded-full bg-white/10">
                   <div
                     className={`h-full rounded-full transition-all ${scoreBarColor(layer.score)}`}
                     style={{ width: `${barWidth}%` }}
@@ -144,13 +144,21 @@ export default function LayerBreakdown({ signal, sourceFlags }: Props) {
               </button>
 
               {isExpanded && layer.subItems.length > 0 && (
-                <div className="border-t border-border-default/50 bg-inset/30 px-4 py-2 space-y-1">
+                <div className="absolute left-3 right-3 top-full z-30 mt-1 max-h-44 space-y-1 overflow-y-auto rounded-[35px] border border-white/12 bg-[linear-gradient(180deg,#3b4252,#2e3440)] px-4 py-2 shadow-2xl shadow-black/45">
                   {layer.subItems.map((sub, i) => (
                     <div key={`${layer.id}-${i}`} className="flex items-center gap-2 pl-5 text-[11px]">
                       <span className="text-txt-secondary">└</span>
                       <span className="flex-1 text-txt-secondary truncate">{sub.label}</span>
                       {sub.score > 0 && (
-                        <span className="font-mono text-[10px] text-txt-primary tabular-nums">+{sub.score}pts</span>
+                        <div className="flex min-w-[118px] items-center gap-2">
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-black/25">
+                            <div
+                              className={`h-full rounded-full ${scoreBarColor(sub.score)}`}
+                              style={{ width: `${Math.max(4, Math.min(100, sub.score))}%` }}
+                            />
+                          </div>
+                          <span className="w-10 text-right font-mono text-[10px] text-txt-primary tabular-nums">+{sub.score}</span>
+                        </div>
                       )}
                     </div>
                   ))}

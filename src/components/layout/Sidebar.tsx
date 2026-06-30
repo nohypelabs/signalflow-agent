@@ -205,7 +205,7 @@ export default function Sidebar({
                 title={collapsed ? label : undefined}
                 whileTap={{ scale: 0.97 }}
                 className={`
-                  w-full flex items-center rounded-lg relative overflow-hidden outline-none
+                  w-full flex items-center rounded-[35px] relative overflow-hidden outline-none
                   ${collapsed
                     ? "justify-center px-0 py-2.5"
                     : "gap-2.5 px-2.5 py-[7px]"
@@ -222,7 +222,7 @@ export default function Sidebar({
                 {isActive && (
                   <motion.div
                     layoutId="sidebar-active-bg"
-                    className="absolute inset-0 rounded-lg"
+                    className="absolute inset-0 rounded-[35px]"
                     style={{
                       background:
                         "linear-gradient(90deg, rgba(0,229,168,0.08) 0%, rgba(0,229,168,0.02) 100%)",
@@ -234,7 +234,7 @@ export default function Sidebar({
                 {/* Hover glow */}
                 {!isActive && (
                   <motion.div
-                    className="absolute inset-0 rounded-lg"
+                    className="absolute inset-0 rounded-[35px]"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: isHovered ? 1 : 0 }}
                     transition={{ duration: 0.15 }}
@@ -280,8 +280,8 @@ export default function Sidebar({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -4 }}
                     transition={{ duration: 0.12 }}
-                    className="absolute left-full ml-2 z-50 px-2.5 py-1.5 rounded-md
-                      bg-elevated border border-border-muted shadow-lg shadow-black/30
+                    className="absolute left-full ml-2 z-50 rounded-[35px] px-2.5 py-1.5
+                      border border-white/12 bg-elevated/90 shadow-lg shadow-black/30 backdrop-blur-xl
                       text-[12px] text-txt-primary font-medium whitespace-nowrap pointer-events-none"
                   >
                     {label}
@@ -302,7 +302,7 @@ export default function Sidebar({
       <motion.aside
         animate={{ width: collapsed ? 64 : 212 }}
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        className="shrink-0 bg-surface border-r border-border-default hidden md:flex flex-col overflow-hidden"
+        className="shell-glass-panel m-2 mr-0 hidden shrink-0 flex-col overflow-hidden rounded-[35px] border md:flex"
       >
         {brandHeader}
         <div className="flex-1 overflow-y-auto py-3 scrollbar-thin">
@@ -315,12 +315,12 @@ export default function Sidebar({
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.15 }}
-              className="border-t border-border-default overflow-hidden"
+              className="overflow-hidden border-t border-white/10"
             >
               <motion.button
                 onClick={onCollapse}
                 whileTap={{ scale: 0.95 }}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-txt-muted hover:text-txt-secondary hover:bg-[#ffffff04] transition-colors outline-none focus-visible:ring-1 focus-visible:ring-accent/50"
+                className="mx-3 mb-2 mt-3 flex w-[calc(100%-1.5rem)] items-center justify-center gap-2 rounded-[35px] px-3 py-2.5 text-txt-muted outline-none transition-colors hover:bg-white/[0.06] hover:text-txt-secondary focus-visible:ring-1 focus-visible:ring-accent/50"
                 title="Collapse sidebar"
               >
                 <SidebarCollapseIcon size={15} className="opacity-60" />
@@ -356,7 +356,7 @@ export default function Sidebar({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="absolute left-0 top-0 bottom-0 w-64 bg-surface border-r border-border-default flex flex-col"
+              className="shell-glass-panel absolute bottom-0 left-0 top-0 flex w-64 flex-col border-r"
             >
               <div className="flex items-center justify-between px-4 py-3">
                 <div className="flex flex-col items-center flex-1">

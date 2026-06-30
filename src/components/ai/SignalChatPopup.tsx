@@ -215,13 +215,13 @@ export default function SignalChatPopup() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.9 }}
             transition={{ duration: 0.3, type: 'spring', stiffness: 300, damping: 25 }}
-            className="fixed bottom-[88px] right-6 z-50 w-[260px] rounded-xl border border-accent/30 bg-card shadow-xl shadow-accent/10 overflow-hidden"
+            className="ticker-selector-glass fixed bottom-[88px] right-5 z-50 w-[270px] overflow-hidden"
           >
             <div className="p-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-lg bg-accent/15 flex items-center justify-center">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent">
+                  <div className="ticker-selector-glass-soft flex h-7 w-7 items-center justify-center text-accent">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                     </svg>
                   </div>
@@ -229,7 +229,7 @@ export default function SignalChatPopup() {
                 </div>
                 <button
                   onClick={dismissHint}
-                  className="text-txt-faint hover:text-txt-secondary transition-colors p-0.5"
+                className="ticker-selector-glass-soft flex h-7 w-7 items-center justify-center text-txt-faint transition-colors hover:text-txt-secondary"
                 >
                   <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <line x1="4" y1="4" x2="16" y2="16" />
@@ -237,18 +237,18 @@ export default function SignalChatPopup() {
                   </svg>
                 </button>
               </div>
-              <p className="text-[11px] text-txt-secondary mt-2 leading-relaxed">
-                Get instant signal analysis from our AI consultant. Ask about any active signal, the engine, or trading strategy.
+              <p className="mt-2 text-[11px] leading-relaxed text-txt-secondary">
+                Ask Dora about the current signal, confluence, or source contradictions.
               </p>
               <button
                 onClick={() => { dismissHint(); setOpen(true); }}
-                className="mt-2 w-full text-center text-[11px] font-medium text-accent bg-accent/10 hover:bg-accent/20 rounded-lg py-1.5 transition-colors"
+                className="ticker-selector-glass-soft mt-2 w-full cursor-pointer py-1.5 text-center text-[11px] font-medium text-accent transition-colors hover:border-accent/30"
               >
-                Try it now
+                Open chat
               </button>
             </div>
             {/* Arrow pointing to button */}
-            <div className="absolute -bottom-1.5 right-8 w-3 h-3 rotate-45 border-r border-b border-accent/30 bg-card" />
+            <div className="absolute -bottom-1.5 right-8 h-3 w-3 rotate-45 border-r border-b border-white/10 bg-[#2e3440]" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -267,24 +267,24 @@ export default function SignalChatPopup() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 5 }}
               transition={{ duration: 0.15 }}
-              className="absolute -top-10 right-0 whitespace-nowrap rounded-lg bg-elevated border border-border-default px-2.5 py-1 text-[11px] text-txt-primary shadow-lg"
+              className="ticker-selector-glass-soft absolute -top-10 right-0 whitespace-nowrap px-2.5 py-1 text-[11px] text-txt-primary shadow-lg"
             >
               Ask Dora AI
-              <div className="absolute -bottom-1 right-5 w-2 h-2 rotate-45 bg-elevated border-r border-b border-border-default" />
+              <div className="absolute -bottom-1 right-5 h-2 w-2 rotate-45 border-r border-b border-white/10 bg-[#2e3440]" />
             </motion.div>
           )}
         </AnimatePresence>
 
         <motion.button
           onClick={() => { setOpen(!open); dismissHint(); }}
-          className="relative flex h-14 w-14 items-center justify-center rounded-full bg-accent text-background shadow-lg shadow-accent/20 hover:shadow-accent/40 transition-shadow"
+          className="ticker-selector-glass relative flex h-12 w-12 items-center justify-center text-accent shadow-lg shadow-black/20 transition-shadow hover:border-accent/35"
           whileTap={{ scale: 0.92 }}
           whileHover={{ scale: 1.05 }}
           aria-label={open ? 'Close chat' : 'Ask Dora AI'}
         >
           {/* Pulse ring animation */}
           {!open && (
-            <span className="absolute inset-0 rounded-full bg-accent/30 animate-ping" style={{ animationDuration: '2s' }} />
+            <span className="absolute inset-1 rounded-full bg-accent/15 animate-ping" style={{ animationDuration: '2s' }} />
           )}
           {open ? (
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -307,16 +307,16 @@ export default function SignalChatPopup() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-24 right-6 z-50 flex w-[380px] max-h-[520px] flex-col rounded-xl border border-border-default bg-card shadow-2xl overflow-hidden"
+            className="ticker-selector-glass fixed bottom-24 right-5 z-50 flex max-h-[min(620px,calc(100vh-7rem))] w-[min(390px,calc(100vw-1.5rem))] flex-col overflow-hidden shadow-2xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between gap-2 border-b border-border-default px-4 py-3">
+            <div className="flex items-center justify-between gap-2 border-b border-white/8 bg-white/[0.04] px-4 py-3">
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
                 <span className="text-sm font-semibold text-txt-primary">Dora</span>
-                <span className="text-[9px] text-accent/70 bg-accent/10 px-1.5 py-0.5 rounded">SignalFlow AI</span>
+                <span className="ticker-selector-glass-soft px-2 py-0.5 text-[9px] text-accent/80">SignalFlow AI</span>
                 {activeSignal && (
-                  <span className="text-[10px] text-txt-secondary bg-inset px-1.5 py-0.5 rounded">
+                  <span className="ticker-selector-glass-soft px-2 py-0.5 text-[10px] text-txt-secondary">
                     {activeSignal.pair}
                   </span>
                 )}
@@ -325,7 +325,7 @@ export default function SignalChatPopup() {
                 {walletAddress && messages.length > 0 && (
                   <button
                     onClick={handleClearChat}
-                    className="text-[9px] text-txt-faint hover:text-txt-secondary transition-colors"
+                    className="ticker-selector-glass-soft px-2 py-1 text-[9px] text-txt-faint transition-colors hover:text-txt-secondary"
                     title="Clear chat history"
                   >
                     Clear
@@ -338,11 +338,11 @@ export default function SignalChatPopup() {
             </div>
 
             {/* Messages */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[200px] max-h-[340px]">
+            <div ref={scrollRef} className="min-h-[220px] flex-1 space-y-3 overflow-y-auto px-4 py-3">
               {/* Wallet not connected */}
               {showWalletRequired && (
                 <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-                  <div className="w-10 h-10 rounded-xl bg-inset border border-border-default flex items-center justify-center">
+                  <div className="ticker-selector-glass-soft flex h-11 w-11 items-center justify-center">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-txt-dim">
                       <rect x="2" y="6" width="20" height="14" rx="2" />
                       <path d="M2 10h20" />
@@ -350,8 +350,8 @@ export default function SignalChatPopup() {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm text-txt-muted font-medium">Connect Wallet</p>
-                    <p className="text-xs text-txt-dim mt-1">Connect your wallet to chat with Dora.</p>
+                    <p className="text-sm text-txt-muted font-medium">Coming Soon</p>
+                    <p className="text-xs text-txt-dim mt-1">Dora chat access is being prepared for this dashboard.</p>
                   </div>
                 </div>
               )}
@@ -366,7 +366,7 @@ export default function SignalChatPopup() {
                     <button
                       key={s}
                       onClick={() => { setInput(s); inputRef.current?.focus(); }}
-                      className="block w-full text-left text-xs text-accent/80 hover:text-accent bg-inset/50 hover:bg-inset rounded-lg px-3 py-2 transition-colors"
+                      className="ticker-selector-glass-soft block w-full px-3 py-2 text-left text-xs text-accent/80 transition-colors hover:border-accent/30 hover:text-accent"
                     >
                       {s}
                     </button>
@@ -376,7 +376,7 @@ export default function SignalChatPopup() {
 
               {/* Limit reached notice */}
               {isLimitReached && !showWalletRequired && (
-                <div className="rounded-lg bg-hold/10 border border-hold/20 px-3 py-2 text-xs text-hold">
+                <div className="rounded-[24px] border border-hold/20 bg-hold/10 px-3 py-2 text-xs text-hold">
                   Question limit reached ({MAX_QUESTIONS}/{MAX_QUESTIONS}). Chat history is preserved.
                 </div>
               )}
@@ -385,10 +385,10 @@ export default function SignalChatPopup() {
               {messages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div
-                    className={`max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed ${
+                    className={`max-w-[85%] rounded-[24px] px-3 py-2 text-xs leading-relaxed ${
                       msg.role === 'user'
-                        ? 'bg-accent/15 text-txt-primary'
-                        : 'bg-inset text-txt-secondary'
+                        ? 'border border-accent/20 bg-accent/15 text-txt-primary'
+                        : 'ticker-selector-glass-soft text-txt-secondary'
                     }`}
                   >
                     {msg.role === 'assistant' && i === typingIndex ? (
@@ -406,7 +406,7 @@ export default function SignalChatPopup() {
 
               {loading && (
                 <div className="flex justify-start">
-                  <div className="bg-inset rounded-lg px-3 py-2 text-xs text-txt-secondary">
+                  <div className="ticker-selector-glass-soft px-3 py-2 text-xs text-txt-secondary">
                     <span className="inline-flex gap-1">
                       <span className="animate-bounce" style={{ animationDelay: '0ms' }}>●</span>
                       <span className="animate-bounce" style={{ animationDelay: '150ms' }}>●</span>
@@ -418,7 +418,7 @@ export default function SignalChatPopup() {
             </div>
 
             {/* Input */}
-            <div className="border-t border-border-default p-3">
+            <div className="border-t border-white/8 bg-white/[0.025] p-3">
               {!showWalletRequired && (
                 <div className="flex items-center gap-2">
                   <input
@@ -434,12 +434,12 @@ export default function SignalChatPopup() {
                         : 'Select a signal first...'
                     }
                     disabled={!activeSignal || loading || isLimitReached}
-                    className="flex-1 bg-inset border border-border-default rounded-lg px-3 py-2 text-xs text-txt-primary placeholder:text-txt-secondary/50 focus:outline-none focus:border-accent/50 disabled:opacity-40"
+                    className="min-w-0 flex-1 rounded-[35px] border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-txt-primary placeholder:text-txt-secondary/50 outline-none transition-colors focus:border-accent/50 disabled:opacity-40"
                   />
                   <button
                     onClick={handleSend}
                     disabled={!input.trim() || loading || !activeSignal || isLimitReached}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-30 transition-colors"
+                    className="ticker-selector-glass-soft flex h-9 w-9 shrink-0 items-center justify-center text-accent transition-colors hover:border-accent/35 disabled:opacity-30"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
@@ -448,7 +448,7 @@ export default function SignalChatPopup() {
                 </div>
               )}
               {showWalletRequired && (
-                <p className="text-center text-[10px] text-txt-faint">Wallet connection required</p>
+                <p className="text-center text-[10px] text-txt-faint">Coming Soon</p>
               )}
             </div>
           </motion.div>

@@ -18,7 +18,7 @@ export default function TopSignalHighlight({ signal, ticker, onFocusSignal }: Pr
   const coin = signal.pair.split("/")[0];
 
   return (
-    <div className="mb-5 relative overflow-hidden rounded-xl border border-accent/20 bg-gradient-to-r from-accent/5 via-card to-card">
+    <div className="signals-glass-card relative mb-5 overflow-hidden">
       {/* Accent stripe */}
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-accent via-buy to-accent/30" />
 
@@ -49,7 +49,7 @@ export default function TopSignalHighlight({ signal, ticker, onFocusSignal }: Pr
           </p>
           <button
             onClick={() => onFocusSignal?.(signal)}
-            className="text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer bg-accent/12 text-accent border border-accent/20 hover:bg-accent/20"
+            className="glass-control cursor-pointer rounded-[35px] px-3 py-1.5 text-[10px] font-bold text-accent transition-all"
           >
             View on Chart
           </button>

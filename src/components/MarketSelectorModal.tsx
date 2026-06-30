@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import type { SoDEXTicker } from "@/lib/types/trade";
 import type { Signal } from "@/lib/types/signal";
+import type { ScreenerData } from "@/lib/api/screener";
+import { parseApiResponse } from "@/lib/api/client";
 import { sodexSymbolToBase } from "@/lib/pair-map";
 import { getCoinIcon } from "@/lib/coin-icons";
 import { getStockIcon } from "@/lib/stock-icons";
@@ -19,10 +21,11 @@ interface Market {
   change24h: number;
   changeAbs: number;
   volume24h: number;
+  marketcap: number;
+  marketcapRank: number;
   category: Category;
   status: string;
   signal: { action: string; confidence: number } | null;
-  maxLev: number;
 }
 
 interface Props {
@@ -150,8 +153,9 @@ function MarketIcon({ base, category, size = 26 }: { base: string; category: Cat
 
 export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, currentSymbol, tickerMap, liveSignals = [] }: Props) {
   const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState<"volume" | "change" | "price">("volume");
+  const [sortBy, setSortBy] = useState<"marketcap" | "change" | "price">("marketcap");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [marketCapMap, setMarketCapMap] = useState<Map<string, { marketcap: number; marketcapRank: number }>>(new Map());
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<"all" | "watchlist">("all");
   const [activeCategory, setActiveCategory] = useState<Category | "All">("All");
@@ -163,9 +167,40 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
 
   useEffect(() => {
     if (isOpen) {
-      setSearch(""); setHighlightIdx(0); setActiveTab("all"); setActiveCategory("All");
+      setSearch(""); setHighlightIdx(0); setActiveTab("all"); setActiveCategory("All"); setSortBy("marketcap"); setSortDir("desc");
       setTimeout(() => inputRef.current?.focus(), 50);
     }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const controller = new AbortController();
+
+    async function loadMarketCaps() {
+      try {
+        const res = await fetch("/api/screener?sortBy=marketcap&sortDir=desc", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const data = await parseApiResponse<ScreenerData>(res);
+        const next = new Map<string, { marketcap: number; marketcapRank: number }>();
+        for (const pair of data.pairs) {
+          const base = pair.baseCoin.replace(/^v/i, "").toUpperCase();
+          const symbolBase = pair.symbol.split("_")[0]?.replace(/^v/i, "").toUpperCase();
+          const value = { marketcap: pair.marketcap, marketcapRank: pair.marketcapRank };
+          next.set(base, value);
+          if (symbolBase) next.set(symbolBase, value);
+          next.set(pair.symbol.toUpperCase(), value);
+        }
+        setMarketCapMap(next);
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+      }
+    }
+
+    void loadMarketCaps();
+
+    return () => controller.abort();
   }, [isOpen]);
 
   const signalMap = useMemo(() => {
@@ -188,11 +223,24 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
       const changePct = typeof t.changePct === "number" && !Number.isNaN(t.changePct) ? t.changePct : 0;
       const openPx = parseFloat(t.openPx || "0");
       const changeAbs = openPx > 0 ? price - openPx : 0;
-      const maxLev = ["BTC", "ETH", "SOL"].includes(base.toUpperCase()) ? 20 : 5;
-      list.push({ symbol, displayPair: `${base}/USDC`, base, lastPrice: price, change24h: changePct, changeAbs, volume24h: vol, category: categorize(base), status: "TRADING", signal: signalMap.get(base) ?? null, maxLev });
+      const marketCap = marketCapMap.get(base.toUpperCase()) ?? marketCapMap.get(symbol.toUpperCase());
+      list.push({
+        symbol,
+        displayPair: `${base}/USDC`,
+        base,
+        lastPrice: price,
+        change24h: changePct,
+        changeAbs,
+        volume24h: vol,
+        marketcap: marketCap?.marketcap ?? 0,
+        marketcapRank: marketCap?.marketcapRank ?? 0,
+        category: categorize(base),
+        status: "TRADING",
+        signal: signalMap.get(base) ?? null,
+      });
     }
     return list;
-  }, [tickerMap, signalMap]);
+  }, [tickerMap, signalMap, marketCapMap]);
 
   const availableCategories = useMemo(() => {
     const cats = new Set<Category>();
@@ -211,14 +259,21 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
       list = list.filter((m) => m.base.includes(q) || m.displayPair.toUpperCase().includes(q));
     }
     list.sort((a, b) => {
-      const av = sortBy === "volume" ? a.volume24h : sortBy === "change" ? a.change24h : a.lastPrice;
-      const bv = sortBy === "volume" ? b.volume24h : sortBy === "change" ? b.change24h : b.lastPrice;
+      if (sortBy === "marketcap") {
+        const aKnown = a.marketcap > 0 ? 1 : 0;
+        const bKnown = b.marketcap > 0 ? 1 : 0;
+        if (aKnown !== bKnown) return bKnown - aKnown;
+        if (a.marketcap !== b.marketcap) return sortDir === "desc" ? b.marketcap - a.marketcap : a.marketcap - b.marketcap;
+        return a.base.localeCompare(b.base);
+      }
+      const av = sortBy === "change" ? a.change24h : a.lastPrice;
+      const bv = sortBy === "change" ? b.change24h : b.lastPrice;
       return sortDir === "desc" ? bv - av : av - bv;
     });
     return list;
   }, [markets, search, sortBy, sortDir, activeTab, activeCategory, watchlist]);
 
-  const totalVolume = useMemo(() => markets.reduce((s, m) => s + m.volume24h, 0), [markets]);
+  const marketCapCount = useMemo(() => markets.filter((m) => m.marketcap > 0).length, [markets]);
 
   const catCounts = useMemo(() => {
     const counts: Record<string, number> = { All: markets.length };
@@ -246,12 +301,12 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
     el?.scrollIntoView({ block: "nearest" });
   }, [highlightIdx]);
 
-  const toggleSort = (col: "volume" | "change" | "price") => {
+  const toggleSort = (col: "marketcap" | "change" | "price") => {
     if (sortBy === col) setSortDir((d) => d === "desc" ? "asc" : "desc");
     else { setSortBy(col); setSortDir("desc"); }
   };
 
-  const renderSortArrow = (col: "volume" | "change" | "price") => (
+  const renderSortArrow = (col: "marketcap" | "change" | "price") => (
     <span className={`ml-0.5 text-[9px] ${sortBy === col ? "text-accent" : "text-txt-faint"}`}>
       {sortBy === col ? (sortDir === "desc" ? "▼" : "▲") : "↕"}
     </span>
@@ -262,38 +317,38 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-3 md:pt-[7vh] bg-transparent" onClick={onClose}>
       <div
-        className="w-[calc(100%-20px)] md:w-full max-w-3xl max-h-[82vh] md:max-h-[72vh] flex flex-col rounded-xl border border-border-muted bg-card/98 overflow-hidden shadow-[0_24px_90px_rgba(0,0,0,0.42)] backdrop-blur-xl animate-[market-selector-in_180ms_cubic-bezier(0.22,1,0.36,1)] will-change-transform"
+        className="ticker-selector-glass w-[calc(100%-20px)] md:w-full max-w-3xl max-h-[82vh] md:max-h-[72vh] flex flex-col overflow-hidden animate-[market-selector-in_180ms_cubic-bezier(0.22,1,0.36,1)] will-change-transform"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
         {/* ═══ Search Bar ═══ */}
-        <div className="shrink-0 flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 border-b border-border-default bg-inset/40">
-          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 border border-accent/20">
+        <div className="shrink-0 flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 border-b border-white/8 bg-white/[0.04]">
+          <div className="ticker-selector-glass-soft flex items-center justify-center w-9 h-9">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
           </div>
           <input ref={inputRef} type="text" value={search} onChange={(e) => { setSearch(e.target.value); setHighlightIdx(0); }}
             placeholder={`Search ${markets.length} markets…`}
             className="flex-1 min-w-0 bg-transparent text-sm text-txt-primary outline-none placeholder:text-txt-muted" />
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-txt-faint font-mono px-2 py-0.5 rounded bg-inset border border-border-default">{filtered.length}</span>
-            <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-txt-faint hover:text-txt-secondary hover:bg-elevated cursor-pointer transition-colors">
+            <span className="ticker-selector-glass-soft text-[10px] text-txt-faint font-mono px-3 py-1">{filtered.length}</span>
+            <button onClick={onClose} className="ticker-selector-glass-soft w-9 h-9 flex items-center justify-center text-txt-faint hover:text-txt-secondary cursor-pointer transition-colors">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
             </button>
           </div>
         </div>
 
         {/* ═══ Filter Tabs ═══ */}
-        <div className="shrink-0 flex flex-col md:flex-row md:items-center md:justify-between gap-2 px-3 md:px-4 py-2 border-b border-border-default">
+        <div className="shrink-0 flex flex-col md:flex-row md:items-center md:justify-between gap-2 px-3 md:px-4 py-2 border-b border-white/8">
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
             {[
               { id: "all" as const, label: "All Markets", icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg> },
               { id: "watchlist" as const, label: "Watchlist", icon: <StarIcon filled size={12} /> },
             ].map((tab) => (
               <button key={tab.id} onClick={() => { setActiveTab(tab.id); setHighlightIdx(0); }}
-                className={`flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg font-medium cursor-pointer transition-all ${
+                className={`ticker-selector-glass-soft flex items-center gap-1.5 text-[11px] px-4 py-2 font-medium cursor-pointer transition-all ${
                   activeTab === tab.id
-                    ? "bg-accent/12 text-accent border border-accent/25"
-                    : "text-txt-dim hover:text-txt-secondary border border-transparent hover:bg-elevated/30"
+                    ? "text-accent border-accent/35 bg-accent/10"
+                    : "text-txt-dim hover:text-txt-secondary"
                 }`}>
                 {tab.icon} {tab.label}
               </button>
@@ -302,34 +357,34 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
           <div className="hidden md:flex items-center gap-2 text-[10px] text-txt-faint">
             <span className="font-mono">{markets.length} pairs</span>
             <span className="text-border-default">·</span>
-            <span className="font-mono">{fmtVol(totalVolume)} volume</span>
+            <span className="font-mono">{marketCapCount}/{markets.length} market caps</span>
           </div>
         </div>
 
         {/* ═══ Category Sub-tabs ═══ */}
         {hasMultipleCategories && (
-          <div className="shrink-0 flex items-center gap-1.5 px-3 md:px-4 py-1.5 border-b border-border-default bg-inset/20 overflow-x-auto scrollbar-none">
+          <div className="shrink-0 flex items-center gap-1.5 px-3 md:px-4 py-1.5 border-b border-white/8 bg-white/[0.02] overflow-x-auto scrollbar-none">
             {availableCategories.map((cat) => (
               <button key={cat} onClick={() => { setActiveCategory(cat); setHighlightIdx(0); }}
-                className={`flex items-center gap-1.5 text-[10px] px-3 py-1.5 rounded-lg font-medium cursor-pointer transition-all shrink-0 ${
+                className={`ticker-selector-glass-soft flex items-center gap-1.5 text-[10px] px-4 py-2 font-medium cursor-pointer transition-all shrink-0 ${
                   activeCategory === cat
-                    ? "bg-accent/12 text-accent border border-accent/25"
-                    : "text-txt-dim hover:text-txt-secondary border border-transparent hover:border-border-default hover:bg-elevated/20"
+                    ? "text-accent border-accent/35 bg-accent/10"
+                    : "text-txt-dim hover:text-txt-secondary"
                 }`}>
                 {cat !== "All" && <CategoryIcon category={cat} size={11} />}
                 <span>{cat}</span>
-                <span className={`text-[9px] ml-0.5 px-1 py-0 rounded ${activeCategory === cat ? "bg-accent/15 text-accent" : "bg-elevated text-txt-faint"}`}>{catCounts[cat] || 0}</span>
+                <span className={`text-[9px] ml-0.5 px-1.5 py-0.5 rounded-full ${activeCategory === cat ? "bg-accent/15 text-accent" : "bg-white/8 text-txt-faint"}`}>{catCounts[cat] || 0}</span>
               </button>
             ))}
           </div>
         )}
 
         {/* ═══ Table Header ═══ */}
-        <div className="hidden md:grid shrink-0 grid-cols-[1fr_108px_82px_82px_34px] gap-3 px-4 py-2 border-b border-border-default bg-inset/30 text-[10px] text-txt-muted font-medium">
+        <div className="hidden md:grid shrink-0 grid-cols-[1fr_108px_82px_94px_34px] gap-3 px-4 py-2 border-b border-white/8 bg-white/[0.03] text-[10px] text-txt-muted font-medium">
           <span className="tracking-wide">Market</span>
           <span className="text-right cursor-pointer hover:text-txt-secondary transition-colors" onClick={() => toggleSort("price")}>Last Price{renderSortArrow("price")}</span>
           <span className="text-right cursor-pointer hover:text-txt-secondary transition-colors" onClick={() => toggleSort("change")}>24h Change{renderSortArrow("change")}</span>
-          <span className="text-right cursor-pointer hover:text-txt-secondary transition-colors" onClick={() => toggleSort("volume")}>Volume{renderSortArrow("volume")}</span>
+          <span className="text-right cursor-pointer hover:text-txt-secondary transition-colors" onClick={() => toggleSort("marketcap")}>Market Cap{renderSortArrow("marketcap")}</span>
           <span className="text-center">Fav</span>
         </div>
 
@@ -354,9 +409,9 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
               return (
                 <div key={m.symbol} data-idx={idx}>
                 <div
-                  className={`hidden md:grid grid-cols-[1fr_108px_82px_82px_34px] gap-3 px-4 py-2.5 cursor-pointer transition-all items-center border-b border-border-default/50 ${
-                    isHighlighted ? "bg-elevated/50" : "hover:bg-elevated/30"
-                  } ${isActive ? "bg-accent/8 border-l-2 border-l-accent" : ""}`}
+                  className={`ticker-selector-glass-soft hidden md:grid grid-cols-[1fr_108px_82px_94px_34px] gap-3 px-4 py-3 cursor-pointer transition-all items-center mb-2 ${
+                    isHighlighted ? "bg-white/[0.12]" : "hover:bg-white/[0.09]"
+                  } ${isActive ? "border-accent/30 bg-accent/8" : ""}`}
                   onClick={() => { onSelectMarket(m.displayPair); onClose(); }}
                   onMouseEnter={() => setHighlightIdx(idx)}
                 >
@@ -368,9 +423,8 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
                         <span className={`text-[13px] font-bold ${isActive ? "text-accent" : "text-txt-primary"}`}>{m.base}</span>
                         <span className="text-[10px] text-txt-faint">/USDC</span>
                         {m.category !== "Crypto" && (
-                          <span className="text-[8px] px-1.5 py-[1px] rounded bg-elevated text-txt-dim font-semibold uppercase">{m.category.slice(0, 3)}</span>
+                          <span className="text-[8px] px-2 py-0.5 rounded-full bg-white/8 text-txt-dim font-semibold uppercase">{m.category.slice(0, 3)}</span>
                         )}
-                        <span className="text-[10px] px-2 py-[2px] rounded-md bg-accent/10 text-accent font-bold font-mono border border-accent/20">{m.maxLev}x</span>
                         {m.signal && <SignalBadge action={m.signal.action} confidence={m.signal.confidence} />}
                       </div>
                     </div>
@@ -389,17 +443,19 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
                     </p>
                   </div>
 
-                  {/* Volume */}
-                  <span className="text-[12px] font-mono text-txt-secondary text-right tabular-nums">{fmtVol(m.volume24h)}</span>
+                  {/* Market cap */}
+                  <span className="text-[12px] font-mono text-txt-secondary text-right tabular-nums">
+                    {m.marketcap > 0 ? fmtVol(m.marketcap) : "--"}
+                  </span>
 
                   {/* Star */}
                   <button onClick={(e) => { e.stopPropagation(); toggleWatch(m.base); }}
-                    className={`flex items-center justify-center cursor-pointer transition-all hover:scale-110 ${isFav ? "text-hold" : "text-txt-faint/30 hover:text-hold/60"}`}>
+                    className={`ticker-selector-glass-soft flex items-center justify-center w-10 h-10 cursor-pointer transition-all hover:scale-110 ${isFav ? "text-hold" : "text-txt-faint/30 hover:text-hold/60"}`}>
                     <StarIcon filled={isFav} size={16} />
                   </button>
                 </div>
                 <div
-                  className={`md:hidden px-3 py-2.5 border-b border-border-default/50 ${isActive ? "bg-accent/8" : "hover:bg-elevated/20"}`}
+                  className={`ticker-selector-glass-soft md:hidden px-3 py-3 mb-2 ${isActive ? "bg-accent/8 border-accent/30" : "hover:bg-white/[0.08]"}`}
                   onClick={() => { onSelectMarket(m.displayPair); onClose(); }}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -409,14 +465,13 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
                         <div className="flex items-center gap-1.5">
                           <span className={`text-[12px] font-bold truncate ${isActive ? "text-accent" : "text-txt-primary"}`}>{m.base}</span>
                           <span className="text-[9px] text-txt-faint">/USDC</span>
-                          <span className="text-[9px] px-1.5 py-[1px] rounded bg-accent/10 text-accent font-bold font-mono border border-accent/20">{m.maxLev}x</span>
                         </div>
                         {m.signal && <div className="mt-1"><SignalBadge action={m.signal.action} confidence={m.signal.confidence} /></div>}
                       </div>
                     </div>
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleWatch(m.base); }}
-                      className={`shrink-0 pt-0.5 ${isFav ? "text-hold" : "text-txt-faint/40"}`}
+                      className={`ticker-selector-glass-soft shrink-0 w-9 h-9 flex items-center justify-center ${isFav ? "text-hold" : "text-txt-faint/40"}`}
                     >
                       <StarIcon filled={isFav} size={15} />
                     </button>
@@ -431,8 +486,8 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
                       <p className={`font-mono ${m.change24h >= 0 ? "text-buy" : "text-sell"}`}>{m.change24h >= 0 ? "+" : ""}{m.change24h.toFixed(2)}%</p>
                     </div>
                     <div>
-                      <p className="text-txt-faint">Vol</p>
-                      <p className="font-mono text-txt-secondary">{fmtVol(m.volume24h)}</p>
+                      <p className="text-txt-faint">MCap</p>
+                      <p className="font-mono text-txt-secondary">{m.marketcap > 0 ? fmtVol(m.marketcap) : "--"}</p>
                     </div>
                   </div>
                 </div>
@@ -443,16 +498,16 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
         </div>
 
         {/* ═══ Footer ═══ */}
-        <div className="hidden md:flex shrink-0 items-center justify-between px-4 py-2 border-t border-border-default bg-inset/30">
+        <div className="hidden md:flex shrink-0 items-center justify-between px-4 py-2.5 border-t border-white/8 bg-white/[0.03]">
           <div className="flex items-center gap-3 text-[10px] text-txt-faint">
             <span className="font-mono">{filtered.length} markets</span>
             <span className="text-border-default">·</span>
-            <span className="font-mono">{fmtVol(filtered.reduce((s, m) => s + m.volume24h, 0))} volume</span>
+            <span className="font-mono">sorted by market cap</span>
           </div>
           <div className="flex items-center gap-4 text-[9px] text-txt-faint">
-            <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 rounded bg-inset border border-border-default text-[8px] font-mono">↑↓</kbd> Navigate</span>
-            <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 rounded bg-inset border border-border-default text-[8px] font-mono">↵</kbd> Select</span>
-            <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 rounded bg-inset border border-border-default text-[8px] font-mono">Esc</kbd> Close</span>
+            <span className="flex items-center gap-1"><kbd className="ticker-selector-glass-soft px-2 py-1 text-[8px] font-mono">↑↓</kbd> Navigate</span>
+            <span className="flex items-center gap-1"><kbd className="ticker-selector-glass-soft px-2 py-1 text-[8px] font-mono">↵</kbd> Select</span>
+            <span className="flex items-center gap-1"><kbd className="ticker-selector-glass-soft px-2 py-1 text-[8px] font-mono">Esc</kbd> Close</span>
           </div>
         </div>
       </div>

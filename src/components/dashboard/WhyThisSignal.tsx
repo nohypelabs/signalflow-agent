@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, MessageSquare, TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle } from "lucide-react";
-import type { Signal, ConfluenceFactor } from "@/lib/types/signal";
+import type { Signal } from "@/lib/types/signal";
 import Card from "@/components/ui/Card";
 
 interface Props {
@@ -32,7 +32,7 @@ export default function WhyThisSignal({ signal }: Props) {
 
   if (!signal) {
     return (
-      <Card variant="glass" padding="none" className="overflow-hidden rounded-xl">
+      <Card variant="glass" padding="none" className="overflow-hidden">
         <div className="border-b border-border-default px-4 py-3">
           <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-txt-secondary">Why This Signal?</p>
           <h2 className="mt-1 text-sm font-semibold text-txt-primary">Reasoning breakdown</h2>
@@ -54,7 +54,7 @@ export default function WhyThisSignal({ signal }: Props) {
   const isBlocked = signal.quality?.status === "blocked";
 
   return (
-    <Card variant="glass" padding="none" className="overflow-hidden rounded-xl">
+    <Card variant="glass" padding="none" className="overflow-hidden">
       <div className="border-b border-border-default px-4 py-3">
         <div className="flex items-center justify-between">
           <div>
@@ -62,7 +62,7 @@ export default function WhyThisSignal({ signal }: Props) {
             <h2 className="mt-1 text-sm font-semibold text-txt-primary">Reasoning breakdown</h2>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${meta.color} ${meta.bg}`}>
+            <span className={`rounded-[35px] px-2.5 py-1 text-[10px] font-bold ${meta.color} ${meta.bg}`}>
               {meta.label}
             </span>
             <span className="font-mono text-[10px] text-txt-secondary tabular-nums">
@@ -106,7 +106,7 @@ export default function WhyThisSignal({ signal }: Props) {
       <button
         type="button"
         onClick={() => setExpanded((prev) => !prev)}
-        className="flex w-full items-center justify-center gap-1.5 px-4 py-2 text-[10px] font-semibold text-txt-muted hover:text-txt-secondary transition-colors"
+        className="flex w-full items-center justify-center gap-1.5 px-4 py-2 text-[10px] font-semibold text-txt-muted transition-colors hover:bg-white/[0.035] hover:text-txt-secondary"
       >
         <span>{expanded ? "Show less" : "Show more details"}</span>
         <ChevronDown size={12} className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
@@ -134,13 +134,13 @@ export default function WhyThisSignal({ signal }: Props) {
           <div className="px-4 py-3 border-b border-border-default/50">
             <p className="text-[9px] font-semibold uppercase tracking-wide text-txt-muted mb-2">Context</p>
             <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-lg border border-border-default bg-inset/30 px-3 py-2">
+              <div className="glass-pill px-3 py-2">
                 <p className="text-[9px] text-txt-muted">Regime</p>
                 <p className="mt-1 text-[11px] font-semibold text-txt-primary">
                   {signal.regime?.replaceAll("_", " ") || "N/A"}
                 </p>
               </div>
-              <div className="rounded-lg border border-border-default bg-inset/30 px-3 py-2">
+              <div className="glass-pill px-3 py-2">
                 <p className="text-[9px] text-txt-muted">Setup</p>
                 <p className="mt-1 text-[11px] font-semibold text-txt-primary">
                   {signal.setup?.label || "N/A"}
@@ -155,7 +155,7 @@ export default function WhyThisSignal({ signal }: Props) {
               <p className="text-[9px] font-semibold uppercase tracking-wide text-txt-muted mb-2">All Factors</p>
               <div className="space-y-1.5">
                 {factors.map((f) => (
-                  <div key={f.name} className="rounded-lg border border-border-default bg-inset/30 px-3 py-2">
+                  <div key={f.name} className="glass-pill px-3 py-2">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[10px] font-semibold text-txt-primary">{f.name.replaceAll("_", " ")}</span>
                       <span className={`font-mono text-[10px] font-bold tabular-nums ${scoreColor(f.score)}`}>
@@ -172,7 +172,7 @@ export default function WhyThisSignal({ signal }: Props) {
           {/* Blocked Reasons */}
           {isBlocked && blockedReasons.length > 0 && (
             <div className="px-4 py-3">
-              <div className="rounded-lg border border-sell-dim/30 bg-sell-muted/10 px-3 py-2">
+              <div className="rounded-[35px] border border-sell-dim/30 bg-sell-muted/10 px-3 py-2">
                 <div className="flex items-center gap-2 mb-1">
                   <AlertTriangle size={12} className="text-sell" />
                   <p className="text-[9px] font-semibold uppercase text-sell">Blocked</p>
