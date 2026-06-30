@@ -157,7 +157,7 @@ export default function Sidebar({
         <motion.button
           onClick={onExpand}
           whileTap={{ scale: 0.92 }}
-          className="flex h-9 w-9 items-center justify-center rounded-[35px] text-txt-muted outline-none transition-colors hover:bg-white/[0.06] hover:text-txt-secondary focus-visible:ring-1 focus-visible:ring-accent/50"
+          className="glass-control flex h-9 w-9 items-center justify-center rounded-[35px] text-txt-muted outline-none transition-colors hover:text-txt-secondary focus-visible:ring-1 focus-visible:ring-white/20"
           title="Expand sidebar"
         >
           <SidebarCollapseIcon size={15} className="rotate-180 opacity-70" />
@@ -171,7 +171,7 @@ export default function Sidebar({
         <motion.button
           onClick={onCollapse}
           whileTap={{ scale: 0.92 }}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[35px] text-txt-muted outline-none transition-colors hover:bg-white/[0.06] hover:text-txt-secondary focus-visible:ring-1 focus-visible:ring-accent/50"
+          className="neu-control flex h-9 w-9 shrink-0 items-center justify-center rounded-[35px] text-txt-muted outline-none transition-colors hover:text-txt-secondary focus-visible:ring-1 focus-visible:ring-white/20"
           title="Collapse sidebar"
         >
           <SidebarCollapseIcon size={15} className="opacity-70" />
@@ -222,7 +222,7 @@ export default function Sidebar({
                 title={collapsed ? label : undefined}
                 whileTap={{ scale: 0.97 }}
                 className={`
-                  w-full flex items-center rounded-[35px] relative overflow-hidden outline-none
+                  w-full flex items-center rounded-[35px] relative outline-none
                   ${collapsed
                     ? "justify-center px-0 py-2.5"
                     : "gap-2.5 px-2.5 py-[7px]"
@@ -232,54 +232,22 @@ export default function Sidebar({
                     : "text-txt-muted hover:text-txt-secondary"
                   }
                   transition-colors duration-150
-                  focus-visible:ring-1 focus-visible:ring-accent/50 focus-visible:ring-offset-0
+                  focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:ring-offset-0
                 `}
+                style={{
+                  boxShadow: isActive
+                    ? "inset 3px 3px 8px rgba(0,0,0,0.45), inset -3px -3px 8px rgba(255,255,255,0.03)"
+                    : "none",
+                  background: isActive ? "var(--bg-inset)" : "transparent",
+                }}
               >
-                {/* Active background */}
-                {isActive && (
-                  <motion.div
-                    layoutId="sidebar-active-bg"
-                    className="absolute inset-0 rounded-[35px]"
-                    style={{
-                      background:
-                        "linear-gradient(90deg, rgba(0,229,168,0.08) 0%, rgba(0,229,168,0.02) 100%)",
-                    }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-
-                {/* Hover glow */}
-                {!isActive && (
-                  <motion.div
-                    className="absolute inset-0 rounded-[35px]"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: isHovered ? 1 : 0 }}
-                    transition={{ duration: 0.15 }}
-                    style={{
-                      background:
-                        "radial-gradient(ellipse at left center, rgba(0,229,168,0.06) 0%, transparent 70%)",
-                    }}
-                  />
-                )}
-
-                {/* Active left bar */}
-                {isActive && (
-                  <motion.div
-                    layoutId="sidebar-active-bar"
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-r-full bg-accent"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-
                 {/* Icon */}
                 <motion.div
-                  className="relative z-10 flex items-center justify-center"
-                  animate={{ scale: isActive ? 1.05 : 1 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  className="flex items-center justify-center"
                 >
                   <Icon
                     size={collapsed ? 16 : 14}
-                    className={isActive ? "text-accent" : "opacity-50"}
+                    className={isActive ? "text-txt-primary" : "text-txt-muted"}
                   />
                 </motion.div>
 

@@ -82,7 +82,7 @@ export default function AppShell({
             <div className="flex flex-col items-center gap-3 text-center">
               <div className="glass-pill inline-flex items-center gap-2 px-4 py-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-                <span className="text-[11px] font-semibold text-accent">SoSoValue Buildathon Wave 2 — 2026</span>
+                <span className="text-[11px] font-semibold text-accent">SoSoValue Buildathon Wave 3 — 2026</span>
               </div>
               <p className="text-[11px] text-txt-secondary">
                 <span className="text-txt-primary font-medium">SignalFlow Agent</span> — AI Signal Intelligence for Crypto Markets

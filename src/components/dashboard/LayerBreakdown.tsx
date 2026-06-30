@@ -144,7 +144,7 @@ export default function LayerBreakdown({ signal, sourceFlags }: Props) {
               </button>
 
               {isExpanded && layer.subItems.length > 0 && (
-                <div className="absolute left-3 right-3 top-full z-30 mt-1 max-h-44 space-y-1 overflow-y-auto rounded-[35px] border border-white/12 bg-[linear-gradient(180deg,#3b4252,#2e3440)] px-4 py-2 shadow-2xl shadow-black/45">
+                <div className="neu-card absolute left-3 right-3 top-full z-30 mt-1 max-h-44 space-y-1 overflow-y-auto rounded-[35px] px-4 py-2">
                   {layer.subItems.map((sub, i) => (
                     <div key={`${layer.id}-${i}`} className="flex items-center gap-2 pl-5 text-[11px]">
                       <span className="text-txt-secondary">└</span>
