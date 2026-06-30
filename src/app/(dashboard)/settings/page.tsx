@@ -1,17 +1,7 @@
 "use client";
 
-import { useDashboard } from "@/lib/dashboard-context";
-import SettingsPage from "@/components/SettingsPage";
+import { redirect } from "next/navigation";
 
 export default function SettingsRoute() {
-  const d = useDashboard();
-  return (
-    <div className="mx-auto w-full max-w-6xl">
-      <SettingsPage
-        walletConnected={d.isConnected}
-        aiConfig={d.aiConfig}
-        onAIConfigChange={d.updateAIConfig}
-      />
-    </div>
-  );
+  redirect("/dashboard");
 }

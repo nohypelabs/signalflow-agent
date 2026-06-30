@@ -1,11 +1,7 @@
 "use client";
 
-import StrategyConfig from "@/components/StrategyConfig";
+import { redirect } from "next/navigation";
 
 export default function StrategyPage() {
-  return (
-    <div className="mx-auto w-full max-w-6xl">
-      <StrategyConfig />
-    </div>
-  );
+  redirect("/signals");
 }

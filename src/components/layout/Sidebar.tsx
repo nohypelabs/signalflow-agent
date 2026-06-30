@@ -6,12 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   HomeIcon,
   SignalIcon,
-  TradeIcon,
-  SettingsIcon,
-  DocsIcon,
   CloseIcon,
   SidebarCollapseIcon,
-  ChartIcon,
 } from "@/components/ui/icons";
 import type { Signal, SignalAction, SignalActionV2 } from "@/lib/types/signal";
 
@@ -20,17 +16,7 @@ const groups = [
     label: "Core",
     items: [
       { href: "/dashboard", label: "Dashboard", Icon: HomeIcon },
-      { href: "/trading", label: "Trading", Icon: TradeIcon },
       { href: "/signals", label: "Signals", Icon: SignalIcon },
-      { href: "/backtest", label: "Backtest", Icon: ChartIcon },
-      { href: "/portfolio", label: "Portfolio", Icon: ChartIcon },
-    ],
-  },
-  {
-    label: "System",
-    items: [
-      { href: "/settings", label: "Settings", Icon: SettingsIcon },
-      { href: "/docs", label: "Docs", Icon: DocsIcon },
     ],
   },
 ];

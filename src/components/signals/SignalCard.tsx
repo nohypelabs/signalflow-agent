@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/types/trade";
 import type { LiveSignalDimensions } from "@/lib/types/signal";
@@ -23,11 +22,11 @@ interface Props {
   weights?: Record<string, number> | null;
   cappedDims?: string[] | null;
   tradingType?: TradingType | null;
+  onFocusSignal?: (signal: Signal) => void;
 }
 
-export default function SignalCard({ signal, ticker, liveDims, overallScore, weights, cappedDims, tradingType }: Props) {
+export default function SignalCard({ signal, ticker, liveDims, overallScore, weights, cappedDims, tradingType, onFocusSignal }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const router = useRouter();
 
   const price = ticker ? parseFloat(ticker.lastPx) : signal.price;
   const change = ticker ? ticker.changePct : signal.change24h;
@@ -248,27 +247,17 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
         </div>
         <div className="flex items-center gap-2 shrink-0 sm:ml-2 self-end sm:self-auto">
           <button
+            onClick={() => onFocusSignal?.(signal)}
+            className="text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-accent/20 bg-accent/10 text-accent hover:bg-accent/20 transition-all"
+          >
+            View on Chart
+          </button>
+          <button
             onClick={() => setDrawerOpen(!drawerOpen)}
             className="text-[10px] text-accent font-semibold hover:opacity-80"
           >
             {drawerOpen ? "Hide Analysis" : "View Analysis"}
           </button>
-          {signal.action !== "HOLD" && (
-            <button
-              onClick={() => {
-                const params = new URLSearchParams({ signal: signal.id });
-                if (tradingType) params.set("type", tradingType);
-                router.push(`/trading?${params.toString()}`);
-              }}
-              className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                signal.action === "SHORT"
-                  ? "bg-[#00ff88]/15 text-[#00ff88] border border-[#00ff88]/20 hover:bg-[#00ff88]/25"
-                  : "bg-[#ff4444]/15 text-[#ff4444] border border-[#ff4444]/20 hover:bg-[#ff4444]/25"
-              }`}
-            >
-              Execute {signal.action}
-            </button>
-          )}
         </div>
       </div>
 

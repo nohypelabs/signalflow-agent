@@ -18,6 +18,7 @@ import SignalCard from "./signals/SignalCard";
 import SignalCompactRow from "./signals/SignalCompactRow";
 import TraderTypeModal from "@/components/TraderTypeModal";
 import TradingTypeIcon from "@/components/TradingTypeIcon";
+import TradingChart from "./TradingChart";
 
 interface Props {
   tickers?: SoDEXTicker[] | null;
@@ -27,6 +28,13 @@ interface Props {
   weights?: Record<string, Record<string, number>> | null;
   cappedDims?: Record<string, string[]> | null;
   activeStrategy?: ActiveStrategySummary | null;
+  selectedPair: string;
+  onSelectedPairChange: (pair: string) => void;
+  selectedSignal: Signal | null;
+  onSelectedSignalChange: (signal: Signal | null) => void;
+  chartKlines?: import("@/lib/types/trade").SoDEXKline[] | null;
+  tickerMap?: Map<string, SoDEXTicker>;
+  aiSignal?: Signal | null;
 }
 
 export default function SignalsPage({
@@ -37,6 +45,13 @@ export default function SignalsPage({
   weights,
   cappedDims,
   activeStrategy,
+  selectedPair,
+  onSelectedPairChange,
+  selectedSignal,
+  onSelectedSignalChange,
+  chartKlines,
+  tickerMap: externalTickerMap,
+  aiSignal,
 }: Props) {
   // ── Trader Type State ──────────────────────────────────
   const { tradingType, hydrated: tradingTypeHydrated, setTradingType } = useTradingType();
@@ -72,7 +87,7 @@ export default function SignalsPage({
 
   // ── Existing state ────────────────────────────────────
   // Build ticker map
-  const tickerMap = useMemo(() => {
+  const signalTickerMap = useMemo(() => {
     const map = new Map<string, SoDEXTicker>();
     if (tickers) tickers.forEach((t) => map.set(t.symbol, t));
     return map;
@@ -122,8 +137,8 @@ export default function SignalsPage({
         case "change": {
           const aSym = pairToSodexSymbol(a.pair);
           const bSym = pairToSodexSymbol(b.pair);
-          const aChg = aSym ? (tickerMap.get(aSym)?.changePct ?? a.change24h) : a.change24h;
-          const bChg = bSym ? (tickerMap.get(bSym)?.changePct ?? b.change24h) : b.change24h;
+          const aChg = aSym ? (signalTickerMap.get(aSym)?.changePct ?? a.change24h) : a.change24h;
+          const bChg = bSym ? (signalTickerMap.get(bSym)?.changePct ?? b.change24h) : b.change24h;
           return bChg - aChg;
         }
         case "newest":
@@ -136,13 +151,20 @@ export default function SignalsPage({
     });
 
     return result;
-  }, [typeFilteredSignals, search, typeFilter, confidenceFilter, sortBy, tickerMap]);
+  }, [typeFilteredSignals, search, typeFilter, confidenceFilter, sortBy, signalTickerMap]);
 
   // Top signal (highest confidence)
   const topSignal = useMemo(() => {
     if (filteredSignals.length === 0) return null;
     return filteredSignals.reduce((best, s) => (s.confidence > best.confidence ? s : best), filteredSignals[0]);
   }, [filteredSignals]);
+
+  const focusedSignal = useMemo(() => {
+    if (selectedSignal && filteredSignals.some((signal) => signal.id === selectedSignal.id)) {
+      return selectedSignal;
+    }
+    return topSignal;
+  }, [filteredSignals, selectedSignal, topSignal]);
 
   // Timestamp
   const lastUpdated = useMemo(() => {
@@ -153,7 +175,7 @@ export default function SignalsPage({
   // Helper to get ticker for a signal
   const getTicker = (signal: Signal): SoDEXTicker | undefined => {
     const sym = pairToSodexSymbol(signal.pair);
-    return sym ? tickerMap.get(sym) : undefined;
+    return sym ? signalTickerMap.get(sym) : undefined;
   };
 
   // Helper to get coin-level data
@@ -174,6 +196,18 @@ export default function SignalsPage({
   };
 
   const showSignalGuidance = liveSignals.length > 0 && filteredSignals.length === 0;
+
+  const focusSignal = useCallback((signal: Signal) => {
+    onSelectedSignalChange(signal);
+    onSelectedPairChange(signal.pair);
+  }, [onSelectedPairChange, onSelectedSignalChange]);
+
+  useEffect(() => {
+    if (!focusedSignal) return;
+    if (!selectedSignal || selectedSignal.id !== focusedSignal.id) {
+      onSelectedSignalChange(focusedSignal);
+    }
+  }, [focusedSignal, onSelectedSignalChange, selectedSignal]);
 
   // Don't render until we've checked for saved type
   if (!modalChecked) {
@@ -296,6 +330,76 @@ export default function SignalsPage({
         {/* Summary cards */}
         {filteredSignals.length > 0 && <SignalSummaryCards signals={filteredSignals} />}
 
+        {focusedSignal && (
+          <section className="rounded-2xl border border-border-default bg-card/95 overflow-hidden">
+            <div className="border-b border-border-default px-4 py-3 sm:px-5">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+                    Signal Evidence
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <span className="text-lg font-bold text-txt-primary">{focusedSignal.pair}</span>
+                    <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${
+                      (focusedSignal.actionV2 ?? focusedSignal.action).includes("LONG")
+                        ? "bg-buy/12 text-buy"
+                        : (focusedSignal.actionV2 ?? focusedSignal.action).includes("SHORT")
+                          ? "bg-sell/12 text-sell"
+                          : "bg-hold/12 text-hold"
+                    }`}>
+                      {focusedSignal.actionV2 ?? focusedSignal.action}
+                    </span>
+                    <span className="rounded-md border border-border-default bg-elevated/40 px-2 py-1 text-[10px] font-mono text-txt-secondary">
+                      {focusedSignal.confidence}% confidence
+                    </span>
+                    {focusedSignal.execution?.entry > 0 && (
+                      <span className="rounded-md border border-border-default bg-elevated/40 px-2 py-1 text-[10px] font-mono text-txt-secondary">
+                        Entry {focusedSignal.execution.entry.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 max-w-3xl text-xs leading-relaxed text-txt-secondary">
+                    {focusedSignal.reasoning}
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-[10px] font-mono">
+                  <div className="rounded-xl border border-border-default bg-inset/30 px-3 py-2">
+                    <p className="text-txt-faint">Entry</p>
+                    <p className="mt-1 text-txt-primary">
+                      {focusedSignal.execution?.entry ? focusedSignal.execution.entry.toFixed(2) : "N/A"}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-buy/20 bg-buy/5 px-3 py-2">
+                    <p className="text-txt-faint">Target</p>
+                    <p className="mt-1 text-buy">
+                      {focusedSignal.execution?.takeProfit ? focusedSignal.execution.takeProfit.toFixed(2) : "N/A"}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-sell/20 bg-sell/5 px-3 py-2">
+                    <p className="text-txt-faint">Risk</p>
+                    <p className="mt-1 text-sell">
+                      {focusedSignal.execution?.stopLoss ? focusedSignal.execution.stopLoss.toFixed(2) : "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="h-[520px]">
+              <TradingChart
+                klines={chartKlines}
+                symbol={selectedPair || focusedSignal.pair}
+                currentPrice={getTicker(focusedSignal) ? parseFloat(getTicker(focusedSignal)!.lastPx) : focusedSignal.price}
+                liveSignals={filteredSignals}
+                aiSignal={aiSignal ?? null}
+                tickerMap={externalTickerMap}
+                onPairChange={onSelectedPairChange}
+                compact
+              />
+            </div>
+          </section>
+        )}
+
         {/* Filters */}
         {liveSignals.length > 0 && (
           <SignalFilters
@@ -314,7 +418,7 @@ export default function SignalsPage({
 
         {/* Top signal highlight */}
         {topSignal && viewMode === "cards" && (
-          <TopSignalHighlight signal={topSignal} ticker={getTicker(topSignal)} tradingType={tradingType} />
+          <TopSignalHighlight signal={topSignal} ticker={getTicker(topSignal)} onFocusSignal={focusSignal} />
         )}
 
         {/* Signal grid / compact list */}
@@ -392,6 +496,7 @@ export default function SignalsPage({
                   weights={coinWeights}
                   cappedDims={coinCapped}
                   tradingType={tradingType}
+                  onFocusSignal={focusSignal}
                 />
               );
             })}
@@ -421,6 +526,7 @@ export default function SignalsPage({
                     weights={coinWeights}
                     cappedDims={coinCapped}
                     tradingType={tradingType}
+                    onFocusSignal={focusSignal}
                   />
                 );
               })}
@@ -438,6 +544,7 @@ export default function SignalsPage({
                     weights={coinWeights}
                     cappedDims={coinCapped}
                     tradingType={tradingType}
+                    onFocusSignal={focusSignal}
                   />
                 );
               })}

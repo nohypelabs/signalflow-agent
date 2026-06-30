@@ -679,22 +679,23 @@ export default function TradingChart({
 
     // Add signal markers (BUY/SELL/HOLD) on chart — only when showSignals is on
     if (showSignals) {
-      const latestKlineTime = klines[klines.length - 1].t / 1000;
       const markers = pairSignals
         .filter((s) => s.execution?.entry)
-        .map((s) => {
-          // Find closest kline to signal time (use latest kline as proxy since signals don't have exact timestamps)
-          const closestKline = klines.reduce((best, k) => {
-            const diff = Math.abs(k.t / 1000 - latestKlineTime);
-            return diff < Math.abs(best.t / 1000 - latestKlineTime) ? k : best;
-          });
+        .slice(0, Math.min(pairSignals.length, klines.length))
+        .map((s, index, arr) => {
+          const distanceFromLatest = arr.length - index;
+          const klineIndex = Math.max(0, klines.length - distanceFromLatest * 2);
+          const markerKline = klines[klineIndex] ?? klines[klines.length - 1];
+          const action = s.actionV2 ?? s.action;
+          const isLong = action.includes("LONG");
+          const isShort = action.includes("SHORT");
 
           return {
-            time: (closestKline.t / 1000) as Time,
-            position: "belowBar" as const,
-            color: s.action === "LONG" ? CHART_COLORS.buyLine : s.action === "SHORT" ? CHART_COLORS.sellLine : CHART_COLORS.holdLine,
-            shape: s.action === "LONG" ? "arrowUp" as const : s.action === "SHORT" ? "arrowDown" as const : "circle" as const,
-            text: s.action,
+            time: (markerKline.t / 1000) as Time,
+            position: isShort ? "aboveBar" as const : "belowBar" as const,
+            color: isLong ? CHART_COLORS.buyLine : isShort ? CHART_COLORS.sellLine : CHART_COLORS.holdLine,
+            shape: isLong ? "arrowUp" as const : isShort ? "arrowDown" as const : "circle" as const,
+            text: action,
           };
         })
         .sort((a, b) => (a.time as number) - (b.time as number));

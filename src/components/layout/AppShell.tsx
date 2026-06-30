@@ -3,10 +3,9 @@
 import { useState } from "react";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
-import TradeForm from "@/components/TradeForm";
 import { AmbientGrid } from "@/components/ui/Polish";
 import type { Signal } from "@/lib/types/signal";
-import type { SoDEXTicker, SoDEXNewOrderRequest } from "@/lib/sodex-types";
+import type { SoDEXTicker } from "@/lib/sodex-types";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -16,18 +15,6 @@ interface AppShellProps {
   tickerMap?: Map<string, SoDEXTicker>;
   onTickerClick?: (symbol: string) => void;
   latestSignal?: Signal | null;
-  // Trade form
-  tradeForm?: {
-    signal: Signal | null;
-    ticker: SoDEXTicker | null;
-    walletConnected: boolean;
-    walletAddress?: string;
-    onExecute: (order: SoDEXNewOrderRequest) => Promise<void>;
-    onClose: () => void;
-    paperBalance?: number;
-    paperAvailable?: number;
-    onPaperTrade?: (trade: { pair: string; side: 'LONG' | 'SHORT'; leverage: number; margin: number; entryPrice: number; takeProfit: number; stopLoss: number }) => void;
-  } | null;
   fullScreen?: boolean;
   hideHeader?: boolean;
 }
@@ -39,7 +26,6 @@ export default function AppShell({
   tickerMap,
   onTickerClick,
   latestSignal,
-  tradeForm,
   fullScreen = false,
   hideHeader = false,
 }: AppShellProps) {
@@ -92,7 +78,7 @@ export default function AppShell({
                 <span className="text-[11px] font-semibold text-accent">SoSoValue Buildathon Wave 2 — 2026</span>
               </div>
               <p className="text-[11px] text-txt-secondary">
-                <span className="text-txt-primary font-medium">SignalFlow Agent</span> — AI-Powered Signal-to-Execution Dashboard
+                <span className="text-txt-primary font-medium">SignalFlow Agent</span> — AI Signal Intelligence for Crypto Markets
               </p>
               <div className="flex items-center gap-4 text-[10px] text-txt-muted">
                 <a href="https://github.com/nohypelabs/signalflow-agent" target="_blank" rel="noopener noreferrer"
@@ -111,20 +97,6 @@ export default function AppShell({
           </footer>
         </main>
       </div>
-
-      {tradeForm && (
-        <TradeForm
-          signal={tradeForm.signal}
-          ticker={tradeForm.ticker}
-          walletConnected={tradeForm.walletConnected}
-          walletAddress={tradeForm.walletAddress}
-          onExecute={tradeForm.onExecute}
-          onClose={tradeForm.onClose}
-          paperBalance={tradeForm.paperBalance}
-          paperAvailable={tradeForm.paperAvailable}
-          onPaperTrade={tradeForm.onPaperTrade}
-        />
-      )}
     </div>
   );
 }

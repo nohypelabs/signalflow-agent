@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/types/trade";
 import type { LiveSignalDimensions } from "@/lib/types/signal";
@@ -19,11 +18,11 @@ interface Props {
   weights?: Record<string, number> | null;
   cappedDims?: string[] | null;
   tradingType?: TradingType | null;
+  onFocusSignal?: (signal: Signal) => void;
 }
 
-export default function SignalCompactRow({ signal, ticker, liveDims, overallScore, weights, cappedDims, tradingType }: Props) {
+export default function SignalCompactRow({ signal, ticker, liveDims, overallScore, weights, cappedDims, tradingType, onFocusSignal }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const router = useRouter();
 
   const price = ticker ? parseFloat(ticker.lastPx) : signal.price;
   const change = ticker ? ticker.changePct : signal.change24h;
@@ -43,7 +42,7 @@ export default function SignalCompactRow({ signal, ticker, liveDims, overallScor
         {/* Pair */}
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm font-bold text-txt-primary">{signal.pair}</span>
-          <SignalTypeBadge action={signal.action} size="sm" />
+          <SignalTypeBadge action={signal.actionV2 ?? signal.action} size="sm" />
           {ticker && (
             <span className="w-1.5 h-1.5 rounded-full bg-buy animate-pulse-glow shrink-0" />
           )}
@@ -72,23 +71,15 @@ export default function SignalCompactRow({ signal, ticker, liveDims, overallScor
 
         {/* Action */}
         <div className="flex items-center gap-1">
-          {signal.action !== "HOLD" && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                const params = new URLSearchParams({ signal: signal.id });
-                if (tradingType) params.set("type", tradingType);
-                router.push(`/trading?${params.toString()}`);
-              }}
-              className={`text-[9px] font-bold px-2 py-1 rounded transition-all cursor-pointer ${
-                signal.action === "SHORT"
-                  ? "bg-[#00ff88]/15 text-[#00ff88] hover:bg-[#00ff88]/25"
-                  : "bg-[#ff4444]/15 text-[#ff4444] hover:bg-[#ff4444]/25"
-              }`}
-            >
-              {signal.action}
-            </button>
-          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onFocusSignal?.(signal);
+            }}
+            className="text-[9px] font-bold px-2 py-1 rounded transition-all cursor-pointer bg-accent/10 text-accent hover:bg-accent/20"
+          >
+            Chart
+          </button>
           <button
             onClick={(e) => {
               e.stopPropagation();

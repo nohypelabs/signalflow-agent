@@ -1,11 +1,7 @@
 "use client";
 
-import DocsPage from "@/components/DocsPage";
+import { redirect } from "next/navigation";
 
 export default function DocsRoute() {
-  return (
-    <div className="mx-auto w-full max-w-6xl">
-      <DocsPage />
-    </div>
-  );
+  redirect("/signals");
 }

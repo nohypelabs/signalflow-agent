@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/types/trade";
 import SignalTypeBadge from "./SignalTypeBadge";
@@ -10,11 +9,10 @@ import { formatPrice, formatPercent } from "./signal-utils";
 interface Props {
   signal: Signal;
   ticker?: SoDEXTicker;
-  tradingType?: string | null;
+  onFocusSignal?: (signal: Signal) => void;
 }
 
-export default function TopSignalHighlight({ signal, ticker, tradingType }: Props) {
-  const router = useRouter();
+export default function TopSignalHighlight({ signal, ticker, onFocusSignal }: Props) {
   const price = ticker ? parseFloat(ticker.lastPx) : signal.price;
   const change = ticker ? ticker.changePct : signal.change24h;
   const coin = signal.pair.split("/")[0];
@@ -34,7 +32,7 @@ export default function TopSignalHighlight({ signal, ticker, tradingType }: Prop
           </div>
 
           <span className="text-sm font-bold text-txt-primary">{signal.pair}</span>
-          <SignalTypeBadge action={signal.action} size="md" />
+          <SignalTypeBadge action={signal.actionV2 ?? signal.action} size="md" />
 
           <span className="text-sm font-bold font-mono text-txt-primary">
             ${formatPrice(price, coin)}
@@ -49,22 +47,12 @@ export default function TopSignalHighlight({ signal, ticker, tradingType }: Prop
           <p className="text-xs text-txt-muted max-w-xs truncate hidden md:block">
             {signal.reasoning}
           </p>
-          {signal.action !== "HOLD" && (
-            <button
-              onClick={() => {
-                const params = new URLSearchParams({ signal: signal.id });
-                if (tradingType) params.set("type", tradingType);
-                router.push(`/trading?${params.toString()}`);
-              }}
-              className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                signal.action === "SHORT"
-                  ? "bg-[#00ff88]/15 text-[#00ff88] border border-[#00ff88]/20 hover:bg-[#00ff88]/25"
-                  : "bg-[#ff4444]/15 text-[#ff4444] border border-[#ff4444]/20 hover:bg-[#ff4444]/25"
-              }`}
-            >
-              Execute {signal.action}
-            </button>
-          )}
+          <button
+            onClick={() => onFocusSignal?.(signal)}
+            className="text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer bg-accent/12 text-accent border border-accent/20 hover:bg-accent/20"
+          >
+            View on Chart
+          </button>
         </div>
       </div>
     </div>

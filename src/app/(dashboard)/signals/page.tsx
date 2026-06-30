@@ -15,6 +15,13 @@ export default function SignalsRoute() {
         weights={d.signalsData?.weights}
         cappedDims={d.signalsData?.capped}
         activeStrategy={d.signalsData?.strategy}
+        selectedPair={d.selectedPair}
+        onSelectedPairChange={d.setSelectedPair}
+        selectedSignal={d.selectedSignal}
+        onSelectedSignalChange={d.setSelectedSignal}
+        chartKlines={d.klines}
+        tickerMap={d.tickerMap}
+        aiSignal={d.aiSignal}
       />
     </div>
   );
