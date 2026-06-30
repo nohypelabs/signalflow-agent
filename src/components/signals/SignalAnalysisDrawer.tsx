@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import type { Signal, LiveSignalDimensions } from "@/lib/types/signal";
 import SignalScoreBreakdown from "./SignalScoreBreakdown";
 import SignalConfluenceBreakdown from "./SignalConfluenceBreakdown";
@@ -18,6 +19,7 @@ interface Props {
 
 export default function SignalAnalysisDrawer({ signal, liveDims, weights, cappedDims, onClose }: Props) {
   const [mounted, setMounted] = useState(false);
+  const [open, setOpen] = useState(true);
   const coin = signal.pair.split("/")[0];
   const ex = signal.execution;
   const qualityLabel = signal.quality?.status === "blocked" ? "watch" : signal.quality?.status;
@@ -39,7 +41,7 @@ export default function SignalAnalysisDrawer({ signal, liveDims, weights, capped
     document.body.style.overflow = "hidden";
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose?.();
+      if (event.key === "Escape") requestClose();
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -47,21 +49,35 @@ export default function SignalAnalysisDrawer({ signal, liveDims, weights, capped
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onClose]);
+  }, []);
 
   if (!mounted) return null;
 
+  function requestClose() {
+    setOpen(false);
+  }
+
   const modal = (
-    <div
-      className="fixed inset-0 z-[90] flex items-start justify-center bg-black/45 px-3 pb-5 pt-20 backdrop-blur-md sm:px-5 lg:pt-24"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label={`${signal.pair} signal analysis`}
-    >
-      <div
+    <AnimatePresence onExitComplete={onClose}>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-[90] flex items-start justify-center bg-black/45 px-3 pb-5 pt-20 backdrop-blur-md sm:px-5 lg:pt-24"
+          onClick={requestClose}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${signal.pair} signal analysis`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+        >
+      <motion.div
         className="ticker-selector-glass relative flex max-h-[calc(100vh-6.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[35px] shadow-[0_28px_90px_rgba(0,0,0,0.45)]"
         onClick={(event) => event.stopPropagation()}
+        initial={{ opacity: 0, y: -14, scale: 0.975, filter: "blur(8px)" }}
+        animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+        exit={{ opacity: 0, y: -10, scale: 0.98, filter: "blur(6px)" }}
+        transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.8 }}
       >
         <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
           <div className="min-w-0">
@@ -79,7 +95,7 @@ export default function SignalAnalysisDrawer({ signal, liveDims, weights, capped
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             className="glass-control h-9 w-9 shrink-0 rounded-[35px] text-sm font-bold text-txt-secondary transition-all hover:text-txt-primary"
             aria-label="Close signal analysis"
           >
@@ -259,8 +275,10 @@ export default function SignalAnalysisDrawer({ signal, liveDims, weights, capped
         </div>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 
   return createPortal(modal, document.body);

@@ -14,9 +14,14 @@ function pairToCoin(pair: string): string {
   return pair.split("/")[0];
 }
 
+function normalizePair(pair: string): string {
+  return pair.replace(/^v/, "").replace(/_vUSDC$/, "/USDC").toUpperCase();
+}
+
 export function useSignalProviderState(
   aiConfig: AIConfig,
   tickers: { symbol: string; lastPx: string }[] | null,
+  selectedPair: string,
 ) {
   const { tradingType } = useTradingType();
   const { data: signalsData, loading: signalsLoading, error: signalsError } = useSignals(tradingType);
@@ -36,7 +41,11 @@ export function useSignalProviderState(
   const [includeAI, setIncludeAI] = useState(true);
 
   const aiSignal = baseSignal;
-  const displaySignal = aiSignal ?? selectedSignal;
+  const selectedPairKey = normalizePair(selectedPair);
+  const pairScopedAiSignal = aiSignal && normalizePair(aiSignal.pair) === selectedPairKey ? aiSignal : null;
+  const pairScopedSelectedSignal =
+    selectedSignal && normalizePair(selectedSignal.pair) === selectedPairKey ? selectedSignal : null;
+  const displaySignal = pairScopedAiSignal ?? pairScopedSelectedSignal;
   const liveSignals: Signal[] = useMemo(() => signalsData?.signals ?? [], [signalsData?.signals]);
   const liveDims = useMemo(() =>
     signalsData && displaySignal
@@ -93,6 +102,13 @@ export function useSignalProviderState(
   useEffect(() => {
     resolvePending();
   }, [resolvePending]);
+
+  useEffect(() => {
+    const nextCoin = pairToCoin(selectedPair);
+    if (nextCoin && nextCoin !== aiCoin) {
+      setAiCoin(nextCoin);
+    }
+  }, [aiCoin, selectedPair]);
 
   return {
     signalsData,

@@ -9,14 +9,15 @@ const PAIR_TO_SODEX: Record<string, string> = {
   ADA: "vADA_vUSDC",
   XRP: "vXRP_vUSDC",
   BNB: "vBNB_vUSDC",
+  XAUT: "vXAUT_vUSDC",
 };
 
 export const SUPPORTED_SIGNAL_PAIRS = Object.keys(PAIR_TO_SODEX).map((base) => `${base}/USDC`);
 
 export function pairToSodexSymbol(pair: string): string {
   if (pair.startsWith("v") && pair.includes("_vUSDC")) return pair;
-  const base = pair.split("/")[0].replace(/^v/, "");
-  return PAIR_TO_SODEX[base] ?? "";
+  const base = pair.split("/")[0].replace(/^v/, "").toUpperCase();
+  return PAIR_TO_SODEX[base] ?? `v${base}_vUSDC`;
 }
 
 export function sodexSymbolToBase(symbol: string): string {

@@ -9,225 +9,280 @@ interface LogEntry {
   msg: string;
 }
 
-function formatTs(): string {
-  const now = new Date();
-  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+interface ApiEnvelope<T> {
+  success?: boolean;
+  data?: T;
+  error?: string;
 }
 
-function send(encoder: TextEncoder, controller: ReadableStreamDefaultController, entry: LogEntry): void {
-  controller.enqueue(encoder.encode(`data: ${JSON.stringify(entry)}\n\n`));
-}
-
-async function fetchTickers(): Promise<Array<{ symbol: string; lastPx: string; changePct: number; quoteVolume: number }>> {
-  try {
-    const res = await fetch("https://mainnet-gw.sodex.dev/api/v1/spot/markets/tickers", {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!res.ok) return [];
-    const json = await res.json();
-    const data = json.data ?? [];
-    return data.map((t: Record<string, unknown>) => ({
-      symbol: String(t.symbol ?? ""),
-      lastPx: String(t.lastPx ?? "0"),
-      changePct: typeof t.changePct === "number" ? t.changePct : parseFloat(String(t.changePct ?? "0")),
-      quoteVolume: typeof t.quoteVolume === "number" ? t.quoteVolume : parseFloat(String(t.quoteVolume ?? "0")),
-    }));
-  } catch {
-    return [];
-  }
-}
-
-async function fetchSignals(): Promise<{
+interface SignalsSnapshot {
+  engine?: string;
+  strategy?: { label?: string } | null;
+  sources?: {
+    etf?: boolean;
+    macro?: boolean;
+    treasuries?: boolean;
+    treasuryActivity?: boolean;
+    news?: boolean;
+    snapshots?: number;
+    sodexKlines?: number;
+    orderbooks?: number;
+    trades?: number;
+    perps?: number;
+    hyperliquid?: number;
+    primaryTF?: string;
+    confluenceTFs?: string[];
+  };
   signals?: Array<{
     pair: string;
     action: string;
     confidence: number;
     confluence?: number;
     regime?: string;
-    factors?: Array<{ name: string; score: number; detail: string }>;
-    setup?: { label: string; thesis: string };
-    reasoning?: string;
-    execution?: { entry: number; takeProfit: number; stopLoss: number; riskReward: string };
   }>;
   updated?: number;
-}> {
+}
+
+interface FetchResult<T> {
+  ok: boolean;
+  status: number;
+  latencyMs: number;
+  data: T;
+  error?: string;
+}
+
+function formatTs(): string {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+}
+
+function send(
+  encoder: TextEncoder,
+  controller: ReadableStreamDefaultController,
+  entry: LogEntry,
+  isClosed: () => boolean,
+): boolean {
+  if (isClosed()) return false;
   try {
-    const res = await fetch("http://localhost:3000/api/signals", {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) return {};
-    return res.json();
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify(entry)}\n\n`));
+    return true;
   } catch {
-    return {};
+    return false;
   }
 }
 
-function formatPrice(px: number): string {
-  if (!Number.isFinite(px)) return "$0";
-  if (px >= 10000) return `$${px.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-  if (px >= 100) return `$${px.toFixed(2)}`;
-  if (px >= 1) return `$${px.toFixed(3)}`;
-  return `$${px.toFixed(5)}`;
+async function fetchRoute<T>(
+  origin: string,
+  path: string,
+  timeoutMs: number,
+): Promise<FetchResult<T>> {
+  const startedAt = Date.now();
+  try {
+    const res = await fetch(`${origin}${path}`, {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(timeoutMs),
+      cache: "no-store",
+    });
+    const json = await res.json().catch(() => null) as ApiEnvelope<T> | null;
+    return {
+      ok: res.ok,
+      status: res.status,
+      latencyMs: Date.now() - startedAt,
+      data: (json?.data ?? ([] as unknown)) as T,
+      error: res.ok ? undefined : (json?.error ?? `HTTP ${res.status}`),
+    };
+  } catch (error) {
+    const err = error instanceof Error ? error : null;
+    return {
+      ok: false,
+      status: 0,
+      latencyMs: Date.now() - startedAt,
+      data: ([] as unknown) as T,
+      error: err?.name === "TimeoutError" ? "Upstream timeout" : (err?.message ?? "Request failed"),
+    };
+  }
 }
 
-function formatVolume(vol: number): string {
-  if (!Number.isFinite(vol) || vol <= 0) return "$0";
-  if (vol >= 1e9) return `$${(vol / 1e9).toFixed(2)}B`;
-  if (vol >= 1e6) return `$${(vol / 1e6).toFixed(1)}M`;
-  if (vol >= 1e3) return `$${(vol / 1e3).toFixed(1)}K`;
-  return `$${vol.toFixed(2)}`;
+function logStatusCode(result: FetchResult<unknown>): number | string {
+  if (result.status) return result.status;
+  return result.error === "Upstream timeout" ? 504 : "ERR";
 }
 
-export async function GET(): Promise<Response> {
+function terminalLine(method: "GET" | "POST", path: string, result: FetchResult<unknown>): string {
+  return `${method} ${path} ${logStatusCode(result)} in ${result.latencyMs}ms`;
+}
+
+function sendRouteLog(
+  safeSend: (entry: LogEntry) => boolean,
+  path: string,
+  result: FetchResult<unknown>,
+): void {
+  safeSend({
+    ts: formatTs(),
+    type: result.ok ? "DATA" : "ERROR",
+    emoji: "",
+    msg: terminalLine("GET", path, result),
+  });
+}
+
+function actionLabel(action: string): string {
+  if (action === "HOLD") return "NO TRADE";
+  return action;
+}
+
+function sourceSummary(data: SignalsSnapshot): string {
+  if (data.engine === "liquidity-flow") {
+    return [
+      data.sources?.sodexKlines ? `${data.sources.sodexKlines} klines` : null,
+      data.sources?.orderbooks ? `${data.sources.orderbooks} orderbooks` : null,
+      data.sources?.trades ? `${data.sources.trades} trades` : null,
+      data.sources?.perps ? `${data.sources.perps} perps` : null,
+      data.sources?.hyperliquid ? `${data.sources.hyperliquid} HL comps` : null,
+    ].filter(Boolean).join(" | ");
+  }
+
+  return [
+    data.sources?.news ? "news on" : "news off",
+    data.sources?.etf ? "ETF on" : "ETF off",
+    data.sources?.macro ? "macro on" : "macro off",
+    data.sources?.treasuries ? "treasuries on" : "treasuries off",
+    data.sources?.treasuryActivity ? "treasury flow on" : "treasury flow off",
+  ].join(" | ");
+}
+
+export async function GET(req: Request): Promise<Response> {
   const encoder = new TextEncoder();
+  const origin = new URL(req.url).origin;
   let lastSignalUpdate = 0;
+  let cleanup = () => {};
 
   const stream = new ReadableStream({
     async start(controller) {
-      send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "🚀", msg: "SignalFlow pipeline connecting..." });
+      let closed = false;
+      const intervals: {
+        ticker?: ReturnType<typeof setInterval>;
+        signal?: ReturnType<typeof setInterval>;
+        orders?: ReturnType<typeof setInterval>;
+        heartbeat?: ReturnType<typeof setInterval>;
+      } = {};
 
-      // Fetch initial market data
-      const tickers = await fetchTickers();
-      const validTickers = tickers.filter(t => {
-        const px = parseFloat(t.lastPx);
-        return !isNaN(px) && px > 0;
+      const isClosed = () => closed;
+      const safeSend = (entry: LogEntry): boolean => {
+        const sent = send(encoder, controller, entry, isClosed);
+        if (!sent) closed = true;
+        return sent;
+      };
+
+      cleanup = () => {
+        closed = true;
+        if (intervals.ticker) clearInterval(intervals.ticker);
+        if (intervals.signal) clearInterval(intervals.signal);
+        if (intervals.orders) clearInterval(intervals.orders);
+        if (intervals.heartbeat) clearInterval(intervals.heartbeat);
+      };
+
+      const logRoute = async <T>(path: string, timeoutMs: number) => {
+        const result = await fetchRoute<T>(origin, path, timeoutMs);
+        if (closed) return result;
+        sendRouteLog(safeSend, path, result);
+        return result;
+      };
+
+      safeSend({
+        ts: formatTs(),
+        type: "DATA",
+        emoji: "",
+        msg: "GET /api/signal-log 200 stream open",
       });
 
-      if (validTickers.length === 0) {
-        send(encoder, controller, { ts: formatTs(), type: "ERROR", emoji: "❌", msg: "SoDEX API timeout — retrying..." });
-      } else {
-        send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "✅", msg: `SoDEX connected — ${validTickers.length} pairs streaming` });
+      await logRoute<unknown[]>("/api/market/tickers", 5000);
+      await logRoute<unknown[]>("/api/orders", 5000);
 
-        const totalVolume = validTickers.reduce((sum, t) => sum + (t.quoteVolume ?? 0), 0);
-        const advancers = validTickers.filter(t => (t.changePct ?? 0) > 0).length;
-        const decliners = validTickers.filter(t => (t.changePct ?? 0) < 0).length;
-        const breadth = Math.round((advancers / validTickers.length) * 100);
-
-        send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "📊", msg: `24H volume: ${formatVolume(totalVolume)} | ${validTickers.length} instruments` });
-        send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "📊", msg: `Market breadth: ${breadth}% advancing (${advancers}↑ ${decliners}↓)` });
-
-        // Top movers
-        const sorted = [...validTickers].sort((a, b) => Math.abs(b.changePct ?? 0) - Math.abs(a.changePct ?? 0));
-        for (const t of sorted.slice(0, 3)) {
-          const base = t.symbol.replace(/^v/, "").replace(/_vUSDC$/, "");
-          const px = parseFloat(t.lastPx);
-          const change = t.changePct ?? 0;
-          send(encoder, controller, {
-            ts: formatTs(),
-            type: "DATA",
-            emoji: change >= 0 ? "📈" : "📉",
-            msg: `${base}/USDC ${formatPrice(px)} (${change >= 0 ? "+" : ""}${change.toFixed(2)}%)`
-          });
-        }
-      }
-
-      send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "✅", msg: "Pipeline active — monitoring market data and signals" });
-
-      // Fetch and display current signals
-      async function checkSignals() {
-        const data = await fetchSignals();
-        if (!data.signals || data.signals.length === 0) return;
+      const checkSignals = async () => {
+        if (closed) return;
+        const result = await logRoute<SignalsSnapshot>("/api/signals", 30000);
+        if (closed || !result.ok) return;
+        const data = result.data;
+        if (!data?.signals || data.signals.length === 0) return;
         if (data.updated === lastSignalUpdate) return;
         lastSignalUpdate = data.updated ?? 0;
 
-        send(encoder, controller, { ts: formatTs(), type: "RECALC", emoji: "🔄", msg: `Signal engine update — ${data.signals.length} pairs analyzed` });
+        const engineLabel = data.engine === "liquidity-flow" ? "Liquidity Flow" : "Confluence V3";
+        safeSend({
+          ts: formatTs(),
+          type: "RECALC",
+          emoji: "",
+          msg: `${engineLabel} update — ${data.signals.length} pairs analyzed${data.sources?.primaryTF ? ` | primary ${data.sources.primaryTF}` : ""}`,
+        });
 
-        // Show top signal
-        const topSignal = data.signals.reduce((best, s) => (s.confidence > best.confidence ? s : best), data.signals[0]);
-        if (topSignal) {
-          const action = topSignal.action === "HOLD" ? "NO TRADE" : topSignal.action;
-          send(encoder, controller, {
+        const sources = sourceSummary(data);
+        if (sources) {
+          safeSend({
+            ts: formatTs(),
+            type: "DATA",
+            emoji: "",
+            msg: `Sources: ${sources}`,
+          });
+        }
+
+        const actionableSignals = [...data.signals]
+          .filter((signal) => signal.action !== "HOLD")
+          .sort((a, b) => b.confidence - a.confidence);
+
+        if (actionableSignals.length === 0) {
+          safeSend({
             ts: formatTs(),
             type: "SIGNAL",
-            emoji: action === "LONG" ? "🟢" : action === "SHORT" ? "🔴" : "🟡",
-            msg: `Top signal: ${topSignal.pair} ${action} — ${Math.round(topSignal.confidence)}% confidence`
+            emoji: "",
+            msg: "Actionable board — no live long/short setup, market remains HOLD",
           });
-
-          if (topSignal.confluence != null) {
-            send(encoder, controller, { ts: formatTs(), type: "SIGNAL", emoji: "📊", msg: `Confluence: ${topSignal.confluence}/100 — ${topSignal.regime?.replaceAll("_", " ") ?? "N/A"} regime` });
-          }
-
-          if (topSignal.factors && topSignal.factors.length > 0) {
-            const top3 = [...topSignal.factors].sort((a, b) => Math.abs(b.score - 50) - Math.abs(a.score - 50)).slice(0, 3);
-            for (const f of top3) {
-              const direction = f.score > 55 ? "▲" : f.score < 45 ? "▼" : "—";
-              send(encoder, controller, {
-                ts: formatTs(),
-                type: "SIGNAL",
-                emoji: "📊",
-                msg: `${f.name.replaceAll("_", " ")}: ${f.score} ${direction} — ${f.detail}`
-              });
-            }
-          }
-
-          if (topSignal.execution) {
-            const exec = topSignal.execution;
-            send(encoder, controller, {
-              ts: formatTs(),
-              type: "SIGNAL",
-              emoji: "🎯",
-              msg: `Entry: ${formatPrice(exec.entry)} | TP: ${formatPrice(exec.takeProfit)} | SL: ${formatPrice(exec.stopLoss)} | R:R ${exec.riskReward}`
-            });
-          }
-
-          if (topSignal.setup?.thesis) {
-            send(encoder, controller, { ts: formatTs(), type: "SIGNAL", emoji: "💡", msg: `Thesis: ${topSignal.setup.thesis}` });
-          }
+          return;
         }
 
-        // Show all signals summary
-        const longs = data.signals.filter(s => s.action === "LONG").length;
-        const shorts = data.signals.filter(s => s.action === "SHORT").length;
-        const holds = data.signals.filter(s => s.action === "HOLD").length;
-        send(encoder, controller, {
+        safeSend({
           ts: formatTs(),
-          type: "DATA",
-          emoji: "📊",
-          msg: `All signals: ${longs} LONG, ${shorts} SHORT, ${holds} HOLD`
+          type: "SIGNAL",
+          emoji: "",
+          msg: `Actionable board — ${actionableSignals.length} live setup${actionableSignals.length > 1 ? "s" : ""}`,
         });
-      }
 
-      // Initial signal check
+        for (const signal of actionableSignals.slice(0, 8)) {
+          if (closed) return;
+          const action = actionLabel(signal.action);
+          safeSend({
+            ts: formatTs(),
+            type: "SIGNAL",
+            emoji: "",
+            msg: `${signal.pair} ${action} ${Math.round(signal.confidence)}%${signal.confluence != null ? ` | confluence ${signal.confluence}` : ""}${signal.regime ? ` | ${signal.regime.replaceAll("_", " ")}` : ""}`,
+          });
+        }
+      };
+
       await checkSignals();
 
-      // Live price updates every 5s
-      const priceInterval = setInterval(async () => {
-        const freshTickers = await fetchTickers();
-        if (freshTickers.length > 0) {
-          const btc = freshTickers.find(t => t.symbol.includes("BTC"));
-          if (btc) {
-            const px = parseFloat(btc.lastPx);
-            const change = btc.changePct ?? 0;
-            send(encoder, controller, {
-              ts: formatTs(),
-              type: "DATA",
-              emoji: "📊",
-              msg: `BTC/USDC ${formatPrice(px)} (${change >= 0 ? "+" : ""}${change.toFixed(2)}%)`
-            });
-          }
-        }
+      intervals.ticker = setInterval(() => {
+        void logRoute<unknown[]>("/api/market/tickers", 5000);
       }, 5000);
 
-      // Check signals every 15s
-      const signalInterval = setInterval(checkSignals, 15000);
+      intervals.signal = setInterval(() => {
+        void checkSignals();
+      }, 15000);
 
-      // Heartbeat every 30s
-      const heartbeat = setInterval(() => {
-        send(encoder, controller, { ts: formatTs(), type: "DATA", emoji: "💓", msg: "Pipeline heartbeat — all feeds active" });
+      intervals.orders = setInterval(() => {
+        void logRoute<unknown[]>("/api/orders", 5000);
+      }, 20000);
+
+      intervals.heartbeat = setInterval(() => {
+        safeSend({
+          ts: formatTs(),
+          type: "DATA",
+          emoji: "",
+          msg: "GET /api/signal-log 200 heartbeat",
+        });
       }, 30000);
-
-      // Cleanup
-      (globalThis as unknown as Record<string, unknown>).__signalLogCleanup = () => {
-        clearInterval(priceInterval);
-        clearInterval(signalInterval);
-        clearInterval(heartbeat);
-      };
     },
     cancel() {
-      const cleanup = (globalThis as unknown as Record<string, unknown>).__signalLogCleanup;
-      if (typeof cleanup === "function") cleanup();
+      cleanup();
     },
   });
 

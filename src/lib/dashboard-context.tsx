@@ -23,7 +23,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const ui = useUIProviderState(trading.refreshOrders);
   const market = useMarketProviderState(ui.selectedPair);
   const wallet = useWalletProviderState();
-  const signal = useSignalProviderState(aiConfig, market.tickers);
+  const signal = useSignalProviderState(aiConfig, market.tickers, ui.selectedPair);
   const executingSodSym = ui.executingSignal ? pairToSodexSymbol(ui.executingSignal.pair) : "";
   const executingTicker = executingSodSym ? market.tickerMap.get(executingSodSym) ?? null : null;
 

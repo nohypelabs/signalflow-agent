@@ -13,6 +13,7 @@ import SignalFilters, { type SortOption, type ViewMode } from "./signals/SignalF
 import TopSignalHighlight from "./signals/TopSignalHighlight";
 import SignalCard from "./signals/SignalCard";
 import SignalCompactRow from "./signals/SignalCompactRow";
+import SignalAnalysisDrawer from "./signals/SignalAnalysisDrawer";
 import TradingChart from "./TradingChart";
 
 interface Props {
@@ -62,6 +63,7 @@ export default function SignalsPage({
   const [confidenceFilter, setConfidenceFilter] = useState(0);
   const [sortBy, setSortBy] = useState<SortOption>("confidence");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const [evidenceAnalysisOpen, setEvidenceAnalysisOpen] = useState(false);
 
   // Filtered & sorted signals
   const filteredSignals = useMemo(() => {
@@ -119,6 +121,20 @@ export default function SignalsPage({
     }
     return topSignal;
   }, [filteredSignals, selectedSignal, topSignal]);
+
+  const evidenceThesisLabel = useMemo(() => {
+    if (!focusedSignal) return "Signal Thesis";
+    if (focusedSignal.setup?.label) return `${focusedSignal.setup.label} Thesis`;
+
+    const action = focusedSignal.actionV2 ?? focusedSignal.action;
+    if (action.includes("LONG")) return "Long Thesis";
+    if (action.includes("SHORT")) return "Short Thesis";
+    return "Neutral Thesis";
+  }, [focusedSignal]);
+
+  useEffect(() => {
+    setEvidenceAnalysisOpen(false);
+  }, [focusedSignal?.id]);
 
   // Timestamp
   const lastUpdated = useMemo(() => {
@@ -215,9 +231,19 @@ export default function SignalsPage({
         </div>
 
         {/* Top signal highlight */}
-        {topSignal && viewMode === "cards" && (
-          <TopSignalHighlight signal={topSignal} ticker={getTicker(topSignal)} onFocusSignal={focusSignal} />
-        )}
+        {topSignal && viewMode === "cards" && (() => {
+          const { liveDims: coinDims, coinWeights, coinCapped } = getCoinData(topSignal);
+          return (
+            <TopSignalHighlight
+              signal={topSignal}
+              ticker={getTicker(topSignal)}
+              liveDims={coinDims}
+              weights={coinWeights}
+              cappedDims={coinCapped}
+              onFocusSignal={focusSignal}
+            />
+          );
+        })()}
 
         {/* Summary cards */}
         {filteredSignals.length > 0 && <SignalSummaryCards signals={filteredSignals} />}
@@ -257,9 +283,26 @@ export default function SignalsPage({
                       <span className="text-sell">{focusedSignal.execution?.stopLoss ? focusedSignal.execution.stopLoss.toFixed(2) : "N/A"}</span>
                     </span>
                   </div>
-                  <p className="mt-2 w-full text-justify text-xs leading-relaxed text-txt-secondary">
-                    {focusedSignal.reasoning}
-                  </p>
+                  <div className="mt-3 rounded-[28px] border border-white/10 bg-white/[0.035] px-3.5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                    <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_12px_rgba(0,229,168,0.45)]" />
+                        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-txt-faint">
+                          {evidenceThesisLabel}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEvidenceAnalysisOpen(true)}
+                        className="glass-control w-fit rounded-[35px] px-3 py-1.5 text-[10px] font-bold text-accent transition-all hover:text-txt-primary"
+                      >
+                        View Analysis
+                      </button>
+                    </div>
+                    <p className="w-full text-left text-[12px] leading-6 text-txt-secondary md:columns-2 md:gap-6 md:text-justify">
+                      {focusedSignal.reasoning}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -276,6 +319,19 @@ export default function SignalsPage({
                 compact
               />
             </div>
+
+            {evidenceAnalysisOpen && (() => {
+              const { liveDims: coinDims, coinWeights, coinCapped } = getCoinData(focusedSignal);
+              return (
+                <SignalAnalysisDrawer
+                  signal={focusedSignal}
+                  liveDims={coinDims}
+                  weights={coinWeights}
+                  cappedDims={coinCapped}
+                  onClose={() => setEvidenceAnalysisOpen(false)}
+                />
+              );
+            })()}
           </section>
         )}
 

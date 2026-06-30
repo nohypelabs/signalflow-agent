@@ -361,12 +361,11 @@ function LogicTracePanel({ signal, signalAccuracy }: { signal: Signal | null; si
 
 export default function SignalFlowTransparencyDashboard() {
   const d = useDashboard();
-  const { openConnectModal } = useConnectModal();
   const metrics = useDashboardMetrics(d.tickers, d.liveSignals, d.marketError, d.signalsError);
 
   const pairSignal = d.liveSignals.find((signal) => normalizePair(signal.pair) === normalizePair(d.selectedPair)) ?? null;
-  const activeSignal = d.displaySignal ?? pairSignal ?? d.liveSignals[0] ?? null;
-  const activePair = activeSignal?.pair ?? d.selectedPair;
+  const activeSignal = pairSignal ?? d.displaySignal ?? d.liveSignals[0] ?? null;
+  const activePair = pairSignal?.pair ?? d.selectedPair;
   const activeCoin = activePair.split("/")[0];
   const activeDims = d.signalsData?.dimensions[activeCoin] ?? null;
   const activeTicker = d.tickerMap.get(pairToSodexSymbol(activePair));
@@ -382,7 +381,7 @@ export default function SignalFlowTransparencyDashboard() {
     : `/trading?pair=${encodeURIComponent(activePair)}`;
 
   function handleGenerate(): void {
-    const coin = activeCoin || "BTC";
+    const coin = activeCoin;
     d.setAiCoin(coin);
     void d.generate(coin);
   }

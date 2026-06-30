@@ -117,6 +117,16 @@ body {
   overflow-x: hidden;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+main {
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
 .dashboard-shell {
   background:
     radial-gradient(circle at 12% 8%, rgba(0, 229, 168, 0.08), transparent 28%),
@@ -177,9 +187,9 @@ body {
 
 /* Global transition base */
 button, a, input, select, [role="button"] {
-  transition-property: color, background-color, border-color, box-shadow, opacity;
-  transition-timing-function: ease-out;
-  transition-duration: 150ms;
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  transition-duration: 180ms;
 }
 
 /* Custom range slider */
@@ -300,6 +310,7 @@ main::-webkit-scrollbar-thumb {
 .dashboard-glass-scope .sf-card,
 .signals-glass-scope .sf-card,
 .signals-glass-card {
+  transform: translate3d(0, 0, 0);
   border-radius: 35px !important;
   border: 1px solid rgba(216, 222, 233, 0.12) !important;
   background: linear-gradient(180deg, rgba(59, 66, 82, 0.34), rgba(46, 52, 64, 0.22)) !important;
@@ -308,11 +319,19 @@ main::-webkit-scrollbar-thumb {
     inset 0 1px 0 rgba(236, 239, 244, 0.07);
   backdrop-filter: blur(26px) saturate(120%);
   -webkit-backdrop-filter: blur(26px) saturate(120%);
+  transition:
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 220ms ease,
+    box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 260ms ease,
+    opacity 260ms ease;
+  will-change: transform;
 }
 
 .dashboard-glass-scope .sf-card:hover,
 .signals-glass-scope .sf-card:hover,
 .signals-glass-card:hover {
+  transform: translate3d(0, -2px, 0);
   border-color: rgba(216, 222, 233, 0.2) !important;
   box-shadow:
     0 28px 96px rgba(0, 0, 0, 0.24),
@@ -401,6 +420,28 @@ main::-webkit-scrollbar-thumb {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+@keyframes glass-card-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.992);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+@keyframes glass-page-drift {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate3d(0, -6px, 0);
+    opacity: 1;
+  }
+}
 @keyframes market-selector-in {
   from {
     opacity: 0;
@@ -438,6 +479,40 @@ main::-webkit-scrollbar-thumb {
   animation: fade-in 0.3s ease-out;
 }
 
+.dashboard-grid-stack > *,
+.signals-page-stack > .relative > * {
+  animation: glass-card-enter 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dashboard-grid-stack > *:nth-child(1),
+.signals-page-stack > .relative > *:nth-child(1) {
+  animation-delay: 40ms;
+}
+
+.dashboard-grid-stack > *:nth-child(2),
+.signals-page-stack > .relative > *:nth-child(2) {
+  animation-delay: 85ms;
+}
+
+.dashboard-grid-stack > *:nth-child(3),
+.signals-page-stack > .relative > *:nth-child(3) {
+  animation-delay: 130ms;
+}
+
+.dashboard-grid-stack > *:nth-child(4),
+.signals-page-stack > .relative > *:nth-child(4) {
+  animation-delay: 175ms;
+}
+
+.dashboard-grid-stack > *:nth-child(n + 5),
+.signals-page-stack > .relative > *:nth-child(n + 5) {
+  animation-delay: 210ms;
+}
+
+.glass-page-backdrop {
+  animation: glass-page-drift 14s ease-in-out infinite;
+}
+
 /* ── Page transitions ── */
 
 @keyframes page-enter {
@@ -455,6 +530,36 @@ main::-webkit-scrollbar-thumb {
   animation: page-enter 0.25s ease-out both;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html,
+  main {
+    scroll-behavior: auto;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  [role="button"],
+  .dashboard-glass-scope .sf-card,
+  .signals-glass-scope .sf-card,
+  .signals-glass-card {
+    transition-duration: 1ms !important;
+  }
+
+  .dashboard-glass-scope .sf-card:hover,
+  .signals-glass-scope .sf-card:hover,
+  .signals-glass-card:hover {
+    transform: none;
+  }
+
+  .dashboard-grid-stack > *,
+  .signals-page-stack > .relative > *,
+  .glass-page-backdrop {
+    animation: none !important;
+  }
+}
+
 /* Stagger children — cards, sections fade in sequentially */
 .page-enter > * {
   animation: page-enter 0.3s ease-out both;
@@ -466,6 +571,13 @@ main::-webkit-scrollbar-thumb {
 .page-enter > *:nth-child(5) { animation-delay: 160ms; }
 .page-enter > *:nth-child(6) { animation-delay: 200ms; }
 .page-enter > *:nth-child(n+7) { animation-delay: 220ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .page-enter > * {
+    animation: none !important;
+  }
+}
 
 /* ── Market Ticker Tape ── */
 @keyframes ticker-scroll {

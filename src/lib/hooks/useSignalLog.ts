@@ -24,7 +24,7 @@ const POLL_INTERVAL_MS = 5000;
 export function useSignalLog() {
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [status, setStatus] = useState<ConnectionStatus>("live");
-  const [filter, setFilter] = useState<LogFilter>("signal");
+  const [filter, setFilter] = useState<LogFilter>("all");
   const idCounter = useRef(0);
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectAttempts = useRef(0);
@@ -44,9 +44,9 @@ export function useSignalLog() {
     pollTimer.current = setInterval(() => {
       appendEntry({
         ts: new Date().toLocaleTimeString("en-US", { hour12: false }),
-        type: "DATA",
-        emoji: "📊",
-        msg: "Pipeline heartbeat — polling mode active",
+        type: "WARNING",
+        emoji: "",
+        msg: "GET /api/signal-log ERR — client fallback polling active",
       });
     }, POLL_INTERVAL_MS);
   }
@@ -61,6 +61,10 @@ export function useSignalLog() {
 
     es.onopen = () => {
       reconnectAttempts.current = 0;
+      if (pollTimer.current) {
+        clearInterval(pollTimer.current);
+        pollTimer.current = null;
+      }
       setStatus("live");
     };
 

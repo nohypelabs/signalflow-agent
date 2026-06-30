@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import type { SoDEXTicker } from "@/lib/types/trade";
 import type { Signal } from "@/lib/types/signal";
 import type { ScreenerData } from "@/lib/api/screener";
@@ -160,10 +161,21 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
   const [activeTab, setActiveTab] = useState<"all" | "watchlist">("all");
   const [activeCategory, setActiveCategory] = useState<Category | "All">("All");
   const [highlightIdx, setHighlightIdx] = useState(0);
+  const [shouldRender, setShouldRender] = useState(isOpen);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setWatchlist(loadWatchlist()); }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setShouldRender(false), 220);
+    return () => window.clearTimeout(timeout);
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -312,14 +324,27 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
     </span>
   );
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-3 md:pt-[7vh] bg-transparent" onClick={onClose}>
-      <div
-        className="ticker-selector-glass w-[calc(100%-20px)] md:w-full max-w-3xl max-h-[82vh] md:max-h-[72vh] flex flex-col overflow-hidden animate-[market-selector-in_180ms_cubic-bezier(0.22,1,0.36,1)] will-change-transform"
+    <AnimatePresence mode="wait">
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-start justify-center pt-3 md:pt-[7vh] bg-transparent"
+          onClick={onClose}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+        >
+      <motion.div
+        className="ticker-selector-glass w-[calc(100%-20px)] md:w-full max-w-3xl max-h-[82vh] md:max-h-[72vh] flex flex-col overflow-hidden will-change-transform"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
+        initial={{ opacity: 0, y: -12, scale: 0.97, filter: "blur(8px)" }}
+        animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+        exit={{ opacity: 0, y: -10, scale: 0.975, filter: "blur(6px)" }}
+        transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.8 }}
       >
         {/* ═══ Search Bar ═══ */}
         <div className="shrink-0 flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 border-b border-white/8 bg-white/[0.04]">
@@ -510,7 +535,9 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
             <span className="flex items-center gap-1"><kbd className="ticker-selector-glass-soft px-2 py-1 text-[8px] font-mono">Esc</kbd> Close</span>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

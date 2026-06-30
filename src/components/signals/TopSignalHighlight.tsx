@@ -1,18 +1,24 @@
 "use client";
 
-import type { Signal } from "@/lib/types/signal";
+import { useState } from "react";
+import type { LiveSignalDimensions, Signal } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/types/trade";
 import SignalTypeBadge from "./SignalTypeBadge";
 import ConfidenceBadge from "./ConfidenceBadge";
+import SignalAnalysisDrawer from "./SignalAnalysisDrawer";
 import { formatPrice, formatPercent } from "./signal-utils";
 
 interface Props {
   signal: Signal;
   ticker?: SoDEXTicker;
+  liveDims?: LiveSignalDimensions | null;
+  weights?: Record<string, number> | null;
+  cappedDims?: string[] | null;
   onFocusSignal?: (signal: Signal) => void;
 }
 
-export default function TopSignalHighlight({ signal, ticker, onFocusSignal }: Props) {
+export default function TopSignalHighlight({ signal, ticker, liveDims, weights, cappedDims, onFocusSignal }: Props) {
+  const [analysisOpen, setAnalysisOpen] = useState(false);
   const price = ticker ? parseFloat(ticker.lastPx) : signal.price;
   const change = ticker ? ticker.changePct : signal.change24h;
   const coin = signal.pair.split("/")[0];
@@ -53,8 +59,24 @@ export default function TopSignalHighlight({ signal, ticker, onFocusSignal }: Pr
           >
             View on Chart
           </button>
+          <button
+            onClick={() => setAnalysisOpen(true)}
+            className="rounded-[35px] border border-accent/35 bg-accent/12 px-3 py-1.5 text-[10px] font-bold text-accent shadow-[0_0_20px_rgba(0,229,168,0.10)] transition-all hover:border-accent/55 hover:bg-accent/18"
+          >
+            View Analysis
+          </button>
         </div>
       </div>
+
+      {analysisOpen && (
+        <SignalAnalysisDrawer
+          signal={signal}
+          liveDims={liveDims}
+          weights={weights}
+          cappedDims={cappedDims}
+          onClose={() => setAnalysisOpen(false)}
+        />
+      )}
     </div>
   );
 }

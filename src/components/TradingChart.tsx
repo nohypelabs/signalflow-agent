@@ -852,9 +852,6 @@ export default function TradingChart({
                 )}
               </div>
               <span className="text-[12px] font-bold font-mono tracking-tight truncate">{pair}</span>
-              <span className="text-[8px] font-mono text-white/50 shrink-0 hidden sm:inline">
-                {["BTC", "ETH", "SOL"].includes(pair.split("/")[0].toUpperCase()) ? "20x" : "5x"}
-              </span>
               <svg width="7" height="7" viewBox="0 0 24 24" fill="none" className="text-txt-faint group-hover:text-txt-secondary transition-colors shrink-0"><path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </button>
 

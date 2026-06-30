@@ -39,7 +39,7 @@ export default function Card({
   children,
   onClick,
 }: Props) {
-  const baseClass = `rounded-lg ${variants[variant]} ${paddings[padding]} ${className}`;
+  const baseClass = `sf-card rounded-lg ${variants[variant]} ${paddings[padding]} ${className}`;
   const accentStyle = accent
     ? { borderTop: `2px solid ${accent}`, ...style }
     : style;

@@ -15,7 +15,7 @@ interface Props {
 const sizes = {
   sm: { w: 120, h: 68, cx: 60, cy: 58, r: 44, sw: 5, needleLen: 32, tickLen: 5, labelSize: 14, subSize: 8 },
   md: { w: 180, h: 100, cx: 90, cy: 86, r: 66, sw: 7, needleLen: 48, tickLen: 7, labelSize: 20, subSize: 10 },
-  lg: { w: 260, h: 145, cx: 130, cy: 124, r: 96, sw: 9, needleLen: 70, tickLen: 9, labelSize: 30, subSize: 13 },
+  lg: { w: 260, h: 145, cx: 130, cy: 124, r: 96, sw: 9, needleLen: 70, tickLen: 9, labelSize: 30, subSize: 10 },
 };
 
 function getColor(v: number): string {
@@ -200,7 +200,7 @@ export default function SpeedometerGauge({ value, size = "md", showLabel = true,
 
         {/* Tick labels */}
         {tickLabels.map((v) => {
-          const labelR = r + sw / 2 + tickLen + (size === "sm" ? 6 : 10);
+          const labelR = r + sw / 2 + tickLen + (size === "sm" ? 6 : size === "lg" ? 6 : 10);
           const pos = polar(cx, cy, labelR, valueToAngle(v));
           return (
             <text
@@ -267,10 +267,10 @@ export default function SpeedometerGauge({ value, size = "md", showLabel = true,
       </svg>
 
       {showLabel && (
-        <div className="mt-1 flex items-baseline gap-1.5">
+        <div className="mt-1 flex max-w-full items-baseline justify-center gap-1">
           <span
             className="font-mono font-bold tabular-nums"
-            style={{ fontSize: labelSize * 0.6, color }}
+            style={{ fontSize: labelSize * 0.72, color }}
           >
             {clamped}%
           </span>

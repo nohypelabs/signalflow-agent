@@ -32,7 +32,7 @@ export default function SignalSummaryCards({ signals }: Props) {
       {stats.map((stat) => (
         <div
           key={stat.label}
-          className="bg-card border border-border-default rounded-xl p-3 flex flex-col items-center gap-1"
+          className="signals-glass-card p-3 flex flex-col items-center gap-1"
         >
           <span className="text-[10px] text-txt-muted font-medium uppercase tracking-wider">
             {stat.label}

@@ -148,9 +148,6 @@ export default function Sidebar({
             <span className="text-base font-bold text-txt-primary leading-tight tracking-tight">
               SignalFlow
             </span>
-            <span className="text-[7px] text-accent font-semibold tracking-[0.2em] uppercase">
-              Agent
-            </span>
           </motion.div>
         )}
       </AnimatePresence>

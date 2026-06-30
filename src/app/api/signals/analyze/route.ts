@@ -338,13 +338,6 @@ export async function POST(req: NextRequest) {
     const coin = (body.coin || body.pair || "BTC").replace(/\/.*$/, "").toUpperCase();
     console.log(`[/api/signals/analyze] coin=${coin} provider=${body.provider || "none"} model=${body.model || "none"} includeAI=${body.includeAI}`);
 
-    if (!["BTC", "ETH", "SOL"].includes(coin)) {
-      return jsonNoCache(
-        { error: `Unsupported coin: ${coin}. Supported: BTC, ETH, SOL.` },
-        { status: 400 },
-      );
-    }
-
     const includeAI = body.includeAI !== false; // default true for backward compat
     const tradingType: TradingType = body.tradingType ?? "intraday";
     const strategyConfig = deserializeStrategyConfig(body.strategy ?? null);
