@@ -338,7 +338,7 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
           transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
         >
       <motion.div
-        className="ticker-selector-glass w-[calc(100%-20px)] md:w-full max-w-3xl max-h-[82vh] md:max-h-[72vh] flex flex-col overflow-hidden will-change-transform"
+        className="ticker-selector-glass neu-modal w-[calc(100%-20px)] md:w-full max-w-3xl max-h-[82vh] md:max-h-[72vh] flex flex-col overflow-hidden will-change-transform"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
         initial={{ opacity: 0, y: -12, scale: 0.97, filter: "blur(8px)" }}

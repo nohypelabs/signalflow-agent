@@ -179,8 +179,8 @@ export default function SignalsPage({
 
   return (
     <>
-      <div className="signals-glass-scope signals-page-stack relative mx-auto mt-2 w-full max-w-[1180px] overflow-hidden px-3 py-3 sm:px-4 lg:mt-3 lg:py-5">
-        <div className="glass-page-backdrop rounded-[35px]" />
+      <div className="signals-glass-scope neu-scope signals-page-stack relative mx-auto mt-2 w-full max-w-[1180px] overflow-hidden px-3 py-3 sm:px-4 lg:mt-3 lg:py-5">
+        <div className="glass-page-backdrop rounded-[35px] hidden" />
         <div className="relative z-10 space-y-4 lg:space-y-5">
         <SignalsPageHeader
           signalCount={filteredSignals.length}
