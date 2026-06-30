@@ -293,33 +293,37 @@ export default function SpeedometerGauge({ value, size = "md", showLabel = true,
           stroke="rgba(255,255,255,0.04)"
           strokeWidth="1"
         />
-      </svg>
 
-      {showLabel && (
-        <div className="mt-2 flex flex-col items-center gap-1">
-          <div
-            className="flex items-center justify-center rounded-[35px] px-3 py-1.5 min-w-[72px]"
-            style={{
-              background: "var(--bg-inset)",
-              boxShadow: "inset 2px 2px 6px rgba(0,0,0,0.5), inset -1px -1px 3px rgba(255,255,255,0.03)",
-            }}
-          >
-            <span
-              className="font-mono font-bold tracking-wider tabular-nums"
-              style={{
-                fontSize: labelSize * 0.72,
-                color,
-                textShadow: `0 0 10px ${color}40`,
-              }}
+        {/* Retro digital display inside gauge */}
+        {showLabel && (
+          <>
+            <rect
+              x={cx - (size === "lg" ? 28 : size === "md" ? 20 : 14)}
+              y={cy - (size === "lg" ? 12 : size === "md" ? 8 : 6)}
+              width={size === "lg" ? 56 : size === "md" ? 40 : 28}
+              height={size === "lg" ? 16 : size === "md" ? 12 : 10}
+              rx={3}
+              fill="rgba(0,0,0,0.45)"
+              stroke="rgba(255,255,255,0.05)"
+              strokeWidth="0.5"
+            />
+            <text
+              x={cx}
+              y={cy - (size === "lg" ? 2 : size === "md" ? 1 : 0)}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill={color}
+              fontSize={size === "lg" ? 12 : size === "md" ? 9 : 7}
+              fontFamily='"Courier New", monospace'
+              fontWeight="bold"
+              letterSpacing="2"
+              style={{ textShadow: `0 0 6px ${color}` }}
             >
               {clamped}%
-            </span>
-          </div>
-          {label && (
-            <span className="text-[10px] text-txt-muted">{label}</span>
-          )}
-        </div>
-      )}
+            </text>
+          </>
+        )}
+      </svg>
     </span>
   );
 }

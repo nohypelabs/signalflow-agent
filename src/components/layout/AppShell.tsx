@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
+import MarketTickerTape from "@/components/MarketTickerTape";
 import type { Signal } from "@/lib/types/signal";
 import type { SoDEXTicker } from "@/lib/sodex-types";
 
@@ -30,6 +32,30 @@ export default function AppShell({
 }: AppShellProps) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showTape, setShowTape] = useState(false);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const tapeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    const main = mainRef.current;
+    if (!main) return;
+
+    function handleScroll() {
+      if (main!.scrollTop <= 2) {
+        clearTimeout(tapeTimerRef.current);
+        tapeTimerRef.current = setTimeout(() => setShowTape(true), 200);
+      } else {
+        clearTimeout(tapeTimerRef.current);
+        setShowTape(false);
+      }
+    }
+
+    main.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      main.removeEventListener("scroll", handleScroll);
+      clearTimeout(tapeTimerRef.current);
+    };
+  }, []);
 
   return (
     <div className="dashboard-shell flex h-screen overflow-hidden">
@@ -43,6 +69,19 @@ export default function AppShell({
       />
 
       <div className="flex flex-col flex-1 min-w-0 min-h-0">
+        <AnimatePresence>
+          {showTape && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="overflow-hidden shrink-0"
+            >
+              <MarketTickerTape tickerMap={tickerMap} onTickerClick={onTickerClick} />
+            </motion.div>
+          )}
+        </AnimatePresence>
         {!hideHeader && (
           <Header
             sodexStatus={sodexStatus}
@@ -52,9 +91,11 @@ export default function AppShell({
             sidebarCollapsed={sidebarCollapsed}
             onExpandSidebar={() => setSidebarCollapsed(false)}
             onMenuClick={() => setMobileSidebarOpen(true)}
+            latestSignal={latestSignal}
           />
         )}
         <main
+          ref={mainRef}
           className={
             fullScreen
               ? "flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative"

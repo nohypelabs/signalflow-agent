@@ -2,11 +2,11 @@
 
 :root {
   /* Surface layers — darkest to lightest */
-  --bg-base: #05070D;
-  --bg-surface: #070A12;
-  --bg-card: #0B1020;
-  --bg-elevated: #111827;
-  --bg-inset: #080B14;
+  --bg-base: #0D1018;
+  --bg-surface: #10141E;
+  --bg-card: #141A2E;
+  --bg-elevated: #1C2438;
+  --bg-inset: #10151E;
 
   /* Borders */
   --border-default: #1E293B;
@@ -128,7 +128,7 @@ main {
 }
 
 .dashboard-shell {
-  background: #05070d;
+  background: #0D1018;
 }
 
 @media (max-height: 920px) {
@@ -964,4 +964,13 @@ main::-webkit-scrollbar-thumb {
   border: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+.topbar-glass .signals-glass-card {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 !important;
 }

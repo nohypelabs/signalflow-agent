@@ -120,7 +120,6 @@ export default function DecisionScoreHero({
             <div className="flex flex-col items-center justify-center text-center">
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-txt-faint">Conviction</p>
               <SpeedometerGauge value={confidence} size="lg" color={gaugeColor} />
-              <p className={`mt-3 text-sm font-semibold ${actionTone(signal)}`}>{action}</p>
             </div>
           </div>
         </div>

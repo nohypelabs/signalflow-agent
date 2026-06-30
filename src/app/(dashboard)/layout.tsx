@@ -24,7 +24,15 @@ function ShellWithProps({ children }: { children: React.ReactNode }) {
         // symbol is display format like "BTC/USDC" from ticker tape
         d.setSelectedPair(symbol);
       }}
-      latestSignal={d.liveSignals[0] ?? null}
+      latestSignal={(() => {
+        const actionable = d.liveSignals.filter((s) => {
+          const a = s.actionV2 ?? s.action;
+          return a === "LONG" || a === "SHORT" || a === "STRONG_LONG" || a === "STRONG_SHORT" || a === "WEAK_LONG" || a === "WEAK_SHORT";
+        });
+        return actionable.length > 0
+          ? actionable.reduce((best, s) => (s.confidence > best.confidence ? s : best), actionable[0])
+          : (d.liveSignals[0] ?? null);
+      })()}
       fullScreen={isFullScreen}
     >
       {children}
