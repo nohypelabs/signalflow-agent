@@ -928,3 +928,44 @@ main::-webkit-scrollbar-thumb {
 .neu-modal [class*="border-b"] {
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
+
+/* ── TopBar & Sidebar neumorphism ── */
+.topbar-glass {
+  background: var(--bg-surface) !important;
+  box-shadow:
+    6px 6px 14px rgba(0, 0, 0, 0.45),
+    -6px -6px 14px rgba(255, 255, 255, 0.035) !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.market-tape-glass {
+  background: var(--bg-inset) !important;
+  box-shadow:
+    inset 3px 3px 8px rgba(0, 0, 0, 0.45),
+    inset -3px -3px 8px rgba(255, 255, 255, 0.03) !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.shell-glass-panel {
+  background: var(--bg-surface) !important;
+  box-shadow:
+    6px 6px 14px rgba(0, 0, 0, 0.45),
+    -6px -6px 14px rgba(255, 255, 255, 0.035) !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.glass-control {
+  background: var(--bg-surface) !important;
+  box-shadow:
+    3px 3px 8px rgba(0, 0, 0, 0.4),
+    -3px -3px 8px rgba(255, 255, 255, 0.03) !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
