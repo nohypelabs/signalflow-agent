@@ -109,7 +109,7 @@ export default function DecisionScoreHero({
                 }}
               >
                 <span className="text-sm">📶</span>
-                <span>Generate Signal</span>
+                <span>{analyzing ? "Generating..." : "Generate Signal"}</span>
               </button>
             </div>
           </div>

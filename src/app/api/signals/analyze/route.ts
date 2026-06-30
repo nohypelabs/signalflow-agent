@@ -39,6 +39,7 @@ import type { Signal } from "@/lib/types/signal";
 import { getPerpsTickers } from "@/lib/sodex-perps";
 import type { SoDEXPerpsTicker } from "@/lib/sodex-perps";
 import type { TradingType } from "@/lib/types/trading-type";
+import { logData, logError, logRecalc, logSignal, logWarning } from "@/lib/signal-log-bus";
 
 // ── Data fetching (reuse heuristic scoring as AI reference) ──
 
@@ -342,6 +343,8 @@ export async function POST(req: NextRequest) {
     const tradingType: TradingType = body.tradingType ?? "intraday";
     const strategyConfig = deserializeStrategyConfig(body.strategy ?? null);
     const isLiquidity = strategyConfig.engine === "liquidityFlow";
+    const engineLabel = isLiquidity ? "Liquidity Flow" : "Confluence V3";
+    logRecalc("⚙️", `Manual generate started for ${coin}/USDC via ${engineLabel}`);
 
     // Abort wiring for upstreams
     const ac = new AbortController();
@@ -349,6 +352,7 @@ export async function POST(req: NextRequest) {
     if (reqSignal) reqSignal.addEventListener("abort", () => ac.abort(), { once: true });
 
     const marketData = await gatherMarketData(coin, ac.signal);
+    logData("📡", `Market data loaded for ${coin}: ${marketData.klines.length} 1H candles, ${marketData.news.length} news items`);
 
     // Always fetch micro for the coin (orderbook, trades, perps) so V3 can use it
     const sodexSymbol = pairToSodexSymbol(`${coin}/USDC`) || `v${coin.toUpperCase()}_vUSDC`;
@@ -360,6 +364,10 @@ export async function POST(req: NextRequest) {
     ]);
     const perpsTicker = perpsList.find((t: SoDEXPerpsTicker) => t.symbol?.toUpperCase().startsWith(coin)) || null;
     const recentTrades = recentTradesRaw;
+    logData(
+      "🧩",
+      `Microstructure loaded for ${coin}: ${orderbook ? "orderbook ready" : "no orderbook"}, ${recentTrades.length} trades, ${perpsTicker ? "perps ready" : "no perps"}`,
+    );
 
     let baseSignal: Signal | null = null;
     const klinesMap = new Map([[coin, marketData.klines]]);
@@ -402,6 +410,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!baseSignal) {
+      logWarning("⚠️", `Generate failed for ${coin}: insufficient market data or no policy-approved signal`);
       return jsonNoCache(
         { error: "Insufficient market data for signal generation. SoDEX klines may be unavailable." },
         { status: 422 },
@@ -409,9 +418,14 @@ export async function POST(req: NextRequest) {
     }
 
     const baseSources = baseSignal.sources;
+    logSignal(
+      "✅",
+      `${engineLabel} generated ${baseSignal.actionV2 ?? baseSignal.action} ${baseSignal.pair} at ${Math.round(baseSignal.confidence)}% confidence`,
+    );
 
     // ── No AI requested — return base signal only ──
     if (!includeAI) {
+      logSignal("🧠", `AI thesis skipped for ${coin}; base engine signal returned`);
       return jsonNoCache({
         baseSignal,
         aiThesis: null,
@@ -423,6 +437,7 @@ export async function POST(req: NextRequest) {
 
     // ── AI enrichment requested ──
     try {
+      logRecalc("🧠", `AI thesis generation started for ${coin}`);
       const prompt = buildPrompt(
         marketData,
         baseSignal,
@@ -492,6 +507,7 @@ export async function POST(req: NextRequest) {
         execution: mergedExecution,
       };
 
+      logSignal("✨", `AI thesis completed for ${coin} with engine TP/SL preserved`);
       return jsonNoCache({
         baseSignal,
         aiThesis,
@@ -503,6 +519,7 @@ export async function POST(req: NextRequest) {
       // AI failed but base signal is still valid
       const mapped = mapAIError(aiErr);
       console.error("/api/signals/analyze AI error:", mapped.code, mapped.message);
+      logWarning("⚠️", `AI thesis failed for ${coin}: ${mapped.message}. Base signal still returned`);
       return jsonNoCache({
         baseSignal,
         aiThesis: null,
@@ -515,6 +532,7 @@ export async function POST(req: NextRequest) {
     // Sanitize error message — don't leak internal details to client
     const internalMsg = err instanceof Error ? err.message : "Unknown error";
     console.error("/api/signals/analyze error:", internalMsg);
+    logError("❌", `Manual generate failed: ${internalMsg}`);
     return jsonNoCache(
       { error: "Signal analysis failed. Please try again." },
       { status: 502 },
