@@ -85,9 +85,13 @@ export default function SignalCompactRow({ signal, ticker, liveDims, overallScor
               e.stopPropagation();
               setDrawerOpen(!drawerOpen);
             }}
-            className="text-[10px] text-accent font-semibold hover:opacity-80 whitespace-nowrap"
+            className={`rounded-[35px] border px-2.5 py-1 text-[9px] font-bold transition-all whitespace-nowrap ${
+              drawerOpen
+                ? "border-accent/45 bg-accent/20 text-accent"
+                : "border-accent/35 bg-accent/12 text-accent hover:border-accent/55 hover:bg-accent/18"
+            }`}
           >
-            {drawerOpen ? "Hide" : "Details"}
+            {drawerOpen ? "Hide Analysis" : "View Analysis"}
           </button>
         </div>
       </div>
@@ -98,6 +102,7 @@ export default function SignalCompactRow({ signal, ticker, liveDims, overallScor
           liveDims={liveDims}
           weights={weights}
           cappedDims={cappedDims}
+          onClose={() => setDrawerOpen(false)}
         />
       )}
     </>

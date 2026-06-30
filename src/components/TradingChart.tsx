@@ -237,7 +237,7 @@ export default function TradingChart({
   } | null>(null);
 
   // Chart display toggles
-  const [chartType, setChartType] = useState<"area" | "candles">("area");
+  const [chartType, setChartType] = useState<"area" | "candles">("candles");
   const [chartEngine, setChartEngine] = useState<"native" | "tradingview">("native");
   const [fullscreen, setFullscreen] = useState(false);
   const chartWrapperRef = useRef<HTMLDivElement>(null);

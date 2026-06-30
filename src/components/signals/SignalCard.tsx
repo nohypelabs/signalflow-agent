@@ -37,9 +37,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
     ? { text: "ACTIONABLE", className: "bg-buy/10 text-buy border-buy/25" }
     : qualityStatus === "watch"
       ? { text: "WATCH", className: "bg-hold/10 text-hold border-hold/25" }
-      : qualityStatus === "blocked"
-        ? { text: "BLOCKED", className: "bg-sell/10 text-sell border-sell/25" }
-        : null;
+      : null;
 
   // Use the ATR/regime/trading-type aware TP/SL that was computed by the signal engine
   // (do NOT recalculate here with fake 2% ATR — that caused "always same numbers" per type).
@@ -51,61 +49,73 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
       {/* Card header */}
       <div className="p-3.5 sm:p-4">
         <div className="flex flex-col gap-2 mb-2">
-          <div className="flex flex-wrap items-center gap-2 min-w-0">
-            <span className="text-base font-bold text-txt-primary">{signal.pair}</span>
-            <SignalTypeBadge action={signal.actionV2 ?? signal.action} size="md" />
-            {ticker && <Badge variant="live" size="sm">LIVE</Badge>}
-            {signal.regime && (
-              <span className="glass-pill px-1.5 py-0.5 text-[8px] font-mono uppercase tracking-wider text-txt-muted">
-                {signal.regime.replace("_", " ")}
-              </span>
-            )}
-            {signal.setup && (
-              <span className="rounded-[35px] border border-accent/20 bg-accent/10 px-1.5 py-0.5 text-[8px] font-mono uppercase tracking-wider text-accent">
-                {signal.setup.label}
-              </span>
-            )}
-            {qualityTone && (
-              <span className={`rounded-[35px] border px-1.5 py-0.5 text-[8px] font-mono font-semibold ${qualityTone.className}`}>
-                {qualityTone.text}
-              </span>
-            )}
-            {/* Trading type badge */}
-            {typeConfig && (
-              <span
-                className="flex items-center gap-1 rounded-[35px] px-1.5 py-0.5 text-[8px] font-semibold"
-                style={{
-                  backgroundColor: `${typeConfig.color}15`,
-                  color: typeConfig.color,
-                  border: `1px solid ${typeConfig.color}30`,
-                }}
-              >
-                <TradingTypeIcon type={typeConfig.id} size={11} />
-                {typeConfig.label}
-              </span>
-            )}
-            {/* Multi-TF confluence badge */}
-            {signal.multiTF && (
-              <span
-                className="flex items-center gap-1 rounded-[35px] px-1.5 py-0.5 text-[8px] font-semibold"
-                style={{
-                  backgroundColor: signal.multiTF.score >= 80 ? "#00E5A815" : signal.multiTF.score >= 60 ? "#F59E0B15" : "#EF444415",
-                  color: signal.multiTF.score >= 80 ? "#00E5A8" : signal.multiTF.score >= 60 ? "#F59E0B" : "#EF4444",
-                  border: `1px solid ${signal.multiTF.score >= 80 ? "#00E5A830" : signal.multiTF.score >= 60 ? "#F59E0B30" : "#EF444430"}`,
-                }}
-              >
-                <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-                </svg>
-                MTF {signal.multiTF.score}
-              </span>
-            )}
-            {/* Thinking Framework badge for live traceable reasoning (Wave 2 differentiator) */}
-            {signal.frameworkApplication && (
-              <span className="rounded-[35px] border border-accent/30 bg-accent/10 px-1 py-0.5 text-[8px] font-bold text-accent" title="Thinking Framework applied - explicit auditable principles from Strategy Config">
-                FW
-              </span>
-            )}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
+              <span className="text-base font-bold text-txt-primary">{signal.pair}</span>
+              <SignalTypeBadge action={signal.actionV2 ?? signal.action} size="md" />
+              {ticker && <Badge variant="live" size="sm">LIVE</Badge>}
+              {signal.regime && (
+                <span className="glass-pill px-1.5 py-0.5 text-[8px] font-mono uppercase tracking-wider text-txt-muted">
+                  {signal.regime.replace("_", " ")}
+                </span>
+              )}
+              {signal.setup && (
+                <span className="rounded-[35px] border border-accent/20 bg-accent/10 px-1.5 py-0.5 text-[8px] font-mono uppercase tracking-wider text-accent">
+                  {signal.setup.label}
+                </span>
+              )}
+              {qualityTone && (
+                <span className={`rounded-[35px] border px-1.5 py-0.5 text-[8px] font-mono font-semibold ${qualityTone.className}`}>
+                  {qualityTone.text}
+                </span>
+              )}
+              {/* Trading type badge */}
+              {typeConfig && (
+                <span
+                  className="flex items-center gap-1 rounded-[35px] px-1.5 py-0.5 text-[8px] font-semibold"
+                  style={{
+                    backgroundColor: `${typeConfig.color}15`,
+                    color: typeConfig.color,
+                    border: `1px solid ${typeConfig.color}30`,
+                  }}
+                >
+                  <TradingTypeIcon type={typeConfig.id} size={11} />
+                  {typeConfig.label}
+                </span>
+              )}
+              {/* Multi-TF confluence badge */}
+              {signal.multiTF && (
+                <span
+                  className="flex items-center gap-1 rounded-[35px] px-1.5 py-0.5 text-[8px] font-semibold"
+                  style={{
+                    backgroundColor: signal.multiTF.score >= 80 ? "#00E5A815" : signal.multiTF.score >= 60 ? "#F59E0B15" : "#EF444415",
+                    color: signal.multiTF.score >= 80 ? "#00E5A8" : signal.multiTF.score >= 60 ? "#F59E0B" : "#EF4444",
+                    border: `1px solid ${signal.multiTF.score >= 80 ? "#00E5A830" : signal.multiTF.score >= 60 ? "#F59E0B30" : "#EF444430"}`,
+                  }}
+                >
+                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                  </svg>
+                  MTF {signal.multiTF.score}
+                </span>
+              )}
+              {/* Thinking Framework badge for live traceable reasoning (Wave 2 differentiator) */}
+              {signal.frameworkApplication && (
+                <span className="rounded-[35px] border border-accent/30 bg-accent/10 px-1 py-0.5 text-[8px] font-bold text-accent" title="Thinking Framework applied - explicit auditable principles from Strategy Config">
+                  FW
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => setDrawerOpen(!drawerOpen)}
+              className={`shrink-0 rounded-[35px] border px-3.5 py-2 text-[10px] font-bold transition-all sm:-mt-0.5 ${
+                drawerOpen
+                  ? "border-accent/45 bg-accent/20 text-accent"
+                  : "border-accent/35 bg-accent/12 text-accent shadow-[0_0_20px_rgba(0,229,168,0.12)] hover:border-accent/55 hover:bg-accent/18"
+              }`}
+            >
+              {drawerOpen ? "Hide Analysis" : "View Analysis"}
+            </button>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {signal.confluence != null && (
@@ -172,7 +182,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
                   <span className="text-txt-tertiary">{signal.quality.lesson.status}</span>
                 </div>
                 <p className="mt-1.5 text-[10px] leading-relaxed text-txt-muted">
-                  {signal.quality.blockedReasons[0] ?? signal.quality.lesson.note}
+                  {signal.quality.lesson.note}
                 </p>
               </div>
             )}
@@ -252,12 +262,6 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
           >
             View on Chart
           </button>
-          <button
-            onClick={() => setDrawerOpen(!drawerOpen)}
-            className="text-[10px] text-accent font-semibold hover:opacity-80"
-          >
-            {drawerOpen ? "Hide Analysis" : "View Analysis"}
-          </button>
         </div>
       </div>
 
@@ -268,6 +272,7 @@ export default function SignalCard({ signal, ticker, liveDims, overallScore, wei
           liveDims={liveDims}
           weights={weights}
           cappedDims={cappedDims}
+          onClose={() => setDrawerOpen(false)}
         />
       )}
     </div>

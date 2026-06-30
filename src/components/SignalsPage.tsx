@@ -201,12 +201,12 @@ export default function SignalsPage({
                 {" "}1 to 8 hours. If price stalls past the session or the thesis invalidates, exit instead of converting it into a swing hold.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono lg:min-w-[260px]">
-              <div className="glass-pill px-3 py-2">
+            <div className="grid grid-cols-2 gap-2 text-center text-[10px] font-mono lg:min-w-[260px]">
+              <div className="glass-pill px-3 py-2 text-center">
                 <p className="text-txt-faint">Primary</p>
                 <p className="mt-1 text-txt-primary">1H</p>
               </div>
-              <div className="glass-pill px-3 py-2">
+              <div className="glass-pill px-3 py-2 text-center">
                 <p className="text-txt-faint">Hold</p>
                 <p className="mt-1 text-txt-primary">1-8h</p>
               </div>
@@ -214,13 +214,18 @@ export default function SignalsPage({
           </div>
         </div>
 
+        {/* Top signal highlight */}
+        {topSignal && viewMode === "cards" && (
+          <TopSignalHighlight signal={topSignal} ticker={getTicker(topSignal)} onFocusSignal={focusSignal} />
+        )}
+
         {/* Summary cards */}
         {filteredSignals.length > 0 && <SignalSummaryCards signals={filteredSignals} />}
 
         {focusedSignal && (
           <section className="signals-glass-card overflow-hidden">
             <div className="border-b border-border-default px-4 py-3 sm:px-5">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-3">
                 <div className="min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
                     Signal Evidence
@@ -239,35 +244,22 @@ export default function SignalsPage({
                     <span className="glass-pill px-2.5 py-1 text-[10px] font-mono text-txt-secondary">
                       {focusedSignal.confidence}% confidence
                     </span>
-                    {focusedSignal.execution?.entry > 0 && (
-                      <span className="glass-pill px-2.5 py-1 text-[10px] font-mono text-txt-secondary">
-                        Entry {focusedSignal.execution.entry.toFixed(2)}
-                      </span>
-                    )}
+                    <span className="glass-pill inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono text-txt-secondary">
+                      <span className="text-txt-faint">Entry</span>
+                      <span className="text-txt-primary">{focusedSignal.execution?.entry ? focusedSignal.execution.entry.toFixed(2) : "N/A"}</span>
+                    </span>
+                    <span className="glass-pill inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono text-txt-secondary">
+                      <span className="text-txt-faint">Target</span>
+                      <span className="text-buy">{focusedSignal.execution?.takeProfit ? focusedSignal.execution.takeProfit.toFixed(2) : "N/A"}</span>
+                    </span>
+                    <span className="glass-pill inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono text-txt-secondary">
+                      <span className="text-txt-faint">Risk</span>
+                      <span className="text-sell">{focusedSignal.execution?.stopLoss ? focusedSignal.execution.stopLoss.toFixed(2) : "N/A"}</span>
+                    </span>
                   </div>
-                  <p className="mt-2 max-w-3xl text-xs leading-relaxed text-txt-secondary">
+                  <p className="mt-2 w-full text-justify text-xs leading-relaxed text-txt-secondary">
                     {focusedSignal.reasoning}
                   </p>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-[10px] font-mono">
-                  <div className="glass-pill px-3 py-2">
-                    <p className="text-txt-faint">Entry</p>
-                    <p className="mt-1 text-txt-primary">
-                      {focusedSignal.execution?.entry ? focusedSignal.execution.entry.toFixed(2) : "N/A"}
-                    </p>
-                  </div>
-                  <div className="glass-pill px-3 py-2">
-                    <p className="text-txt-faint">Target</p>
-                    <p className="mt-1 text-buy">
-                      {focusedSignal.execution?.takeProfit ? focusedSignal.execution.takeProfit.toFixed(2) : "N/A"}
-                    </p>
-                  </div>
-                  <div className="glass-pill px-3 py-2">
-                    <p className="text-txt-faint">Risk</p>
-                    <p className="mt-1 text-sell">
-                      {focusedSignal.execution?.stopLoss ? focusedSignal.execution.stopLoss.toFixed(2) : "N/A"}
-                    </p>
-                  </div>
                 </div>
               </div>
             </div>
@@ -301,11 +293,6 @@ export default function SignalsPage({
             viewMode={viewMode}
             onViewModeChange={setViewMode}
           />
-        )}
-
-        {/* Top signal highlight */}
-        {topSignal && viewMode === "cards" && (
-          <TopSignalHighlight signal={topSignal} ticker={getTicker(topSignal)} onFocusSignal={focusSignal} />
         )}
 
         {/* Signal grid / compact list */}

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Signal, LiveSignalDimensions } from "@/lib/types/signal";
 import SignalScoreBreakdown from "./SignalScoreBreakdown";
 import SignalConfluenceBreakdown from "./SignalConfluenceBreakdown";
@@ -11,11 +13,14 @@ interface Props {
   liveDims?: LiveSignalDimensions | null;
   weights?: Record<string, number> | null;
   cappedDims?: string[] | null;
+  onClose?: () => void;
 }
 
-export default function SignalAnalysisDrawer({ signal, liveDims, weights, cappedDims }: Props) {
+export default function SignalAnalysisDrawer({ signal, liveDims, weights, cappedDims, onClose }: Props) {
+  const [mounted, setMounted] = useState(false);
   const coin = signal.pair.split("/")[0];
   const ex = signal.execution;
+  const qualityLabel = signal.quality?.status === "blocked" ? "watch" : signal.quality?.status;
 
   // Extract V2 engine data for confluence breakdown
   const factors = signal.factors ?? [];
@@ -25,9 +30,65 @@ export default function SignalAnalysisDrawer({ signal, liveDims, weights, capped
   const bullishCount = factors.filter((f) => f.score > 60).length;
   const bearishCount = factors.filter((f) => f.score < 40).length;
 
-  return (
-    <div className="border-t border-border-default bg-inset/50 animate-slide-up">
-      <div className="p-4 space-y-4">
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose?.();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  if (!mounted) return null;
+
+  const modal = (
+    <div
+      className="fixed inset-0 z-[90] flex items-start justify-center bg-black/45 px-3 pb-5 pt-20 backdrop-blur-md sm:px-5 lg:pt-24"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${signal.pair} signal analysis`}
+    >
+      <div
+        className="ticker-selector-glass relative flex max-h-[calc(100vh-6.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[35px] shadow-[0_28px_90px_rgba(0,0,0,0.45)]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-accent">Signal Analysis</p>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <h3 className="text-lg font-bold text-txt-primary">{signal.pair}</h3>
+              <Badge variant="muted" size="sm">{signal.actionV2 ?? signal.action}</Badge>
+              <span className="glass-pill px-2.5 py-1 text-[10px] font-mono text-txt-secondary">
+                {signal.confidence}% confidence
+              </span>
+            </div>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-txt-secondary">
+              Full reasoning, confluence, risk plan, and data sources behind this signal.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="glass-control h-9 w-9 shrink-0 rounded-[35px] text-sm font-bold text-txt-secondary transition-all hover:text-txt-primary"
+            aria-label="Close signal analysis"
+          >
+            X
+          </button>
+        </div>
+
+        <div className="overflow-y-auto px-4 py-4 sm:px-5">
+          <div className="space-y-4">
         {/* ── CONFLUENCE BREAKDOWN (V2 Engine Transparency) ── */}
         {/* This is what judges want to see: HOW the signal was generated */}
         {factors.length > 0 && (
@@ -62,9 +123,9 @@ export default function SignalAnalysisDrawer({ signal, liveDims, weights, capped
                 <div className="text-[9px] text-txt-dim">Signal Quality</div>
                 <div className="text-xs font-mono mt-0.5" style={{
                   color: signal.quality.status === "actionable" ? "#00E5A8" :
-                         signal.quality.status === "watch" ? "#F59E0B" : "#EF4444"
+                         signal.quality.status === "watch" ? "#F59E0B" : "#F59E0B"
                 }}>
-                  {signal.quality.status} ({signal.quality.calibratedConfidence}%)
+                  {qualityLabel} ({signal.quality.calibratedConfidence}%)
                 </div>
               </div>
             )}
@@ -196,7 +257,11 @@ export default function SignalAnalysisDrawer({ signal, liveDims, weights, capped
             ))}
           </div>
         </div>
+          </div>
+        </div>
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }

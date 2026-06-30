@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, MessageSquare, TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle } from "lucide-react";
+import { ChevronDown, MessageSquare, TrendingUp, TrendingDown, Minus, CheckCircle } from "lucide-react";
 import type { Signal } from "@/lib/types/signal";
 import Card from "@/components/ui/Card";
 
@@ -50,8 +50,6 @@ export default function WhyThisSignal({ signal }: Props) {
   const topFactors = [...factors].sort((a, b) => Math.abs(b.score - 50) - Math.abs(a.score - 50)).slice(0, 5);
   const evidence = signal.setup?.evidence ?? [];
   const thesis = signal.setup?.thesis || signal.reasoning || "No thesis available.";
-  const blockedReasons = signal.quality?.blockedReasons ?? [];
-  const isBlocked = signal.quality?.status === "blocked";
 
   return (
     <Card variant="glass" padding="none" className="overflow-hidden">
@@ -165,19 +163,6 @@ export default function WhyThisSignal({ signal }: Props) {
                     <p className="mt-1 text-[10px] text-txt-secondary">{f.detail}</p>
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
-
-          {/* Blocked Reasons */}
-          {isBlocked && blockedReasons.length > 0 && (
-            <div className="px-4 py-3">
-              <div className="rounded-[35px] border border-sell-dim/30 bg-sell-muted/10 px-3 py-2">
-                <div className="flex items-center gap-2 mb-1">
-                  <AlertTriangle size={12} className="text-sell" />
-                  <p className="text-[9px] font-semibold uppercase text-sell">Blocked</p>
-                </div>
-                <p className="text-[10px] text-txt-secondary">{blockedReasons.join(" ")}</p>
               </div>
             </div>
           )}
