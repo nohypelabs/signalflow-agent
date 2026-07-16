@@ -17,6 +17,7 @@ import type { SoDEXPerpsTicker } from "@/lib/sodex-perps";
 import { pairToSodexSymbol, SUPPORTED_SIGNAL_PAIRS } from "@/lib/pair-map";
 import { generateSignalsV2 } from "@/lib/strategy/signal-engine-v2";
 import {
+  DEFAULT_STRATEGY_CONFIG,
   deserializeStrategyConfig,
   strategyConfigKey,
   toActiveStrategySummary,
@@ -136,18 +137,38 @@ export async function GET(request: Request) {
     return jsonNoCache(cached.data);
   }
 
-  const ac = new AbortController();
   const reqSignal = (request as unknown as { signal?: AbortSignal }).signal;
-  if (reqSignal) {
-    reqSignal.addEventListener("abort", () => ac.abort(), { once: true });
-  }
 
   if (cached) {
     const age = Date.now() - cached.ts;
     if (age >= cacheTtl) {
-      setTimeout(() => cache.delete(cacheKey), 4000);
+      // Stale-while-revalidate: return stale data immediately, regenerate in background.
+      void generateAndCache(cacheKey, tradingType, strategyConfig, reqSignal).catch(() => {});
     }
     return jsonNoCache(cached.data);
+  }
+
+  try {
+    const result = await generateAndCache(cacheKey, tradingType, strategyConfig, reqSignal);
+    return jsonNoCache(result);
+  } catch (err) {
+    return jsonNoCache(
+      { error: err instanceof Error ? err.message : "Failed" },
+      { status: 502 },
+    );
+  }
+}
+
+// ── Shared generation (used by both cold path and background revalidation) ──
+async function generateAndCache(
+  cacheKey: string,
+  tradingType: TradingType | null,
+  strategyConfig: ReturnType<typeof deserializeStrategyConfig>,
+  signal?: AbortSignal,
+): Promise<unknown> {
+  const ac = new AbortController();
+  if (signal) {
+    signal.addEventListener("abort", () => ac.abort(), { once: true });
   }
 
   try {
@@ -278,7 +299,7 @@ export async function GET(request: Request) {
       };
 
       setCachedResult(cacheKey, result);
-      return jsonNoCache(result);
+      return result;
     }
 
     // ── CONFLUENCE V3 PATH (unified: 5 TA factors + ORDER_FLOW + DEPTH + FUNDING micro) ────────────────────────────────
@@ -614,11 +635,21 @@ export async function GET(request: Request) {
     };
 
     setCachedResult(cacheKey, result);
-    return jsonNoCache(result);
+    return result;
   } catch (err) {
     return jsonNoCache(
       { error: err instanceof Error ? err.message : "Failed" },
       { status: 502 },
     );
+  }
+}
+
+// ── Warm-up cache on module load ─────────────────────────
+// Pre-generates the default (intraday) signal set once at server boot so the
+// first visitor gets a cached response instead of waiting on ~50 SoDEX calls.
+if (process.env.NODE_ENV !== "test") {
+  const warmKey = `all:${strategyConfigKey(DEFAULT_STRATEGY_CONFIG)}`;
+  if (!cache.has(warmKey)) {
+    generateAndCache(warmKey, null, DEFAULT_STRATEGY_CONFIG).catch(() => {});
   }
 }

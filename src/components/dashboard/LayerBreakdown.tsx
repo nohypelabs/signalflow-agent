@@ -109,7 +109,7 @@ export default function LayerBreakdown({ signal, sourceFlags }: Props) {
   }
 
   return (
-    <Card variant="glass" padding="none" className="overflow-visible">
+    <Card variant="glass" padding="none" className="overflow-visible" data-tour="layer-breakdown">
       <div className="border-b border-border-default px-4 py-3">
         <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-txt-secondary">Layer Breakdown</p>
         <h2 className="mt-1 text-sm font-semibold text-txt-primary">Pipeline score contributions</h2>

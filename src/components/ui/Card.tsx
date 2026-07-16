@@ -28,6 +28,7 @@ interface Props {
   style?: CSSProperties;
   children: ReactNode;
   onClick?: (e: MouseEvent<HTMLDivElement>) => void;
+  [key: `data-${string}`]: string | undefined;
 }
 
 export default function Card({
@@ -39,6 +40,7 @@ export default function Card({
   style,
   children,
   onClick,
+  ...rest
 }: Props) {
   const baseClass = `sf-card rounded-lg ${variants[variant]} ${paddings[padding]} ${className}`;
   const accentStyle = accent
@@ -55,6 +57,7 @@ export default function Card({
         className={`${baseClass} hover:border-border-muted hover:bg-elevated/20 cursor-pointer transition-[border-color,background-color,transform] duration-200`}
         style={accentStyle}
         onClick={onClick}
+        {...rest}
       >
         {children}
       </motion.div>
@@ -62,7 +65,7 @@ export default function Card({
   }
 
   return (
-    <div className={baseClass} style={accentStyle} onClick={onClick}>
+    <div className={baseClass} style={accentStyle} onClick={onClick} {...rest}>
       {children}
     </div>
   );

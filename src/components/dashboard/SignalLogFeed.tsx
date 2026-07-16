@@ -64,7 +64,7 @@ export default function SignalLogFeed({ entries, status, filter, onFilterChange 
   const statusMeta = STATUS_META[status];
 
   return (
-    <Card variant="glass" padding="none" className="overflow-hidden">
+    <Card variant="glass" padding="none" className="overflow-hidden" data-tour="signal-log">
       <div className="flex items-center justify-between border-b border-border-default px-4 py-3">
         <div>
           <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-txt-secondary">Signal Log</p>

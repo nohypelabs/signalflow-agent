@@ -6,6 +6,49 @@ function baseUrl(): string {
   return network === "mainnet" ? MAINNET_SPOT : TESTNET_SPOT;
 }
 
+// ── In-process cache ──────────────────────────────────────
+// /api/signals calls getSodexKlines/getOrderbook directly (not via the
+// cached /api/market/* routes), so without this every signal request fires
+// dozens of fresh HTTP calls to SoDEX → rate-limit storms + 20s+ first loads.
+interface CacheEntry<T> {
+  data: T;
+  ts: number;
+}
+const cache = new Map<string, CacheEntry<unknown>>();
+const CACHE_MS = 10_000; // 10s — matches market route kline TTL
+
+function cacheGet<T>(key: string): T | null {
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.ts < CACHE_MS) return hit.data as T;
+  return null;
+}
+function cacheSet<T>(key: string, data: T): void {
+  cache.set(key, { data, ts: Date.now() });
+}
+
+// ── Concurrency limiter ───────────────────────────────────
+// Cap parallel SoDEX calls so we don't burst 50+ concurrent requests
+// (which trips per-IP rate limits and forces 5-8s timeouts).
+const MAX_CONCURRENT = 6;
+let active = 0;
+const queue: (() => void)[] = [];
+
+function acquire(): Promise<void> {
+  if (active < MAX_CONCURRENT) {
+    active++;
+    return Promise.resolve();
+  }
+  return new Promise<void>((resolve) => queue.push(resolve));
+}
+function release(): void {
+  active--;
+  const next = queue.shift();
+  if (next) {
+    active++;
+    next();
+  }
+}
+
 async function sodexFetch<T>(
   path: string,
   params?: Record<string, string>,
@@ -17,6 +60,12 @@ async function sodexFetch<T>(
       if (v !== undefined) url.searchParams.set(k, v);
     });
   }
+
+  const cacheKey = url.toString();
+  const cached = cacheGet<T>(cacheKey);
+  if (cached !== null) return cached;
+
+  await acquire();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5_000);
 
@@ -32,9 +81,12 @@ async function sodexFetch<T>(
     }
     const json = await res.json();
     if (json.error) throw new Error(json.error);
-    return json.data as T;
+    const data = json.data as T;
+    cacheSet(cacheKey, data);
+    return data;
   } finally {
     clearTimeout(timeout);
+    release();
   }
 }
 

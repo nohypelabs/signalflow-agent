@@ -11,12 +11,12 @@ import {
 } from "@/components/ui/icons";
 import type { Signal, SignalAction, SignalActionV2 } from "@/lib/types/signal";
 
-const groups = [
+const groups: { label: string; items: { href: string; label: string; Icon: React.ComponentType<{ size?: number; className?: string }>; tour?: string }[] }[] = [
   {
     label: "Core",
     items: [
       { href: "/dashboard", label: "Dashboard", Icon: HomeIcon },
-      { href: "/signals", label: "Signals", Icon: SignalIcon },
+      { href: "/signals", label: "Signals", Icon: SignalIcon, tour: "signals-tab" },
     ],
   },
 ];
@@ -207,7 +207,7 @@ export default function Sidebar({
             </motion.div>
           )}
           {collapsed && gi > 0 && <div className="h-1" />}
-          {group.items.map(({ href, label, Icon }) => {
+          {group.items.map(({ href, label, Icon, tour }) => {
             const isActive = pathname === href;
             const isHovered = hoveredItem === href;
 
@@ -215,6 +215,7 @@ export default function Sidebar({
               <motion.button
                 key={href}
                 variants={navItemVariants}
+                {...(tour ? { "data-tour": tour } : {})}
                 onClick={() => handleNavigate(href)}
                 onMouseEnter={() => setHoveredItem(href)}
                 onMouseLeave={() => setHoveredItem(null)}

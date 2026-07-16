@@ -5,6 +5,7 @@ import { DashboardProvider, useDashboard } from "@/lib/dashboard-context";
 import AppShell from "@/components/layout/AppShell";
 import DynamicTitle from "@/components/DynamicTitle";
 import SignalChatPopup from "@/components/ai/SignalChatPopup";
+import ProductTour from "@/components/layout/ProductTour";
 
 function ShellWithProps({ children }: { children: React.ReactNode }) {
   const d = useDashboard();
@@ -37,6 +38,7 @@ function ShellWithProps({ children }: { children: React.ReactNode }) {
     >
       {children}
     </AppShell>
+    {isDashboard && <ProductTour />}
     <SignalChatPopup />
     </>
   );
