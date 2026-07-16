@@ -254,20 +254,22 @@ main::-webkit-scrollbar-thumb {
 }
 
 .shell-glass-panel {
-  border-color: rgba(216, 222, 233, 0.09) !important;
-  background: linear-gradient(180deg, rgba(59, 66, 82, 0.14), rgba(46, 52, 64, 0.08)) !important;
+  border: 1px solid rgba(216, 222, 233, 0.1) !important;
+  background: var(--bg-card) !important;
   box-shadow:
-    0 24px 90px rgba(0, 0, 0, 0.1),
+    6px 6px 14px rgba(0, 0, 0, 0.45),
+    -6px -6px 14px rgba(255, 255, 255, 0.035),
     inset 0 1px 0 rgba(236, 239, 244, 0.055);
   backdrop-filter: blur(30px) saturate(115%);
   -webkit-backdrop-filter: blur(30px) saturate(115%);
 }
 
 .topbar-glass {
-  border-color: rgba(216, 222, 233, 0.09) !important;
-  background: linear-gradient(180deg, rgba(59, 66, 82, 0.14), rgba(46, 52, 64, 0.08)) !important;
+  border: 1px solid rgba(216, 222, 233, 0.1) !important;
+  background: var(--bg-card) !important;
   box-shadow:
-    0 24px 90px rgba(0, 0, 0, 0.1),
+    6px 6px 14px rgba(0, 0, 0, 0.45),
+    -6px -6px 14px rgba(255, 255, 255, 0.035),
     inset 0 1px 0 rgba(236, 239, 244, 0.055);
   backdrop-filter: blur(30px) saturate(115%);
   -webkit-backdrop-filter: blur(30px) saturate(115%);

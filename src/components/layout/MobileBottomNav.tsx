@@ -22,7 +22,7 @@ export default function MobileBottomNav() {
   const router = useRouter();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 backdrop-blur-xl bg-surface/90 border-t border-border-default z-40 safe-bottom">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 backdrop-blur-xl bg-card border-t border-border-default z-40 safe-bottom">
       <div className="flex items-center justify-around h-14">
         {tabs.map(({ href, label, Icon }) => {
           const isActive = pathname === href;
