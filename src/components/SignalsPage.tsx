@@ -188,27 +188,31 @@ export default function SignalsPage({
         />
 
         {/* Summary cards — total stats at top */}
-        {filteredSignals.length > 0 && <div data-tour="signals-summary"><SignalSummaryCards signals={filteredSignals} /></div>}
+        <div data-tour="signals-summary">
+          {filteredSignals.length > 0 && <SignalSummaryCards signals={filteredSignals} />}
+        </div>
 
         {/* Active strategy policy */}
-        {activeStrategy && (
-          <div data-tour="signals-strategy" className="signals-glass-card flex flex-wrap items-center gap-2.5 px-3.5 py-2.5 sm:px-4">
-            <div className="flex-1 min-w-[220px]">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-txt-dim">
-                Active Strategy Policy
+        <div data-tour="signals-strategy">
+          {activeStrategy && (
+            <div className="signals-glass-card flex flex-wrap items-center gap-2.5 px-3.5 py-2.5 sm:px-4">
+              <div className="flex-1 min-w-[220px]">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-txt-dim">
+                  Active Strategy Policy
+                </span>
+                <span className="block text-xs font-semibold text-accent sm:inline sm:ml-2">
+                  {activeStrategy.label}
+                </span>
+              </div>
+              <span className="glass-pill px-2.5 py-1 text-[10px] font-mono text-txt-secondary">
+                ≥{activeStrategy.minConfidence}% confidence
               </span>
-              <span className="block text-xs font-semibold text-accent sm:inline sm:ml-2">
-                {activeStrategy.label}
+              <span className="glass-pill px-2.5 py-1 text-[10px] font-mono text-txt-secondary">
+                {activeStrategy.maxPositionSize}% max position
               </span>
             </div>
-            <span className="glass-pill px-2.5 py-1 text-[10px] font-mono text-txt-secondary">
-              ≥{activeStrategy.minConfidence}% confidence
-            </span>
-            <span className="glass-pill px-2.5 py-1 text-[10px] font-mono text-txt-secondary">
-              {activeStrategy.maxPositionSize}% max position
-            </span>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="signals-glass-card px-4 py-3">
           <div className="flex flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
@@ -233,8 +237,9 @@ export default function SignalsPage({
           </div>
         </div>
 
-        {focusedSignal && (
-          <section data-tour="signals-evidence" className="signals-glass-card overflow-hidden">
+        <div data-tour="signals-evidence">
+          {focusedSignal && (
+            <section className="signals-glass-card overflow-hidden">
             <div className="border-b border-border-default px-4 py-3 sm:px-5">
               <div className="flex flex-col gap-3">
                 <div className="min-w-0">
@@ -319,6 +324,7 @@ export default function SignalsPage({
             })()}
           </section>
         )}
+        </div>
 
         {/* Filters */}
         {liveSignals.length > 0 && (
@@ -338,6 +344,7 @@ export default function SignalsPage({
         )}
 
         {/* Signal grid / compact list */}
+        <div data-tour="signals-grid">
         {filteredSignals.length === 0 ? (
           <div className="space-y-3">
             {liveSignals.length === 0 ? (
@@ -384,7 +391,7 @@ export default function SignalsPage({
           </div>
         ) : viewMode === "cards" ? (
           /* Cards view */
-          <div data-tour="signals-grid" className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {filteredSignals.map((s) => {
               const { liveDims: coinDims, overallScore, coinWeights, coinCapped } = getCoinData(s);
               return (
@@ -452,6 +459,7 @@ export default function SignalsPage({
             </div>
           </>
         )}
+        </div>
         </div>
       </div>
     </>

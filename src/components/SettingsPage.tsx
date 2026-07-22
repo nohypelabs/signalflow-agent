@@ -271,6 +271,7 @@ export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChan
         </div>
 
         {/* Selected agent profile details */}
+        <div data-tour="settings-profile">
         {selectedProvider && (() => {
           const ap = AGENT_PROFILES[aiConfig.providerId] || {
             color: "#64748B",
@@ -283,7 +284,7 @@ export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChan
             bgGradient: "from-slate-500/10 to-transparent",
           };
           return (
-            <Card data-tour="settings-profile" padding="lg" className="space-y-5 relative overflow-hidden" accent={ap.color}>
+            <Card padding="lg" className="space-y-5 relative overflow-hidden" accent={ap.color}>
               {/* Background blur highlight */}
               <div className="absolute -right-24 -top-24 w-48 h-48 rounded-full blur-[100px] opacity-10 pointer-events-none" style={{ backgroundColor: ap.color }} />
 
@@ -431,6 +432,7 @@ export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChan
             </Card>
           );
         })()}
+        </div>
       </div>
 
       {/* ── API Connections ── */}
