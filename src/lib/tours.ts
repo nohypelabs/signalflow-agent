@@ -18,6 +18,8 @@ export const DASHBOARD_TOUR: TourStep[] = [
   { target: "decision-score", title: "The decision score", body: "Live signal for the selected pair. Confidence, action (LONG/SHORT/HOLD) and a volatility-adjusted plan — scored by the 5-layer engine.", placement: "bottom" },
   { target: "layer-breakdown", title: "Why this signal", body: "Every signal is traceable. Trend, momentum, volatility, volume and structure factors — plus regime and the exact confluence math.", placement: "top" },
   { target: "signal-log", title: "Live signal log", body: "A rolling feed of generated signals across the market. Click any row to focus its evidence and chart.", placement: "top" },
+  { target: "wallet-button", title: "Web3 Wallet Connect", body: "Connect your Ethereum/Arbitrum wallet to unlock custom AI model credentials and live transaction execution.", placement: "bottom" },
+  { target: "ai-assistant", title: "AI Trading Assistant", body: "Ask Dora, your autonomous Web3 trading companion, to analyze charts, explain indicators, or execute test orders.", placement: "left" },
   { target: "signals-tab", title: "The Signals workspace", body: "Switch to Signals for the full grid: summary cards, filters, AI reasoning drawer and your trading-type policy.", placement: "right", note: "Use the sidebar » Signals" },
 ];
 

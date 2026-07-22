@@ -258,6 +258,7 @@ export default function SignalChatPopup() {
 
       {/* Floating Dora AI Button */}
       <div
+        data-tour="ai-assistant"
         className="fixed bottom-6 right-6 z-50"
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}

@@ -30,6 +30,7 @@ export default function WalletButton() {
 
         return (
           <div
+            data-tour="wallet-button"
             {...(!ready && {
               "aria-hidden": true,
               style: { opacity: 0, pointerEvents: "none", userSelect: "none" },
