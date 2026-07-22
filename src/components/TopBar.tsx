@@ -42,11 +42,10 @@ export default function TopBar({
 
   return (
     <div className="shrink-0">
-      <header className="topbar-glass relative mx-2 mt-2 rounded-[35px] px-4">
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent" />
+      <header className="topbar-glass relative mx-2 mt-1 rounded-[35px] px-4">
 
         {latestSignal ? (
-          <div className="flex items-start gap-3 py-2">
+          <div className="flex items-start gap-3 py-1.5">
             <div className="flex min-w-0 items-center gap-2.5 shrink-0 pt-1">
               <motion.button
                 type="button"
@@ -106,7 +105,7 @@ export default function TopBar({
             </div>
           </div>
         ) : (
-          <div className="flex h-16 items-center justify-between gap-3">
+          <div className="flex h-12 items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2.5 shrink-0">
               <motion.button
                 type="button"

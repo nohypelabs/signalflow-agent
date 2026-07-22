@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   HomeIcon,
   SignalIcon,
+  SettingsIcon,
   CloseIcon,
   SidebarCollapseIcon,
 } from "@/components/ui/icons";
@@ -17,6 +18,12 @@ const groups: { label: string; items: { href: string; label: string; Icon: React
     items: [
       { href: "/dashboard", label: "Dashboard", Icon: HomeIcon },
       { href: "/signals", label: "Signals", Icon: SignalIcon, tour: "signals-tab" },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { href: "/settings", label: "Settings", Icon: SettingsIcon },
     ],
   },
 ];

@@ -294,36 +294,20 @@ export default function SpeedometerGauge({ value, size = "md", showLabel = true,
           strokeWidth="1"
         />
 
-        {/* Retro digital display inside gauge */}
-        {showLabel && (
-          <>
-            <rect
-              x={cx - (size === "lg" ? 28 : size === "md" ? 20 : 14)}
-              y={cy - (size === "lg" ? 12 : size === "md" ? 8 : 6)}
-              width={size === "lg" ? 56 : size === "md" ? 40 : 28}
-              height={size === "lg" ? 16 : size === "md" ? 12 : 10}
-              rx={3}
-              fill="rgba(0,0,0,0.45)"
-              stroke="rgba(255,255,255,0.05)"
-              strokeWidth="0.5"
-            />
-            <text
-              x={cx}
-              y={cy - (size === "lg" ? 2 : size === "md" ? 1 : 0)}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fill={color}
-              fontSize={size === "lg" ? 12 : size === "md" ? 9 : 7}
-              fontFamily='"Courier New", monospace'
-              fontWeight="bold"
-              letterSpacing="2"
-              style={{ textShadow: `0 0 6px ${color}` }}
-            >
-              {clamped}%
-            </text>
-          </>
-        )}
       </svg>
+
+      {showLabel && (
+        <span
+          className="mt-1 font-mono font-bold leading-none"
+          style={{
+            color,
+            fontSize: size === "lg" ? 18 : size === "md" ? 13 : 10,
+            textShadow: `0 0 6px ${color}`,
+          }}
+        >
+          {clamped}%
+        </span>
+      )}
     </span>
   );
 }
