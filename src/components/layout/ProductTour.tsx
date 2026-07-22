@@ -52,6 +52,12 @@ export default function ProductTour() {
     return () => clearTimeout(t);
   }, [config]);
 
+  const finish = useCallback(() => {
+    setActive(false);
+    if (!config) return;
+    try { localStorage.setItem(config.storageKey, "1"); } catch {}
+  }, [config]);
+
   const measure = useCallback(() => {
     if (!config) return;
     const current = config.steps[step];
@@ -62,19 +68,16 @@ export default function ProductTour() {
     if (!active) return;
     measure();
     const onResize = () => measure();
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") finish(); };
     window.addEventListener("resize", onResize);
     window.addEventListener("scroll", onResize, true);
+    window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("resize", onResize);
       window.removeEventListener("scroll", onResize, true);
+      window.removeEventListener("keydown", onKey);
     };
-  }, [active, measure]);
-
-  const finish = useCallback(() => {
-    setActive(false);
-    if (!config) return;
-    try { localStorage.setItem(config.storageKey, "1"); } catch {}
-  }, [config]);
+  }, [active, measure, finish]);
 
   const next = useCallback(() => {
     if (!config) return;
@@ -247,6 +250,7 @@ function Tooltip({
       </div>
       <h3 className="text-[15px] font-semibold leading-snug text-txt-primary">{step.title}</h3>
       <p className="mt-2 text-[12px] leading-6 text-txt-secondary">{step.body}</p>
+      <p className="mt-3 text-[10px] text-txt-dim">Press <kbd className="rounded border border-white/10 bg-white/5 px-1 py-[1px] font-mono text-[9px]">ESC</kbd> to exit</p>
 
       <div className="mt-4 flex items-center justify-between">
         <button
