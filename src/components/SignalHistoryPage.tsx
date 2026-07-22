@@ -53,9 +53,10 @@ function fmtTimeAgo(ts: number): string {
 function SignalRow({ signal }: { signal: SignalRecord }) {
   const actionColor = signal.action === "LONG" ? "#00ff88" : signal.action === "SHORT" ? "#ff4444" : "#ff8800";
   const outcomeColor = signal.outcome === "win" ? "#00ff88" : signal.outcome === "loss" ? "#ff4444" : "#64748b";
+  const borderHoverClass = signal.action === "LONG" ? "hover:border-l-[#00ff88]" : signal.action === "SHORT" ? "hover:border-l-[#ff4444]" : "hover:border-l-[#ff8800]";
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 hover:bg-elevated/20 transition-colors">
+    <div className={`flex items-center gap-2 px-4 py-2.5 border-b border-border-default/30 border-l-2 border-l-transparent hover:bg-elevated/20 transition-all duration-150 cursor-default ${borderHoverClass}`}>
       {/* Action badge */}
       <span
         className="min-w-[36px] rounded px-1.5 py-0.5 text-center text-[8px] font-bold uppercase tracking-wider"
@@ -149,14 +150,14 @@ function SignalHistoryHero({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           {[
             { label: "Avg PnL", value: `${stats.avgPnl >= 0 ? "+" : ""}${stats.avgPnl.toFixed(2)}%`, tone: pnlTone },
-            { label: "Profit Factor", value: stats.profitFactor === Infinity ? "∞" : stats.profitFactor.toFixed(2), tone: "text-info" },
+            { label: "Profit Factor", value: stats.profitFactor == null ? "—" : stats.profitFactor === Infinity ? "∞" : stats.profitFactor.toFixed(2), tone: "text-info" },
             { label: "Sharpe", value: stats.sharpeRatio.toFixed(2), tone: stats.sharpeRatio >= 1 ? "text-buy" : "text-txt-primary" },
             { label: "Best / Worst", value: `+${stats.bestTrade.toFixed(1)} / ${stats.worstTrade.toFixed(1)}%`, tone: "text-txt-primary" },
           ].map((item) => (
-            <div key={item.label} className="border-l border-border-default px-3">
+            <div key={item.label} className="rounded-xl border border-border-default/50 bg-elevated/10 p-3 hover:bg-elevated/20 hover:border-border-muted transition-all duration-200 cursor-default">
               <div className="text-[9px] font-semibold uppercase tracking-wider text-txt-faint">{item.label}</div>
               <div className={cx("mt-1 font-mono text-sm font-bold", item.tone)}>{item.value}</div>
             </div>
@@ -164,17 +165,17 @@ function SignalHistoryHero({
         </div>
       </div>
 
-      <div className="mt-4 flex flex-col gap-2 border-t border-border-default pt-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-4 flex flex-col gap-3 border-t border-border-default pt-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[9px] text-txt-faint uppercase tracking-wider">Signal</span>
+          <span className="text-[9px] text-txt-faint uppercase tracking-wider mr-1">Signal</span>
           {(["all", "LONG", "SHORT", "HOLD"] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`cursor-pointer rounded px-2 py-1 text-[10px] transition-colors ${
+              className={`cursor-pointer rounded px-2.5 py-1 text-[10px] transition-all border ${
                 filter === f
-                  ? "border border-accent/30 bg-accent/15 text-accent"
-                  : "text-txt-muted hover:text-txt-secondary"
+                  ? "border-accent/40 bg-accent/12 text-accent font-semibold shadow-sm"
+                  : "border-transparent text-txt-muted hover:text-txt-secondary hover:bg-elevated/45"
               }`}
             >
               {f === "all" ? "All" : f === "HOLD" ? "NO TRADE" : f}
@@ -182,15 +183,15 @@ function SignalHistoryHero({
           ))}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[9px] text-txt-faint uppercase tracking-wider">Outcome</span>
+          <span className="text-[9px] text-txt-faint uppercase tracking-wider mr-1">Outcome</span>
           {(["all", "win", "loss", "pending"] as const).map((f) => (
             <button
               key={f}
               onClick={() => setOutcomeFilter(f)}
-              className={`cursor-pointer rounded px-2 py-1 text-[10px] capitalize transition-colors ${
+              className={`cursor-pointer rounded px-2.5 py-1 text-[10px] capitalize transition-all border ${
                 outcomeFilter === f
-                  ? "border border-accent/30 bg-accent/15 text-accent"
-                  : "text-txt-muted hover:text-txt-secondary"
+                  ? "border-accent/40 bg-accent/12 text-accent font-semibold shadow-sm"
+                  : "border-transparent text-txt-muted hover:text-txt-secondary hover:bg-elevated/45"
               }`}
             >
               {f}

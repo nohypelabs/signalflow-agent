@@ -204,8 +204,8 @@ export default function PaperTradingStats({ stats, balance, trades, currentPrice
       <div className="px-4 py-2 grid grid-cols-1 sm:grid-cols-2 gap-2 border-b border-border-default">
         <div className="flex items-center justify-between">
           <span className="text-[9px] text-txt-faint">Profit Factor</span>
-          <span className={`text-[10px] font-mono ${stats.profitFactor > 1.5 ? "text-[#00ff88]" : stats.profitFactor > 1 ? "text-[#ff8800]" : "text-[#ff4444]"}`}>
-            {stats.profitFactor === Infinity ? "∞" : stats.profitFactor.toFixed(2)}
+          <span className={`text-[10px] font-mono ${stats.profitFactor != null && stats.profitFactor > 1.5 ? "text-[#00ff88]" : stats.profitFactor != null && stats.profitFactor > 1 ? "text-[#ff8800]" : "text-[#ff4444]"}`}>
+            {stats.profitFactor == null ? "—" : stats.profitFactor === Infinity ? "∞" : stats.profitFactor.toFixed(2)}
           </span>
         </div>
         <div className="flex items-center justify-between">

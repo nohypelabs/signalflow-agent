@@ -114,7 +114,7 @@ export default function BacktestPanel() {
           <select
             value={pair}
             onChange={(e) => setPair(e.target.value)}
-            className="w-full bg-inset border border-border-default rounded-lg px-2 py-1.5 text-xs text-txt-primary outline-none"
+            className="w-full bg-inset border border-border-default hover:border-border-muted rounded-lg px-2 py-1.5 text-xs text-txt-primary outline-none cursor-pointer transition-colors"
           >
             {PAIRS.map((p) => (
               <option key={p} value={p}>{p}</option>
@@ -126,7 +126,7 @@ export default function BacktestPanel() {
           <select
             value={tradingType ?? ""}
             onChange={(e) => setTradingType(e.target.value ? e.target.value as TradingType : null)}
-            className="w-full bg-inset border border-border-default rounded-lg px-2 py-1.5 text-xs text-txt-primary outline-none"
+            className="w-full bg-inset border border-border-default hover:border-border-muted rounded-lg px-2 py-1.5 text-xs text-txt-primary outline-none cursor-pointer transition-colors"
           >
             <option value="">All Types</option>
             {TRADING_TYPE_LIST.map((t) => (
@@ -141,7 +141,7 @@ export default function BacktestPanel() {
           <select
             value={resolution}
             onChange={(e) => setResolution(Number(e.target.value))}
-            className="w-full bg-inset border border-border-default rounded-lg px-2 py-1.5 text-xs text-txt-primary outline-none"
+            className="w-full bg-inset border border-border-default hover:border-border-muted rounded-lg px-2 py-1.5 text-xs text-txt-primary outline-none cursor-pointer transition-colors"
           >
             <option value={6}>6H (fast)</option>
             <option value={12}>12H (default)</option>
@@ -153,7 +153,7 @@ export default function BacktestPanel() {
           <button
             onClick={runTest}
             disabled={loading}
-            className="w-full py-1.5 px-3 text-xs font-bold rounded-lg bg-accent/15 text-accent border border-accent/30 hover:bg-accent/25 transition-colors cursor-pointer disabled:opacity-50"
+            className="w-full py-1.5 px-3 text-xs font-bold rounded-lg bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 hover:border-accent/40 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
           >
             {loading ? "Running..." : "Run Backtest"}
           </button>
@@ -189,7 +189,11 @@ export default function BacktestPanel() {
           {/* Key metrics */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             <MetricCard label="Win Rate" value={`${data.winRate}%`} color={data.winRate >= 60 ? "#00E5A8" : data.winRate >= 50 ? "#F59E0B" : "#EF4444"} />
-            <MetricCard label="Profit Factor" value={data.profitFactor === Infinity ? "∞" : data.profitFactor.toFixed(2)} color={data.profitFactor >= 1.5 ? "#00E5A8" : data.profitFactor >= 1 ? "#F59E0B" : "#EF4444"} />
+            <MetricCard
+              label="Profit Factor"
+              value={data.profitFactor == null ? "—" : data.profitFactor === Infinity ? "∞" : data.profitFactor.toFixed(2)}
+              color={data.profitFactor != null && data.profitFactor >= 1.5 ? "#00E5A8" : data.profitFactor != null && data.profitFactor >= 1 ? "#F59E0B" : "#EF4444"}
+            />
             <MetricCard label="Total PnL" value={`${data.totalPnl > 0 ? "+" : ""}${data.totalPnl}%`} color={data.totalPnl >= 0 ? "#00E5A8" : "#EF4444"} />
             <MetricCard label="Max Drawdown" value={`${data.maxDrawdown}%`} color="#EF4444" />
             <MetricCard label="Avg Win" value={`+${data.avgWin.toFixed(2)}%`} color="#00E5A8" />
@@ -218,7 +222,7 @@ export default function BacktestPanel() {
                 <p className="text-[9px] font-semibold text-txt-secondary uppercase tracking-wider mb-2">Lesson Actions</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {data.lessonReport.setupLessons.slice(0, 4).map((lesson) => (
-                    <div key={lesson.setup} className="rounded bg-elevated/40 px-2.5 py-2">
+                    <div key={lesson.setup} className="rounded-lg border border-border-default/50 bg-elevated/30 px-3 py-2 hover:bg-elevated/50 hover:border-border-muted transition-all duration-200 cursor-default">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[10px] font-semibold text-txt-primary uppercase">
                           {lesson.setup.replaceAll("_", " ")}
@@ -228,7 +232,7 @@ export default function BacktestPanel() {
                         </span>
                       </div>
                       <p className="mt-1 text-[9px] text-txt-muted">
-                        {lesson.tradable}/{lesson.total} trades · {lesson.accuracy}% · PF {lesson.profitFactor === Infinity ? "∞" : lesson.profitFactor.toFixed(2)}
+                        {lesson.tradable}/{lesson.total} trades · {lesson.accuracy}% · PF {lesson.profitFactor == null ? "—" : lesson.profitFactor === Infinity ? "∞" : lesson.profitFactor.toFixed(2)}
                       </p>
                     </div>
                   ))}
@@ -313,7 +317,7 @@ export default function BacktestPanel() {
                 {Object.entries(data.setupAccuracy)
                   .sort(([, a], [, b]) => b.total - a.total)
                   .map(([setup, stats]) => (
-                    <div key={setup} className="rounded-lg border border-border-default bg-elevated/40 p-2.5">
+                    <div key={setup} className="rounded-lg border border-border-default bg-elevated/30 p-2.5 hover:bg-elevated/50 hover:border-border-muted transition-all duration-200 cursor-default">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-[10px] font-semibold text-txt-primary uppercase">
                           {setup.replaceAll("_", " ")}
@@ -328,8 +332,8 @@ export default function BacktestPanel() {
                         <SetupMetric label="B" value={stats.blocked ?? 0} className="text-hold" />
                         <SetupMetric
                           label="PF"
-                          value={stats.profitFactor === Infinity ? "∞" : stats.profitFactor.toFixed(2)}
-                          className={stats.profitFactor >= 1.5 ? "text-buy" : stats.profitFactor >= 1 ? "text-hold" : "text-sell"}
+                          value={stats.profitFactor == null ? "—" : stats.profitFactor === Infinity ? "∞" : stats.profitFactor.toFixed(2)}
+                          className={stats.profitFactor != null && stats.profitFactor >= 1.5 ? "text-buy" : stats.profitFactor != null && stats.profitFactor >= 1 ? "text-hold" : "text-sell"}
                         />
                       </div>
                       <div className="mt-2 h-1.5 rounded-full overflow-hidden flex bg-inset">
@@ -368,9 +372,9 @@ export default function BacktestPanel() {
 
 function MetricCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="p-2.5 rounded-lg bg-inset/30 border border-border-default text-center">
+    <div className="p-3 rounded-xl bg-inset/20 hover:bg-inset/40 border border-border-default hover:border-border-muted transition-all duration-200 text-center cursor-default hover:shadow-sm">
       <p className="text-[8px] font-semibold text-txt-tertiary uppercase tracking-wider">{label}</p>
-      <p className="text-sm font-bold font-mono" style={{ color }}>{value}</p>
+      <p className="text-sm font-bold font-mono mt-0.5" style={{ color }}>{value}</p>
     </div>
   );
 }

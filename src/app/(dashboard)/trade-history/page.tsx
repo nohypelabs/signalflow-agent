@@ -22,7 +22,7 @@ export default function TradeHistoryRoute() {
         liveSignals={d.liveSignals}
         paperTrades={paper.trades}
         paperStats={paper.stats}
-        onExecuteSignal={d.setExecutingSignal}
+        onExecuteSignal={d.handleExecuteSignal}
         onCancelOrder={d.cancelOrder}
       />
     </div>

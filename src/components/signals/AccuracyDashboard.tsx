@@ -128,8 +128,8 @@ export default function AccuracyDashboard({ report, loading }: Props) {
         />
         <StatCard
           label="Profit Factor"
-          value={overall.profitFactor === Infinity ? "∞" : overall.profitFactor.toFixed(2)}
-          color={overall.profitFactor >= 1.5 ? "#00E5A8" : overall.profitFactor >= 1 ? "#F59E0B" : "#EF4444"}
+          value={overall.profitFactor == null ? "—" : overall.profitFactor === Infinity ? "∞" : overall.profitFactor.toFixed(2)}
+          color={overall.profitFactor != null && overall.profitFactor >= 1.5 ? "#00E5A8" : overall.profitFactor != null && overall.profitFactor >= 1 ? "#F59E0B" : "#EF4444"}
           subtext={`Avg win: +${overall.avgWinPnl.toFixed(2)}% / Avg loss: -${overall.avgLossPnl.toFixed(2)}%`}
         />
         <StatCard
@@ -164,7 +164,7 @@ export default function AccuracyDashboard({ report, loading }: Props) {
           <div>
             <div className="text-[10px] text-txt-dim">Profit Factor</div>
             <div className="text-lg font-mono font-bold text-txt-primary">
-              {rolling30d.profitFactor === Infinity ? "∞" : rolling30d.profitFactor.toFixed(2)}
+              {rolling30d.profitFactor == null ? "—" : rolling30d.profitFactor === Infinity ? "∞" : rolling30d.profitFactor.toFixed(2)}
             </div>
           </div>
           <div>

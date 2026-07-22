@@ -235,14 +235,14 @@ function Tooltip({
         <button
           type="button"
           onClick={onSkip}
-          className="rounded-[35px] px-3 py-1.5 text-[11px] font-medium text-txt-muted transition-colors hover:text-txt-primary"
+          className="rounded-[35px] px-3 py-1.5 text-[11px] font-medium text-txt-muted cursor-pointer transition-colors hover:text-txt-primary"
         >
           Skip
         </button>
         <button
           type="button"
           onClick={onNext}
-          className="group inline-flex items-center gap-2 rounded-[35px] border border-white/10 bg-[linear-gradient(180deg,#00E5A8,#00b386)] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#04130d] transition-transform hover:scale-[1.02] active:scale-[0.98]"
+          className="group inline-flex items-center gap-2 rounded-[35px] border border-white/10 bg-[linear-gradient(180deg,#00E5A8,#00b386)] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#04130d] cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]"
         >
           {isLast ? "Got it" : "Next"}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">

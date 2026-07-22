@@ -285,7 +285,7 @@ export default function PortfolioPage({ trades, stats, balance, isWalletConnecte
               { label: "Available", value: fmtUSD(balance.available), tone: "text-info" },
               { label: "Margin Used", value: fmtUSD(balance.marginUsed), tone: "text-hold" },
               { label: "Win Rate", value: `${stats.winRate.toFixed(1)}%`, tone: stats.winRate >= 55 ? "text-buy" : stats.winRate >= 45 ? "text-hold" : "text-sell" },
-              { label: "Trades / PF", value: `${stats.totalTrades} / ${stats.profitFactor === Infinity ? "∞" : stats.profitFactor.toFixed(2)}`, tone: "text-txt-primary" },
+               { label: "Trades / PF", value: `${stats.totalTrades} / ${stats.profitFactor == null ? "—" : stats.profitFactor === Infinity ? "∞" : stats.profitFactor.toFixed(2)}`, tone: "text-txt-primary" },
             ].map((item) => (
               <div key={item.label} className="border-l border-border-default px-3">
                 <div className="text-[9px] font-semibold uppercase tracking-wider text-txt-faint">{item.label}</div>

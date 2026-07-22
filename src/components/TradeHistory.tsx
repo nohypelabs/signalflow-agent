@@ -183,7 +183,7 @@ export default function TradeHistory({
             {paperStats && closedPaperTrades.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 border-t border-border-default p-4">
                 <HistoryMetric label="Win Rate" value={`${paperStats.winRate.toFixed(1)}%`} tone={paperStats.winRate >= 50 ? "buy" : "sell"} />
-                <HistoryMetric label="Profit Factor" value={paperStats.profitFactor === Infinity ? "∞" : paperStats.profitFactor.toFixed(2)} tone={paperStats.profitFactor >= 1 ? "buy" : "sell"} />
+                <HistoryMetric label="Profit Factor" value={paperStats.profitFactor == null ? "—" : paperStats.profitFactor === Infinity ? "∞" : paperStats.profitFactor.toFixed(2)} tone={paperStats.profitFactor >= 1 ? "buy" : "sell"} />
                 <HistoryMetric label="Best Trade" value={`+${fmtUsd(paperStats.bestTrade)}`} tone="buy" />
                 <HistoryMetric label="Worst Trade" value={fmtUsd(paperStats.worstTrade)} tone="sell" />
               </div>
