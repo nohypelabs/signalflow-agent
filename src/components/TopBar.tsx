@@ -46,8 +46,8 @@ export default function TopBar({
       <header className="topbar-glass relative mx-2 mt-1 rounded-[35px] px-4">
 
         {latestSignal ? (
-          <div className="flex items-start gap-3 py-1.5">
-            <div className="flex min-w-0 items-center gap-2.5 shrink-0 pt-1">
+          <div className="flex items-center gap-2 sm:gap-3 py-1 sm:py-1.5">
+            <div className="flex min-w-0 items-center gap-2 shrink-0">
               <motion.button
                 type="button"
                 onClick={onMenuClick}
@@ -92,10 +92,11 @@ export default function TopBar({
               <TopSignalHighlight
                 signal={latestSignal}
                 ticker={topTicker}
+                isCompact
               />
             </div>
 
-            <div className="flex items-center gap-2 shrink-0 pt-1">
+            <div className="flex items-center gap-2 shrink-0">
               <WalletButton />
               <AlertBell
                 unreadCount={alerts.unreadCount}

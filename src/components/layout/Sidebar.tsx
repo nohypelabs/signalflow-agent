@@ -173,7 +173,7 @@ export default function Sidebar({
         <motion.button
           onClick={onExpand}
           whileTap={{ scale: 0.92 }}
-          className="glass-control flex h-9 w-9 items-center justify-center rounded-[35px] text-txt-muted outline-none transition-colors hover:text-txt-secondary focus-visible:ring-1 focus-visible:ring-white/20"
+          className="glass-control flex h-9 w-9 cursor-pointer items-center justify-center rounded-[35px] text-txt-muted outline-none transition-colors hover:text-txt-secondary focus-visible:ring-1 focus-visible:ring-white/20"
           title="Expand sidebar"
         >
           <SidebarCollapseIcon size={15} className="rotate-180 opacity-70" />
@@ -187,7 +187,7 @@ export default function Sidebar({
         <motion.button
           onClick={onCollapse}
           whileTap={{ scale: 0.92 }}
-          className="neu-control flex h-9 w-9 shrink-0 items-center justify-center rounded-[35px] text-txt-muted outline-none transition-colors hover:text-txt-secondary focus-visible:ring-1 focus-visible:ring-white/20"
+          className="neu-control flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[35px] text-txt-muted outline-none transition-colors hover:text-txt-secondary focus-visible:ring-1 focus-visible:ring-white/20"
           title="Collapse sidebar"
         >
           <SidebarCollapseIcon size={15} className="opacity-70" />
@@ -239,7 +239,7 @@ export default function Sidebar({
                 title={collapsed ? label : undefined}
                 whileTap={{ scale: 0.97 }}
                 className={`
-                  w-full flex items-center rounded-[35px] relative outline-none
+                  w-full flex items-center rounded-[35px] relative outline-none cursor-pointer
                   ${collapsed
                     ? "justify-center px-0 py-2.5"
                     : "gap-2.5 px-2.5 py-[7px]"
@@ -331,7 +331,7 @@ export default function Sidebar({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer"
               onClick={onMobileClose}
             />
             <motion.aside
@@ -350,7 +350,7 @@ export default function Sidebar({
                 <motion.button
                   onClick={onMobileClose}
                   whileTap={{ scale: 0.9 }}
-                  className="text-txt-muted hover:text-txt-primary transition-colors p-1 rounded-md hover:bg-[#ffffff08] outline-none focus-visible:ring-1 focus-visible:ring-accent/50"
+                  className="text-txt-muted hover:text-txt-primary cursor-pointer transition-colors p-1 rounded-md hover:bg-[#ffffff08] outline-none focus-visible:ring-1 focus-visible:ring-accent/50"
                 >
                   <CloseIcon size={18} />
                 </motion.button>
