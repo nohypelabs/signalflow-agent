@@ -1,7 +1,7 @@
 "use client";
 
-import { redirect } from "next/navigation";
+import SignalHistoryPage from "@/components/SignalHistoryPage";
 
-export default function SignalHistoryPage() {
-  redirect("/signals");
+export default function SignalHistoryRoute() {
+  return <SignalHistoryPage />;
 }

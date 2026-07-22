@@ -13,7 +13,7 @@ const tabs = [
   { href: "/dashboard", label: "Dashboard", Icon: HomeIcon },
   { href: "/signals", label: "Signals", Icon: SignalIcon },
   { href: "/trading", label: "Trading", Icon: TradeIcon },
-  { href: "/performance", label: "Performance", Icon: PerformanceIcon },
+  { href: "/performance", label: "Backtesting", Icon: PerformanceIcon },
   { href: "/settings", label: "Settings", Icon: SettingsIcon },
 ];
 

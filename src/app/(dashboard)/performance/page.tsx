@@ -1,7 +1,7 @@
 "use client";
 
-import { redirect } from "next/navigation";
+import PerformancePage from "@/components/PerformancePage";
 
 export default function PerformanceRoute() {
-  redirect("/signals");
+  return <PerformancePage />;
 }

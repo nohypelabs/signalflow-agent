@@ -7,6 +7,8 @@ import {
   HomeIcon,
   SignalIcon,
   SettingsIcon,
+  PerformanceIcon,
+  HistoryIcon,
   CloseIcon,
   SidebarCollapseIcon,
 } from "@/components/ui/icons";
@@ -18,6 +20,13 @@ const groups: { label: string; items: { href: string; label: string; Icon: React
     items: [
       { href: "/dashboard", label: "Dashboard", Icon: HomeIcon },
       { href: "/signals", label: "Signals", Icon: SignalIcon, tour: "signals-tab" },
+    ],
+  },
+  {
+    label: "Analytics",
+    items: [
+      { href: "/signal-history", label: "Signal History", Icon: HistoryIcon },
+      { href: "/performance", label: "Backtesting", Icon: PerformanceIcon },
     ],
   },
   {
