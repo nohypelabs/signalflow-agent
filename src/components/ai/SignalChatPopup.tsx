@@ -4,6 +4,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '@/lib/dashboard-context';
 import { useTradingType } from '@/lib/hooks/useTradingType';
+import { usePathname } from 'next/navigation';
+import { PAGE_TOURS } from '@/lib/tours';
 import TypewriterText from './TypewriterText';
 
 interface Message {
@@ -69,7 +71,7 @@ export default function SignalChatPopup() {
   const [hydrated, setHydrated] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [hovering, setHovering] = useState(false);
-  const [tourHovering, setTourHovering] = useState(false);
+  const pathname = usePathname();
   const [typingIndex, setTypingIndex] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -254,52 +256,6 @@ export default function SignalChatPopup() {
         )}
       </AnimatePresence>
 
-      {/* Floating Tour Button (Static, stacked above Dora AI) */}
-      <AnimatePresence>
-        {!open && (
-          <motion.div
-            initial={{ opacity: 0, y: 15, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 15, scale: 0.8 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            className="fixed bottom-20 right-6 z-50"
-            onMouseEnter={() => setTourHovering(true)}
-            onMouseLeave={() => setTourHovering(false)}
-          >
-            {/* Tour Hover tooltip */}
-            <AnimatePresence>
-              {tourHovering && (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.15 }}
-                  className="ticker-selector-glass-soft absolute right-14 top-2.5 whitespace-nowrap px-2.5 py-1 text-[11px] text-txt-primary shadow-lg"
-                >
-                  Start Product Tour
-                  <div className="absolute top-2.5 -right-1 h-1.5 w-1.5 rotate-45 border-t border-r border-white/10 bg-[#2e3440]" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <motion.button
-              onClick={() => {
-                window.dispatchEvent(new Event("start-signalflow-tour"));
-              }}
-              className="ticker-selector-glass flex h-12 w-12 items-center justify-center text-[#f59e0b] hover:text-[#f59e0b] shadow-lg shadow-black/20 hover:border-[#f59e0b]/40 transition-colors cursor-pointer"
-              whileTap={{ scale: 0.92 }}
-              whileHover={{ scale: 1.05 }}
-              aria-label="Start Product Tour"
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-              </svg>
-            </motion.button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Floating Dora AI Button */}
       <div
         className="fixed bottom-6 right-6 z-50"
@@ -412,7 +368,8 @@ export default function SignalChatPopup() {
                   <button
                     onClick={() => {
                       setOpen(false);
-                      window.dispatchEvent(new Event("start-signalflow-tour"));
+                      const tourConfig = PAGE_TOURS[pathname];
+                      window.dispatchEvent(new Event(tourConfig?.eventName ?? "start-signalflow-tour"));
                     }}
                     className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-accent/10 border border-accent/20 hover:bg-accent/15 transition-all text-xs text-accent font-semibold cursor-pointer"
                   >

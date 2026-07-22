@@ -188,11 +188,11 @@ export default function SignalsPage({
         />
 
         {/* Summary cards — total stats at top */}
-        {filteredSignals.length > 0 && <SignalSummaryCards signals={filteredSignals} />}
+        {filteredSignals.length > 0 && <div data-tour="signals-summary"><SignalSummaryCards signals={filteredSignals} /></div>}
 
         {/* Active strategy policy */}
         {activeStrategy && (
-          <div className="signals-glass-card flex flex-wrap items-center gap-2.5 px-3.5 py-2.5 sm:px-4">
+          <div data-tour="signals-strategy" className="signals-glass-card flex flex-wrap items-center gap-2.5 px-3.5 py-2.5 sm:px-4">
             <div className="flex-1 min-w-[220px]">
               <span className="text-[10px] font-semibold uppercase tracking-wide text-txt-dim">
                 Active Strategy Policy
@@ -234,7 +234,7 @@ export default function SignalsPage({
         </div>
 
         {focusedSignal && (
-          <section className="signals-glass-card overflow-hidden">
+          <section data-tour="signals-evidence" className="signals-glass-card overflow-hidden">
             <div className="border-b border-border-default px-4 py-3 sm:px-5">
               <div className="flex flex-col gap-3">
                 <div className="min-w-0">
@@ -322,7 +322,7 @@ export default function SignalsPage({
 
         {/* Filters */}
         {liveSignals.length > 0 && (
-          <SignalFilters
+          <div data-tour="signals-filters"><SignalFilters
             search={search}
             onSearchChange={setSearch}
             typeFilter={typeFilter}
@@ -334,6 +334,7 @@ export default function SignalsPage({
             viewMode={viewMode}
             onViewModeChange={setViewMode}
           />
+        </div>
         )}
 
         {/* Signal grid / compact list */}
@@ -383,7 +384,7 @@ export default function SignalsPage({
           </div>
         ) : viewMode === "cards" ? (
           /* Cards view */
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <div data-tour="signals-grid" className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {filteredSignals.map((s) => {
               const { liveDims: coinDims, overallScore, coinWeights, coinCapped } = getCoinData(s);
               return (

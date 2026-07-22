@@ -133,7 +133,7 @@ function SignalHistoryHero({
   const pnlTone = stats.avgPnl >= 0 ? "text-buy" : "text-sell";
 
   return (
-    <section className="neu-card p-5">
+    <section data-tour="history-hero" className="neu-card p-5">
       <div className="grid gap-4 lg:grid-cols-[1.1fr_1.4fr] lg:items-end">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-txt-secondary">Signal History</p>
@@ -165,7 +165,7 @@ function SignalHistoryHero({
         </div>
       </div>
 
-      <div className="mt-4 flex flex-col gap-3 border-t border-border-default pt-3 sm:flex-row sm:items-center sm:justify-between">
+      <div data-tour="history-filters" className="mt-4 flex flex-col gap-3 border-t border-border-default pt-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[9px] text-txt-faint uppercase tracking-wider mr-1">Signal</span>
           {(["all", "LONG", "SHORT", "HOLD"] as const).map((f) => (
@@ -328,7 +328,7 @@ export default function SignalHistoryPage() {
       />
 
       {/* Signal List */}
-      <Card padding="none" className="overflow-hidden">
+      <div data-tour="history-list"><Card padding="none" className="overflow-hidden">
         <div className="hidden md:grid grid-cols-[55px_95px_125px_75px_75px_1fr] px-4 py-2 bg-elevated/10 border-b border-border-default items-center gap-4 text-txt-secondary font-semibold">
           <span className="text-[9px] text-txt-faint uppercase tracking-wider">Type</span>
           <span className="text-[9px] text-txt-faint uppercase tracking-wider">Pair</span>
@@ -369,7 +369,7 @@ export default function SignalHistoryPage() {
             <p className="text-xs text-txt-muted">No signals match the selected filters</p>
           </div>
         )}
-      </Card>
+      </Card></div>
     </div>
   );
 }

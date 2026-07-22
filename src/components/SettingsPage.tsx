@@ -197,7 +197,7 @@ export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChan
       </div>
 
       {/* ── AI Agent Configuration ── */}
-      <div className="space-y-4">
+      <div data-tour="settings-agent" className="space-y-4">
         <div>
           <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider">AI Agent Selection</h3>
           <p className="text-[11px] text-txt-dim mt-0.5">Choose which intelligence engine backbones the strategy generator.</p>
@@ -283,7 +283,7 @@ export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChan
             bgGradient: "from-slate-500/10 to-transparent",
           };
           return (
-            <Card padding="lg" className="space-y-5 relative overflow-hidden" accent={ap.color}>
+            <Card data-tour="settings-profile" padding="lg" className="space-y-5 relative overflow-hidden" accent={ap.color}>
               {/* Background blur highlight */}
               <div className="absolute -right-24 -top-24 w-48 h-48 rounded-full blur-[100px] opacity-10 pointer-events-none" style={{ backgroundColor: ap.color }} />
 
@@ -434,7 +434,7 @@ export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChan
       </div>
 
       {/* ── API Connections ── */}
-      <div>
+      <div data-tour="settings-connections">
         <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider mb-3">API Connections</h3>
         <Card padding="none" className="overflow-hidden">
           {loading ? (
@@ -474,7 +474,7 @@ export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChan
       </div>
 
       {/* ── General Settings ── */}
-      <div>
+      <div data-tour="settings-general">
         <h3 className="text-xs font-semibold text-txt-secondary uppercase tracking-wider mb-3">General</h3>
         <Card padding="none" className="overflow-hidden divide-y divide-border-default">
           {[

@@ -38,7 +38,7 @@ function ShellWithProps({ children }: { children: React.ReactNode }) {
     >
       {children}
     </AppShell>
-    {isDashboard && <ProductTour />}
+    <ProductTour />
     <SignalChatPopup />
     </>
   );

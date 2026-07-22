@@ -2,50 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-
-export const TOUR_STORAGE_KEY = "signalflow-product-tour-done";
-
-interface TourStep {
-  target: string; // data-tour attribute value
-  title: string;
-  body: string;
-  placement?: "top" | "bottom" | "left" | "right";
-  note?: string;
-}
-
-const STEPS: TourStep[] = [
-  {
-    target: "market-selector",
-    title: "Pick your market",
-    body: "Start here. Select the pair you want to track — SoDEX tape, AI confluence and risk state all scope to this symbol.",
-    placement: "bottom",
-  },
-  {
-    target: "decision-score",
-    title: "The decision score",
-    body: "Live signal for the selected pair. Confidence, action (LONG / SHORT / HOLD) and a volatility-adjusted plan — scored by the 5-layer engine.",
-    placement: "bottom",
-  },
-  {
-    target: "layer-breakdown",
-    title: "Why this signal",
-    body: "Every signal is traceable. Trend, momentum, volatility, volume and structure factors — plus regime and the exact confluence math.",
-    placement: "top",
-  },
-  {
-    target: "signal-log",
-    title: "Live signal log",
-    body: "A rolling feed of generated signals across the market. Click any row to focus its evidence and chart.",
-    placement: "top",
-  },
-  {
-    target: "signals-tab",
-    title: "The Signals workspace",
-    body: "Switch to Signals for the full grid: summary cards, filters, AI reasoning drawer and your trading-type policy. That's the other half of SignalFlow.",
-    placement: "right",
-    note: "Use the sidebar » Signals",
-  },
-];
+import { usePathname } from "next/navigation";
+import { PAGE_TOURS } from "@/lib/tours";
+import type { TourStep } from "@/lib/tours";
 
 interface Rect {
   top: number;
@@ -63,40 +22,41 @@ function getRect(target: string): Rect | null {
 }
 
 export default function ProductTour() {
+  const pathname = usePathname();
+  const config = PAGE_TOURS[pathname];
   const [active, setActive] = useState(false);
   const [step, setStep] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
+  const [buttonHovering, setButtonHovering] = useState(false);
 
+  // Listen for manual trigger event
   useEffect(() => {
-    const handleStart = () => {
-      setActive(true);
-      setStep(0);
-    };
-    window.addEventListener("start-signalflow-tour", handleStart);
-    return () => {
-      window.removeEventListener("start-signalflow-tour", handleStart);
-    };
-  }, []);
+    if (!config) return;
+    const handler = () => { setActive(true); setStep(0); };
+    window.addEventListener(config.eventName, handler);
+    return () => window.removeEventListener(config.eventName, handler);
+  }, [config]);
 
+  // Auto-trigger on first visit
   useEffect(() => {
+    if (!config) return;
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("tour") === "1") {
         setActive(true);
         return;
       }
-      if (localStorage.getItem(TOUR_STORAGE_KEY) === "1") return;
-    } catch {
-      // storage blocked — still allow tour
-    }
+      if (localStorage.getItem(config.storageKey) === "1") return;
+    } catch {}
     const t = setTimeout(() => setActive(true), 900);
     return () => clearTimeout(t);
-  }, []);
+  }, [config]);
 
   const measure = useCallback(() => {
-    const current = STEPS[step];
+    if (!config) return;
+    const current = config.steps[step];
     setRect(getRect(current.target));
-  }, [step]);
+  }, [config, step]);
 
   useEffect(() => {
     if (!active) return;
@@ -112,70 +72,116 @@ export default function ProductTour() {
 
   const finish = useCallback(() => {
     setActive(false);
-    try {
-      localStorage.setItem(TOUR_STORAGE_KEY, "1");
-    } catch {
-      // non-critical
-    }
-  }, []);
+    if (!config) return;
+    try { localStorage.setItem(config.storageKey, "1"); } catch {}
+  }, [config]);
 
   const next = useCallback(() => {
-    if (step < STEPS.length - 1) setStep((s) => s + 1);
+    if (!config) return;
+    if (step < config.steps.length - 1) setStep((s) => s + 1);
     else finish();
-  }, [step, finish]);
+  }, [config, step, finish]);
 
   const skip = useCallback(() => finish(), [finish]);
 
-  const current = STEPS[step];
+  if (!config) return null;
+
+  const current = config.steps[step];
+  const total = config.steps.length;
   const isSidebarStep = current.target === "signals-tab";
   const pad = 8;
 
   return (
-    <AnimatePresence>
-      {active && (
-        <motion.div
-          className="fixed inset-0 z-[120]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.25 }}
-        >
-          {/* Dim layer with spotlight cutout (skip for sidebar step — no element to highlight) */}
-          {!isSidebarStep && rect && (
-            <motion.div
-              key={`spot-${step}`}
-              className="absolute inset-0"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              style={{
-                background: `rgba(3,7,18,0.78)`,
-                clipPath: `polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0,
-                  ${rect.left - pad}px ${rect.top - pad}px,
-                  ${rect.left - pad}px ${rect.top + rect.height + pad}px,
-                  ${rect.left + rect.width + pad}px ${rect.top + rect.height + pad}px,
-                  ${rect.left + rect.width + pad}px ${rect.top - pad}px,
-                  ${rect.left - pad}px ${rect.top - pad}px)`,
-                pointerEvents: "none",
-              }}
-            />
-          )}
-          {isSidebarStep && (
-            <div className="absolute inset-0 bg-[rgba(3,7,18,0.78)]" />
-          )}
+    <>
+      {/* Floating tour button */}
+      <AnimatePresence>
+        {!active && (
+          <motion.div
+            initial={{ opacity: 0, y: 15, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 15, scale: 0.8 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className="fixed bottom-20 right-6 z-50"
+            onMouseEnter={() => setButtonHovering(true)}
+            onMouseLeave={() => setButtonHovering(false)}
+          >
+            <AnimatePresence>
+              {buttonHovering && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.15 }}
+                  className="ticker-selector-glass-soft absolute right-14 top-2.5 whitespace-nowrap px-2.5 py-1 text-[11px] text-txt-primary shadow-lg"
+                >
+                  {config.buttonLabel}
+                  <div className="absolute top-2.5 -right-1 h-1.5 w-1.5 rotate-45 border-t border-r border-white/10 bg-[#2e3440]" />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          {/* Tooltip */}
-          <Tooltip
-            step={current}
-            index={step}
-            total={STEPS.length}
-            rect={rect}
-            isSidebar={isSidebarStep}
-            onNext={next}
-            onSkip={skip}
-          />
-        </motion.div>
-      )}
-    </AnimatePresence>
+            <motion.button
+              onClick={() => { setActive(true); setStep(0); }}
+              className="ticker-selector-glass flex h-12 w-12 items-center justify-center text-[#f59e0b] hover:text-[#f59e0b] shadow-lg shadow-black/20 hover:border-[#f59e0b]/40 transition-colors cursor-pointer"
+              whileTap={{ scale: 0.92 }}
+              whileHover={{ scale: 1.05 }}
+              aria-label={config.buttonLabel}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Tour overlay */}
+      <AnimatePresence>
+        {active && (
+          <motion.div
+            className="fixed inset-0 z-[120]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            {!isSidebarStep && rect && (
+              <motion.div
+                key={`spot-${step}`}
+                className="absolute inset-0"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                style={{
+                  background: `rgba(3,7,18,0.78)`,
+                  clipPath: `polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0,
+                    ${rect.left - pad}px ${rect.top - pad}px,
+                    ${rect.left - pad}px ${rect.top + rect.height + pad}px,
+                    ${rect.left + rect.width + pad}px ${rect.top + rect.height + pad}px,
+                    ${rect.left + rect.width + pad}px ${rect.top - pad}px,
+                    ${rect.left - pad}px ${rect.top - pad}px)`,
+                  pointerEvents: "none",
+                }}
+              />
+            )}
+            {isSidebarStep && (
+              <div className="absolute inset-0 bg-[rgba(3,7,18,0.78)]" />
+            )}
+
+            <Tooltip
+              step={current}
+              index={step}
+              total={total}
+              rect={rect}
+              isSidebar={isSidebarStep}
+              onNext={next}
+              onSkip={skip}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 

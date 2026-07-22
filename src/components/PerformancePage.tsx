@@ -240,7 +240,7 @@ export default function PerformancePage({
   return (
     <div className="space-y-4">
       {/* ── Hero: Big stat + 4 key metrics ── */}
-      <Card padding="lg" className="!rounded-[35px]">
+      <Card data-tour="perf-hero" padding="lg" className="!rounded-[35px]">
         <div className="grid gap-5 lg:grid-cols-[1.1fr_1.4fr] lg:items-end">
           <div>
             <div className="flex items-center gap-2">
@@ -284,10 +284,10 @@ export default function PerformancePage({
       </Card>
 
       {/* ── Backtest CTA — right below hero ── */}
-      <BacktestPanel />
+      <div data-tour="perf-backtest"><BacktestPanel /></div>
 
       {/* ── Equity Curve + Streak/Drawdown (2-column) ── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
+      <div data-tour="perf-equity" className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
         {/* Equity Curve */}
         {equityCurve.length > 2 && (
           <Card padding="lg">
@@ -382,7 +382,7 @@ export default function PerformancePage({
       </div>
 
       {/* ── 30D Returns + Coin Table ── */}
-      <div>
+      <div data-tour="perf-returns">
         <Card padding="lg">
           <h4 className="text-xs font-semibold text-txt-primary mb-3">30-Day Returns</h4>
           <div className="flex items-end gap-3 md:gap-6 h-40 overflow-x-auto scrollbar-none">
@@ -442,7 +442,7 @@ export default function PerformancePage({
 
       {/* ── Collapsible Details ── */}
       {historyHydrated && (
-        <div className="space-y-3">
+        <div data-tour="perf-details" className="space-y-3">
           {/* Resolution window selector */}
           <div className="flex items-center gap-2">
             <span className="text-[9px] text-txt-dim">Resolve signals after:</span>
