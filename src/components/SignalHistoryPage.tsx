@@ -133,7 +133,7 @@ function SignalHistoryHero({
   const pnlTone = stats.avgPnl >= 0 ? "text-buy" : "text-sell";
 
   return (
-    <section className="rounded-xl border border-border-default bg-inset/70 p-4">
+    <section className="neu-card p-5">
       <div className="grid gap-4 lg:grid-cols-[1.1fr_1.4fr] lg:items-end">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-txt-secondary">Signal History</p>
@@ -157,7 +157,7 @@ function SignalHistoryHero({
             { label: "Sharpe", value: stats.sharpeRatio.toFixed(2), tone: stats.sharpeRatio >= 1 ? "text-buy" : "text-txt-primary" },
             { label: "Best / Worst", value: `+${stats.bestTrade.toFixed(1)} / ${stats.worstTrade.toFixed(1)}%`, tone: "text-txt-primary" },
           ].map((item) => (
-            <div key={item.label} className="rounded-xl border border-border-default/50 bg-elevated/10 p-3 hover:bg-elevated/20 hover:border-border-muted transition-all duration-200 cursor-default">
+            <div key={item.label} className="neu-card rounded-xl p-3 hover:bg-elevated/20 hover:shadow-md transition-all duration-200 cursor-default text-center">
               <div className="text-[9px] font-semibold uppercase tracking-wider text-txt-faint">{item.label}</div>
               <div className={cx("mt-1 font-mono text-sm font-bold", item.tone)}>{item.value}</div>
             </div>

@@ -372,7 +372,7 @@ export default function BacktestPanel() {
 
 function MetricCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="p-3 rounded-xl bg-inset/20 hover:bg-inset/40 border border-border-default hover:border-border-muted transition-all duration-200 text-center cursor-default hover:shadow-sm">
+    <div className="neu-card rounded-xl p-3 transition-all duration-200 text-center cursor-default hover:bg-elevated/20 hover:shadow-md">
       <p className="text-[8px] font-semibold text-txt-tertiary uppercase tracking-wider">{label}</p>
       <p className="text-sm font-bold font-mono mt-0.5" style={{ color }}>{value}</p>
     </div>
