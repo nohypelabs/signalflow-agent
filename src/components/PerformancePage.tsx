@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import type { RecordedSignal, ResolutionWindow, CalibrationBucket, EquityPoint, DrawdownResult, StreakInfo, CoinAccuracy, FrequencyStats } from "@/lib/hooks/useSignalHistory";
 import { usePerformance } from "@/lib/hooks/usePerformance";
 import { useSignals } from "@/lib/hooks/useSignals";
+import { useDashboard } from "@/lib/dashboard-context";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Skeleton from "@/components/ui/Skeleton";
@@ -190,20 +191,21 @@ interface Props {
 
 /* ── Main Component ── */
 
-export default function PerformancePage({
-  signalHistory = [],
-  signalStats,
-  historyHydrated = true,
-  calibration = [],
-  equityCurve = [],
-  drawdown,
-  streaks,
-  perCoin = [],
-  frequency,
-  resolutionWindow = "24h",
-  setResolutionWindow,
-  exportCSV,
-}: Props) {
+export default function PerformancePage(props: Props) {
+  const d = useDashboard();
+
+  const signalHistory = props.signalHistory ?? d.history ?? [];
+  const signalStats = props.signalStats ?? d.signalStats;
+  const historyHydrated = props.historyHydrated ?? d.historyHydrated ?? true;
+  const calibration = props.calibration ?? d.calibration ?? [];
+  const equityCurve = props.equityCurve ?? d.equityCurve ?? [];
+  const drawdown = props.drawdown ?? d.drawdown;
+  const streaks = props.streaks ?? d.streaks;
+  const perCoin = props.perCoin ?? d.perCoin ?? [];
+  const frequency = props.frequency ?? d.frequency;
+  const resolutionWindow = props.resolutionWindow ?? d.resolutionWindow ?? "24h";
+  const setResolutionWindow = props.setResolutionWindow ?? d.setResolutionWindow;
+  const exportCSV = props.exportCSV ?? d.exportCSV;
   const { coins, loading, error } = usePerformance();
   const { data: signalsData } = useSignals();
 
