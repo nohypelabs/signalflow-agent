@@ -14,7 +14,8 @@ import TopSignalHighlight from "./signals/TopSignalHighlight";
 import SignalCard from "./signals/SignalCard";
 import SignalCompactRow from "./signals/SignalCompactRow";
 import SignalAnalysisDrawer from "./signals/SignalAnalysisDrawer";
-import TradingChart from "./TradingChart";
+import dynamic from "next/dynamic";
+const TradingChart = dynamic(() => import("./TradingChart"), { ssr: false });
 
 interface Props {
   tickers?: SoDEXTicker[] | null;

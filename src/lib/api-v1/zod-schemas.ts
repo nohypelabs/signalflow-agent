@@ -1,8 +1,5 @@
-/**
- * Zod validation schemas for all V1 API query parameters.
- */
-
 import { z } from "zod";
+import { symbolSchema, limitSchema } from "../validation/index";
 
 // ─── Common ───
 
@@ -50,7 +47,7 @@ export const systemDataQuerySchema = z.object({
 export const signalsQuerySchema = z.object({
   type: z.enum(TRADING_TYPES).optional(),
   strategy: z.enum(["confluence", "liquidityFlow"]).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: limitSchema.max(100).default(20),
 });
 
 // ─── Signals Analyze ───
@@ -66,22 +63,22 @@ export const signalsAnalyzeBodySchema = z.object({
 // ─── Market Tickers ───
 
 export const marketTickersQuerySchema = z.object({
-  symbol: z.string().max(50).optional(),
+  symbol: symbolSchema.optional(),
 });
 
 // ─── Market Klines ───
 
 export const marketKlinesQuerySchema = z.object({
-  symbol: z.string().min(1).max(50),
+  symbol: symbolSchema,
   interval: z.string().max(10).default("1h"),
-  limit: z.coerce.number().int().min(1).max(1000).default(100),
+  limit: limitSchema.default(100),
 });
 
 // ─── Market Orderbook ───
 
 export const marketOrderbookQuerySchema = z.object({
-  symbol: z.string().min(1).max(50),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  symbol: symbolSchema,
+  limit: limitSchema.max(100).default(20),
 });
 
 // ─── ETF Flow ───
@@ -89,7 +86,7 @@ export const marketOrderbookQuerySchema = z.object({
 export const etfFlowQuerySchema = z.object({
   symbol: z.string().max(20).optional(),
   country: z.string().max(10).optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(30),
+  limit: limitSchema.max(200).default(30),
 });
 
 // ─── Macro ───
@@ -116,7 +113,7 @@ export const performanceQuerySchema = z.object({
 
 export const correlationQuerySchema = z.object({
   symbols: z.string().min(1).max(200),
-  limit: z.coerce.number().int().min(10).max(500).default(100),
+  limit: limitSchema.default(100),
   timeframe: z.string().max(10).default("1h"),
 });
 
@@ -133,7 +130,7 @@ export const screenerQuerySchema = z.object({
 // ─── Funding ───
 
 export const fundingQuerySchema = z.object({
-  symbol: z.string().max(50).optional(),
+  symbol: symbolSchema.optional(),
 });
 
 // ─── Backtest ───
