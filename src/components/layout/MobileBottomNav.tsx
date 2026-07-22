@@ -31,8 +31,8 @@ export default function MobileBottomNav() {
               key={href}
               onClick={() => router.push(href)}
               className={`
-                flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors relative
-                ${isActive ? "text-accent" : "text-txt-dim"}
+                flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors relative cursor-pointer
+                ${isActive ? "text-accent" : "text-txt-dim hover:text-txt-secondary"}
               `}
             >
               {isActive && (

@@ -65,7 +65,7 @@ export default function Card({
   }
 
   return (
-    <div className={baseClass} style={accentStyle} onClick={onClick} {...rest}>
+    <div className={`${baseClass} ${onClick ? "cursor-pointer" : ""}`} style={accentStyle} onClick={onClick} {...rest}>
       {children}
     </div>
   );
