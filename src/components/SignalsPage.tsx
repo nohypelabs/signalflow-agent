@@ -187,6 +187,9 @@ export default function SignalsPage({
           timestamp={lastUpdated}
         />
 
+        {/* Summary cards — total stats at top */}
+        {filteredSignals.length > 0 && <SignalSummaryCards signals={filteredSignals} />}
+
         {/* Active strategy policy */}
         {activeStrategy && (
           <div className="signals-glass-card flex flex-wrap items-center gap-2.5 px-3.5 py-2.5 sm:px-4">
@@ -229,9 +232,6 @@ export default function SignalsPage({
             </div>
           </div>
         </div>
-
-        {/* Summary cards */}
-        {filteredSignals.length > 0 && <SignalSummaryCards signals={filteredSignals} />}
 
         {focusedSignal && (
           <section className="signals-glass-card overflow-hidden">
