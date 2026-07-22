@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import AlertBell from "./AlertBell";
+import WalletButton from "./WalletButton";
 import TopSignalHighlight from "@/components/signals/TopSignalHighlight";
 import { useAlerts } from "@/lib/hooks/useAlerts";
 import { pairToSodexSymbol } from "@/lib/pair-map";
@@ -94,7 +95,8 @@ export default function TopBar({
               />
             </div>
 
-            <div className="flex items-start gap-2 shrink-0 pt-1">
+            <div className="flex items-center gap-2 shrink-0 pt-1">
+              <WalletButton />
               <AlertBell
                 unreadCount={alerts.unreadCount}
                 triggeredAlerts={alerts.triggeredAlerts}
@@ -150,6 +152,7 @@ export default function TopBar({
             <span className="text-xs text-txt-muted">Waiting for signal data...</span>
 
             <div className="flex items-center gap-2 shrink-0">
+              <WalletButton />
               <AlertBell
                 unreadCount={alerts.unreadCount}
                 triggeredAlerts={alerts.triggeredAlerts}

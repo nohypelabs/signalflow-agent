@@ -95,7 +95,7 @@ export default function DecisionScoreHero({
                 type="button"
                 onClick={onGenerate}
                 disabled={analyzing}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-[35px] px-5 py-3 text-[13px] font-semibold transition-all active:scale-[0.99] disabled:cursor-not-allowed sm:min-w-[200px]"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-[35px] px-5 py-3 text-[13px] font-semibold transition-all hover:scale-[1.02] active:scale-[0.99] disabled:cursor-not-allowed sm:min-w-[200px]"
                 style={{
                   background: "var(--bg-surface)",
                   boxShadow: analyzing

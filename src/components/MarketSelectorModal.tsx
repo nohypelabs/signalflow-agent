@@ -480,7 +480,7 @@ export default function MarketSelectorModal({ isOpen, onClose, onSelectMarket, c
                   </button>
                 </div>
                 <div
-                  className={`ticker-selector-glass-soft md:hidden px-3 py-3 mb-2 ${isActive ? "bg-accent/8 border-accent/30" : "hover:bg-white/[0.08]"}`}
+                  className={`ticker-selector-glass-soft md:hidden px-3 py-3 mb-2 cursor-pointer ${isActive ? "bg-accent/8 border-accent/30" : "hover:bg-white/[0.08]"}`}
                   onClick={() => { onSelectMarket(m.displayPair); onClose(); }}
                 >
                   <div className="flex items-start justify-between gap-2">
