@@ -69,6 +69,7 @@ export default function SignalChatPopup() {
   const [hydrated, setHydrated] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [hovering, setHovering] = useState(false);
+  const [tourHovering, setTourHovering] = useState(false);
   const [typingIndex, setTypingIndex] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -255,48 +256,88 @@ export default function SignalChatPopup() {
 
       {/* Floating button with hover tooltip */}
       <div
-        className="fixed bottom-6 right-6 z-50"
+        className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-2.5"
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
       >
-        {/* Hover tooltip */}
+        {/* Tour button */}
         <AnimatePresence>
-          {hovering && !open && !showHint && (
+          {hovering && !open && (
             <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 5 }}
-              transition={{ duration: 0.15 }}
-              className="ticker-selector-glass-soft absolute -top-10 right-0 whitespace-nowrap px-2.5 py-1 text-[11px] text-txt-primary shadow-lg"
+              initial={{ opacity: 0, y: 15, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 15, scale: 0.8 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="relative"
+              onMouseEnter={() => setTourHovering(true)}
+              onMouseLeave={() => setTourHovering(false)}
             >
-              Ask Dora AI
-              <div className="absolute -bottom-1 right-5 h-2 w-2 rotate-45 border-r border-b border-white/10 bg-[#2e3440]" />
+              {/* Tour Hover tooltip */}
+              {tourHovering && (
+                <div className="ticker-selector-glass-soft absolute right-12 top-1.5 whitespace-nowrap px-2.5 py-1 text-[11px] text-txt-primary shadow-lg">
+                  Start Product Tour
+                  <div className="absolute top-2.5 -right-1 h-1.5 w-1.5 rotate-45 border-t border-r border-white/10 bg-[#2e3440]" />
+                </div>
+              )}
+              <motion.button
+                onClick={() => {
+                  window.dispatchEvent(new Event("start-signalflow-tour"));
+                }}
+                className="ticker-selector-glass flex h-9 w-9 items-center justify-center text-accent/80 hover:text-accent shadow-lg shadow-black/20 hover:border-accent/35 cursor-pointer"
+                whileTap={{ scale: 0.92 }}
+                whileHover={{ scale: 1.05 }}
+                aria-label="Start Product Tour"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </motion.button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <motion.button
-          onClick={() => { setOpen(!open); dismissHint(); }}
-          className="ticker-selector-glass relative flex h-12 w-12 items-center justify-center text-accent shadow-lg shadow-black/20 transition-shadow hover:border-accent/35"
-          whileTap={{ scale: 0.92 }}
-          whileHover={{ scale: 1.05 }}
-          aria-label={open ? 'Close chat' : 'Ask Dora AI'}
-        >
-          {/* Pulse ring animation */}
-          {!open && (
-            <span className="absolute inset-1 rounded-full bg-accent/15 animate-ping" style={{ animationDuration: '2s' }} />
-          )}
-          {open ? (
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="4" y1="4" x2="16" y2="16" />
-              <line x1="16" y1="4" x2="4" y2="16" />
-            </svg>
-          ) : (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-          )}
-        </motion.button>
+        {/* Hover tooltip for main button */}
+        <div className="relative">
+          <AnimatePresence>
+            {hovering && !open && !showHint && (
+              <motion.div
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 5 }}
+                transition={{ duration: 0.15 }}
+                className="ticker-selector-glass-soft absolute -top-10 right-0 whitespace-nowrap px-2.5 py-1 text-[11px] text-txt-primary shadow-lg"
+              >
+                Ask Dora AI
+                <div className="absolute -bottom-1 right-5 h-2 w-2 rotate-45 border-r border-b border-white/10 bg-[#2e3440]" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <motion.button
+            onClick={() => { setOpen(!open); dismissHint(); }}
+            className="ticker-selector-glass relative flex h-12 w-12 items-center justify-center text-accent shadow-lg shadow-black/20 transition-shadow hover:border-accent/35 cursor-pointer"
+            whileTap={{ scale: 0.92 }}
+            whileHover={{ scale: 1.05 }}
+            aria-label={open ? 'Close chat' : 'Ask Dora AI'}
+          >
+            {/* Pulse ring animation */}
+            {!open && (
+              <span className="absolute inset-1 rounded-full bg-accent/15 animate-ping" style={{ animationDuration: '2s' }} />
+            )}
+            {open ? (
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="4" y1="4" x2="16" y2="16" />
+                <line x1="16" y1="4" x2="4" y2="16" />
+              </svg>
+            ) : (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            )}
+          </motion.button>
+        </div>
       </div>
 
       {/* Chat panel */}
@@ -362,6 +403,20 @@ export default function SignalChatPopup() {
                   <p className="text-xs text-txt-secondary">
                     Hi! I&apos;m Dora, your SignalFlow consultant. Ask me anything about active signals, the engine, or how our system works.
                   </p>
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      window.dispatchEvent(new Event("start-signalflow-tour"));
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-accent/10 border border-accent/20 hover:bg-accent/15 transition-all text-xs text-accent font-semibold cursor-pointer"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-[10px]">💡</span> Start Product Tour
+                    </span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </button>
                   {suggestions.map((s) => (
                     <button
                       key={s}

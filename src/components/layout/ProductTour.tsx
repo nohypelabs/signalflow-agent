@@ -68,6 +68,17 @@ export default function ProductTour() {
   const [rect, setRect] = useState<Rect | null>(null);
 
   useEffect(() => {
+    const handleStart = () => {
+      setActive(true);
+      setStep(0);
+    };
+    window.addEventListener("start-signalflow-tour", handleStart);
+    return () => {
+      window.removeEventListener("start-signalflow-tour", handleStart);
+    };
+  }, []);
+
+  useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("tour") === "1") {

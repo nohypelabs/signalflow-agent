@@ -73,43 +73,49 @@ export async function GET() {
   }
 
   try {
-    const currencies = await getCurrencies().catch(() => []);
-    const sodexTickers = await getTickers().catch(() => []);
+    const [currencies, sodexTickers] = await Promise.all([
+      getCurrencies().catch(() => []),
+      getTickers().catch(() => []),
+    ]);
+
+    const tickerMap = new Map(sodexTickers.map((t) => [t.symbol, t]));
 
     const targets = ["btc", "eth", "sol"];
-    const coins: CoinPerf[] = [];
+    const coinResults = await Promise.all(
+      targets.map(async (sym) => {
+        const currency = currencies.find((c) => c.symbol.toLowerCase() === sym);
+        if (!currency) return null;
 
-    for (const sym of targets) {
-      const currency = currencies.find((c) => c.symbol.toLowerCase() === sym);
-      if (!currency) continue;
+        const [klines, snapshot] = await Promise.all([
+          getKlines(currency.currency_id, "1d", 30).catch(() => []),
+          getMarketSnapshot(currency.currency_id).catch(() => null),
+        ]);
 
-      const [klines, snapshot] = await Promise.all([
-        getKlines(currency.currency_id, "1d", 30).catch(() => []),
-        getMarketSnapshot(currency.currency_id).catch(() => null),
-      ]);
+        const sodexSym = `v${sym.toUpperCase()}_vUSDC`;
+        const ticker = tickerMap.get(sodexSym);
+        const price = ticker ? parseFloat(ticker.lastPx) : snapshot?.price ?? 0;
+        const change24h = ticker ? ticker.changePct : snapshot?.change_pct_24h ?? 0;
 
-      const sodexSym = `v${sym.toUpperCase()}_vUSDC`;
-      const ticker = sodexTickers.find((t) => t.symbol === sodexSym);
-      const price = ticker ? parseFloat(ticker.lastPx) : snapshot?.price ?? 0;
-      const change24h = ticker ? ticker.changePct : snapshot?.change_pct_24h ?? 0;
+        const { change7d, change30d, high30d, low30d, volatility7d, volatility30d, maxDrawdown, sharpeRatio } = computeReturns(klines);
 
-      const { change7d, change30d, high30d, low30d, volatility7d, volatility30d, maxDrawdown, sharpeRatio } = computeReturns(klines);
+        return {
+          symbol: sym.toUpperCase(),
+          price,
+          change24h,
+          change7d,
+          change30d,
+          high30d,
+          low30d,
+          volatility7d,
+          volatility30d,
+          maxDrawdown,
+          sharpeRatio,
+          klines: klines.map((k) => ({ t: k.timestamp, c: k.close })),
+        } satisfies CoinPerf;
+      }),
+    );
 
-      coins.push({
-        symbol: sym.toUpperCase(),
-        price,
-        change24h,
-        change7d,
-        change30d,
-        high30d,
-        low30d,
-        volatility7d,
-        volatility30d,
-        maxDrawdown,
-        sharpeRatio,
-        klines: klines.map((k) => ({ t: k.timestamp, c: k.close })),
-      });
-    }
+    const coins = coinResults.filter((c): c is CoinPerf => c !== null);
 
     cache = { data: coins, ts: Date.now() };
     return jsonNoCache({ coins, updated: cache.ts });
