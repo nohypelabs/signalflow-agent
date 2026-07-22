@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { parseApiResponse } from "@/lib/api/client";
 
 export interface ServiceStatus {
@@ -17,45 +17,35 @@ interface StatusParams {
 }
 
 export function useStatus(params?: StatusParams) {
-  const [services, setServices] = useState<ServiceStatus[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const hasSecret = !!params?.apiKey;
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const qs = new URLSearchParams();
-        if (params?.providerId) qs.set("provider", params.providerId);
-        if (params?.model) qs.set("model", params.model);
-        const hasSecret = !!params?.apiKey;
-        const url = `/api/status${!hasSecret && qs.toString() ? `?${qs}` : ""}`;
-        const res = await fetch(url, hasSecret
-          ? {
-              method: "POST",
-              cache: "no-store",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                provider: params?.providerId,
-                model: params?.model,
-                apiKey: params?.apiKey,
-              }),
-            }
-          : { cache: "no-store" });
-        const json = await parseApiResponse<{ services: ServiceStatus[] }>(res);
-        if (!cancelled) {
-          setServices(json.services);
-          setError(null);
-        }
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    load();
-    return () => { cancelled = true; };
-  }, [params?.providerId, params?.model, params?.apiKey]);
+  const query = useQuery<ServiceStatus[], Error>({
+    queryKey: ["status", params?.providerId, params?.model, params?.apiKey],
+    queryFn: async () => {
+      const qs = new URLSearchParams();
+      if (params?.providerId) qs.set("provider", params.providerId);
+      if (params?.model) qs.set("model", params.model);
+      const url = `/api/status${!hasSecret && qs.toString() ? `?${qs}` : ""}`;
+      const res = await fetch(url, hasSecret
+        ? {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              provider: params?.providerId,
+              model: params?.model,
+              apiKey: params?.apiKey,
+            }),
+          }
+        : undefined);
+      const json = await parseApiResponse<{ services: ServiceStatus[] }>(res);
+      return json.services;
+    },
+    staleTime: 10_000,
+  });
 
-  return { services, loading, error };
+  return {
+    services: query.data ?? [],
+    loading: query.isLoading,
+    error: query.error ? query.error.message : null,
+  };
 }

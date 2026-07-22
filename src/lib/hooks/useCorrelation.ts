@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { parseApiResponse } from "@/lib/api/client";
 
 interface CorrelationData {
@@ -21,32 +21,24 @@ export function useCorrelation(
   timeframe = "1d",
   limit = 30,
 ): UseCorrelationReturn {
-  const [data, setData] = useState<CorrelationData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const query = useQuery<CorrelationData, Error>({
+    queryKey: ["correlation", symbols, timeframe, limit],
+    queryFn: async () => {
       const qs = new URLSearchParams();
       if (symbols?.length) qs.set("symbols", symbols.join(","));
       qs.set("timeframe", timeframe);
       qs.set("limit", String(limit));
 
-      const res = await fetch(`/api/correlation?${qs.toString()}`, { cache: "no-store" });
-      const json = await parseApiResponse<CorrelationData>(res);
-      setData(json);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch correlation");
-    } finally {
-      setLoading(false);
-    }
-  }, [symbols, timeframe, limit]);
+      const res = await fetch(`/api/correlation?${qs.toString()}`);
+      return parseApiResponse<CorrelationData>(res);
+    },
+    staleTime: 60_000,
+  });
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  return { data, loading, error, refetch: fetchData };
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error ? query.error.message : null,
+    refetch: () => { void query.refetch(); },
+  };
 }

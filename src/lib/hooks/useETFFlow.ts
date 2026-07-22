@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { parseApiResponse } from "@/lib/api/client";
 import type { ETFSummaryItem } from "@/lib/sosovalue";
 
@@ -12,27 +12,20 @@ interface UseETFFlowReturn {
 }
 
 export function useETFFlow(symbol = "BTC", countryCode = "US", limit = 30): UseETFFlowReturn {
-  const [data, setData] = useState<ETFSummaryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const query = useQuery<ETFSummaryItem[], Error>({
+    queryKey: ["etf-flow", symbol, countryCode, limit],
+    queryFn: async () => {
       const res = await fetch(`/api/etf-flow?symbol=${symbol}&country=${countryCode}&limit=${limit}`);
       const json = await parseApiResponse<{ data?: ETFSummaryItem[] }>(res);
-      setData(json.data ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch ETF data");
-    } finally {
-      setLoading(false);
-    }
-  }, [symbol, countryCode, limit]);
+      return json.data ?? [];
+    },
+    staleTime: 60_000,
+  });
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  return { data, loading, error, refetch: fetchData };
+  return {
+    data: query.data ?? [],
+    loading: query.isLoading,
+    error: query.error ? query.error.message : null,
+    refetch: () => { void query.refetch(); },
+  };
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { parseApiResponse } from "@/lib/api/client";
 import type { ScreenerPair } from "../api/screener";
 
@@ -29,42 +30,39 @@ const DEFAULT_FILTERS: ScreenerFilters = {
 };
 
 export function useScreener(): UseScreenerReturn {
-  const [data, setData] = useState<ScreenerPair[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [filters, setFiltersState] = useState<ScreenerFilters>(DEFAULT_FILTERS);
 
   const setFilters = useCallback((partial: Partial<ScreenerFilters>) => {
     setFiltersState((prev) => ({ ...prev, ...partial }));
   }, []);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const query = useQuery<{ pairs: ScreenerPair[]; total: number }, Error>({
+    queryKey: ["screener", filters],
+    queryFn: async () => {
       const qs = new URLSearchParams();
       if (filters.category !== "all") qs.set("category", filters.category);
       qs.set("sortBy", filters.sortBy);
       qs.set("sortDir", filters.sortDir);
       if (filters.minVolume > 0) qs.set("minVolume", String(filters.minVolume));
 
-      const res = await fetch(`/api/screener?${qs.toString()}`, { cache: "no-store" });
+      const res = await fetch(`/api/screener?${qs.toString()}`);
       const json = await parseApiResponse<{ pairs?: ScreenerPair[]; total?: number }>(res);
-      setData(json.pairs ?? []);
-      setTotal(json.total ?? 0);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch screener");
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
+      return {
+        pairs: json.pairs ?? [],
+        total: json.total ?? 0,
+      };
+    },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
 
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 60_000);
-    return () => clearInterval(interval);
-  }, [fetchData]);
-
-  return { data, total, loading, error, filters, setFilters, refetch: fetchData };
+  return {
+    data: query.data?.pairs ?? [],
+    total: query.data?.total ?? 0,
+    loading: query.isLoading,
+    error: query.error ? query.error.message : null,
+    filters,
+    setFilters,
+    refetch: () => { void query.refetch(); },
+  };
 }
