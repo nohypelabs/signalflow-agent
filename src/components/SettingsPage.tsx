@@ -222,15 +222,15 @@ export default function SettingsPage({ walletConnected, aiConfig, onAIConfigChan
                 key={p.id}
                 onClick={() => onAIConfigChange({ providerId: p.id, model: p.defaultModel })}
                 className={`
-                  relative p-4 rounded-2xl border text-left transition-all cursor-pointer overflow-hidden group
-                  bg-card hover:bg-elevated/20
+                  relative p-4 rounded-2xl text-left transition-all cursor-pointer overflow-hidden group
+                  neu-card hover:bg-elevated/20
                   ${isSelected
-                    ? "border-accent"
-                    : "border-border-default hover:border-border-muted"
+                    ? "ring-2 ring-accent"
+                    : ""
                   }
                 `}
                 style={{
-                  boxShadow: isSelected ? "0 0 20px rgba(0, 229, 168, 0.06), inset 0 0 12px rgba(0, 229, 168, 0.02)" : "none",
+                  boxShadow: isSelected ? "0 0 20px rgba(0, 229, 168, 0.1), inset 0 0 12px rgba(0, 229, 168, 0.02)" : undefined,
                 }}
               >
                 {/* Background glow gradient */}

@@ -10,7 +10,6 @@ import Skeleton from "@/components/ui/Skeleton";
 import SignalsPageHeader from "./signals/SignalsPageHeader";
 import SignalSummaryCards from "./signals/SignalSummaryCards";
 import SignalFilters, { type SortOption, type ViewMode } from "./signals/SignalFilters";
-import TopSignalHighlight from "./signals/TopSignalHighlight";
 import SignalCard from "./signals/SignalCard";
 import SignalCompactRow from "./signals/SignalCompactRow";
 import SignalAnalysisDrawer from "./signals/SignalAnalysisDrawer";
@@ -230,21 +229,6 @@ export default function SignalsPage({
             </div>
           </div>
         </div>
-
-        {/* Top signal highlight */}
-        {topSignal && viewMode === "cards" && (() => {
-          const { liveDims: coinDims, coinWeights, coinCapped } = getCoinData(topSignal);
-          return (
-            <TopSignalHighlight
-              signal={topSignal}
-              ticker={getTicker(topSignal)}
-              liveDims={coinDims}
-              weights={coinWeights}
-              cappedDims={coinCapped}
-              onFocusSignal={focusSignal}
-            />
-          );
-        })()}
 
         {/* Summary cards */}
         {filteredSignals.length > 0 && <SignalSummaryCards signals={filteredSignals} />}
