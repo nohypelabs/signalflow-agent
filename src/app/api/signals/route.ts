@@ -6,8 +6,8 @@ import {
   getMarketSnapshot,
   getIndexSnapshot,
   getNewsHot,
-  getCurrencies,
 } from "@/lib/sosovalue";
+import { getFileCache, setFileCache } from "@/lib/api/file-cache";
 import type { ETFSummaryItem, MarketSnapshot, NewsItem, MacroEvent, BTCPurchaseHistory } from "@/lib/sosovalue";
 import { getKlines as getSodexKlines, getOrderbook, getRecentTrades } from "@/lib/sodex";
 import type { OrderBook, SoDEXKline } from "@/lib/sodex-types";
@@ -92,6 +92,7 @@ function setCachedResult(key: string, data: unknown) {
     if (oldestKey) cache.delete(oldestKey);
   }
   cache.set(key, { data, ts: now });
+  setFileCache(`signals_${key}`, data);
 }
 
 // ── Fetch with timeout + abort ───────────────────────────
@@ -130,22 +131,31 @@ export async function GET(request: Request) {
       : null;
   const strategyConfig = deserializeStrategyConfig(url.searchParams.get("strategy"));
   const cacheKey = `${tradingType ?? "all"}:${strategyConfigKey(strategyConfig)}`;
-  const cached = cache.get(cacheKey);
   const cacheTtl = strategyConfig.engine === "liquidityFlow" ? LIQUIDITY_CACHE_MS : CACHE_MS;
 
-  if (cached && Date.now() - cached.ts < cacheTtl) {
-    return jsonNoCache(cached.data);
+  // Check memory cache first, fallback to persistent file cache
+  let cachedVal = cache.get(cacheKey);
+  let isExpired = false;
+
+  if (!cachedVal) {
+    const fileCacheObj = getFileCache<any>(`signals_${cacheKey}`, cacheTtl);
+    if (fileCacheObj) {
+      cachedVal = { data: fileCacheObj.data, ts: Date.now() - (fileCacheObj.isExpired ? cacheTtl + 1000 : 0) };
+      cache.set(cacheKey, cachedVal);
+      isExpired = fileCacheObj.isExpired;
+    }
+  } else {
+    isExpired = Date.now() - cachedVal.ts >= cacheTtl;
   }
 
   const reqSignal = (request as unknown as { signal?: AbortSignal }).signal;
 
-  if (cached) {
-    const age = Date.now() - cached.ts;
-    if (age >= cacheTtl) {
+  if (cachedVal) {
+    if (isExpired) {
       // Stale-while-revalidate: return stale data immediately, regenerate in background.
       void generateAndCache(cacheKey, tradingType, strategyConfig, reqSignal).catch(() => {});
     }
-    return jsonNoCache(cached.data);
+    return jsonNoCache(cachedVal.data);
   }
 
   try {
@@ -304,17 +314,22 @@ async function generateAndCache(
 
     // ── CONFLUENCE V3 PATH (unified: 5 TA factors + ORDER_FLOW + DEPTH + FUNDING micro) ────────────────────────────────
 
-    const [currencies, etfSummary, macroEvents, btcTreasuries, hotNews] = await Promise.all([
-      getCurrencies(ac.signal).catch(() => []),
+    const STATIC_CURRENCIES = [
+      { currency_id: "1673723677362319866", symbol: "btc", name: "Bitcoin" },
+      { currency_id: "1673723677362319867", symbol: "eth", name: "Ethereum" },
+      { currency_id: "1673723677362319875", symbol: "sol", name: "Solana" },
+    ];
+
+    const [etfSummary, macroEvents, btcTreasuries, hotNews] = await Promise.all([
       getETFSummary("BTC", "US", 5, ac.signal).catch(() => []),
       getMacroEvents(ac.signal).catch(() => []),
       getBTCTreasuries(ac.signal).catch(() => []),
       getNewsHot(1, 20, ac.signal).catch(() => ({ list: [], page: 1, page_size: 20, total: 0 })),
     ]);
 
-    const btc = currencies.find((c) => c.symbol.toLowerCase() === "btc");
-    const eth = currencies.find((c) => c.symbol.toLowerCase() === "eth");
-    const sol = currencies.find((c) => c.symbol.toLowerCase() === "sol");
+    const btc = STATIC_CURRENCIES.find((c) => c.symbol.toLowerCase() === "btc");
+    const eth = STATIC_CURRENCIES.find((c) => c.symbol.toLowerCase() === "eth");
+    const sol = STATIC_CURRENCIES.find((c) => c.symbol.toLowerCase() === "sol");
 
     const newsList = "list" in hotNews ? hotNews.list : [];
 

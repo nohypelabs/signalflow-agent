@@ -1,7 +1,8 @@
-import { getCurrencies, getKlines, getMarketSnapshot } from "@/lib/sosovalue";
+import { getKlines, getMarketSnapshot } from "@/lib/sosovalue";
 import { getTickers } from "@/lib/sodex";
 import type { KlineItem } from "@/lib/sosovalue";
 import { jsonNoCache } from "@/lib/api/no-cache";
+import { getFileCache, setFileCache } from "@/lib/api/file-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -64,65 +65,78 @@ function computeReturns(klines: KlineItem[]) {
   return { change7d, change30d, high30d, low30d, volatility7d, volatility30d, maxDrawdown, sharpeRatio };
 }
 
-let cache: { data: CoinPerf[]; ts: number } | null = null;
-const CACHE_MS = 300_000;
+const CACHE_KEY = "performance_data";
+const CACHE_MS = 300_000; // 5 minutes
+
+// Static SoSoValue currency mappings for btc, eth, sol to avoid outbound /currencies HTTP requests
+const STATIC_CURRENCIES = [
+  { currency_id: "1673723677362319866", symbol: "btc", name: "Bitcoin" },
+  { currency_id: "1673723677362319867", symbol: "eth", name: "Ethereum" },
+  { currency_id: "1673723677362319875", symbol: "sol", name: "Solana" },
+];
 
 export async function GET() {
-  if (cache && Date.now() - cache.ts < CACHE_MS) {
-    return jsonNoCache({ coins: cache.data, updated: cache.ts });
+  const cached = getFileCache<{ coins: CoinPerf[] }>(CACHE_KEY, CACHE_MS);
+  if (cached) {
+    if (cached.isExpired) {
+      // Revalidate in background asynchronously
+      void fetchAndCachePerformance().catch(() => {});
+    }
+    return jsonNoCache(cached.data);
   }
 
   try {
-    const [currencies, sodexTickers] = await Promise.all([
-      getCurrencies().catch(() => []),
-      getTickers().catch(() => []),
-    ]);
-
-    const tickerMap = new Map(sodexTickers.map((t) => [t.symbol, t]));
-
-    const targets = ["btc", "eth", "sol"];
-    const coinResults = await Promise.all(
-      targets.map(async (sym) => {
-        const currency = currencies.find((c) => c.symbol.toLowerCase() === sym);
-        if (!currency) return null;
-
-        const [klines, snapshot] = await Promise.all([
-          getKlines(currency.currency_id, "1d", 30).catch(() => []),
-          getMarketSnapshot(currency.currency_id).catch(() => null),
-        ]);
-
-        const sodexSym = `v${sym.toUpperCase()}_vUSDC`;
-        const ticker = tickerMap.get(sodexSym);
-        const price = ticker ? parseFloat(ticker.lastPx) : snapshot?.price ?? 0;
-        const change24h = ticker ? ticker.changePct : snapshot?.change_pct_24h ?? 0;
-
-        const { change7d, change30d, high30d, low30d, volatility7d, volatility30d, maxDrawdown, sharpeRatio } = computeReturns(klines);
-
-        return {
-          symbol: sym.toUpperCase(),
-          price,
-          change24h,
-          change7d,
-          change30d,
-          high30d,
-          low30d,
-          volatility7d,
-          volatility30d,
-          maxDrawdown,
-          sharpeRatio,
-          klines: klines.map((k) => ({ t: k.timestamp, c: k.close })),
-        } satisfies CoinPerf;
-      }),
-    );
-
-    const coins = coinResults.filter((c): c is CoinPerf => c !== null);
-
-    cache = { data: coins, ts: Date.now() };
-    return jsonNoCache({ coins, updated: cache.ts });
+    const data = await fetchAndCachePerformance();
+    return jsonNoCache(data);
   } catch (err) {
     return jsonNoCache(
       { error: err instanceof Error ? err.message : "Failed" },
       { status: 502 },
     );
   }
+}
+
+async function fetchAndCachePerformance() {
+  const sodexTickers = await getTickers().catch(() => []);
+  const tickerMap = new Map(sodexTickers.map((t) => [t.symbol, t]));
+
+  const targets = ["btc", "eth", "sol"];
+  const coinResults = await Promise.all(
+    targets.map(async (sym) => {
+      const currency = STATIC_CURRENCIES.find((c) => c.symbol.toLowerCase() === sym);
+      if (!currency) return null;
+
+      const [klines, snapshot] = await Promise.all([
+        getKlines(currency.currency_id, "1d", 30).catch(() => []),
+        getMarketSnapshot(currency.currency_id).catch(() => null),
+      ]);
+
+      const sodexSym = `v${sym.toUpperCase()}_vUSDC`;
+      const ticker = tickerMap.get(sodexSym);
+      const price = ticker ? parseFloat(ticker.lastPx) : snapshot?.price ?? 0;
+      const change24h = ticker ? ticker.changePct : snapshot?.change_pct_24h ?? 0;
+
+      const { change7d, change30d, high30d, low30d, volatility7d, volatility30d, maxDrawdown, sharpeRatio } = computeReturns(klines);
+
+      return {
+        symbol: sym.toUpperCase(),
+        price,
+        change24h,
+        change7d,
+        change30d,
+        high30d,
+        low30d,
+        volatility7d,
+        volatility30d,
+        maxDrawdown,
+        sharpeRatio,
+        klines: klines.map((k) => ({ t: k.timestamp, c: k.close })),
+      } satisfies CoinPerf;
+    }),
+  );
+
+  const coins = coinResults.filter((c): c is CoinPerf => c !== null);
+  const result = { coins };
+  setFileCache(CACHE_KEY, result);
+  return result;
 }

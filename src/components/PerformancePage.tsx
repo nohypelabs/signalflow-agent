@@ -240,7 +240,7 @@ export default function PerformancePage({
   return (
     <div className="space-y-4">
       {/* ── Hero: Big stat + 4 key metrics ── */}
-      <section className="rounded-xl border border-border-default bg-inset/70 p-5">
+      <Card padding="lg" className="!rounded-[35px]">
         <div className="grid gap-5 lg:grid-cols-[1.1fr_1.4fr] lg:items-end">
           <div>
             <div className="flex items-center gap-2">
@@ -281,7 +281,7 @@ export default function PerformancePage({
             </button>
           </div>
         )}
-      </section>
+      </Card>
 
       {/* ── Backtest CTA — right below hero ── */}
       <BacktestPanel />
