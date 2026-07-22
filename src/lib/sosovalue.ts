@@ -4,6 +4,30 @@ function apiKey(): string {
   return process.env.SOSOVALUE_API_KEY || "";
 }
 
+// ── Concurrency limiter ───────────────────────────────────
+// Cap parallel SoSoValue calls so we don't burst concurrent requests
+// and trip rate limits.
+const MAX_CONCURRENT = 5;
+let active = 0;
+const queue: (() => void)[] = [];
+
+function acquire(): Promise<void> {
+  if (active < MAX_CONCURRENT) {
+    active++;
+    return Promise.resolve();
+  }
+  return new Promise<void>((resolve) => queue.push(resolve));
+}
+
+function release(): void {
+  active--;
+  const next = queue.shift();
+  if (next) {
+    active++;
+    next();
+  }
+}
+
 async function sosoFetch<T>(path: string, params?: Record<string, string>, retries = 3, signal?: AbortSignal): Promise<T> {
   const url = new URL(`${BASE}${path}`);
   if (params) {
@@ -12,47 +36,52 @@ async function sosoFetch<T>(path: string, params?: Record<string, string>, retri
     });
   }
 
-  let lastError: Error | null = null;
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    if (signal?.aborted) {
-      throw new DOMException("Aborted", "AbortError");
-    }
-    if (attempt > 0) {
-      // Shorter backoff + respect abort: 1s, 2s, 4s (previous 5/10/20 too long vs caller timeouts)
-      const backoff = 1000 * Math.pow(2, attempt - 1);
-      await new Promise((r, reject) => {
-        const t = setTimeout(r, backoff);
-        signal?.addEventListener("abort", () => { clearTimeout(t); reject(new DOMException("Aborted", "AbortError")); }, { once: true });
-      });
+  await acquire();
+  try {
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt <= retries; attempt++) {
       if (signal?.aborted) {
         throw new DOMException("Aborted", "AbortError");
       }
+      if (attempt > 0) {
+        // Shorter backoff + respect abort: 1s, 2s, 4s (previous 5/10/20 too long vs caller timeouts)
+        const backoff = 1000 * Math.pow(2, attempt - 1);
+        await new Promise((r, reject) => {
+          const t = setTimeout(r, backoff);
+          signal?.addEventListener("abort", () => { clearTimeout(t); reject(new DOMException("Aborted", "AbortError")); }, { once: true });
+        });
+        if (signal?.aborted) {
+          throw new DOMException("Aborted", "AbortError");
+        }
+      }
+
+      const res = await fetch(url.toString(), {
+        headers: { "x-soso-api-key": apiKey(), Accept: "application/json" },
+        signal,
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        lastError = new Error(`SoSoValue ${res.status}: ${text}`);
+        continue;
+      }
+
+      const json = await res.json();
+
+      // Rate limit: code 402901 — retry with backoff
+      if (json.code === 402901 && attempt < retries) {
+        lastError = new Error(json.message || "Rate limited");
+        continue;
+      }
+
+      if (json.code !== 0) throw new Error(json.message || "SoSoValue error");
+      return json.data as T;
     }
 
-    const res = await fetch(url.toString(), {
-      headers: { "x-soso-api-key": apiKey(), Accept: "application/json" },
-      signal,
-    });
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      lastError = new Error(`SoSoValue ${res.status}: ${text}`);
-      continue;
-    }
-
-    const json = await res.json();
-
-    // Rate limit: code 402901 — retry with backoff
-    if (json.code === 402901 && attempt < retries) {
-      lastError = new Error(json.message || "Rate limited");
-      continue;
-    }
-
-    if (json.code !== 0) throw new Error(json.message || "SoSoValue error");
-    return json.data as T;
+    throw lastError ?? new Error("SoSoValue fetch failed");
+  } finally {
+    release();
   }
-
-  throw lastError ?? new Error("SoSoValue fetch failed");
 }
 
 // ── Types ──────────────────────────────────────────────

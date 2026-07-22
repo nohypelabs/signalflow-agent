@@ -330,23 +330,22 @@ export async function fetchNews(page: number, pageSize: number) {
 export async function fetchPerformance() {
   const currencies = await getCurrencies().catch(() => []);
   const coins = ["btc", "eth", "sol"];
-  const results: Array<{ symbol: string; price: number; change24h: number }> = [];
 
-  for (const coin of coins) {
-    const c = currencies.find((cu) => cu.symbol.toLowerCase() === coin);
-    if (c) {
+  const results = await Promise.all(
+    coins.map(async (coin) => {
+      const c = currencies.find((cu) => cu.symbol.toLowerCase() === coin);
+      if (!c) return null;
       const snap = await getMarketSnapshot(c.currency_id).catch(() => null);
-      if (snap) {
-        results.push({
-          symbol: coin.toUpperCase(),
-          price: snap.price ?? 0,
-          change24h: snap.change_pct_24h ?? 0,
-        });
-      }
-    }
-  }
+      if (!snap) return null;
+      return {
+        symbol: coin.toUpperCase(),
+        price: snap.price ?? 0,
+        change24h: snap.change_pct_24h ?? 0,
+      };
+    })
+  );
 
-  return results;
+  return results.filter((r): r is { symbol: string; price: number; change24h: number } => r !== null);
 }
 
 // ─── System Data Aggregator ───
