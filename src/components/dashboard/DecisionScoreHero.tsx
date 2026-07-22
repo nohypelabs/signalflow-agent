@@ -89,7 +89,7 @@ export default function DecisionScoreHero({
 
           <div className="neu-card flex flex-col items-center" style={{borderRadius: "35px", padding: "24px 20px 20px"}}>
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-txt-faint mb-3">Conviction</p>
-            <SpeedometerGauge value={confidence} size="lg" color={gaugeColor} />
+            <SpeedometerGauge value={confidence} size="lg" color={gaugeColor} sweeping={analyzing} />
             <div className="mt-5">
               <button
                 type="button"

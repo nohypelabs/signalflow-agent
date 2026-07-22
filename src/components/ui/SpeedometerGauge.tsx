@@ -69,16 +69,17 @@ export default function SpeedometerGauge({ value, size = "md", showLabel = true,
 
   useEffect(() => {
     if (!sweeping) return;
-    let current = valueToAngle(0);
-    const ceiling = valueToAngle(92);
-    setDisplayAngle(current);
+    const startTime = performance.now();
+    const minAngle = valueToAngle(15);
+    const maxAngle = valueToAngle(85);
+    const center = (minAngle + maxAngle) / 2;
+    const amplitude = (maxAngle - minAngle) / 2;
 
-    function animate() {
-      current += 0.55;
-      if (current >= ceiling) {
-        current = valueToAngle(0);
-      }
-      setDisplayAngle(current);
+    function animate(now: number) {
+      const elapsed = now - startTime;
+      const period = 2200; // 2.2 seconds for full cycle oscillation
+      const angle = center + amplitude * Math.sin((elapsed / period) * 2 * Math.PI);
+      setDisplayAngle(angle);
       rafRef.current = requestAnimationFrame(animate);
     }
 
