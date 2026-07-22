@@ -67,12 +67,14 @@ export default function ProductTour() {
   useEffect(() => {
     if (!active) return;
     measure();
+    const interval = setInterval(measure, 150);
     const onResize = () => measure();
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") finish(); };
     window.addEventListener("resize", onResize);
     window.addEventListener("scroll", onResize, true);
     window.addEventListener("keydown", onKey);
     return () => {
+      clearInterval(interval);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("scroll", onResize, true);
       window.removeEventListener("keydown", onKey);
@@ -143,35 +145,75 @@ export default function ProductTour() {
       {/* Tour overlay */}
       <AnimatePresence>
         {active && (
-          <motion.div
-            className="fixed inset-0 z-[120]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-          >
+          <div className="fixed inset-0 z-[120] overflow-hidden pointer-events-none">
+            {/* Spotlight Mask (4 dynamic overlay panels + glowing border outline) */}
             {!isSidebarStep && rect && (
-              <motion.div
-                key={`spot-${step}`}
-                className="absolute inset-0"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                style={{
-                  background: `rgba(3,7,18,0.78)`,
-                  clipPath: `polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0,
-                    ${rect.left - pad}px ${rect.top - pad}px,
-                    ${rect.left - pad}px ${rect.top + rect.height + pad}px,
-                    ${rect.left + rect.width + pad}px ${rect.top + rect.height + pad}px,
-                    ${rect.left + rect.width + pad}px ${rect.top - pad}px,
-                    ${rect.left - pad}px ${rect.top - pad}px)`,
-                  pointerEvents: "none",
-                }}
-              />
-            )}
-            {isSidebarStep && (
-              <div className="absolute inset-0 bg-[rgba(3,7,18,0.78)]" />
+              <>
+                {/* Top Overlay Panel */}
+                <motion.div
+                  className="fixed left-0 top-0 w-full pointer-events-auto"
+                  animate={{ height: Math.max(0, rect.top - pad) }}
+                  transition={{ type: "spring", stiffness: 350, damping: 32 }}
+                  style={{ backgroundColor: "rgba(3, 7, 18, 0.78)" }}
+                />
+
+                {/* Bottom Overlay Panel */}
+                <motion.div
+                  className="fixed left-0 w-full bottom-0 pointer-events-auto"
+                  animate={{ top: rect.top + rect.height + pad }}
+                  transition={{ type: "spring", stiffness: 350, damping: 32 }}
+                  style={{ backgroundColor: "rgba(3, 7, 18, 0.78)" }}
+                />
+
+                {/* Left Overlay Panel */}
+                <motion.div
+                  className="fixed left-0 pointer-events-auto"
+                  animate={{
+                    top: rect.top - pad,
+                    width: Math.max(0, rect.left - pad),
+                    height: rect.height + 2 * pad,
+                  }}
+                  transition={{ type: "spring", stiffness: 350, damping: 32 }}
+                  style={{ backgroundColor: "rgba(3, 7, 18, 0.78)" }}
+                />
+
+                {/* Right Overlay Panel */}
+                <motion.div
+                  className="fixed right-0 pointer-events-auto"
+                  animate={{
+                    top: rect.top - pad,
+                    left: rect.left + rect.width + pad,
+                    height: rect.height + 2 * pad,
+                  }}
+                  transition={{ type: "spring", stiffness: 350, damping: 32 }}
+                  style={{ backgroundColor: "rgba(3, 7, 18, 0.78)" }}
+                />
+
+                {/* Glowing Accent Border Outline */}
+                <motion.div
+                  className="fixed border-[1.5px] border-accent rounded-xl shadow-[0_0_15px_rgba(0,229,168,0.35)] pointer-events-none"
+                  animate={{
+                    top: rect.top - pad,
+                    left: rect.left - pad,
+                    width: rect.width + 2 * pad,
+                    height: rect.height + 2 * pad,
+                  }}
+                  transition={{ type: "spring", stiffness: 350, damping: 32 }}
+                />
+              </>
             )}
 
+            {/* Sidebar Full Mask (no highlight hole) */}
+            {isSidebarStep && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-[rgba(3,7,18,0.78)] pointer-events-auto"
+              />
+            )}
+
+            {/* Tooltip Content Component */}
             <Tooltip
               step={current}
               index={step}
@@ -181,7 +223,7 @@ export default function ProductTour() {
               onNext={next}
               onSkip={skip}
             />
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </>
@@ -205,42 +247,41 @@ function Tooltip({
   onNext: () => void;
   onSkip: () => void;
 }) {
-  const [style, setStyle] = useState<React.CSSProperties>({});
   const placement = step.placement ?? "bottom";
   const tooltipW = 320;
 
-  useEffect(() => {
-    if (isSidebar) {
-      setStyle({ left: 76, top: 90 });
-      return;
-    }
-    if (!rect) {
-      setStyle({ left: 16, top: 90 });
-      return;
-    }
-    const vw = typeof window !== "undefined" ? window.innerWidth : 1024;
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1024;
+  let targetX = 16;
+  let targetY = 90;
+
+  if (isSidebar) {
+    targetX = 76;
+    targetY = 90;
+  } else if (rect) {
     if (placement === "bottom") {
-      setStyle({ left: Math.min(Math.max(rect.left, 12), vw - tooltipW - 12), top: rect.top + rect.height + 14 });
+      targetX = Math.min(Math.max(rect.left, 12), vw - tooltipW - 12);
+      targetY = rect.top + rect.height + 14;
     } else if (placement === "top") {
-      setStyle({ left: Math.min(Math.max(rect.left, 12), vw - tooltipW - 12), top: Math.max(rect.top - 160, 12) });
+      targetX = Math.min(Math.max(rect.left, 12), vw - tooltipW - 12);
+      targetY = Math.max(rect.top - 190, 12);
     } else if (placement === "right") {
-      setStyle({ left: Math.min(rect.left + rect.width + 14, vw - tooltipW - 12), top: rect.top });
+      targetX = Math.min(rect.left + rect.width + 14, vw - tooltipW - 12);
+      targetY = rect.top;
     } else {
-      setStyle({ left: 12, top: rect.top });
+      targetX = 12;
+      targetY = rect.top;
     }
-  }, [rect, isSidebar, placement]);
+  }
 
   const isLast = index === total - 1;
 
   return (
     <motion.div
-      key={`tip-${index}`}
-      initial={{ opacity: 0, y: 8, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 8, scale: 0.98 }}
-      transition={{ type: "spring", stiffness: 380, damping: 30 }}
-      className="absolute z-[121] w-[320px] max-w-[calc(100vw-24px)] rounded-[28px] border border-white/12 bg-[#0B1020]/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.55)] backdrop-blur-xl"
-      style={style}
+      initial={{ opacity: 0, scale: 0.95, x: targetX, y: targetY }}
+      animate={{ opacity: 1, scale: 1, x: targetX, y: targetY }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ type: "spring", stiffness: 350, damping: 32 }}
+      className="fixed left-0 top-0 z-[121] w-[320px] max-w-[calc(100vw-24px)] rounded-[28px] border border-white/12 bg-[#0B1020]/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.55)] backdrop-blur-xl pointer-events-auto"
     >
       <div className="mb-2 flex items-center gap-2">
         <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_10px_rgba(0,229,168,0.6)]" />
@@ -275,3 +316,5 @@ function Tooltip({
     </motion.div>
   );
 }
+
+
